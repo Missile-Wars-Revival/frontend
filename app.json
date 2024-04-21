@@ -1,13 +1,8 @@
 {
   "expo": {
-<<<<<<< HEAD
-    "name": "Missile Wars",
-    "slug": "Missile Wars",
-=======
     "name": "MissileWars",
     "slug": "MissileWars",
     "scheme": "missilewars",
->>>>>>> nativewind/expo-router
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/logo.gif",
