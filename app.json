@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "MissileWars",
-    "slug": "MissileWars",
-    "scheme": "missilewars",
+    "name": "missle-wars",
+    "slug": "missle-wars",
+    "scheme": "missle-wars",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/logo.gif",
@@ -23,13 +23,8 @@
       }
     },
     "web": {
-<<<<<<< HEAD
-      "favicon": "./assets/logo.gif"
-    }
-=======
       "favicon": "./assets/favicon.png"
     },
     "plugins": ["expo-router"]
->>>>>>> nativewind/expo-router
   }
 }
