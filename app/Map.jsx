@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { Text, View, StyleSheet, TouchableOpacity, Modal } from "react-native";
-import MapView, { PROVIDER_GOOGLE } from "react-native-maps";
+import MapView, { PROVIDER_GOOGLE, Circle } from "react-native-maps";
 import * as Location from 'expo-location';
 
 const DefaultMapStyle = [
@@ -317,7 +317,7 @@ const CherryBlossomMapStyle = [
 const Loot = ({ location }) => (
   <MapView.Circle
     center={location}
-    radius={10} // 10 meters
+    radius={20} // 10 meters
     fillColor="rgba(0, 0, 255, 0.5)" // Blue color
     strokeColor="rgba(0, 0, 255, 0.8)"
   />
@@ -330,6 +330,9 @@ const Missile = ({ location, radius }) => (
     radius={radius}
     fillColor="rgba(255, 0, 0, 0.5)" // Red color
     strokeColor="rgba(255, 0, 0, 0.8)"
+    // fillColor="rgba(255, 0, 0, 0.5)" // Red color
+    // strokeColor="rgba(255, 0, 0, 0.8)" // Darker red color
+
   />
 );
 
@@ -370,7 +373,7 @@ export default function Map() {
     latitudeDelta: 90,
     longitudeDelta: 90,
   };
-
+  
   const [region, setRegion] = useState(defaultRegion);
   const [selectedMapStyle, setSelectedMapStyle] = useState(DefaultMapStyle);
   const [popupVisible, setPopupVisible] = useState(false);
@@ -406,17 +409,17 @@ export default function Map() {
 //Temporary locaiton for drops and missiles 
 
   // const fetchLootAndMissiles = useCallback(() => {
-  //   // Temporary loot and missile data
+  //   // Temporary loot and missile data - These secondary coords are in Taunton UK
   //   const lootTemp = [
   //     { latitude: 0.01, longitude: 0.01 }, // Temporary loot location
-  //     { latitude: -0.01, longitude: -0.01 }, // Another temporary loot location
+  //     { latitude: 51.0284388, longitude: -3.1001024 }, // Another temporary loot location
   //   ];
-  
+    
   //   const missileTemp = [
-  //     { location: { latitude: 0.02, longitude: 0.02 }, radius: 20 }, // Temporary missile data
-  //     { location: { latitude: -0.02, longitude: -0.02 }, radius: 30 }, // Another temporary missile data
+  //     { location: { latitude: 0.02, longitude: 0.02 }, radius: 100 }, // Temporary missile data
+  //     { location: { latitude: 51.0256046, longitude: -3.1085848 }, radius: 100 }, // Another temporary missile data
   //   ];
-  
+
   //   setLootLocations(lootTemp);
   //   setMissileData(missileTemp);
   // }, []);
@@ -452,6 +455,9 @@ export default function Map() {
     }
   };
 
+console.log("lootLocations:", lootLocations);
+console.log("missileData:", missileData);
+
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Map Page- Temp</Text>
@@ -466,25 +472,26 @@ export default function Map() {
 >
   {/* Render Loot Drops */}
   {lootLocations.map((location, index) => (
-    <MapView.Circle
-      key={index}
-      center={location}
-      radius={10} // 10 meters
-      fillColor="rgba(0, 0, 255, 0.5)" // Blue color
-      strokeColor="rgba(0, 0, 255, 0.8)"
-    />
+    <Circle
+    key={index}
+    center={location}
+    radius={30}
+    fillColor="rgba(0, 0, 255, 0.5)"
+    strokeColor="rgba(0, 0, 255, 0.8)"
+  />  
   ))}
 
   {/* Render Missiles */}
   {missileData.map(({ location, radius }, index) => (
-    <MapView.Circle
+    <Circle
       key={index}
       center={location}
       radius={radius}
-      fillColor="rgba(255, 0, 0, 0.5)" // Red color
+      fillColor="rgba(255, 0, 0, 0.5)"
       strokeColor="rgba(255, 0, 0, 0.8)"
     />
   ))}
+  
 </MapView>
 
       {/* Dropdown button */}
