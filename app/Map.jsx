@@ -317,7 +317,7 @@ const CherryBlossomMapStyle = [
 const Loot = ({ location }) => (
   <MapView.Circle
     center={location}
-    radius={20} // 10 meters
+    radius={40} // 40 meters
     fillColor="rgba(0, 0, 255, 0.5)" // Blue color
     strokeColor="rgba(0, 0, 255, 0.8)"
   />
@@ -330,9 +330,6 @@ const Missile = ({ location, radius }) => (
     radius={radius}
     fillColor="rgba(255, 0, 0, 0.5)" // Red color
     strokeColor="rgba(255, 0, 0, 0.8)"
-    // fillColor="rgba(255, 0, 0, 0.5)" // Red color
-    // strokeColor="rgba(255, 0, 0, 0.8)" // Darker red color
-
   />
 );
 
@@ -396,34 +393,43 @@ export default function Map() {
     });
   }, []);
 
-  const fetchLootAndMissiles = useCallback(async () => {
+  const fetchLootAndMissiles = useCallback(() => {
     // Fetch loot and missile data from backend
-    // Replace these with actual fetch functions
-    const lootData = await fetchLootFromBackend();
-    const missileData = await fetchMissilesFromBackend();
-
-    setLootLocations(lootData.locations);
-    setMissileData(missileData);
+    const fetchLootFromBackend = async () => {
+      // Simulated fetch function to get loot data:
+      return [
+        { latitude: 51.0284388, longitude: -3.1001024 }, // Loot location 1 
+        { latitude: 45.305, longitude: -0.860 }, // Loot location 2
+      ];
+    };
+  
+    const fetchMissilesFromBackend = async () => {
+      // Simulated fetch function to get missile data:
+      return [
+        { location: { latitude: 45.2949318, longitude: -0.852764 }, radius: 100 }, //temp missile locaiton 
+        { location: { latitude: 51.0256046, longitude: -3.1085848 }, radius: 500 }, //2nd temp missle location 
+      ];
+    };
+  
+    const updateData = async () => {
+      const lootData = await fetchLootFromBackend();
+      const missileData = await fetchMissilesFromBackend();
+  
+      setLootLocations(lootData);
+      setMissileData(missileData);
+    };
+  
+    // Initial fetch
+    updateData();
+  
+    // Fetch data every 60 seconds
+    const intervalId = setInterval(updateData, 60000); // 60 seconds
+  
+    // Cleanup interval on component unmount
+    return () => {
+      clearInterval(intervalId);
+    };
   }, []);
-  
-//Temporary locaiton for drops and missiles 
-
-  // const fetchLootAndMissiles = useCallback(() => {
-  //   // Temporary loot and missile data - These secondary coords are in Taunton UK
-  //   const lootTemp = [
-  //     { latitude: 0.01, longitude: 0.01 }, // Temporary loot location
-  //     { latitude: 51.0284388, longitude: -3.1001024 }, // Another temporary loot location
-  //   ];
-    
-  //   const missileTemp = [
-  //     { location: { latitude: 0.02, longitude: 0.02 }, radius: 100 }, // Temporary missile data
-  //     { location: { latitude: 51.0256046, longitude: -3.1085848 }, radius: 100 }, // Another temporary missile data
-  //   ];
-
-  //   setLootLocations(lootTemp);
-  //   setMissileData(missileTemp);
-  // }, []);
-  
 
   useEffect(() => {
     fetchLocation();
@@ -454,13 +460,12 @@ export default function Map() {
         break;
     }
   };
-
-console.log("lootLocations:", lootLocations);
-console.log("missileData:", missileData);
+//logs for location 
+//console.log("lootLocations:", lootLocations);
+//console.log("missileData:", missileData);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Map Page- Temp</Text>
 
       <MapView
   provider={PROVIDER_GOOGLE}
@@ -475,7 +480,7 @@ console.log("missileData:", missileData);
     <Circle
     key={index}
     center={location}
-    radius={30}
+    radius={40} //actual radius size
     fillColor="rgba(0, 0, 255, 0.5)"
     strokeColor="rgba(0, 0, 255, 0.8)"
   />  
