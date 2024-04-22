@@ -376,6 +376,8 @@ export default function Map() {
   const [popupVisible, setPopupVisible] = useState(false);
   const [lootLocations, setLootLocations] = useState([]);
   const [missileData, setMissileData] = useState([]);
+  const [userLocation, setUserLocation] = useState(null);
+
 
   const fetchLocation = useCallback(async () => {
     let { status } = await Location.requestForegroundPermissionsAsync();
@@ -383,22 +385,74 @@ export default function Map() {
       console.log('Permission to access location was denied');
       return;
     }
-
+  
     let location = await Location.getCurrentPositionAsync({});
-    setRegion({
+    const userLoc = {
       latitude: location.coords.latitude,
       longitude: location.coords.longitude,
-      latitudeDelta: 0.0922,
-      longitudeDelta: 0.0421,
-    });
+    };
+    // setRegion({ //slashed out as it got annyoing
+    //   latitude: userLoc.latitude,
+    //   longitude: userLoc.longitude,
+    //   latitudeDelta: 0.0922,
+    //   longitudeDelta: 0.0421,
+    // });
+    setUserLocation(userLoc);
   }, []);
+  
+  const checkMissileCollision = () => {
+    for (let missile of missileData) {
+      const distance = getDistance(userLocation.latitude, userLocation.longitude, missile.location.latitude, missile.location.longitude);
+      if (distance <= missile.radius) {
+        alert("Warning: You are in the radius of a missile!");
+        console.log("Player died");
+        break;
+      }
+    }
+  };
+  
+  const checkLootCollection = () => {
+    for (let loot of lootLocations) {
+      const distance = getDistance(userLocation.latitude, userLocation.longitude, loot.latitude, loot.longitude);
+      if (distance <= 40) { // Assuming loot radius is 40 meters
+        alert("You've found loot nearby!");
+        console.log("Loot collected");
+        break;
+      }
+    }
+  };
+  
+  const getDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371; // Radius of the earth in km
+    const dLat = deg2rad(lat2 - lat1);
+    const dLon = deg2rad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const d = R * c; // Distance in km
+    return d * 1000; // Distance in meters
+  };
+  
+  const deg2rad = (deg) => {
+    return deg * (Math.PI / 180);
+  };
+
+  useEffect(() => {
+    if (userLocation) {
+      checkMissileCollision();
+      checkLootCollection();
+    }
+  }, [userLocation]);
+  
 
   const fetchLootAndMissiles = useCallback(() => {
     // Fetch loot and missile data from backend
     const fetchLootFromBackend = async () => {
       // Simulated fetch function to get loot data:
       return [
-        { latitude: 51.0284388, longitude: -3.1001024 }, // Loot location 1 
+        { latitude: 51.026281, longitude: -3.113764 }, // Loot location 1 TS
         { latitude: 45.305, longitude: -0.860 }, // Loot location 2
       ];
     };
@@ -407,7 +461,7 @@ export default function Map() {
       // Simulated fetch function to get missile data:
       return [
         { location: { latitude: 45.2949318, longitude: -0.852764 }, radius: 100 }, //temp missile locaiton 
-        { location: { latitude: 51.0256046, longitude: -3.1085848 }, radius: 500 }, //2nd temp missle location 
+        { location: { latitude: 51.025316, longitude: -3.115612 }, radius: 100 }, //2nd temp missle location TS
       ];
     };
   
