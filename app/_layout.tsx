@@ -10,7 +10,7 @@ function RootLayoutNav() {
   return (
     <SafeAreaProvider>
       <Stack>
-        <Stack.Screen name="Map" />
+        <Stack.Screen name="Map" options={{ headerShown: false }} />
       </Stack>
     </SafeAreaProvider>
   );
