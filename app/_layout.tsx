@@ -10,6 +10,7 @@ function RootLayoutNav() {
   return (
     <SafeAreaProvider>
       <Stack>
+        <Stack.Screen name="index" options={{ headerShown: true }} />
         <Stack.Screen name="Map" options={{ headerShown: true }} />
       </Stack>
     </SafeAreaProvider>
