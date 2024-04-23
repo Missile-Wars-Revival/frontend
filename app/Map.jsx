@@ -159,7 +159,7 @@ const fetchOtherPlayersData = async () => {
     console.log('Other players data fetched successfully:', data);
     
     // Filter out players with the same username
-    const filteredData = data.filter(player => player.username !== userNAME); // Replace 'test' with your username
+    const filteredData = data.filter(player => player.username !== userNAME); 
     
     return filteredData;
   } catch (error) {
@@ -168,7 +168,17 @@ const fetchOtherPlayersData = async () => {
   }
 };
 
+useEffect(() => {
+  fetchOtherPlayers();
 
+  // Fetch other players' data every 30 seconds
+  const intervalId = setInterval(fetchOtherPlayers, 30000); // 30 seconds
+
+  // Cleanup interval on component unmount
+  return () => {
+    clearInterval(intervalId);
+  };
+}, []);
   
   const checkMissileCollision = () => {
     for (let missile of missileData) {
@@ -211,11 +221,13 @@ const fetchOtherPlayersData = async () => {
 
   useEffect(() => {
     if (userLocation) {
+      console.log('Sending location:', userLocation); // Log the location being sent
       checkMissileCollision();
       checkLootCollection();
       sendLocationToBackend(userLocation.latitude, userLocation.longitude); // Send location to backend
     }
   }, [userLocation]);
+  
   
 
   const fetchLootAndMissiles = useCallback(() => {
@@ -247,8 +259,8 @@ const fetchOtherPlayersData = async () => {
     // Initial fetch
     updateData();
   
-    // Fetch data every 60 seconds
-    const intervalId = setInterval(updateData, 60000); // 60 seconds
+    // Fetch data every 30 seconds
+    const intervalId = setInterval(updateData, 30000); // 30 seconds
   
     // Cleanup interval on component unmount
     return () => {
