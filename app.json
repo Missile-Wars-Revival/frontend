@@ -12,11 +12,14 @@
       "resizeMode": "center",
       "backgroundColor": "#ffffff"
     },
+    "extra": {
+      "dotenv": ".env"
+    },
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "config": {
-        "googleMapsApiKey": "AIzaSyBKb33CQ0Dbt_IeD7fCfaPC5ugigphNcgY",
+        "googleMapsApiKey": "${GOOGLE_MAPS_API_KEY}",
         "permissions": ["ACCESS_FINE_LOCATION"]
       }
     },
@@ -27,7 +30,7 @@
       },
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyBKb33CQ0Dbt_IeD7fCfaPC5ugigphNcgY" 
+          "googleMapsApiKey": "${GOOGLE_MAPS_API_KEY}" 
         },
         "permissions": ["ACCESS_FINE_LOCATION"]
       }
