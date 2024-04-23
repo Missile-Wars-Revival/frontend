@@ -76,6 +76,17 @@ export default function Map() {
   const [missileData, setMissileData] = useState([]);
   const [userLocation, setUserLocation] = useState(null);
 
+  const [otherPlayersData, setOtherPlayersData] = useState([]);
+
+  const fetchOtherPlayers = async () => {
+    const data = await fetchOtherPlayersData();
+    setOtherPlayersData(data);
+  };
+
+  useEffect(() => {
+    fetchOtherPlayers();
+  }, []);
+
 
   const fetchLocation = useCallback(async () => {
     let { status } = await Location.requestForegroundPermissionsAsync();
@@ -98,34 +109,58 @@ export default function Map() {
     setUserLocation(userLoc);
   }, []);
 
-  const sendLocationToBackend = async (latitude, longitude) => {
-    try {
-      // Replace with your backend API endpoint
-      const apiUrl = 'http://localhost:3000/api/sendLocation'; // Replace with your actual backend URL
-      
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: 'test', // Replace with actual username or fetch from state!!!
-          latitude: latitude,
-          longitude: longitude,
-        }),
-      });
+const apiUrl = 'http://172.20.10.5:3000/api/';
 
-      if (!response.ok) {
-        console.error('Failed to send location to backend');
-        return;
-      }
+const fetchData = async (endpoint, method = 'GET', data = null) => {
+  const config = {
+    method: method,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  };
 
-      const data = await response.json();
-      console.log('Location sent successfully:', data);
-    } catch (error) {
-      console.error('Error sending location to backend:', error);
+  if (data) {
+    config.body = JSON.stringify(data);
+  }
+
+  try {
+    const response = await fetch(apiUrl + endpoint, config);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch data. Status: ${response.status}`);
     }
+
+    return await response.json();
+  } catch (error) {
+    console.error(`Error fetching data: ${error.message}`);
+    throw error;
+  }
 };
+
+const sendLocationToBackend = async (latitude, longitude) => {
+  try {
+    const data = await fetchData('sendLocation', 'POST', {
+      username: 'test',
+      latitude,
+      longitude,
+    });
+    console.log('Location sent successfully:', data);
+  } catch (error) {
+    console.error('Error sending location to backend:', error.message);
+  }
+};
+
+const fetchOtherPlayersData = async () => {
+  try {
+    const data = await fetchData('getOtherPlayersData');
+    console.log('Other players data fetched successfully:', data);
+    return data;
+  } catch (error) {
+    console.error('Error fetching other players data:', error.message);
+    return [];
+  }
+};
+
   
   const checkMissileCollision = () => {
     for (let missile of missileData) {
@@ -189,7 +224,7 @@ export default function Map() {
       // Simulated fetch function to get missile data:
       return [
         { location: { latitude: 45.2949318, longitude: -0.852764 }, radius: 100 }, //temp missile locaiton 
-        { location: { latitude: 51.025316, longitude: -3.115612 }, radius: 100 }, //2nd temp missle location TS
+        { location: { latitude: 51.025316, longitude: -3.115612 }, radius: 50 }, //2nd temp missle location TS
       ];
     };
   
@@ -262,7 +297,7 @@ export default function Map() {
     <Circle
     key={index}
     center={location}
-    radius={40} //actual radius size
+    radius={20} //actual radius size
     fillColor="rgba(0, 0, 255, 0.5)"
     strokeColor="rgba(0, 0, 255, 0.8)"
   />  
@@ -278,6 +313,17 @@ export default function Map() {
       strokeColor="rgba(255, 0, 0, 0.8)"
     />
   ))}
+
+  {/* Render Other Players */}
+  {otherPlayersData.map((player, index) => (
+        <Circle
+          key={index}
+          center={{ latitude: player.latitude, longitude: player.longitude }}
+          radius={5} // Assuming a radius for other players
+          fillColor="rgba(0, 255, 0, 0.5)" // Green color
+          strokeColor="rgba(0, 255, 0, 0.8)"
+        />
+      ))}
   
 </MapView>
 
