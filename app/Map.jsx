@@ -109,25 +109,23 @@ export default function Map() {
 
 
   const fetchLocation = useCallback(async () => {
-    let { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') {
-      console.log('Permission to access location was denied');
-      return;
-    }
+    try {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        console.log('Permission to access location was denied');
+        return;
+      }
   
-    let location = await Location.getCurrentPositionAsync({});
-    const userLoc = {
-      latitude: location.coords.latitude,
-      longitude: location.coords.longitude,
-    };
-    // setRegion({ //slashed out as it got annyoing
-    //   latitude: userLoc.latitude,
-    //   longitude: userLoc.longitude,
-    //   latitudeDelta: 0.0922,
-    //   longitudeDelta: 0.0421,
-    // });
-    setUserLocation(userLoc);
-  }, []);
+      let location = await Location.getCurrentPositionAsync({});
+      const userLoc = {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      };
+      setUserLocation(userLoc); // Update userLocation
+    } catch (error) {
+      console.error('Error fetching location:', error.message);
+    }
+  }, []);  
 
 const apiUrl = 'http://172.20.10.5:3000/api/';
 
@@ -157,25 +155,44 @@ const fetchData = async (endpoint, method = 'GET', data = null) => {
   }
 };
 
-const sendLocationToBackend = async (latitude, longitude) => {
+const sendLocationToBackend = async () => {
   try {
-    const timestamp = new Date().toISOString(); // Adding timestamp
-    const data = await fetchData('sendLocation', 'POST', {
-      username: userNAME,
-      latitude,
-      longitude,
-      timestamp, // Include timestamp in the data
-    });
-    console.log('Location sent successfully:', data);
+    // Ensure location data is available
+    if (userLocation && userLocation.latitude && userLocation.longitude) {
+      const { latitude, longitude } = userLocation;
+      const timestamp = new Date().toISOString();
+      
+      const data = {
+        username: userNAME,
+        latitude,
+        longitude,
+        timestamp,
+      };
+
+      const response = await fetchData('sendLocation', 'POST', data);
+      console.log('Location sent successfully:', response);
+    } else {
+      console.log('Latitude or longitude is missing');
+    }
   } catch (error) {
     console.error('Error sending location to backend:', error.message);
   }
 };
 useEffect(() => {
-  sendLocationToBackend();
+  const fetchDataAndSendLocation = async () => {
+    await fetchLocation(); // Fetch location
 
-  // sends user data every 30 seconds
-  const intervalId = setInterval(sendLocationToBackend, 30000); // 30 seconds
+    if (userLocation && userLocation.latitude && userLocation.longitude) {
+      sendLocationToBackend(); // Send location to backend
+    } else {
+      console.error('Latitude or longitude is missing');
+    }
+  };
+
+  fetchDataAndSendLocation(); // Initial fetch and send
+
+  // Set interval to fetch and send location every 30 seconds
+  const intervalId = setInterval(fetchDataAndSendLocation, 30000);
 
   // Cleanup interval on component unmount
   return () => {
@@ -252,7 +269,6 @@ useEffect(() => {
 
   useEffect(() => {
     if (userLocation) {
-      console.log('Sending location:', userLocation); // Log the location being sent
       checkMissileCollision();
       checkLootCollection();
       sendLocationToBackend(userLocation.latitude, userLocation.longitude); // Send location to backend
@@ -300,9 +316,8 @@ useEffect(() => {
   }, []);
 
   useEffect(() => {
-    fetchLocation();
     fetchLootAndMissiles();
-  }, [fetchLocation, fetchLootAndMissiles]);
+  }, [fetchLootAndMissiles]);
 
   const showPopup = () => {
     setPopupVisible(true);
