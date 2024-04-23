@@ -3,16 +3,19 @@ import { router } from "expo-router";
 import { Input } from "../components/input";
 import { useState } from "react";
 import axios from "axios";
+import Constants from "expo-constants";
 
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isError, setIsError] = useState(false);
+
+  const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
+  console.log(backendUrl);
 
   function handleLogin(username: string, password: string) {
     axios
-      .post("http://192.168.1.168:3000/api/login", {
+      .post(`${backendUrl}:3000/api/login`, {
         username,
         password,
       })
@@ -45,7 +48,6 @@ export default function Login() {
         />
       </View>
       <Button title="Login!" onPress={() => handleLogin(username, password)} />
-      <Button title="Logout!" onPress={() => setIsLoggedIn(false)} />
       {isError && (
         <Text className={"text-red-700 text-lg"}>
           Invalid username or password

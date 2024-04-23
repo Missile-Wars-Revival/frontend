@@ -12,7 +12,7 @@ import { CherryBlossomMapStyle } from "./Themes/CherryBlossomMapStyle";
 import { styles } from "./styles";
 
 //import username
-import { userNAME } from "./temp/login.ts";
+import { userNAME } from "../temp/login";
 
 // Loot Component
 const Loot = ({ location }) => (
