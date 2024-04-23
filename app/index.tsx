@@ -5,9 +5,9 @@ import { Link } from "expo-router";
 export default function Index() {
   return (
     <SafeAreaView className="flex-1 justify-center items-center">
-      <Text className="text-2xl text-green-700">Index</Text>
+      <Text className="text-2xl text-green-700">Home Page (index)</Text>
       <Link href="/Map" className="text-blue-500">
-        Map Page
+        Click here for: Map
       </Link>
     </SafeAreaView>
   );
