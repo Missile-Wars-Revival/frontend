@@ -64,6 +64,22 @@ const MapStylePopup = ({ visible, onClose, onSelect }) => {
   );
 };
 
+//calculating last seen on map
+const getTimeDifference = (timestamp) => {
+  const currentTime = new Date();
+  const lastSeenTime = new Date(timestamp);
+  const differenceInMilliseconds = currentTime - lastSeenTime;
+  const differenceInMinutes = Math.floor(differenceInMilliseconds / (1000 * 60));
+
+  if (differenceInMinutes < 1) {
+    return { text: "Last seen: Just now", color: "green" };
+  }
+
+  return { text: `Last seen: ${differenceInMinutes} min ago`, color: "black" };
+};
+
+
+
 export default function Map() {
 
   const defaultRegion = {
@@ -354,29 +370,34 @@ useEffect(() => {
     />
   ))}
 
-  {/* Render Other Players with Marker for username and last seen */}
-  {otherPlayersData.map((player, index) => (
-          <React.Fragment key={index}>
+{otherPlayersData.map((player, index) => {
+    const { text, color } = getTimeDifference(player.timestamp);
+    
+    return (
+        <React.Fragment key={index}>
             <Circle
-              center={{ latitude: player.latitude, longitude: player.longitude }}
-              radius={3} // Assuming a radius for other players
-              fillColor="rgba(0, 255, 0, 0.5)" // Green color
-              strokeColor="rgba(0, 255, 0, 0.8)"
+                center={{ latitude: player.latitude, longitude: player.longitude }}
+                radius={4} // Assuming a radius for other players
+                fillColor="rgba(0, 255, 0, 0.2)" // Green color
+                strokeColor="rgba(0, 255, 0, 0.8)"
             />
             <Marker
-            key={index}
-            coordinate={{ latitude: player.latitude, longitude: player.longitude }}
-            title={player.username}
-            description={`Last seen: ${player.timestamp}`}
-          >
-            {/* Use resized image for the Marker */}
-            <Image
-              source={resizedMarkerImage}
-              style={resizedImageStyle}
-            />
-          </Marker>
-          </React.Fragment>
-        ))}
+                key={index}
+                coordinate={{ latitude: player.latitude, longitude: player.longitude }}
+                title={player.username}
+                description={text}//Finding it really hard to set "just now" as green
+                style={{ color: color }}
+            >
+                {/* Use resized image for the Marker */}
+                <Image
+                    source={resizedMarkerImage}
+                    style={resizedImageStyle}
+                />
+            </Marker>
+        </React.Fragment>
+    );
+})}
+
 </MapView>
 
       {/* Dropdown button */}
