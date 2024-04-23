@@ -142,10 +142,12 @@ const fetchData = async (endpoint, method = 'GET', data = null) => {
 
 const sendLocationToBackend = async (latitude, longitude) => {
   try {
+    const timestamp = new Date().toISOString(); // Adding timestamp
     const data = await fetchData('sendLocation', 'POST', {
       username: userNAME,
       latitude,
       longitude,
+      timestamp, // Include timestamp in the data
     });
     console.log('Location sent successfully:', data);
   } catch (error) {
