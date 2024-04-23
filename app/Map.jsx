@@ -97,6 +97,35 @@ export default function Map() {
     // });
     setUserLocation(userLoc);
   }, []);
+
+  const sendLocationToBackend = async (latitude, longitude) => {
+    try {
+      // Replace with your backend API endpoint
+      const apiUrl = 'http://localhost:3000/api/sendLocation'; // Replace with your actual backend URL
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: 'test', // Replace with actual username or fetch from state!!!
+          latitude: latitude,
+          longitude: longitude,
+        }),
+      });
+
+      if (!response.ok) {
+        console.error('Failed to send location to backend');
+        return;
+      }
+
+      const data = await response.json();
+      console.log('Location sent successfully:', data);
+    } catch (error) {
+      console.error('Error sending location to backend:', error);
+    }
+};
   
   const checkMissileCollision = () => {
     for (let missile of missileData) {
@@ -141,6 +170,7 @@ export default function Map() {
     if (userLocation) {
       checkMissileCollision();
       checkLootCollection();
+      sendLocationToBackend(userLocation.latitude, userLocation.longitude); // Send location to backend
     }
   }, [userLocation]);
   
