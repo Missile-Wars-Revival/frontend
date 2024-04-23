@@ -1,5 +1,5 @@
 import { Stack } from "expo-router";
-import React = require("react");
+import React from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 export default function RootLayout() {
@@ -10,7 +10,8 @@ function RootLayoutNav() {
   return (
     <SafeAreaProvider>
       <Stack>
-        <Stack.Screen name="Map" />
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="Map" options={{ headerShown: true }} />
       </Stack>
     </SafeAreaProvider>
   );
