@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { Text, View, StyleSheet, TouchableOpacity, Modal } from "react-native";
-import MapView, { PROVIDER_GOOGLE, Circle } from "react-native-maps";
+import MapView, { PROVIDER_GOOGLE, Circle, Marker } from "react-native-maps";
+import { Image } from 'react-native';
 import * as Location from 'expo-location';
 
 //Themes
@@ -154,6 +155,18 @@ const sendLocationToBackend = async (latitude, longitude) => {
     console.error('Error sending location to backend:', error.message);
   }
 };
+useEffect(() => {
+  sendLocationToBackend();
+
+  // sends user data every 30 seconds
+  const intervalId = setInterval(sendLocationToBackend, 30000); // 30 seconds
+
+  // Cleanup interval on component unmount
+  return () => {
+    clearInterval(intervalId);
+  };
+}, []);
+
 
 const fetchOtherPlayersData = async () => {
   try {
@@ -303,6 +316,11 @@ useEffect(() => {
 //console.log("lootLocations:", lootLocations);
 //console.log("missileData:", missileData);
 
+
+//To allow player to upload their own this is modular
+  const resizedMarkerImage = require('./mapicons/logo.png'); // Your custom image path
+  const resizedImageStyle = { width: 40, height: 40}; // Custom size for image
+
   return (
     <View style={styles.container}>
 
@@ -336,17 +354,29 @@ useEffect(() => {
     />
   ))}
 
-  {/* Render Other Players */}
+  {/* Render Other Players with Marker for username and last seen */}
   {otherPlayersData.map((player, index) => (
-        <Circle
-          key={index}
-          center={{ latitude: player.latitude, longitude: player.longitude }}
-          radius={5} // Assuming a radius for other players
-          fillColor="rgba(0, 255, 0, 0.5)" // Green color
-          strokeColor="rgba(0, 255, 0, 0.8)"
-        />
-      ))}
-  
+          <React.Fragment key={index}>
+            <Circle
+              center={{ latitude: player.latitude, longitude: player.longitude }}
+              radius={3} // Assuming a radius for other players
+              fillColor="rgba(0, 255, 0, 0.5)" // Green color
+              strokeColor="rgba(0, 255, 0, 0.8)"
+            />
+            <Marker
+            key={index}
+            coordinate={{ latitude: player.latitude, longitude: player.longitude }}
+            title={player.username}
+            description={`Last seen: ${player.timestamp}`}
+          >
+            {/* Use resized image for the Marker */}
+            <Image
+              source={resizedMarkerImage}
+              style={resizedImageStyle}
+            />
+          </Marker>
+          </React.Fragment>
+        ))}
 </MapView>
 
       {/* Dropdown button */}
