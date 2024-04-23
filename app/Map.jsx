@@ -123,7 +123,7 @@ export default function Map() {
       };
       setUserLocation(userLoc); // Update userLocation
     } catch (error) {
-      console.error('Error fetching location:', error.message);
+      console.log('Error fetching location:', error.message);
     }
   }, []);  
 
@@ -185,7 +185,7 @@ useEffect(() => {
     if (userLocation && userLocation.latitude && userLocation.longitude) {
       sendLocationToBackend(); // Send location to backend
     } else {
-      console.error('Latitude or longitude is missing');
+      console.log('Latitude or longitude is missing');
     }
   };
 
