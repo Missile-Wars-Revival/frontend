@@ -154,12 +154,17 @@ const fetchOtherPlayersData = async () => {
   try {
     const data = await fetchData('getOtherPlayersData');
     console.log('Other players data fetched successfully:', data);
-    return data;
+    
+    // Filter out players with the same username
+    const filteredData = data.filter(player => player.username !== 'test'); // Replace 'test' with your username
+    
+    return filteredData;
   } catch (error) {
     console.error('Error fetching other players data:', error.message);
     return [];
   }
 };
+
 
   
   const checkMissileCollision = () => {
