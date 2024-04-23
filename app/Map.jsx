@@ -11,6 +11,9 @@ import { CherryBlossomMapStyle } from './Themes/CherryBlossomMapStyle';
 //Stylesheet
 import { styles } from './styles';
 
+//import username
+import { userNAME } from './login.js';
+
 // Loot Component
 const Loot = ({ location }) => (
   <MapView.Circle
@@ -140,7 +143,7 @@ const fetchData = async (endpoint, method = 'GET', data = null) => {
 const sendLocationToBackend = async (latitude, longitude) => {
   try {
     const data = await fetchData('sendLocation', 'POST', {
-      username: 'test',
+      username: userNAME,
       latitude,
       longitude,
     });
@@ -156,7 +159,7 @@ const fetchOtherPlayersData = async () => {
     console.log('Other players data fetched successfully:', data);
     
     // Filter out players with the same username
-    const filteredData = data.filter(player => player.username !== 'test'); // Replace 'test' with your username
+    const filteredData = data.filter(player => player.username !== userNAME); // Replace 'test' with your username
     
     return filteredData;
   } catch (error) {
