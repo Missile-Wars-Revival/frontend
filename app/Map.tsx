@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { Text, View, StyleSheet, TouchableOpacity, Modal } from "react-native";
+import { Text, View, TouchableOpacity, Modal } from "react-native";
 import MapView, { PROVIDER_GOOGLE, Circle } from "react-native-maps";
 import * as Location from "expo-location";
+import axios from "axios";
 
 //Themes
 import { DefaultMapStyle } from "./Themes/DefaultMapStyle";
@@ -15,8 +16,8 @@ import { styles } from "./styles";
 import { userNAME } from "../temp/login";
 
 // Loot Component
-const Loot = ({ location }) => (
-  <MapView.Circle
+const Loot = ({ location }: { location: Location }) => (
+  <Circle
     center={location}
     radius={40} // 40 meters
     fillColor="rgba(0, 0, 255, 0.5)" // Blue color
@@ -24,9 +25,14 @@ const Loot = ({ location }) => (
   />
 );
 
+interface MissleProps {
+  location: Location;
+  radius: number;
+}
+
 // Missile Component
-const Missile = ({ location, radius }) => (
-  <MapView.Circle
+const Missile = ({ location, radius }: MissleProps) => (
+  <Circle
     center={location}
     radius={radius}
     fillColor="rgba(255, 0, 0, 0.5)" // Red color
@@ -34,7 +40,13 @@ const Missile = ({ location, radius }) => (
   />
 );
 
-const MapStylePopup = ({ visible, onClose, onSelect }) => {
+interface MapStylePopupProps {
+  visible: boolean;
+  onClose: () => void;
+  onSelect: (style: string) => void;
+}
+
+const MapStylePopup = ({ visible, onClose, onSelect }: MapStylePopupProps) => {
   return (
     <Modal
       animationType="slide"
@@ -72,6 +84,24 @@ const MapStylePopup = ({ visible, onClose, onSelect }) => {
   );
 };
 
+interface Missile {
+  location: {
+    latitude: number;
+    longitude: number;
+  };
+  radius: number;
+}
+
+interface Loot {
+  latitude: number;
+  longitude: number;
+}
+
+interface Location {
+  latitude: number;
+  longitude: number;
+}
+
 export default function Map() {
   const defaultRegion = {
     latitude: 0,
@@ -83,9 +113,9 @@ export default function Map() {
   const [region, setRegion] = useState(defaultRegion);
   const [selectedMapStyle, setSelectedMapStyle] = useState(DefaultMapStyle);
   const [popupVisible, setPopupVisible] = useState(false);
-  const [lootLocations, setLootLocations] = useState([]);
-  const [missileData, setMissileData] = useState([]);
-  const [userLocation, setUserLocation] = useState(null);
+  const [lootLocations, setLootLocations] = useState<Loot[]>([]);
+  const [missileData, setMissileData] = useState<Missile[]>([]);
+  const [userLocation, setUserLocation] = useState<Location | null>(null);
 
   const [otherPlayersData, setOtherPlayersData] = useState([]);
 
@@ -121,33 +151,36 @@ export default function Map() {
 
   const apiUrl = "http://172.20.10.5:3000/api/";
 
-  const fetchData = async (endpoint, method = "GET", data = null) => {
+  const fetchData = async (
+    endpoint: string,
+    method: string = "GET",
+    body: {
+      username: string;
+      latitude: number;
+      longitude: number;
+    } | null = null
+  ) => {
     const config = {
       method: method,
       headers: {
         "Content-Type": "application/json",
       },
+      data: body,
     };
 
-    if (data) {
-      config.body = JSON.stringify(data);
-    }
-
     try {
-      const response = await fetch(apiUrl + endpoint, config);
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch data. Status: ${response.status}`);
-      }
-
-      return await response.json();
+      const response = await axios(apiUrl + endpoint, config);
+      return response.data;
     } catch (error) {
-      console.error(`Error fetching data: ${error.message}`);
+      console.error(`Error fetching data: ${(error as Error).message}`);
       throw error;
     }
   };
 
-  const sendLocationToBackend = async (latitude, longitude) => {
+  const sendLocationToBackend = async (
+    latitude: Location["latitude"],
+    longitude: Location["longitude"]
+  ) => {
     try {
       const data = await fetchData("sendLocation", "POST", {
         username: userNAME,
@@ -156,9 +189,17 @@ export default function Map() {
       });
       console.log("Location sent successfully:", data);
     } catch (error) {
-      console.error("Error sending location to backend:", error.message);
+      console.error(
+        `Error sending location to backend: ${error as Error}.message`
+      );
     }
   };
+
+  interface Player {
+    username: string;
+    latitude: number;
+    longitude: number;
+  }
 
   const fetchOtherPlayersData = async () => {
     try {
@@ -167,18 +208,24 @@ export default function Map() {
 
       // Filter out players with the same username
       const filteredData = data.filter(
-        (player) => player.username !== userNAME
+        (player: Player) => player.username !== userNAME
       ); // Replace 'test' with your username
 
       return filteredData;
     } catch (error) {
-      console.error("Error fetching other players data:", error.message);
+      console.error(
+        `Error fetching other players data: ${(error as Error).message}`
+      );
       return [];
     }
   };
 
   const checkMissileCollision = () => {
     for (let missile of missileData) {
+      if (!userLocation || !missile.location) {
+        console.log("User location or missile location not found");
+        return;
+      }
       const distance = getDistance(
         userLocation.latitude,
         userLocation.longitude,
@@ -195,6 +242,10 @@ export default function Map() {
 
   const checkLootCollection = () => {
     for (let loot of lootLocations) {
+      if (!userLocation) {
+        console.log("User location not found");
+        return;
+      }
       const distance = getDistance(
         userLocation.latitude,
         userLocation.longitude,
@@ -210,7 +261,12 @@ export default function Map() {
     }
   };
 
-  const getDistance = (lat1, lon1, lat2, lon2) => {
+  const getDistance = (
+    lat1: Location["latitude"],
+    lon1: Location["longitude"],
+    lat2: Location["latitude"],
+    lon2: Location["longitude"]
+  ) => {
     const R = 6371; // Radius of the earth in km
     const dLat = deg2rad(lat2 - lat1);
     const dLon = deg2rad(lon2 - lon1);
@@ -225,7 +281,7 @@ export default function Map() {
     return d * 1000; // Distance in meters
   };
 
-  const deg2rad = (deg) => {
+  const deg2rad = (deg: number) => {
     return deg * (Math.PI / 180);
   };
 
@@ -291,7 +347,7 @@ export default function Map() {
     setPopupVisible(false);
   };
 
-  const selectMapStyle = (style) => {
+  const selectMapStyle = (style: string) => {
     closePopup();
     switch (style) {
       case "default":
@@ -344,7 +400,7 @@ export default function Map() {
         ))}
 
         {/* Render Other Players */}
-        {otherPlayersData.map((player, index) => (
+        {otherPlayersData.map((player: Player, index) => (
           <Circle
             key={index}
             center={{ latitude: player.latitude, longitude: player.longitude }}
