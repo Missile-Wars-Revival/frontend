@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { Text, View, StyleSheet, TouchableOpacity, Modal } from "react-native";
+import { Text, View, TouchableOpacity, StyleSheet, Modal, Image } from "react-native";
 import MapView, { PROVIDER_GOOGLE, Circle, Marker } from "react-native-maps";
-import { Image } from 'react-native';
-import * as Location from 'expo-location';
+import * as Location from "expo-location";
+
 
 //Themes
 import { DefaultMapStyle } from "./Themes/DefaultMapStyle";
@@ -15,9 +15,29 @@ import { styles } from "./styles";
 //import username
 import { userNAME } from "../temp/login";
 
+interface Missile {
+  location: {
+    latitude: number;
+    longitude: number;
+  };
+  radius: number;
+}
+
+interface Loot {
+  latitude: number;
+  longitude: number;
+}
+
+interface Location {
+  latitude: number;
+  longitude: number;
+}
+
+declare type TimeStamp = string;
+
 // Loot Component
-const Loot = ({ location }) => (
-  <MapView.Circle
+const Loot = ({ location }: { location: Location }) => (
+  <Circle
     center={location}
     radius={40} // 40 meters
     fillColor="rgba(0, 0, 255, 0.5)" // Blue color
@@ -26,18 +46,22 @@ const Loot = ({ location }) => (
 );
 
 // landmine Component
-const landmine = ({ location }) => (
-  <MapView.Circle
+const landmine = ({ location }: { location: Location }) => (
+  <Circle
     center={location}
     radius={20}//radius 20
     fillColor="rgba(128, 128, 128, 0.5)"//gray colour
     strokeColor="rgba(128, 128, 128, 0.8)"
   />
 );
+interface MissleProps {
+  location: Location;
+  radius: number;
+}
 
 // Missile Component
-const Missile = ({ location, radius }) => (
-  <MapView.Circle
+const Missile = ({ location, radius }: MissleProps) => (
+  <Circle
     center={location}
     radius={radius}
     fillColor="rgba(255, 0, 0, 0.5)" // Red color
@@ -45,7 +69,13 @@ const Missile = ({ location, radius }) => (
   />
 );
 
-const MapStylePopup = ({ visible, onClose, onSelect }) => {
+interface MapStylePopupProps {
+  visible: boolean;
+  onClose: () => void;
+  onSelect: (style: string) => void;
+}
+
+const MapStylePopup = ({ visible, onClose, onSelect }: MapStylePopupProps) => {
   return (
     <Modal
       animationType="slide"
@@ -84,9 +114,9 @@ const MapStylePopup = ({ visible, onClose, onSelect }) => {
 };
 
 //calculating last seen on map
-const getTimeDifference = (timestamp) => {
-  const currentTime = new Date();
-  const lastSeenTime = new Date(timestamp);
+const getTimeDifference = (timestamp: TimeStamp) => {
+  const currentTime = new Date().getTime();
+  const lastSeenTime = new Date(timestamp).getTime();
   const differenceInMilliseconds = currentTime - lastSeenTime;
   const differenceInMinutes = Math.floor(differenceInMilliseconds / (1000 * 60));
 
@@ -97,7 +127,11 @@ const getTimeDifference = (timestamp) => {
   return { text: `Last seen: ${differenceInMinutes} min ago`, color: "black" };
 };
 
-
+type Landmine = {
+  latitude: number;
+  longitude: number;
+  isActive: boolean;
+};
 
 export default function Map() {
   const defaultRegion = {
@@ -110,10 +144,10 @@ export default function Map() {
   const [region, setRegion] = useState(defaultRegion);
   const [selectedMapStyle, setSelectedMapStyle] = useState(DefaultMapStyle);
   const [popupVisible, setPopupVisible] = useState(false);
-  const [lootLocations, setLootLocations] = useState([]);
-  const [missileData, setMissileData] = useState([]);
-  const [landminedata, setlandminelocations] = useState([]);
-  const [userLocation, setUserLocation] = useState(null);
+  const [lootLocations, setLootLocations] = useState<Loot[]>([]);
+  const [missileData, setMissileData] = useState<Missile[]>([]);
+  const [landminedata, setlandminelocations]= useState<Landmine[]>([]);
+  const [userLocation, setUserLocation] = useState<Location | null>(null);
 
   const [otherPlayersData, setOtherPlayersData] = useState([]);
 
@@ -146,7 +180,7 @@ export default function Map() {
         //console.log('Latitude or longitude is missing. Not sending backend');
       }
     } catch (error) {
-      console.log('Error sending location to backend:', error.message);
+      console.log('Error sending location to backend:', (error as Error).message);
     }
   };
 
@@ -165,7 +199,7 @@ export default function Map() {
       };
       setUserLocation(userLoc); // Update userLocation
     } catch (error) {
-      console.log('Error fetching location:', error.message);
+      console.log('Error fetching location:', (error as Error).message);
     }
   }, []);
   
@@ -190,28 +224,34 @@ export default function Map() {
   const apiUrl = `${backendUrl}:3000/api/`;
   //console.log(apiUrl);
 
-  const fetchData = async (endpoint, method = "GET", data = null) => {
+  const fetchData = async (
+    endpoint: string,
+    method: string = "GET",
+    body: {
+      username: string;
+      latitude: number;
+      longitude: number;
+    } | null = null
+  ) => {
     const config = {
       method: method,
       headers: {
         "Content-Type": "application/json",
       },
+      data: body,
     };
-
-    if (data) {
-      config.body = JSON.stringify(data);
-    }
 
     try {
       const response = await fetch(apiUrl + endpoint, config);
-
       if (!response.ok) {
         throw new Error(`Failed to fetch data. Status: ${response.status}`);
+      } else {
+        return response.json();
       }
 
     return await response.json();
   } catch (error) {
-    console.log(`Error fetching data: ${error.message}`);
+    console.log(`Error fetching data: ${(error as Error).message}`);
     throw error;
   }
 };
@@ -251,26 +291,32 @@ useEffect(() => {
   };
 }, []);
 
+interface Player {
+  username: string;
+  latitude: number;
+  longitude: number;
+  timestamp: any; //todo add type
+}
 
 const fetchOtherPlayersData = async () => {
   try {
     const data = await fetchData('getOtherPlayersData');
     
     // Filter out players with the same username
-    const filteredData = data.filter(player => player.username !== userNAME); 
+    const filteredData = data.filter((player: Player) => player.username !== userNAME); 
     
     // Filter out players with timestamps older than 2 weeks
     const currentTime = new Date().getTime();
     const twoWeeksInMillis = 2 * 7 * 24 * 60 * 60 * 1000; // 2 weeks in milliseconds
     
-    const recentPlayersData = filteredData.filter(player => {
+    const recentPlayersData = filteredData.filter((player: Player) => {
       const playerTime = new Date(player.timestamp).getTime();
       return currentTime - playerTime <= twoWeeksInMillis;
     });
     
     return recentPlayersData;
   } catch (error) {
-    console.log('Error fetching other players data:', error.message);
+    console.log('Error fetching other players data:', (error as Error).message);
     return [];
   }
 };
@@ -290,7 +336,7 @@ useEffect(() => {
   
 //Missile, landmine and loot drop logic 
 const checkMissileCollision = () => {
-  if (!userLocation.latitude || !userLocation.longitude) {
+  if (!userLocation || !userLocation.latitude || !userLocation.longitude) {
     console.log("Error: User location not available");
     return;
   }
@@ -311,11 +357,12 @@ const checkMissileCollision = () => {
 };
 
 const checkLandmineCollision = () => {
-  if (!userLocation.latitude || !userLocation.longitude) {
+  if (!userLocation || !userLocation.latitude || !userLocation.longitude) {
     console.log("Error: User location not available");
     return;
   }
 
+  const landminedata: any = []; // TODO Assuming landmine data is available
   for (let landmine of landminedata) {
     if (!landmine.latitude || !landmine.longitude) {
       console.log("Error: Landmine location data incomplete");
@@ -332,7 +379,7 @@ const checkLandmineCollision = () => {
 };
 
 const checkLootCollection = () => {
-  if (!userLocation.latitude || !userLocation.longitude) {
+  if (!userLocation || !userLocation.latitude || !userLocation.longitude) {
     console.log("Error: User location not available");
     return;
   }
@@ -352,8 +399,12 @@ const checkLootCollection = () => {
   }
 };
 
-  
-  const getDistance = (lat1, lon1, lat2, lon2) => {
+  const getDistance = (
+    lat1: Location["latitude"],
+    lon1: Location["longitude"],
+    lat2: Location["latitude"],
+    lon2: Location["longitude"]
+  ) => {
     const R = 6371; // Radius of the earth in km
     const dLat = deg2rad(lat2 - lat1);
     const dLon = deg2rad(lon2 - lon1);
@@ -368,7 +419,7 @@ const checkLootCollection = () => {
     return d * 1000; // Distance in meters
   };
 
-  const deg2rad = (deg) => {
+  const deg2rad = (deg: number) => {
     return deg * (Math.PI / 180);
   };
 
@@ -419,7 +470,8 @@ const fetchLootAndMissiles = useCallback(() => {
     const missileData = await fetchMissilesFromBackend();
 
     setLootLocations(lootData);
-    setlandminelocations(landminedata);
+    
+    setlandminelocations(landminedata as Landmine[]);
     setMissileData(missileData);
   };
 
@@ -447,7 +499,7 @@ const fetchLootAndMissiles = useCallback(() => {
     setPopupVisible(false);
   };
 
-  const selectMapStyle = (style) => {
+  const selectMapStyle = (style: string) => {
     closePopup();
     switch (style) {
       case "default":
@@ -515,7 +567,7 @@ const fetchLootAndMissiles = useCallback(() => {
           />
         ))}
 
-{otherPlayersData.map((player, index) => {
+{otherPlayersData.map((player: Player, index) => {
     const { text, color } = getTimeDifference(player.timestamp);
     
     return (
@@ -531,7 +583,7 @@ const fetchLootAndMissiles = useCallback(() => {
                 coordinate={{ latitude: player.latitude, longitude: player.longitude }}
                 title={player.username}
                 description={text}//Finding it really hard to set "just now" as green
-                style={{ color: color }}
+                style={{ backgroundColor: color }}
             >
                 {/* Use resized image for the Marker */}
                 <Image
