@@ -150,7 +150,7 @@ const fetchData = async (endpoint, method = 'GET', data = null) => {
 
     return await response.json();
   } catch (error) {
-    console.error(`Error fetching data: ${error.message}`);
+    console.log(`Error fetching data: ${error.message}`);
     throw error;
   }
 };
@@ -175,7 +175,7 @@ const sendLocationToBackend = async () => {
       console.log('Latitude or longitude is missing');
     }
   } catch (error) {
-    console.error('Error sending location to backend:', error.message);
+    console.log('Error sending location to backend:', error.message);
   }
 };
 useEffect(() => {
@@ -211,7 +211,7 @@ const fetchOtherPlayersData = async () => {
     
     return filteredData;
   } catch (error) {
-    console.error('Error fetching other players data:', error.message);
+    console.log('Error fetching other players data:', error.message);
     return [];
   }
 };
