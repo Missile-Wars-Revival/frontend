@@ -1,2 +1,2 @@
 // temp login page for db in map
-export const userNAME = 'test';
+export const userNAME = 'Test';

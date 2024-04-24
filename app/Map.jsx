@@ -118,6 +118,29 @@ export default function Map() {
     fetchOtherPlayers();
   }, []);
 
+  const sendLocationToBackend = async () => {
+    try {
+      // Ensure location data is available
+      if (userLocation && userLocation.latitude && userLocation.longitude) {
+        const { latitude, longitude } = userLocation;
+        const timestamp = new Date().toISOString();
+        
+        const data = {
+          username: userNAME,
+          latitude,
+          longitude,
+          timestamp,
+        };
+  
+        const response = await fetchData('sendLocation', 'POST', data);
+        //console.log('Location sent successfully:', response);
+      } else {
+        //console.log('Latitude or longitude is missing. Not sending backend');
+      }
+    } catch (error) {
+      console.log('Error sending location to backend:', error.message);
+    }
+  };
 
   const fetchLocation = useCallback(async () => {
     try {
@@ -136,11 +159,28 @@ export default function Map() {
     } catch (error) {
       console.log('Error fetching location:', error.message);
     }
-  }, []);  
+  }, []);
+  
+  useEffect(() => {
+    const intervalId = setInterval(async () => {
+      await fetchLocation(); // Fetch location
+  
+      if (userLocation && userLocation.latitude && userLocation.longitude) {
+        sendLocationToBackend(); // Send location to backend
+      } else {
+        console.log('Latitude or longitude is missing. Unable to send backend');
+      }
+    }, 30000); // 30 seconds
+  
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [fetchLocation]);
+  
 
   const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
   const apiUrl = `${backendUrl}:3000/api/`;
-  console.log(apiUrl);
+  //console.log(apiUrl);
 
 const fetchData = async (endpoint, method = 'GET', data = null) => {
   const config = {
@@ -168,29 +208,19 @@ const fetchData = async (endpoint, method = 'GET', data = null) => {
   }
 };
 
-const sendLocationToBackend = async () => {
-  try {
-    // Ensure location data is available
-    if (userLocation && userLocation.latitude && userLocation.longitude) {
-      const { latitude, longitude } = userLocation;
-      const timestamp = new Date().toISOString();
-      
-      const data = {
-        username: userNAME,
-        latitude,
-        longitude,
-        timestamp,
-      };
+useEffect(() => {
+  
+  sendLocationToBackend(); // Initial send
 
-      const response = await fetchData('sendLocation', 'POST', data);
-      console.log('Location sent successfully:', response);
-    } else {
-      console.log('Latitude or longitude is missing. ot sending backend');
-    }
-  } catch (error) {
-    console.log('Error sending location to backend:', error.message);
-  }
-};
+  // Set interval to send location to backend every 30 seconds
+  const intervalId = setInterval(sendLocationToBackend, 30000);
+
+  // Cleanup interval on component unmount
+  return () => {
+    clearInterval(intervalId);
+  };
+}, [userLocation]); // Add userLocation to dependency array
+
 useEffect(() => {
   const fetchDataAndSendLocation = async () => {
     await fetchLocation(); // Fetch location
@@ -198,7 +228,7 @@ useEffect(() => {
     if (userLocation && userLocation.latitude && userLocation.longitude) {
       sendLocationToBackend(); // Send location to backend
     } else {
-      console.log('Latitude or longitude is missing sending backend');
+      //console.log('Latitude or longitude is missing. Unable to send backend');
     }
   };
 
@@ -217,17 +247,26 @@ useEffect(() => {
 const fetchOtherPlayersData = async () => {
   try {
     const data = await fetchData('getOtherPlayersData');
-    console.log('Other players data fetched successfully:', data);
     
     // Filter out players with the same username
     const filteredData = data.filter(player => player.username !== userNAME); 
     
-    return filteredData;
+    // Filter out players with timestamps older than 2 weeks
+    const currentTime = new Date().getTime();
+    const twoWeeksInMillis = 2 * 7 * 24 * 60 * 60 * 1000; // 2 weeks in milliseconds
+    
+    const recentPlayersData = filteredData.filter(player => {
+      const playerTime = new Date(player.timestamp).getTime();
+      return currentTime - playerTime <= twoWeeksInMillis;
+    });
+    
+    return recentPlayersData;
   } catch (error) {
     console.log('Error fetching other players data:', error.message);
     return [];
   }
 };
+
 
 useEffect(() => {
   fetchOtherPlayers();
@@ -241,7 +280,7 @@ useEffect(() => {
   };
 }, []);
   
-//Miissile, landmine and loot drop logic 
+//Missile, landmine and loot drop logic 
 const checkMissileCollision = () => {
   if (!userLocation.latitude || !userLocation.longitude) {
     console.log("Error: User location not available");
@@ -270,16 +309,12 @@ const checkLandmineCollision = () => {
   }
 
   for (let landmine of landminedata) {
-    if (!landmine.location || 
-        !landmine.location.latitude || 
-        !landmine.location.longitude) {
+    if (!landmine.latitude || !landmine.longitude) {
       console.log("Error: Landmine location data incomplete");
       continue;
     }
 
-    const { latitude, longitude } = landmine.location;
-
-    const distance = getDistance(userLocation.latitude, userLocation.longitude, latitude, longitude);
+    const distance = getDistance(userLocation.latitude, userLocation.longitude, landmine.latitude, landmine.longitude);
     if (distance <= 20) {
       alert("Warning: You are in the radius of a landmine!");
       console.log("Player died");
@@ -333,7 +368,7 @@ const checkLootCollection = () => {
             checkLandmineCollision();
             checkMissileCollision();
             checkLootCollection();
-            sendLocationToBackend(userLocation.latitude, userLocation.longitude); // Send location to backend
+            
         }
     }, 30000); // 30 seconds
 
@@ -343,53 +378,52 @@ const checkLootCollection = () => {
   
   
 
-  const fetchLootAndMissiles = useCallback(() => {
-    // Fetch loot and missile data from backend
-    const fetchLootFromBackend = async () => {
-      // Simulated fetch function to get loot data:
-      return [
-        { latitude: 51.026281, longitude: -3.113764 }, // Loot location 1 TS
-        { latitude: 45.305, longitude: -0.860 }, // Loot location 2
-      ];
-    };
+const fetchLootAndMissiles = useCallback(() => {
+  const fetchLootFromBackend = async () => {
+    // Simulated fetch function to get loot data:
+    return [
+      { latitude: 51.026281, longitude: -3.113764 }, // Loot location 1 TS
+      { latitude: 45.305, longitude: -0.860 }, // Loot location 2
+    ];
+  };
 
-    const fetchlandmineFromBackend = async () => {
-      // Simulated fetch function to get missile data:
-      return [
-        { latitude: 45.2949318, longitude: -0.852764 }, //temp landmine locaiton 
-        { latitude: 51.025682, longitude: -3.1174578 }, //2nd temp landmine location TS
-      ];
-    };
-  
-    const fetchMissilesFromBackend = async () => {
-      // Simulated fetch function to get missile data:
-      return [
-        { location: { latitude: 45.2949318, longitude: -0.852764 }, radius: 100 }, //temp missile locaiton 
-        { location: { latitude: 51.025316, longitude: -3.115612 }, radius: 50 }, //2nd temp missle location TS
-      ];
-    };
-  
-    const updateData = async () => {
-      const lootData = await fetchLootFromBackend();
-      const landminedata = await fetchlandmineFromBackend();
-      const missileData = await fetchMissilesFromBackend();
-  
-      setLootLocations(lootData);
-      setlandminelocations(landminedata);
-      setMissileData(missileData);
-    };
-  
-    // Initial fetch
-    updateData();
-  
-    // Fetch data every 30 seconds
-    const intervalId = setInterval(updateData, 30000); // 30 seconds
-  
-    // Cleanup interval on component unmount
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, []);
+  const fetchlandmineFromBackend = async () => {
+    // Simulated fetch function to get landmine data:
+    return [
+      { latitude: 45.2949318, longitude: -0.852764 }, //temp landmine location 
+      { latitude: 51.025682, longitude: -3.1174578 }, //2nd temp landmine location TS
+    ];
+  };
+
+  const fetchMissilesFromBackend = async () => {
+    // Simulated fetch function to get missile data:
+    return [
+      { location: { latitude: 45.2949318, longitude: -0.852764 }, radius: 100 }, //temp missile location 
+      { location: { latitude: 51.025316, longitude: -3.115612 }, radius: 50 }, //2nd temp missle location TS
+    ];
+  };
+
+  const updateData = async () => {
+    const lootData = await fetchLootFromBackend();
+    const landminedata = await fetchlandmineFromBackend();
+    const missileData = await fetchMissilesFromBackend();
+
+    setLootLocations(lootData);
+    setlandminelocations(landminedata);
+    setMissileData(missileData);
+  };
+
+  // Initial fetch
+  updateData();
+
+  // Fetch data every 30 seconds
+  const intervalId = setInterval(updateData, 30000); // 30 seconds
+
+  // Cleanup interval on component unmount
+  return () => {
+    clearInterval(intervalId);
+  };
+}, []);
 
   useEffect(() => {
     fetchLootAndMissiles();

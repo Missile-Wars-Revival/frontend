@@ -4,7 +4,7 @@ import * as Location from 'expo-location';
 
 const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
 const apiUrl = `${backendUrl}:3000/api/`;
-const userNAME = 'test'; // Placeholder for username
+import { userNAME } from './login.js';
 
 const QuickAddPage = () => {
   const [userLocation, setUserLocation] = useState(null);
@@ -82,10 +82,24 @@ const QuickAddPage = () => {
   }, []);
 
   const renderItem = ({ item }) => (
-    <TouchableOpacity onPress={() => {/* Add friend logic */}}>
-      <Text>{item.username}</Text>
-    </TouchableOpacity>
-  );
+    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+      <Text style={{ flex: 1, fontSize: 18 }}>{item.username}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <TouchableOpacity 
+          style={{ backgroundColor: '#4CAF50', padding: 10, borderRadius: 5, width: 35, height: 35, justifyContent: 'center', alignItems: 'center', marginRight: 10 }}
+          onPress={() => {/* Add friend logic */}}
+        >
+          <Text style={{ color: 'white', fontSize: 13 }}>+</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={{ backgroundColor: '#F44336', padding: 10, borderRadius: 5, width: 35, height: 35, justifyContent: 'center', alignItems: 'center' }}
+          onPress={() => {/* Remove friend logic */}}
+        >
+          <Text style={{ color: 'white', fontSize: 13 }}>x</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );  
 
   return (
     <View style={{ flex: 1, padding: 20 }}>
@@ -102,7 +116,7 @@ const QuickAddPage = () => {
           <Text style={{ textAlign: 'center', fontSize: 16 }}>No players found near you</Text>
         ) : (
           <>
-            <Text style={{ fontSize: 20, marginBottom: 10 }}>Quick Add Players Near You</Text>
+            <Text style={{ fontSize: 20, marginBottom: 10 }}>Player's Nearby:</Text>
             <FlatList
               data={playersData}
               renderItem={renderItem}
