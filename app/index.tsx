@@ -9,7 +9,7 @@ export default function Index() {
       <Link href="/login" className="text-blue-500">
         Login Page
       </Link>
-      <Link href="/Map" className="text-blue-500">
+      <Link href="/map" className="text-blue-500">
         Map Page
       </Link>
     </SafeAreaView>

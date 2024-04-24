@@ -5,9 +5,9 @@ import * as Location from "expo-location";
 import axios from "axios";
 
 //Themes
-import { DefaultMapStyle } from "./Themes/DefaultMapStyle";
-import { RadarMapStyle } from "./Themes/RadarMapStyle";
-import { CherryBlossomMapStyle } from "./Themes/CherryBlossomMapStyle";
+import { DefaultMapStyle } from "../Themes/DefaultMapStyle";
+import { RadarMapStyle } from "../Themes/RadarMapStyle";
+import { CherryBlossomMapStyle } from "../Themes/CherryBlossomMapStyle";
 
 //Stylesheet
 import { styles } from "./styles";
@@ -149,7 +149,7 @@ export default function Map() {
     setUserLocation(userLoc);
   }, []);
 
-  const apiUrl = "http://172.20.10.5:3000/api/";
+  const apiUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
 
   const fetchData = async (
     endpoint: string,

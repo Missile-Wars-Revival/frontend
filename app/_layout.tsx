@@ -12,7 +12,7 @@ function RootLayoutNav() {
       <Stack>
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="login" />
-        <Stack.Screen name="Map" />
+        <Stack.Screen name="map" />
       </Stack>
     </SafeAreaProvider>
   );
