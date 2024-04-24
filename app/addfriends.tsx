@@ -106,14 +106,14 @@ const QuickAddPage: React.FC = () => {
           <Text style={styles.actionButtonText}>+</Text>
         </TouchableOpacity>
         <TouchableOpacity 
-          style={styles.actionButton}
+          style={styles.actionButtonRed}  // Changed to actionButtonRed
           onPress={() => {/* Remove friend logic */}}
         >
           <Text style={styles.actionButtonText}>x</Text>
         </TouchableOpacity>
       </View>
     </View>
-  );
+  );  
 
   return (
     <View style={styles.container}>
@@ -171,6 +171,16 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     backgroundColor: '#4CAF50',
+    padding: 10,
+    borderRadius: 5,
+    width: 35,
+    height: 35,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  actionButtonRed: {
+    backgroundColor: 'lightred',  // Changed to red color
     padding: 10,
     borderRadius: 5,
     width: 35,
