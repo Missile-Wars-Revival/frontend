@@ -68,13 +68,23 @@ const QuickAddPage = () => {
       // Filter out players with the same username
       const filteredData = data.filter(player => player.username !== userNAME); 
       
-      setPlayersData(filteredData);
+      // Filter out players with timestamps older than 2 weeks
+      const currentTime = new Date().getTime();
+      const twoWeeksInMillis = 2 * 7 * 24 * 60 * 60 * 1000; // 2 weeks in milliseconds
+      
+      const recentPlayersData = filteredData.filter(player => {
+        const playerTime = new Date(player.timestamp).getTime();
+        return currentTime - playerTime <= twoWeeksInMillis;
+      });
+      
+      setPlayersData(recentPlayersData);
       setLoading(false);
     } catch (error) {
       console.log('Error fetching other players data:', error.message);
       setLoading(false);
     }
   };
+  
 
   useEffect(() => {
     fetchLocation(); // Fetch location
