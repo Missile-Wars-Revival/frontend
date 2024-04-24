@@ -168,7 +168,7 @@ export default function Map() {
       if (userLocation && userLocation.latitude && userLocation.longitude) {
         sendLocationToBackend(); // Send location to backend
       } else {
-        console.log('Latitude or longitude is missing. Unable to send backend');
+        //console.log('Latitude or longitude is missing. Unable to send backend');
       }
     }, 30000); // 30 seconds
   
