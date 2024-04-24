@@ -9,6 +9,9 @@ export default function Index() {
       <Link href="/Map" className="text-blue-500">
         Click here for: Map
       </Link>
+      <Link href="/friends" className="text-blue-500">
+        Click here for: friends
+      </Link>
     </SafeAreaView>
   );
 }
