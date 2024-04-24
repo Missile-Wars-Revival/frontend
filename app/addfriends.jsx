@@ -4,7 +4,7 @@ import * as Location from 'expo-location';
 
 const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
 const apiUrl = `${backendUrl}:3000/api/`;
-import { userNAME } from './login.js';
+import { userNAME } from "../temp/login";
 
 const QuickAddPage = () => {
   const [userLocation, setUserLocation] = useState(null);
