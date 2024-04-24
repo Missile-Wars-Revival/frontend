@@ -127,7 +127,11 @@ export default function Map() {
     }
   }, []);  
 
-const apiUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
+
+  const serverIp = process.env.SERVER_IP;
+  const port = process.env.PORT;
+  const apiUrl = `http://${serverIp}:${port}/api/`;
+  
 
 const fetchData = async (endpoint, method = 'GET', data = null) => {
   const config = {
