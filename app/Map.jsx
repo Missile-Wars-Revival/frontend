@@ -25,6 +25,16 @@ const Loot = ({ location }) => (
   />
 );
 
+// landmine Component
+const landmine = ({ location }) => (
+  <MapView.Circle
+    center={location}
+    radius={20}//radius 20
+    fillColor="rgba(128, 128, 128, 0.5)"//gray colour
+    strokeColor="rgba(128, 128, 128, 0.8)"
+  />
+);
+
 // Missile Component
 const Missile = ({ location, radius }) => (
   <MapView.Circle
@@ -94,6 +104,7 @@ export default function Map() {
   const [popupVisible, setPopupVisible] = useState(false);
   const [lootLocations, setLootLocations] = useState([]);
   const [missileData, setMissileData] = useState([]);
+  const [landminedata, setlandminelocations] = useState([]);
   const [userLocation, setUserLocation] = useState(null);
 
   const [otherPlayersData, setOtherPlayersData] = useState([]);
@@ -127,11 +138,9 @@ export default function Map() {
     }
   }, []);  
 
-
-  const serverIp = process.env.SERVER_IP;
-  const port = process.env.PORT;
-  const apiUrl = `http://${serverIp}:${port}/api/`;
-  
+  const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
+  const apiUrl = `${backendUrl}:3000/api/`;
+  console.log(apiUrl);
 
 const fetchData = async (endpoint, method = 'GET', data = null) => {
   const config = {
@@ -176,7 +185,7 @@ const sendLocationToBackend = async () => {
       const response = await fetchData('sendLocation', 'POST', data);
       console.log('Location sent successfully:', response);
     } else {
-      console.log('Latitude or longitude is missing');
+      console.log('Latitude or longitude is missing. ot sending backend');
     }
   } catch (error) {
     console.log('Error sending location to backend:', error.message);
@@ -189,7 +198,7 @@ useEffect(() => {
     if (userLocation && userLocation.latitude && userLocation.longitude) {
       sendLocationToBackend(); // Send location to backend
     } else {
-      console.log('Latitude or longitude is missing');
+      console.log('Latitude or longitude is missing sending backend');
     }
   };
 
@@ -232,27 +241,74 @@ useEffect(() => {
   };
 }, []);
   
-  const checkMissileCollision = () => {
-    for (let missile of missileData) {
-      const distance = getDistance(userLocation.latitude, userLocation.longitude, missile.location.latitude, missile.location.longitude);
-      if (distance <= missile.radius) {
-        alert("Warning: You are in the radius of a missile!");
-        console.log("Player died");
-        break;
-      }
+//Miissile, landmine and loot drop logic 
+const checkMissileCollision = () => {
+  if (!userLocation.latitude || !userLocation.longitude) {
+    console.log("Error: User location not available");
+    return;
+  }
+
+  for (let missile of missileData) {
+    if (!missile.location || !missile.location.latitude || !missile.location.longitude) {
+      console.log("Error: Missile location data incomplete");
+      continue;
     }
-  };
-  
-  const checkLootCollection = () => {
-    for (let loot of lootLocations) {
-      const distance = getDistance(userLocation.latitude, userLocation.longitude, loot.latitude, loot.longitude);
-      if (distance <= 40) { // Assuming loot radius is 40 meters
-        alert("You've found loot nearby!");
-        console.log("Loot collected");
-        break;
-      }
+
+    const distance = getDistance(userLocation.latitude, userLocation.longitude, missile.location.latitude, missile.location.longitude);
+    if (distance <= missile.radius) {
+      alert("Warning: You are in the radius of a missile!");
+      console.log("Player died");
+      break;
     }
-  };
+  }
+};
+
+const checkLandmineCollision = () => {
+  if (!userLocation.latitude || !userLocation.longitude) {
+    console.log("Error: User location not available");
+    return;
+  }
+
+  for (let landmine of landminedata) {
+    if (!landmine.location || 
+        !landmine.location.latitude || 
+        !landmine.location.longitude) {
+      console.log("Error: Landmine location data incomplete");
+      continue;
+    }
+
+    const { latitude, longitude } = landmine.location;
+
+    const distance = getDistance(userLocation.latitude, userLocation.longitude, latitude, longitude);
+    if (distance <= 20) {
+      alert("Warning: You are in the radius of a landmine!");
+      console.log("Player died");
+      break;
+    }
+  }
+};
+
+const checkLootCollection = () => {
+  if (!userLocation.latitude || !userLocation.longitude) {
+    console.log("Error: User location not available");
+    return;
+  }
+
+  for (let loot of lootLocations) {
+    if (!loot.latitude || !loot.longitude) {
+      console.log("Error: Loot location data incomplete");
+      continue;
+    }
+
+    const distance = getDistance(userLocation.latitude, userLocation.longitude, loot.latitude, loot.longitude);
+    if (distance <= 20) { // Assuming loot radius is 20 meters
+      alert("You've found loot nearby!");
+      console.log("Loot collected");
+      break;
+    }
+  }
+};
+
   
   const getDistance = (lat1, lon1, lat2, lon2) => {
     const R = 6371; // Radius of the earth in km
@@ -272,12 +328,18 @@ useEffect(() => {
   };
 
   useEffect(() => {
-    if (userLocation) {
-      checkMissileCollision();
-      checkLootCollection();
-      sendLocationToBackend(userLocation.latitude, userLocation.longitude); // Send location to backend
-    }
-  }, [userLocation]);
+    const intervalId = setInterval(() => {
+        if (userLocation) {
+            checkLandmineCollision();
+            checkMissileCollision();
+            checkLootCollection();
+            sendLocationToBackend(userLocation.latitude, userLocation.longitude); // Send location to backend
+        }
+    }, 30000); // 30 seconds
+
+    // Clear interval on component unmount to prevent memory leaks
+    return () => clearInterval(intervalId);
+}, []);
   
   
 
@@ -288,6 +350,14 @@ useEffect(() => {
       return [
         { latitude: 51.026281, longitude: -3.113764 }, // Loot location 1 TS
         { latitude: 45.305, longitude: -0.860 }, // Loot location 2
+      ];
+    };
+
+    const fetchlandmineFromBackend = async () => {
+      // Simulated fetch function to get missile data:
+      return [
+        { latitude: 45.2949318, longitude: -0.852764 }, //temp landmine locaiton 
+        { latitude: 51.025682, longitude: -3.1174578 }, //2nd temp landmine location TS
       ];
     };
   
@@ -301,9 +371,11 @@ useEffect(() => {
   
     const updateData = async () => {
       const lootData = await fetchLootFromBackend();
+      const landminedata = await fetchlandmineFromBackend();
       const missileData = await fetchMissilesFromBackend();
   
       setLootLocations(lootData);
+      setlandminelocations(landminedata);
       setMissileData(missileData);
     };
   
@@ -353,7 +425,7 @@ useEffect(() => {
 
 
 //To allow player to upload their own this is modular
-  const resizedMarkerImage = require('./mapicons/logo.png'); // Your custom image path
+  const resizedMarkerImage = require('./mapicons/playerimage.png'); // Your custom image path
   const resizedImageStyle = { width: 40, height: 40}; // Custom size for image
 
   return (
@@ -375,6 +447,17 @@ useEffect(() => {
     radius={20} //actual radius size
     fillColor="rgba(0, 0, 255, 0.5)"
     strokeColor="rgba(0, 0, 255, 0.8)"
+  />  
+  ))}
+
+  {/* Render landmine Drops */}
+  {landminedata.map((location, index) => (
+    <Circle
+    key={index}
+    center={location}
+    radius={20} //actual radius size
+    fillColor="rgba(128, 128, 128, 0.5)"
+    strokeColor="rgba(128, 128, 128, 0.8)"
   />  
   ))}
 
