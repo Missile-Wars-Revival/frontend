@@ -127,7 +127,7 @@ export default function Map() {
     }
   }, []);  
 
-const apiUrl = 'http://172.20.10.5:3000/api/';
+const apiUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
 
 const fetchData = async (endpoint, method = 'GET', data = null) => {
   const config = {
