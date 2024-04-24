@@ -488,7 +488,7 @@ const fetchLootAndMissiles = useCallback(() => {
     key={index}
     center={location}
     radius={20} //actual radius size
-    fillColor="rgba(0, 0, 255, 0.5)"
+    fillColor="rgba(0, 0, 255, 0.2)"
     strokeColor="rgba(0, 0, 255, 0.8)"
   />  
   ))}
@@ -499,7 +499,7 @@ const fetchLootAndMissiles = useCallback(() => {
     key={index}
     center={location}
     radius={20} //actual radius size
-    fillColor="rgba(128, 128, 128, 0.5)"
+    fillColor="rgba(128, 128, 128, 0.3)"
     strokeColor="rgba(128, 128, 128, 0.8)"
   />  
   ))}
@@ -510,7 +510,7 @@ const fetchLootAndMissiles = useCallback(() => {
             key={index}
             center={location}
             radius={radius}
-            fillColor="rgba(255, 0, 0, 0.5)"
+            fillColor="rgba(255, 0, 0, 0.2)"
             strokeColor="rgba(255, 0, 0, 0.8)"
           />
         ))}
