@@ -22,7 +22,7 @@ async function registerUser(username: string, email: string, password: string) {
   }
 }
 
-export default function useRegisterUser() {
+export default function useRegisterUser(onSuccess: () => void) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({
@@ -39,6 +39,10 @@ export default function useRegisterUser() {
         queryKey: ["users"],
         refetchType: "active",
       });
+      onSuccess();
+    },
+    onError: (error) => {
+      console.log(error);
     },
   });
 }

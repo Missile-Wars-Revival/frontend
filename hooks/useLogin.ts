@@ -21,7 +21,7 @@ async function login(username: string, password: string) {
   }
 }
 
-export default function useLogin() {
+export default function useLogin(onSuccess: () => void) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({
@@ -36,6 +36,7 @@ export default function useLogin() {
         queryKey: ["currentUser"],
         refetchType: "active",
       });
+      onSuccess();
     },
   });
 }
