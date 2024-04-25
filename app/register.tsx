@@ -2,18 +2,15 @@ import { SafeAreaView, Text, Button, View } from "react-native";
 import { router } from "expo-router";
 import { Input } from "../components/input";
 import { useState } from "react";
-import useLogin from "../hooks/useLogin";
+import useRegisterUser from "../hooks/useRegisterUser";
 
-export default function Login() {
+export default function Register() {
   const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isError, setIsError] = useState(false);
 
-  const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
-  console.log(backendUrl);
-
-  const mutation = useLogin(() => {
-    router.navigate("/");
+  const mutate = useRegisterUser(() => {
+    router.navigate("/login");
   });
 
   return (
@@ -25,20 +22,22 @@ export default function Login() {
           className="w-[50vw]"
         />
         <Input
+          placeholder="Email"
+          onChangeText={(text) => setEmail(text)}
+          className="w-[50vw]"
+        />
+        <Input
           placeholder="Password"
           onChangeText={(text) => setPassword(text)}
           className="w-[50vw]"
         />
       </View>
       <Button
-        title="Login!"
-        onPress={() => mutation.mutate({ username, password })}
+        title="Register"
+        onPress={() => {
+          mutate.mutate({ username, email, password });
+        }}
       />
-      {isError && (
-        <Text className={"text-red-700 text-lg"}>
-          Invalid username or password
-        </Text>
-      )}
     </SafeAreaView>
   );
 }
