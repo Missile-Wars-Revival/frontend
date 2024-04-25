@@ -173,7 +173,7 @@ export default function Map() {
           timestamp,
         };        
   
-        const response = await fetchData('sendLocation', 'POST', data);
+        const response = await fetchData('dispatch', 'POST', data);
         //console.log('Location sent successfully:', response);
       } else {
         //console.log('Latitude or longitude is missing. Not sending backend');
