@@ -11,7 +11,7 @@ Make sure to install all dependencies before proceeding:
 $ npm i
 ```
 
-Make sure you set your ip in map line 115
+Make sure you set your ip in .env
 ```
 const apiUrl = 'http://localhost:3000/api/';
 ```
