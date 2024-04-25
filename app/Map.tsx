@@ -442,14 +442,14 @@ const checkLandmineCollision = () => {
     return;
   }
 
-  for (let landmine of landminedata) { // Use landminelocations instead of landminedata
+  for (let landmine of landminedata) { 
     if (!landmine.latitude || !landmine.longitude) {
       console.log("Error: Landmine location data incomplete");
       continue;
     }
 
     const distance = getDistance(userLocation.latitude, userLocation.longitude, landmine.latitude, landmine.longitude);
-    if (distance <= 20) {
+    if (distance <= 30) {
       alert("Warning: You are in the radius of a landmine!");
       console.log("Player died");
       // Landmine impact logic here
@@ -539,22 +539,22 @@ const checkLootCollection = () => {
     <Circle
     key={index}
     center={location}
-    radius={20} //actual radius size
+    radius={30} //actual radius size
     fillColor="rgba(128, 128, 128, 0.3)"
     strokeColor="rgba(128, 128, 128, 0.8)"
   />  
   ))}
 
-        {/* Render Missiles */}
-        {missileData.map(({ location, radius }, index) => (
-          <Circle
-            key={index}
-            center={location}
-            radius={radius}
-            fillColor="rgba(255, 0, 0, 0.2)"
-            strokeColor="rgba(255, 0, 0, 0.8)"
-          />
-        ))}
+  {/* Render Missiles */}
+  {missileData.map(({ location, radius }, index) => (
+      <Circle
+      key={index}
+      center={location}
+      radius={radius}
+      fillColor="rgba(255, 0, 0, 0.2)"
+      strokeColor="rgba(255, 0, 0, 0.8)"
+    />
+    ))}
 
 {otherPlayersData.map((player: Player, index) => {
     const { text, color } = getTimeDifference(player.timestamp);
