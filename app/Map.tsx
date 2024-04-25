@@ -28,6 +28,11 @@ interface Loot {
   longitude: number;
 }
 
+interface Landmine {
+  latitude: number;
+  longitude: number;
+}
+
 interface Location {
   latitude: number;
   longitude: number;
@@ -46,7 +51,7 @@ const Loot = ({ location }: { location: Location }) => (
 );
 
 // landmine Component
-const landmine = ({ location }: { location: Location }) => (
+const Landmine = ({ location }: { location: Location }) => (
   <Circle
     center={location}
     radius={20}//radius 20
@@ -125,12 +130,6 @@ const getTimeDifference = (timestamp: TimeStamp) => {
   }
 
   return { text: `Last seen: ${differenceInMinutes} min ago`, color: "black" };
-};
-
-type Landmine = {
-  latitude: number;
-  longitude: number;
-  isActive: boolean;
 };
 
 export default function Map() {
@@ -321,109 +320,8 @@ useEffect(() => {
 }, []);
   
 //Missile, landmine and loot drop logic !!!!NOT WORKING TODO!!!!
-const checkMissileCollision = () => {
-  if (!userLocation || !userLocation.latitude || !userLocation.longitude) {
-    console.log("Error: User location not available");
-    return;
-  }
 
-  for (let missile of missileData) {
-    if (!missile.location || !missile.location.latitude || !missile.location.longitude) {
-      console.log("Error: Missile location data incomplete");
-      continue;
-    }
-
-    const distance = getDistance(userLocation.latitude, userLocation.longitude, missile.location.latitude, missile.location.longitude);
-    if (distance <= missile.radius) {
-      alert("Warning: You are in the radius of a missile!");
-      console.log("Player died");
-      break;
-    }
-  }
-};
-
-const checkLandmineCollision = () => {
-  if (!userLocation || !userLocation.latitude || !userLocation.longitude) {
-    console.log("Error: User location not available");
-    return;
-  }
-
-  const landminedata: any = []; 
-  for (let landmine of landminedata) {
-    if (!landmine.latitude || !landmine.longitude) {
-      console.log("Error: Landmine location data incomplete");
-      continue;
-    }
-
-    const distance = getDistance(userLocation.latitude, userLocation.longitude, landmine.latitude, landmine.longitude);
-    if (distance <= 20) {
-      alert("Warning: You are in the radius of a landmine!");
-      console.log("Player died");
-      break;
-    }
-  }
-};
-
-const checkLootCollection = () => {
-  if (!userLocation || !userLocation.latitude || !userLocation.longitude) {
-    console.log("Error: User location not available");
-    return;
-  }
-
-  for (let loot of lootLocations) {
-    if (!loot.latitude || !loot.longitude) {
-      console.log("Error: Loot location data incomplete");
-      continue;
-    }
-
-    const distance = getDistance(userLocation.latitude, userLocation.longitude, loot.latitude, loot.longitude);
-    if (distance <= 20) { // Assuming loot radius is 20 meters
-      alert("You've found loot nearby!");
-      console.log("Loot collected");
-      break;
-    }
-  }
-};
-
-  const getDistance = (
-    lat1: Location["latitude"],
-    lon1: Location["longitude"],
-    lat2: Location["latitude"],
-    lon2: Location["longitude"]
-  ) => {
-    const R = 6371; // Radius of the earth in km
-    const dLat = deg2rad(lat2 - lat1);
-    const dLon = deg2rad(lon2 - lon1);
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(deg2rad(lat1)) *
-        Math.cos(deg2rad(lat2)) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const d = R * c; // Distance in km
-    return d * 1000; // Distance in meters
-  };
-
-  const deg2rad = (deg: number) => {
-    return deg * (Math.PI / 180);
-  };
-
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-        if (userLocation) {
-            checkLandmineCollision();
-            checkMissileCollision();
-            checkLootCollection();
-            
-        }
-    }, 30000); // 30 seconds
-
-    // Clear interval on component unmount to prevent memory leaks
-    return () => clearInterval(intervalId);
-}, []);
-  
-  
+//fetch dist
 
 const fetchLootAndMissiles = useCallback(() => {
   const fetchLootFromBackend = async () => {
@@ -456,8 +354,7 @@ const fetchLootAndMissiles = useCallback(() => {
     const missileData = await fetchMissilesFromBackend();
 
     setLootLocations(lootData);
-    
-    setlandminelocations(landminedata as Landmine[]);
+    setlandminelocations(landminedata);
     setMissileData(missileData);
   };
 
@@ -476,6 +373,112 @@ const fetchLootAndMissiles = useCallback(() => {
   useEffect(() => {
     fetchLootAndMissiles();
   }, [fetchLootAndMissiles]);
+
+const getDistance = (
+  lat1: Location["latitude"],
+  lon1: Location["longitude"],
+  lat2: Location["latitude"],
+  lon2: Location["longitude"]
+) => {
+  const R = 6371; // Radius of the earth in km
+  const dLat = deg2rad(lat2 - lat1);
+  const dLon = deg2rad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(deg2rad(lat1)) *
+      Math.cos(deg2rad(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const d = R * c; // Distance in km
+  return d * 1000; // Distance in meters
+};
+
+const deg2rad = (deg: number) => {
+  return deg * (Math.PI / 180);
+};
+
+useEffect(() => {
+  const intervalId = setInterval(() => {
+      if (userLocation) {
+          checkLandmineCollision();
+          checkMissileCollision();
+          checkLootCollection();
+          
+      }
+  }, 5000); // 30 seconds
+
+  // Clear interval on component unmount to prevent memory leaks
+  return () => clearInterval(intervalId);
+}, []);
+
+//Check Collision 
+
+const checkMissileCollision = () => {
+  if (!userLocation || !userLocation.latitude || !userLocation.longitude) {
+    console.log("Error: User location not available");
+    return;
+  }
+
+  for (let missile of missileData) {
+    if (!missile.location || !missile.location.latitude || !missile.location.longitude) {
+      console.log("Error: Missile location data incomplete");
+      continue;
+    }
+
+    const distance = getDistance(userLocation.latitude, userLocation.longitude, missile.location.latitude, missile.location.longitude);
+    if (distance <= missile.radius) {
+      alert("Warning: You are in the radius of a missile!");
+      console.log("Player died");
+      //Missile impact info here....
+      break;
+    }
+  }
+};
+
+const checkLandmineCollision = () => {
+  if (!userLocation || !userLocation.latitude || !userLocation.longitude) {
+    console.log("Error: User location not available");
+    return;
+  }
+
+  for (let landmine of landminedata) { // Use landminelocations instead of landminedata
+    if (!landmine.latitude || !landmine.longitude) {
+      console.log("Error: Landmine location data incomplete");
+      continue;
+    }
+
+    const distance = getDistance(userLocation.latitude, userLocation.longitude, landmine.latitude, landmine.longitude);
+    if (distance <= 20) {
+      alert("Warning: You are in the radius of a landmine!");
+      console.log("Player died");
+      // Landmine impact logic here
+      break;
+    }
+  }
+};
+
+const checkLootCollection = () => {
+  if (!userLocation || !userLocation.latitude || !userLocation.longitude) {
+    console.log("Error: User location not available");
+    return;
+  }
+
+  for (let loot of lootLocations) {
+    if (!loot.latitude || !loot.longitude) {
+      console.log("Error: Loot location data incomplete");
+      continue;
+    }
+
+    const distance = getDistance(userLocation.latitude, userLocation.longitude, loot.latitude, loot.longitude);
+    if (distance <= 20) { // Assuming loot radius is 20 meters
+      alert("You've found loot nearby!");
+      console.log("Loot collected");
+      // loot pickup logic here
+      break;
+    }
+  }
+};  
 
   const showPopup = () => {
     setPopupVisible(true);
@@ -560,7 +563,7 @@ const fetchLootAndMissiles = useCallback(() => {
         <React.Fragment key={index}>
             <Circle
                 center={{ latitude: player.latitude, longitude: player.longitude }}
-                radius={8} // Assuming a radius for other players
+                radius={6} // Assuming a radius for other players
                 fillColor="rgba(0, 255, 0, 0.2)" // Green color
                 strokeColor="rgba(0, 255, 0, 0.8)"
             />
