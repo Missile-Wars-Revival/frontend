@@ -18,8 +18,7 @@ import { CherryBlossomMapStyle } from "../themes/cherryBlossomMapStyle";
 //Stylesheet
 import { styles } from "./styles";
 
-//import username
-import { userNAME } from "../temp/login";
+const userNAME = "Player"; //todo: get username from backend
 
 interface Missile {
   location: {
