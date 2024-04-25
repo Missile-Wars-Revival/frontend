@@ -137,11 +137,11 @@ export default function Map() {
   const defaultRegion = {
     latitude: 0,
     longitude: 0,
-    latitudeDelta: 90,
-    longitudeDelta: 90,
+    latitudeDelta: 0,
+    longitudeDelta: 0,
   };
 
-  const [region, setRegion] = useState(defaultRegion);
+  const [region, setRegion] = useState(defaultRegion); //null was defaultRegion but zoomed in ugly
   const [selectedMapStyle, setSelectedMapStyle] = useState(DefaultMapStyle);
   const [popupVisible, setPopupVisible] = useState(false);
   const [lootLocations, setLootLocations] = useState<Loot[]>([]);
@@ -163,11 +163,18 @@ export default function Map() {
   const sendLocationToBackend = async () => {
     try {
       // Ensure location data is available
-      if (userLocation && userLocation.latitude && userLocation.longitude) {
+      if (userLocation && typeof userLocation.latitude === 'number' && typeof userLocation.longitude === 'number') {
         const { latitude, longitude } = userLocation;
         const timestamp = new Date().toISOString();
-        
-        const data = {
+  
+        console.log('Sending location:', {
+          username: userNAME,
+          latitude,
+          longitude,
+          timestamp,
+        });
+  
+        const data: Player = {
           username: userNAME,
           latitude,
           longitude,
@@ -175,14 +182,15 @@ export default function Map() {
         };
   
         const response = await fetchData('sendLocation', 'POST', data);
-        //console.log('Location sent successfully:', response);
+        console.log('Location sent successfully:', response);
       } else {
-        //console.log('Latitude or longitude is missing. Not sending backend');
+        console.log('Latitude or longitude is missing. Not sending to backend');
       }
     } catch (error) {
       console.log('Error sending location to backend:', (error as Error).message);
     }
   };
+  
 
   const fetchLocation = useCallback(async () => {
     try {
@@ -196,30 +204,28 @@ export default function Map() {
       const userLoc = {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
+        latitudeDelta: 0.0922,
+        longitudeDelta: 0.0421,
       };
+      //setRegion(userLoc); //set starting region as user location
       setUserLocation(userLoc); // Update userLocation
     } catch (error) {
       console.log('Error fetching location:', (error as Error).message);
     }
   }, []);
-  
+
   useEffect(() => {
-    const intervalId = setInterval(async () => {
-      await fetchLocation(); // Fetch location
-  
-      if (userLocation && userLocation.latitude && userLocation.longitude) {
-        sendLocationToBackend(); // Send location to backend
-      } else {
-        //console.log('Latitude or longitude is missing. Unable to send backend');
-      }
-    }, 30000); // 30 seconds
-  
+    fetchLocation(); // Fetch location on component mount
+
+    // Set interval to fetch location every 30 seconds
+    const intervalId = setInterval(fetchLocation, 30000);
+
+    // Cleanup interval on component unmount
     return () => {
       clearInterval(intervalId);
     };
   }, [fetchLocation]);
   
-
   const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
   const apiUrl = `${backendUrl}:3000/api/`;
   //console.log(apiUrl);
@@ -268,28 +274,6 @@ useEffect(() => {
     clearInterval(intervalId);
   };
 }, [userLocation]); // Add userLocation to dependency array
-
-useEffect(() => {
-  const fetchDataAndSendLocation = async () => {
-    await fetchLocation(); // Fetch location
-
-    if (userLocation && userLocation.latitude && userLocation.longitude) {
-      sendLocationToBackend(); // Send location to backend
-    } else {
-      //console.log('Latitude or longitude is missing. Unable to send backend');
-    }
-  };
-
-  fetchDataAndSendLocation(); // Initial fetch and send
-
-  // Set interval to fetch and send location every 30 seconds
-  const intervalId = setInterval(fetchDataAndSendLocation, 30000);
-
-  // Cleanup interval on component unmount
-  return () => {
-    clearInterval(intervalId);
-  };
-}, []);
 
 interface Player {
   username: string;
@@ -574,7 +558,7 @@ const fetchLootAndMissiles = useCallback(() => {
         <React.Fragment key={index}>
             <Circle
                 center={{ latitude: player.latitude, longitude: player.longitude }}
-                radius={4} // Assuming a radius for other players
+                radius={8} // Assuming a radius for other players
                 fillColor="rgba(0, 255, 0, 0.2)" // Green color
                 strokeColor="rgba(0, 255, 0, 0.8)"
             />
