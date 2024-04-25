@@ -469,8 +469,8 @@ const fetchLootAndMissiles = useCallback(() => {
 
 
 //To allow player to upload their own this is modular
-  const resizedMarkerImage = require('../assets/logo.png'); // Your custom image path
-  const resizedImageStyle = { width: 40, height: 40}; // Custom size for image
+  const resizedMarkerImage = require('../assets/Female_Avatar_PNG.png'); // Your custom image path
+  const resizedImageStyle = { width: 30, height: 30}; // Custom size for image
 
   return (
     <View style={styles.container}>
