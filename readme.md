@@ -11,6 +11,11 @@ Make sure to install all dependencies before proceeding:
 $ npm i
 ```
 
+Make sure you set your ip in map line 115
+```
+const apiUrl = 'http://localhost:3000/api/';
+```
+
 To build and run:
 
 ```sh
