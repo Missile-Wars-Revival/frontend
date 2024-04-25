@@ -1,5 +1,4 @@
 import { Modal, View, Text, TouchableOpacity } from "react-native";
-import { styles } from "../styles";
 
 interface MapStylePopupProps {
   visible: boolean;
@@ -20,28 +19,28 @@ export const MapStylePopup = ({
       onRequestClose={onClose}
     >
       <TouchableOpacity
-        style={styles.centeredView}
+        className="flex-1 justify-center items-center bg-black bg-opacity-50"
         activeOpacity={1}
         onPressOut={onClose}
       >
-        <View style={styles.modalView}>
+        <View className="bg-white rounded-lg p-5 items-center shadow-md">
           <TouchableOpacity
             onPress={() => onSelect("default")}
-            style={styles.button}
+            className="rounded p-[10px] my-[5px] bg-gray-200 w-[200px] items-center"
           >
-            <Text style={styles.buttonText}>Default</Text>
+            <Text className="text-[16px]">Default</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => onSelect("radar")}
-            style={styles.button}
+            className="rounded p-[10px] my-[5px] bg-gray-200 w-[200px] items-center"
           >
-            <Text style={styles.buttonText}>Radar</Text>
+            <Text className="text-[16px]">Radar</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => onSelect("cherry")}
-            style={styles.button}
+            className="rounded p-[10px] my-[5px] bg-gray-200 w-[200px] items-center"
           >
-            <Text style={styles.buttonText}>Cherry Blossom</Text>
+            <Text className="text-[16px]">Cherry Blossom</Text>
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
