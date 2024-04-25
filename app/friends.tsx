@@ -2,23 +2,28 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
-const fireMissile = (username) => {
+interface Friend {
+  username: string;
+}
+
+const fireMissile = (username: string) => {
+  //fireing missile logic 
   console.log(`Firing missile for friend with username: ${username}`);
 };
 
-const FriendsPage = () => {
-  const [friends, setFriends] = useState([
+const FriendsPage: React.FC = () => {
+  const [friends, setFriends] = useState<Friend[]>([
+    //fetch friends from backend for user 
     { username: 'Alice' },
     { username: 'Bob' },
     { username: 'Charlie' },
   ]);
 
-  const navigation = useNavigation(); // Access the navigation object
+const navigation = useNavigation(); 
 
-  const navigateToAddFriends = () => {
-    navigation.navigate('addfriends'); // Navigate to 'AddFriends' page
-  };
-
+const navigateToAddFriends = () => {
+  navigation.navigate('addfriends' as never); // Navigate to 'AddFriends' page
+};
   return (
     <View style={styles.friendsContainer}>
       <View style={styles.header}>
@@ -28,8 +33,8 @@ const FriendsPage = () => {
         </TouchableOpacity>
 
         {/* Bell icon */}
-        <TouchableOpacity style={styles.bellIcon}>
-          <Text>🔔</Text>
+        <TouchableOpacity>
+          <Text style={styles.bellIcon}>🔔</Text>
         </TouchableOpacity>
       </View>
 
@@ -70,7 +75,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     lineHeight: 20,
     color: 'white',
-  },  
+  },
   bellIcon: {
     fontSize: 24,
   },
