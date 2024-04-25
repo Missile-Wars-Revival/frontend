@@ -4,6 +4,7 @@ import { Input } from "../components/input";
 import { useState } from "react";
 import axios from "axios";
 import Constants from "expo-constants";
+export const userNAME = 'Test';
 
 export default function Login() {
   const [username, setUsername] = useState("");
