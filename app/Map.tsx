@@ -163,34 +163,26 @@ export default function Map() {
   const sendLocationToBackend = async () => {
     try {
       // Ensure location data is available
-      if (userLocation && typeof userLocation.latitude === 'number' && typeof userLocation.longitude === 'number') {
+      if (userLocation && userLocation.latitude && userLocation.longitude) {
         const { latitude, longitude } = userLocation;
         const timestamp = new Date().toISOString();
-  
-        console.log('Sending location:', {
+        
+        const data = {
           username: userNAME,
           latitude,
           longitude,
           timestamp,
-        });
-  
-        const data: Player = {
-          username: userNAME,
-          latitude,
-          longitude,
-          timestamp,
-        };
+        };        
   
         const response = await fetchData('sendLocation', 'POST', data);
-        console.log('Location sent successfully:', response);
+        //console.log('Location sent successfully:', response);
       } else {
-        console.log('Latitude or longitude is missing. Not sending to backend');
+        //console.log('Latitude or longitude is missing. Not sending backend');
       }
     } catch (error) {
       console.log('Error sending location to backend:', (error as Error).message);
     }
   };
-  
 
   const fetchLocation = useCallback(async () => {
     try {
@@ -233,34 +225,44 @@ export default function Map() {
   const fetchData = async (
     endpoint: string,
     method: string = "GET",
-    body: {
-      username: string;
-      latitude: number;
-      longitude: number;
-    } | null = null
+    body: any | null = null // Adjusted the type to any
   ) => {
-    const config = {
+    let url = apiUrl + endpoint;
+  
+    const config: {
+      method: string;
+      headers: {
+        "Content-Type": string;
+      };
+      body?: string;
+    } = {
       method: method,
       headers: {
         "Content-Type": "application/json",
       },
-      data: body,
     };
-
+  
+    // If method is GET, append data as query parameters
+    if (method === "GET" && body) {
+      url += `?${new URLSearchParams(body).toString()}`;
+    } else if (method === "POST" && body) {
+      config.body = JSON.stringify(body); // Send body as JSON string
+    }
+  
     try {
-      const response = await fetch(apiUrl + endpoint, config);
+      const response = await fetch(url, config);
+  
       if (!response.ok) {
         throw new Error(`Failed to fetch data. Status: ${response.status}`);
       } else {
         return response.json();
       }
-
-    return await response.json();
-  } catch (error) {
-    console.log(`Error fetching data: ${(error as Error).message}`);
-    throw error;
-  }
-};
+    } catch (error) {
+      console.log(`Error fetching data: ${(error as Error).message}`);
+      throw error;
+    }
+  };  
+  
 
 useEffect(() => {
   
