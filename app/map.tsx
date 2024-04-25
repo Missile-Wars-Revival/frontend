@@ -11,15 +11,14 @@ import MapView, { PROVIDER_GOOGLE, Circle, Marker } from "react-native-maps";
 import * as Location from "expo-location";
 
 //Themes
-import { DefaultMapStyle } from "../themes/DefaultMapStyle";
-import { RadarMapStyle } from "../themes/RadarMapStyle";
-import { CherryBlossomMapStyle } from "../themes/CherryBlossomMapStyle";
+import { DefaultMapStyle } from "../themes/defaultMapStyle";
+import { RadarMapStyle } from "../themes/radarMapStyle";
+import { CherryBlossomMapStyle } from "../themes/cherryBlossomMapStyle";
 
 //Stylesheet
 import { styles } from "./styles";
 
-//import username
-import { userNAME } from "../temp/login";
+const userNAME = "Player"; //todo: get username from backend
 
 interface Missile {
   location: {
