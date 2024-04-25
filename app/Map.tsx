@@ -320,7 +320,7 @@ useEffect(() => {
   };
 }, []);
   
-//Missile, landmine and loot drop logic 
+//Missile, landmine and loot drop logic !!!!NOT WORKING TODO!!!!
 const checkMissileCollision = () => {
   if (!userLocation || !userLocation.latitude || !userLocation.longitude) {
     console.log("Error: User location not available");
@@ -348,7 +348,7 @@ const checkLandmineCollision = () => {
     return;
   }
 
-  const landminedata: any = []; // TODO Assuming landmine data is available
+  const landminedata: any = []; 
   for (let landmine of landminedata) {
     if (!landmine.latitude || !landmine.longitude) {
       console.log("Error: Landmine location data incomplete");
