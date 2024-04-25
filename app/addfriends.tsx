@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Text, View, TextInput, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+import { Text, View, TextInput, FlatList, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import * as Location from 'expo-location';
 
 const backendUrl: string = process.env.EXPO_PUBLIC_BACKEND_URL!;
@@ -70,30 +70,77 @@ const QuickAddPage: React.FC = () => {
 
   const fetchOtherPlayersData = async () => {
     try {
-      const data = await fetchData('getOtherPlayersData');
-      
-      const filteredData = data.filter((player: Player) => player.username !== userNAME);
-      
-      const currentTime = new Date().getTime();
-      const twoWeeksInMillis = 2 * 7 * 24 * 60 * 60 * 1000;
-      
-      const recentPlayersData = filteredData.filter((player: Player) => {
-        const playerTime = new Date(player.timestamp).getTime();
-        return currentTime - playerTime <= twoWeeksInMillis;
-      });
-      
-      setPlayersData(recentPlayersData);
-      setLoading(false);
+      // Check if userLocation is available
+      if (!userLocation) {
+        console.log('User location is not available');
+        setLoading(false);
+        return;
+      }
+  
+      const { latitude, longitude } = userLocation;
+  
+      const requestData = {
+        username: userNAME, // Assuming userNAME is available from the state or props
+        latitude: latitude,
+        longitude: longitude,
+      };
+  
+      const data = await fetchData('nearby', 'POST', requestData);
+  
+      if (data && data.nearbyUsers) {
+        const recentPlayersData = data.nearbyUsers.filter((player: Player) => {
+          const playerTime = new Date(player.timestamp).getTime();
+          const currentTime = new Date().getTime();
+          const twoWeeksInMillis = 2 * 7 * 24 * 60 * 60 * 1000;
+          return currentTime - playerTime <= twoWeeksInMillis;
+        });
+  
+        setPlayersData(recentPlayersData);
+        setLoading(false);
+      } else {
+        console.log('No nearby users found');
+        setPlayersData([]);
+        setLoading(false);
+      }
     } catch (error) {
-      console.log('Error fetching other players data:');
+      console.log('Error fetching other players data:', error);
       setLoading(false);
     }
-  };
+  };  
 
   useEffect(() => {
     fetchLocation();
-    fetchOtherPlayersData();
   }, []);
+  
+  useEffect(() => {
+    if (userLocation) {
+      fetchOtherPlayersData();
+    }
+  }, [userLocation]);  
+
+  const addFriend = async (friendUsername: string) => {
+    try {
+      const data = await fetchData('addFriend', 'POST', { friendUsername });
+      if (data && data.message === 'Friend added') {
+        Alert.alert('Success', 'Friend added successfully!');
+      }
+    } catch (error) {
+      console.log('Error adding friend:', error);
+      Alert.alert('Error', 'Failed to add friend. Please try again.');
+    }
+  };
+
+  const removeFriend = async (friendUsername: string) => {
+    try {
+      const data = await fetchData('removeFriend', 'DELETE', { friendUsername });
+      if (data && data.message === 'Friend removed') {
+        Alert.alert('Success', 'Friend removed successfully!');
+      }
+    } catch (error) {
+      console.log('Error removing friend:', error);
+      Alert.alert('Error', 'Failed to remove friend. Please try again.');
+    }
+  };
 
   const renderItem = ({ item }: { item: Player }) => (
     <View style={styles.playerItem}>
@@ -101,13 +148,13 @@ const QuickAddPage: React.FC = () => {
       <View style={styles.actions}>
         <TouchableOpacity 
           style={styles.actionButton}
-          onPress={() => {/* Add friend logic */}}
+          onPress={() => addFriend(item.username)}
         >
           <Text style={styles.actionButtonText}>+</Text>
         </TouchableOpacity>
         <TouchableOpacity 
-          style={styles.actionButtonRed}  // Changed to actionButtonRed
-          onPress={() => {/* Remove friend logic */}}
+          style={styles.actionButtonRed}
+          onPress={() => removeFriend(item.username)}
         >
           <Text style={styles.actionButtonText}>x</Text>
         </TouchableOpacity>
