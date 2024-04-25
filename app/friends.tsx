@@ -7,11 +7,13 @@ interface Friend {
 }
 
 const fireMissile = (username: string) => {
+  //fireing missile logic 
   console.log(`Firing missile for friend with username: ${username}`);
 };
 
 const FriendsPage: React.FC = () => {
   const [friends, setFriends] = useState<Friend[]>([
+    //fetch friends from backend for user 
     { username: 'Alice' },
     { username: 'Bob' },
     { username: 'Charlie' },
