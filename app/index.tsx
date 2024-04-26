@@ -15,9 +15,9 @@ export default function Index() {
       <Link href="/friends" className="text-blue-500">
         Click here for: friends
       </Link>
-      <Link href="/register" className="text-blue-500">
+      {/* <Link href="/register" className="text-blue-500">
         Click here for: register
-      </Link>
+      </Link> */}
     </SafeAreaView>
   );
 }
