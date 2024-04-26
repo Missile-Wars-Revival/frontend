@@ -11,7 +11,7 @@ export default function Login() {
   const [isError, setIsError] = useState(false);
 
   const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
-  console.log(backendUrl);
+  //console.log(backendUrl);
 
   const mutation = useLogin(() => {
     router.navigate("/");

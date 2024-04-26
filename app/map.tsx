@@ -1,14 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
-import {
-  Text,
-  View,
-  TouchableOpacity,
-  StyleSheet,
-  Modal,
-  Image,
-} from "react-native";
+import { Text, View, TouchableOpacity, Image } from "react-native";
 import MapView, { PROVIDER_GOOGLE, Circle, Marker } from "react-native-maps";
-import * as Location from "expo-location";
+import * as ExpoLocation from "expo-location";
 
 //Themes
 import { DefaultMapStyle } from "../themes/defaultMapStyle";
@@ -16,128 +9,15 @@ import { RadarMapStyle } from "../themes/radarMapStyle";
 import { CherryBlossomMapStyle } from "../themes/cherryBlossomMapStyle";
 
 //Stylesheet
-import { styles } from "./styles";
+import { styles } from "../styles";
 
-const userNAME = "Player"; //todo: get username from backend
+//Types
+import { Loot, Missile, Landmine, Location, Player } from "../types/types";
 
-interface Missile {
-  location: {
-    latitude: number;
-    longitude: number;
-  };
-  radius: number;
-}
+import { MapStylePopup } from "../components/map-style-popup";
+import { getTimeDifference } from "../lib/get-time-difference";
 
-interface Loot {
-  latitude: number;
-  longitude: number;
-}
-
-interface Landmine {
-  latitude: number;
-  longitude: number;
-}
-
-interface Location {
-  latitude: number;
-  longitude: number;
-}
-
-declare type TimeStamp = string;
-
-// Loot Component
-const Loot = ({ location }: { location: Location }) => (
-  <Circle
-    center={location}
-    radius={40} // 40 meters
-    fillColor="rgba(0, 0, 255, 0.5)" // Blue color
-    strokeColor="rgba(0, 0, 255, 0.8)"
-  />
-);
-
-// landmine Component
-const Landmine = ({ location }: { location: Location }) => (
-  <Circle
-    center={location}
-    radius={20} //radius 20
-    fillColor="rgba(128, 128, 128, 0.5)" //gray colour
-    strokeColor="rgba(128, 128, 128, 0.8)"
-  />
-);
-interface MissleProps {
-  location: Location;
-  radius: number;
-}
-
-// Missile Component
-const Missile = ({ location, radius }: MissleProps) => (
-  <Circle
-    center={location}
-    radius={radius}
-    fillColor="rgba(255, 0, 0, 0.5)" // Red color
-    strokeColor="rgba(255, 0, 0, 0.8)"
-  />
-);
-
-interface MapStylePopupProps {
-  visible: boolean;
-  onClose: () => void;
-  onSelect: (style: string) => void;
-}
-
-const MapStylePopup = ({ visible, onClose, onSelect }: MapStylePopupProps) => {
-  return (
-    <Modal
-      animationType="slide"
-      transparent={true}
-      visible={visible}
-      onRequestClose={onClose}
-    >
-      <TouchableOpacity
-        style={styles.centeredView}
-        activeOpacity={1}
-        onPressOut={onClose}
-      >
-        <View style={styles.modalView}>
-          <TouchableOpacity
-            onPress={() => onSelect("default")}
-            style={styles.button}
-          >
-            <Text style={styles.buttonText}>Default</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => onSelect("radar")}
-            style={styles.button}
-          >
-            <Text style={styles.buttonText}>Radar</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => onSelect("cherry")}
-            style={styles.button}
-          >
-            <Text style={styles.buttonText}>Cherry Blossom</Text>
-          </TouchableOpacity>
-        </View>
-      </TouchableOpacity>
-    </Modal>
-  );
-};
-
-//calculating last seen on map
-const getTimeDifference = (timestamp: TimeStamp) => {
-  const currentTime = new Date().getTime();
-  const lastSeenTime = new Date(timestamp).getTime();
-  const differenceInMilliseconds = currentTime - lastSeenTime;
-  const differenceInMinutes = Math.floor(
-    differenceInMilliseconds / (1000 * 60)
-  );
-
-  if (differenceInMinutes < 1) {
-    return { text: "Last seen: Just now", color: "green" };
-  }
-
-  return { text: `Last seen: ${differenceInMinutes} min ago`, color: "black" };
-};
+import { userNAME } from "../temp/login"; // fetch from backend eventually
 
 export default function Map() {
   const defaultRegion = {
@@ -194,13 +74,13 @@ export default function Map() {
 
   const fetchLocation = useCallback(async () => {
     try {
-      let { status } = await Location.requestForegroundPermissionsAsync();
+      let { status } = await ExpoLocation.requestForegroundPermissionsAsync();
       if (status !== "granted") {
         console.log("Permission to access location was denied");
         return;
       }
 
-      let location = await Location.getCurrentPositionAsync({});
+      let location = await ExpoLocation.getCurrentPositionAsync({});
       const userLoc = {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
@@ -282,13 +162,6 @@ export default function Map() {
       clearInterval(intervalId);
     };
   }, [userLocation]); // Add userLocation to dependency array
-
-  interface Player {
-    username: string;
-    latitude: number;
-    longitude: number;
-    timestamp: any; //todo add type
-  }
 
   //Pending update from backend....
   const fetchOtherPlayersData = async () => {
