@@ -7,10 +7,7 @@ import {
   FlatList,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-
-interface Friend {
-  username: string;
-}
+import { Friend } from "../types/types";
 
 const fireMissile = (username: string) => {
   //fireing missile logic
