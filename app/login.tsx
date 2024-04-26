@@ -4,6 +4,7 @@ import { Input } from "../components/input";
 import { useState } from "react";
 import useLogin from "../hooks/useLogin";
 import { User, LockKeyhole } from "lucide-react-native";
+import { useNavigation } from "@react-navigation/native";
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -16,6 +17,12 @@ export default function Login() {
   const mutation = useLogin(() => {
     router.navigate("/");
   });
+
+  const navigation = useNavigation();
+
+  const navigateregister = () => {
+    navigation.navigate("register" as never); // Navigate to 'register' page
+  };
 
   return (
     <SafeAreaView className="flex-1 justify-center items-center space-y-8">
