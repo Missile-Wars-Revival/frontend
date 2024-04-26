@@ -3,6 +3,7 @@ import { router } from "expo-router";
 import { Input } from "../components/input";
 import { useState } from "react";
 import useLogin from "../hooks/useLogin";
+import { User, LockKeyhole } from "lucide-react-native";
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -22,12 +23,18 @@ export default function Login() {
         <Input
           placeholder="Username"
           onChangeText={(text) => setUsername(text)}
-          className="w-[50vw]"
+          className="w-[50vw] rounded-2xl"
+          icon={<User size={24} color="black" />}
         />
         <Input
           placeholder="Password"
           onChangeText={(text) => setPassword(text)}
-          className="w-[50vw]"
+          className="w-[50vw] rounded-2xl"
+          icon={
+            <View className="inset-y-[7px]">
+              <LockKeyhole size={24} color="black" />
+            </View>
+          }
         />
       </View>
       <Button
