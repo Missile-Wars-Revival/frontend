@@ -27,3 +27,7 @@ export interface Player {
   longitude: number;
   timestamp: any;
 }
+
+export interface Friend {
+  username: string;
+}
