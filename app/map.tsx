@@ -17,7 +17,7 @@ import { Loot, Missile, Landmine, Location, Player } from "../types/types";
 import { MapStylePopup } from "../components/map-style-popup";
 import { getTimeDifference } from "../lib/get-time-difference";
 
-const userNAME = "Player"; //todo: get username from backend
+import { userNAME } from "../temp/login"; // fetch from backend eventually
 
 export default function Map() {
   const defaultRegion = {
