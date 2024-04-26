@@ -8,9 +8,6 @@ import { DefaultMapStyle } from "../themes/defaultMapStyle";
 import { RadarMapStyle } from "../themes/radarMapStyle";
 import { CherryBlossomMapStyle } from "../themes/cherryBlossomMapStyle";
 
-//Stylesheet
-import { styles } from "../styles";
-
 //Types
 import { Loot, Missile, Landmine, Location, Player } from "../types/types";
 
@@ -420,10 +417,10 @@ export default function Map() {
   const resizedImageStyle = { width: 30, height: 30 }; // Custom size for image
 
   return (
-    <View style={styles.container}>
+    <View className="flex-1 bg-gray-200">
       <MapView
         provider={PROVIDER_GOOGLE}
-        style={styles.map}
+        className="flex-1"
         region={region}
         showsUserLocation={true}
         showsMyLocationButton={true}
@@ -495,8 +492,11 @@ export default function Map() {
       </MapView>
 
       {/* Dropdown button */}
-      <TouchableOpacity style={styles.dropdownButton} onPress={showPopup}>
-        <Text style={styles.dropdownButtonText}>Theme</Text>
+      <TouchableOpacity
+        className="absolute bottom-[20px] left-[20px] rounded-[5px] p-[10px] bg-white shadow-md"
+        onPress={showPopup}
+      >
+        <Text className="text-[16px]">Theme</Text>
       </TouchableOpacity>
 
       <MapStylePopup
