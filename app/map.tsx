@@ -15,7 +15,7 @@ import { styles } from "../styles";
 import { Loot, Missile, Landmine, Location, Player } from "../types/types";
 
 import { MapStylePopup } from "../components/map-style-popup";
-import { getTimeDifference } from "../lib/get-time-difference";
+import { getTimeDifference } from "../util/get-time-difference";
 
 const userNAME = "Player"; //todo: get username from backend
 
