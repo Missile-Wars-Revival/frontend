@@ -6,8 +6,8 @@ import {
   StyleSheet,
   FlatList,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
 import { Friend } from "../types/types";
+import { router } from "expo-router";
 
 const fireMissile = (username: string) => {
   //fireing missile logic
@@ -22,18 +22,13 @@ const FriendsPage: React.FC = () => {
     { username: "Charlie" },
   ]);
 
-  const navigation = useNavigation();
-
-  const navigateToAddFriends = () => {
-    navigation.navigate("addfriends" as never); // Navigate to 'AddFriends' page
-  };
   return (
     <View className="p-[20px]">
       <View className="flex-row justify-between mb-[20px]">
         {/* Plus button */}
         <TouchableOpacity
           className="w-[30px] h-[30px] rounded-[15px] flex justify-center items-center bg-blue-400"
-          onPress={navigateToAddFriends}
+          onPress={() => router.navigate("/add-friends")}
         >
           <Text className="text-[20px] leading-none text-white">+</Text>
         </TouchableOpacity>
