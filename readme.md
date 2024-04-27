@@ -16,6 +16,8 @@ Make sure you set your ip in .env
 const apiUrl = 'http://localhost:3000/api/';
 ```
 
+Next modify the .env to have your local ip address (not localhost or 127.0.0.1)
+Make sure to run the backend server before running.
 To build and run:
 
 ```sh
