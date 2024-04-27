@@ -1,6 +1,7 @@
 import * as React from "react";
 import { TextInput, View, TextInputProps } from "react-native";
 import { ReactNode } from "react";
+import { cn } from "../util/cn";
 
 interface InputProps extends TextInputProps {
   icon?: ReactNode;
