@@ -46,10 +46,10 @@ async function registerUser(username: string, email: string, password: string) {
   }
 }
 
-export default function useRegisterUser(onSuccess: () => void) {
+export default function useRegisterUser() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({
+    mutationFn: ({
       username,
       email,
       password,
@@ -57,29 +57,12 @@ export default function useRegisterUser(onSuccess: () => void) {
       username: string;
       email: string;
       password: string;
-    }) => {
-      try {
-        const data = await registerUser(username, email, password);
-        return data;
-      } catch (error) {
-        console.log("Registration failed:");
-        throw error; // Rethrow the error to handle it in the mutation hook
-      }
-    },
-    onSuccess: (data) => {
-      if (data && data.success) {
-        queryClient.invalidateQueries({
-          queryKey: ["users"],
-          refetchType: "active",
-        });
-        onSuccess();
-        console.log("Registration successful!");
-      }
-    },
-    onError: (error) => {
-      console.log("Mutation error:", error.message);
-      // Handle UI flow here, e.g., show error message to user
-      // You can also redirect the user to a different page if needed
+    }) => registerUser(username, email, password),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["users"],
+        refetchType: "active",
+      });
     },
   });
 }
