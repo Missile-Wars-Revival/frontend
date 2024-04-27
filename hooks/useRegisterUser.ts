@@ -1,10 +1,16 @@
 import axios, { AxiosError } from "axios";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
+import Constants from "expo-constants";
+
+const uri = Constants?.expoConfig?.hostUri
+  ? `http://` + Constants.expoConfig.hostUri.split(`:`).shift()?.concat(`:3000`)
+  : `missilewars.com`;
+
 async function registerUser(username: string, email: string, password: string) {
   try {
     const response = await axios.post(
-      `${process.env.EXPO_PUBLIC_BACKEND_URL}:3000/api/register`,
+      `${uri}/api/register`,
       {
         username,
         email,
@@ -20,10 +26,10 @@ async function registerUser(username: string, email: string, password: string) {
       if (axiosError.response) {
         console.log("Status:", axiosError.response.status);
         console.log("Data:", axiosError.response.data);
-        
+
         // Type assertion to specify the type of axiosError.response.data
         const responseData = axiosError.response.data as { message: string };
-  
+
         // Check if the error message matches the specified message
         if (responseData.message === "Password must be at least 8 characters long") {
           alert("Password must be at least 8 characters long");
@@ -36,7 +42,7 @@ async function registerUser(username: string, email: string, password: string) {
         if (responseData.message === "Invalid email address") {
           alert("Enter a valid email address!");
         }
-        
+
         return responseData;
       }
     } else {

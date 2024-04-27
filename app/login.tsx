@@ -5,6 +5,35 @@ import { useState } from "react";
 import useLogin from "../hooks/useLogin";
 import { User, LockKeyhole } from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
+import Constants from "expo-constants";
+
+const uri = Constants?.expoConfig?.hostUri
+  ? `http://` + Constants.expoConfig.hostUri.split(`:`).shift()?.concat(`:3000`)
+  : `missilewars.com`;
+
+
+async function handleLogin(username: string, password: string) {
+
+  const apiUrl = `${uri}/api/login`;
+
+  console.log(apiUrl);
+
+  const response = await fetch(apiUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ username, password }),
+  });
+
+  if (response.ok) {
+    const data = await response.json();
+    console.log(data);
+  } else {
+    console.error("Error logging in");
+  }
+
+}
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -13,10 +42,6 @@ export default function Login() {
 
   const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
   //console.log(backendUrl);
-
-  const mutation = useLogin(() => {
-    router.navigate("/");
-  });
 
   const navigation = useNavigation();
 
@@ -46,7 +71,7 @@ export default function Login() {
       </View>
       <Button
         title="Login!"
-        onPress={() => mutation.mutate({ username, password })}
+        onPress={async () => await handleLogin(username, password)}
       />
       {isError && (
         <Text className={"text-red-700 text-lg"}>

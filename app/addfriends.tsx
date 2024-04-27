@@ -2,9 +2,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Text, View, TextInput, FlatList, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import * as Location from 'expo-location';
 
-const backendUrl: string = process.env.EXPO_PUBLIC_BACKEND_URL!;
-const apiUrl: string = `${backendUrl}:3000/api/`;
-import { userNAME } from "../temp/login";
+import Constants from "expo-constants";
+import { username } from '../temp/login';
+
+const uri = Constants?.expoConfig?.hostUri
+  ? `http://` + Constants.expoConfig.hostUri.split(`:`).shift()?.concat(`:3000`)
+  : `missilewars.com`;
 
 interface Player {
   username: string;
@@ -38,10 +41,10 @@ const QuickAddPage: React.FC = () => {
   }, []);
 
   const fetchData = async (endpoint: string, method: string = 'GET', data: any = null) => {
-    const config: { 
-      method: string; 
-      headers: { 'Content-Type': string }; 
-      body?: string | null; 
+    const config: {
+      method: string;
+      headers: { 'Content-Type': string };
+      body?: string | null;
     } = {
       method: method,
       headers: {
@@ -50,12 +53,12 @@ const QuickAddPage: React.FC = () => {
     };
 
     if (data) {
-  config.body = JSON.stringify(data as object);
-}
+      config.body = JSON.stringify(data as object);
+    }
 
 
     try {
-      const response = await fetch(apiUrl + endpoint, config);
+      const response = await fetch(uri + endpoint, config);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch data. Status: ${response.status}`);
@@ -76,17 +79,17 @@ const QuickAddPage: React.FC = () => {
         setLoading(false);
         return;
       }
-  
+
       const { latitude, longitude } = userLocation;
-  
+
       const requestData = {
-        username: userNAME, // Assuming userNAME is available from the state or props
+        username: username,
         latitude: latitude,
         longitude: longitude,
       };
-  
-      const data = await fetchData('nearby', 'POST', requestData);
-  
+
+      const data = await fetchData('/api/nearby', 'POST', requestData);
+
       if (data && data.nearbyUsers) {
         const recentPlayersData = data.nearbyUsers.filter((player: Player) => {
           const playerTime = new Date(player.timestamp).getTime();
@@ -94,7 +97,7 @@ const QuickAddPage: React.FC = () => {
           const twoWeeksInMillis = 2 * 7 * 24 * 60 * 60 * 1000;
           return currentTime - playerTime <= twoWeeksInMillis;
         });
-  
+
         setPlayersData(recentPlayersData);
         setLoading(false);
       } else {
@@ -106,17 +109,17 @@ const QuickAddPage: React.FC = () => {
       console.log('Error fetching other players data:', error);
       setLoading(false);
     }
-  };  
+  };
 
   useEffect(() => {
     fetchLocation();
   }, []);
-  
+
   useEffect(() => {
     if (userLocation) {
       fetchOtherPlayersData();
     }
-  }, [userLocation]);  
+  }, [userLocation]);
 
   const addFriend = async (friendUsername: string) => {
     try {
@@ -146,13 +149,13 @@ const QuickAddPage: React.FC = () => {
     <View style={styles.playerItem}>
       <Text style={styles.playerName}>{item.username}</Text>
       <View style={styles.actions}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.actionButton}
           onPress={() => addFriend(item.username)}
         >
           <Text style={styles.actionButtonText}>+</Text>
         </TouchableOpacity>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.actionButtonRed}
           onPress={() => removeFriend(item.username)}
         >
@@ -160,7 +163,7 @@ const QuickAddPage: React.FC = () => {
         </TouchableOpacity>
       </View>
     </View>
-  );  
+  );
 
   return (
     <View style={styles.container}>

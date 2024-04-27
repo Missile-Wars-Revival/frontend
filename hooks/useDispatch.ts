@@ -1,6 +1,12 @@
 import axios from "axios";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
+import Constants from "expo-constants";
+
+const uri = Constants?.expoConfig?.hostUri
+  ? `http://` + Constants.expoConfig.hostUri.split(`:`).shift()?.concat(`:3000`)
+  : `missilewars.com`;
+
 async function dispatchLocation(
   username: string,
   latitude: number,
@@ -8,7 +14,7 @@ async function dispatchLocation(
 ) {
   try {
     const response = await axios.post(
-      `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/dispatch`,
+      `${uri}/api/dispatch`,
       {
         username,
         latitude,

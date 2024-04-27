@@ -1,5 +1,33 @@
-import axios from "axios";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from 'react';
 
-// Confused about how to do this one, its a get but you are passing in data
-// need to talk to clxde before I can do this one
+import Constants from "expo-constants";
+
+const uri = Constants?.expoConfig?.hostUri
+    ? `http://` + Constants.expoConfig.hostUri.split(`:`).shift()?.concat(`:3000`)
+    : `missilewars.com`;
+
+
+
+export default function useNearby(username: string, latitude: number, longitude: number) {
+    // get body
+    fetch(uri + '/api/nearby', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            username: username,
+            latitude: latitude,
+            longitude: longitude,
+        }),
+    })
+        .then((response) => response.json())
+        .then((data) => {
+            console.log(data);
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+        });
+
+
+}
