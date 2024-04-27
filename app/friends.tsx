@@ -1,40 +1,41 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-
-interface Friend {
-  username: string;
-}
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  FlatList,
+} from "react-native";
+import { Friend } from "../types/types";
+import { router } from "expo-router";
 
 const fireMissile = (username: string) => {
-  //fireing missile logic 
+  //fireing missile logic
   console.log(`Firing missile for friend with username: ${username}`);
 };
 
 const FriendsPage: React.FC = () => {
   const [friends, setFriends] = useState<Friend[]>([
-    //fetch friends from backend for user 
-    { username: 'Alice' },
-    { username: 'Bob' },
-    { username: 'Charlie' },
+    //fetch friends from backend for user
+    { username: "Alice" },
+    { username: "Bob" },
+    { username: "Charlie" },
   ]);
 
-const navigation = useNavigation(); 
-
-const navigateToAddFriends = () => {
-  navigation.navigate('addfriends' as never); // Navigate to 'AddFriends' page
-};
   return (
-    <View style={styles.friendsContainer}>
-      <View style={styles.header}>
+    <View className="p-[20px]">
+      <View className="flex-row justify-between mb-[20px]">
         {/* Plus button */}
-        <TouchableOpacity style={styles.plusButton} onPress={navigateToAddFriends}>
-          <Text style={styles.plusButtonText}>+</Text>
+        <TouchableOpacity
+          className="w-[30px] h-[30px] rounded-[15px] flex justify-center items-center bg-blue-400"
+          onPress={() => router.navigate("/add-friends")}
+        >
+          <Text className="text-[20px] leading-none text-white">+</Text>
         </TouchableOpacity>
 
         {/* Bell icon */}
         <TouchableOpacity>
-          <Text style={styles.bellIcon}>🔔</Text>
+          <Text className="text-[24px]">🔔</Text>
         </TouchableOpacity>
       </View>
 
@@ -42,10 +43,13 @@ const navigateToAddFriends = () => {
         data={friends}
         keyExtractor={(item, index) => index.toString()}
         renderItem={({ item }) => (
-          <View style={styles.friendItem}>
+          <View className="flex-row justify-between items-center p-2.5 border-b border-gray-300">
             <Text>{item.username}</Text>
-            <TouchableOpacity style={styles.fireMissileButton} onPress={() => fireMissile(item.username)}>
-              <Text style={styles.fireMissileButtonText}>Fire Missile</Text>
+            <TouchableOpacity
+              className="bg-red-500 p-[5px] rounded-[5px]"
+              onPress={() => fireMissile(item.username)}
+            >
+              <Text className="text-white">Fire Missile</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -53,48 +57,5 @@ const navigateToAddFriends = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  friendsContainer: {
-    padding: 20,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  plusButton: {
-    backgroundColor: 'skyblue',
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  plusButtonText: {
-    fontSize: 20,
-    lineHeight: 20,
-    color: 'white',
-  },
-  bellIcon: {
-    fontSize: 24,
-  },
-  friendItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
-  },
-  fireMissileButton: {
-    backgroundColor: 'red',
-    padding: 5,
-    borderRadius: 5,
-  },
-  fireMissileButtonText: {
-    color: 'white',
-  },
-});
 
 export default FriendsPage;
