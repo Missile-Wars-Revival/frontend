@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Text, View, FlatList, TouchableOpacity, Alert } from "react-native";
 import * as Location from "expo-location";
-import { Input } from "../components/input";
+import { Input } from "../components/ui/input";
 
 const backendUrl: string = process.env.EXPO_PUBLIC_BACKEND_URL!;
 const apiUrl: string = `${backendUrl}:3000/api/`;
