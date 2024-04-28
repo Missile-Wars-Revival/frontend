@@ -1,4 +1,5 @@
-import axios from "axios";
+import { isAxiosError } from "axios";
+import axiosInstance from "../api/axios-instance";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 async function dispatchLocation(
@@ -7,17 +8,14 @@ async function dispatchLocation(
   longitude: number
 ) {
   try {
-    const response = await axios.post(
-      `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/dispatch`,
-      {
-        username,
-        latitude,
-        longitude,
-      }
-    );
+    const response = await axiosInstance.post("/api/dispatch", {
+      username,
+      latitude,
+      longitude,
+    });
     return response.data;
   } catch (error) {
-    if (axios.isAxiosError(error)) {
+    if (isAxiosError(error)) {
       return error.response?.data;
     }
     console.error(error);
