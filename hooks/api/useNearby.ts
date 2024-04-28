@@ -1,5 +1,13 @@
-import axios from "axios";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { nearby } from "../../api/nearby";
 
-// Confused about how to do this one, its a get but you are passing in data
-// need to talk to clxde before I can do this one
+export default function useNearby(
+  username: string,
+  latitude: number,
+  longitude: number
+) {
+  return useQuery({
+    queryKey: ["nearby"],
+    queryFn: () => nearby(username, latitude, longitude),
+  });
+}

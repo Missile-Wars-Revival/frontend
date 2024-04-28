@@ -1,24 +1,26 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { dispatch } from "../../api/dispatch";
+import { register } from "../../api/register";
 
-export default function useDispatch() {
+export default function useRegister(onSuccess?: () => void) {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: ({
       username,
-      latitude,
-      longitude,
+      email,
+      password,
     }: {
       username: string;
-      latitude: number;
-      longitude: number;
-    }) => dispatch(username, latitude, longitude),
+      email: string;
+      password: string;
+    }) => register(username, email, password),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["locations"],
+        queryKey: ["users"],
         refetchType: "active",
       });
+      if (onSuccess) {
+        onSuccess();
+      }
     },
   });
 }
