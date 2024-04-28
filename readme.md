@@ -13,7 +13,7 @@ $ npm i
 
 Make sure you set your ip in .env
 ```
-const apiUrl = 'http://localhost:3000/api/';
+EXPO_PUBLIC_BACKEND_URL=http://localhost:3000
 ```
 
 Next modify the .env to have your local ip address (not localhost or 127.0.0.1)
