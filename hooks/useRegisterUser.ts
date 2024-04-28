@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 async function registerUser(username: string, email: string, password: string) {
   try {
     const response = await axios.post(
-      `${process.env.EXPO_PUBLIC_BACKEND_URL}:3000/api/register`,
+      `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/register`,
       {
         username,
         email,
