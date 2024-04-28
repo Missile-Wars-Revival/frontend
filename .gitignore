@@ -36,3 +36,6 @@ desktop.ini
 
 # typescript
 *.tsbuildinfo
+
+# %ProgramData%
+/%ProgramData%/
