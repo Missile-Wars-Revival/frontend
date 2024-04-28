@@ -61,7 +61,7 @@ export default function Login() {
       <CometDivider
         width={1000}
         height={1000}
-        className="absolute bottom-[-25%]"
+        className="absolute bottom-[-25%] fill-gray-400"
       />
       <SignUpButton />
     </SafeAreaView>
@@ -82,7 +82,7 @@ function LoginButton({
   return (
     <TouchableHighlight
       onPress={() => mutation.mutate({ username, password })}
-      className="bg-purple-500 rounded-[20px] w-[375px] h-[45px] flex items-center justify-center absolute top-[44%]"
+      className="bg-[#773765] rounded-[20px] w-[375px] h-[45px] flex items-center justify-center absolute top-[44%]"
     >
       <View>
         <Text className="text-white font-bold">Let's Fight</Text>
