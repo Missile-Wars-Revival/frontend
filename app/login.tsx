@@ -4,6 +4,7 @@ import {
   View,
   Image,
   TouchableHighlight,
+  Dimensions,
 } from "react-native";
 import { router } from "expo-router";
 import { Input } from "../components/ui/input";
@@ -59,8 +60,8 @@ export default function Login() {
         </Text>
       )}
       <CometDivider
-        width={1000}
-        height={1000}
+        width={Dimensions.get("window").width * 2.4}
+        height={Dimensions.get("window").height * 1.15}
         className="absolute bottom-[-25%] fill-gray-400"
       />
       <SignUpButton />
