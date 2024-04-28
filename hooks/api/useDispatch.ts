@@ -7,13 +7,15 @@ export default function useDispatch() {
   return useMutation({
     mutationFn: ({
       username,
+      password,
       latitude,
       longitude,
     }: {
       username: string;
+      password: string;
       latitude: number;
       longitude: number;
-    }) => dispatch(username, latitude, longitude),
+    }) => dispatch(username, password, latitude, longitude),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["locations"],
