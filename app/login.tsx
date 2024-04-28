@@ -2,8 +2,9 @@ import { SafeAreaView, Text, Button, View } from "react-native";
 import { router } from "expo-router";
 import { Input } from "../components/input";
 import { useState } from "react";
-import axios from "axios";
-import Constants from "expo-constants";
+import useLogin from "../hooks/useLogin";
+import { User, LockKeyhole } from "lucide-react-native";
+import { useNavigation } from "@react-navigation/native";
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -11,27 +12,17 @@ export default function Login() {
   const [isError, setIsError] = useState(false);
 
   const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
-  console.log(backendUrl);
+  //console.log(backendUrl);
 
-  function handleLogin(username: string, password: string) {
-    axios
-      .post(`${backendUrl}:3000/api/login`, {
-        username,
-        password,
-      })
-      .then((response) => {
-        console.log(response.data);
-        if (response.status === 200) {
-          router.navigate("/");
-        }
-      })
-      .catch((error) => {
-        console.log(error);
-        if (error.response.status === 401) {
-          setIsError(true);
-        }
-      });
-  }
+  const mutation = useLogin(() => {
+    router.navigate("/");
+  });
+
+  const navigation = useNavigation();
+
+  const navigateregister = () => {
+    navigation.navigate("register" as never); // Navigate to 'register' page
+  };
 
   return (
     <SafeAreaView className="flex-1 justify-center items-center space-y-8">
@@ -39,15 +30,24 @@ export default function Login() {
         <Input
           placeholder="Username"
           onChangeText={(text) => setUsername(text)}
-          className="w-[50vw]"
+          className="w-[50vw] rounded-2xl"
+          icon={<User size={24} color="black" />}
         />
         <Input
           placeholder="Password"
           onChangeText={(text) => setPassword(text)}
-          className="w-[50vw]"
+          className="w-[50vw] rounded-2xl"
+          icon={
+            <View className="inset-y-[7px]">
+              <LockKeyhole size={24} color="black" />
+            </View>
+          }
         />
       </View>
-      <Button title="Login!" onPress={() => handleLogin(username, password)} />
+      <Button
+        title="Login!"
+        onPress={() => mutation.mutate({ username, password })}
+      />
       {isError && (
         <Text className={"text-red-700 text-lg"}>
           Invalid username or password
