@@ -1,14 +1,18 @@
 import axiosInstance from "./axios-instance";
 import { isAxiosError } from "axios";
 
-export async function nearby(
+export async function removeFriend(
   username: string,
-  latitude: number,
-  longitude: number
+  password: string,
+  friend: string
 ) {
   try {
-    const response = await axiosInstance.get("/api/nearby", {
-      data: { username, latitude, longitude },
+    const response = await axiosInstance.delete("/api/removeFriend", {
+      data: {
+        username,
+        password,
+        friend,
+      },
     });
 
     return response.data;

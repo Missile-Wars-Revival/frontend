@@ -1,21 +1,21 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { registerUser } from "../../api/register-user";
+import { removeFriend } from "../../api/remove-friend";
 
-export default function useRegisterUser() {
+export default function useRemoveFriend() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({
       username,
-      email,
       password,
+      friend,
     }: {
       username: string;
-      email: string;
       password: string;
-    }) => registerUser(username, email, password),
+      friend: string;
+    }) => removeFriend(username, password, friend),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["users"],
+        queryKey: ["friends"],
         refetchType: "active",
       });
     },

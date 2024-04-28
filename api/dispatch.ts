@@ -1,7 +1,7 @@
 import { isAxiosError } from "axios";
 import axiosInstance from "./axios-instance";
 
-export async function dispatchLocation(
+export async function dispatch(
   username: string,
   latitude: number,
   longitude: number

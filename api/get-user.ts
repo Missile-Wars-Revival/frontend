@@ -1,14 +1,12 @@
 import axiosInstance from "./axios-instance";
 import { isAxiosError } from "axios";
 
-export async function nearby(
-  username: string,
-  latitude: number,
-  longitude: number
-) {
+export async function getUser(username: string) {
   try {
-    const response = await axiosInstance.get("/api/nearby", {
-      data: { username, latitude, longitude },
+    const response = await axiosInstance.get("/api/getuser", {
+      params: {
+        username,
+      },
     });
 
     return response.data;

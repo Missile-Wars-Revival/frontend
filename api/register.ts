@@ -1,20 +1,17 @@
 import { isAxiosError, AxiosError } from "axios";
 import axiosInstance from "./axios-instance";
 
-export async function registerUser(
+export async function register(
   username: string,
   email: string,
   password: string
 ) {
   try {
-    const response = await axiosInstance.post(
-      `${process.env.EXPO_PUBLIC_BACKEND_URL}:3000/api/register`,
-      {
-        username,
-        email,
-        password,
-      }
-    );
+    const response = await axiosInstance.post("/api/register", {
+      username,
+      email,
+      password,
+    });
 
     return response.data;
   } catch (error) {

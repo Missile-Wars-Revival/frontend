@@ -1,22 +1,21 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { dispatch } from "../../api/dispatch";
+import { addFriend } from "../../api/add-friend";
 
-export default function useDispatch() {
+export default function useAddFriend() {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: ({
       username,
-      latitude,
-      longitude,
+      password,
+      friend,
     }: {
       username: string;
-      latitude: number;
-      longitude: number;
-    }) => dispatch(username, latitude, longitude),
+      password: string;
+      friend: string;
+    }) => addFriend(username, password, friend),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["locations"],
+        queryKey: ["friends"],
         refetchType: "active",
       });
     },
