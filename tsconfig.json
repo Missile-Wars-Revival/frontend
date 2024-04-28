@@ -1,7 +1,14 @@
 {
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
+    /* Strictness */
     "strict": true,
-    "jsx": "react-native"
+    "noUncheckedIndexedAccess": true,
+
+    /* Module Resolution */
+    "module": "esnext",
+
+    /* Misc */
+    "forceConsistentCasingInFileNames": true
   }
 }
