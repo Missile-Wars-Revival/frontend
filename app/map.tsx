@@ -201,8 +201,6 @@ export default function Map() {
     };
   }, []);
 
-  //Missile, landmine and loot drop logic !!!!NOT WORKING TODO!!!!
-
   //fetch dist
 
   const fetchLootAndMissiles = useCallback(() => {
@@ -225,10 +223,7 @@ export default function Map() {
     const fetchMissilesFromBackend = async () => {
       // Simulated fetch function to get missile data:
       return [
-        {
-          location: { latitude: 45.2949318, longitude: -0.852764 },
-          radius: 100,
-        }, //temp missile location
+        { location: { latitude: 45.2949318, longitude: -0.852764 }, radius: 100 }, //temp missile location
         { location: { latitude: 51.025316, longitude: -3.115612 }, radius: 50 }, //2nd temp missle location TS
       ];
     };
