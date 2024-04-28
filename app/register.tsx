@@ -76,7 +76,7 @@ function SignUpButton({
   return (
     <TouchableHighlight
       onPress={() => mutation.mutate({ username, password, email })}
-      className="bg-purple-500 rounded-[20px] w-[375px] h-[45px] flex items-center justify-center absolute top-[60%]"
+      className="bg-[#773765] rounded-[20px] w-[375px] h-[45px] flex items-center justify-center absolute top-[60%]"
     >
       <View>
         <Text className="text-white font-bold">Sign Up!</Text>
