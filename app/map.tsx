@@ -15,6 +15,7 @@ import { MapStylePopup } from "../components/map-style-popup";
 import { getTimeDifference } from "../util/get-time-difference";
 
 import { userNAME } from "../temp/login"; // fetch from backend eventually
+import { passWORD } from "../temp/login"; // fetch from backend eventually
 
 export default function Map() {
   const defaultRegion = {
@@ -52,6 +53,7 @@ export default function Map() {
 
         const data = {
           username: userNAME,
+          password: passWORD,
           latitude,
           longitude,
         };
@@ -104,7 +106,7 @@ export default function Map() {
   }, [fetchLocation]);
 
   const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
-  const apiUrl = `${backendUrl}:3000/api/`;
+  const apiUrl = `${backendUrl}/api/`;
   //console.log(apiUrl);
 
   const fetchData = async (
