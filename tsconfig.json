@@ -6,7 +6,7 @@
     "noUncheckedIndexedAccess": true,
 
     /* Module Resolution */
-    "module": "ESNext",
+    "module": "preserve",
 
     /* Misc */
     "forceConsistentCasingInFileNames": true
