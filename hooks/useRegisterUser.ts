@@ -20,12 +20,14 @@ async function registerUser(username: string, email: string, password: string) {
       if (axiosError.response) {
         console.log("Status:", axiosError.response.status);
         console.log("Data:", axiosError.response.data);
-        
+
         // Type assertion to specify the type of axiosError.response.data
         const responseData = axiosError.response.data as { message: string };
-  
+
         // Check if the error message matches the specified message
-        if (responseData.message === "Password must be at least 8 characters long") {
+        if (
+          responseData.message === "Password must be at least 8 characters long"
+        ) {
           alert("Password must be at least 8 characters long");
         }
 
@@ -36,7 +38,7 @@ async function registerUser(username: string, email: string, password: string) {
         if (responseData.message === "Invalid email address") {
           alert("Enter a valid email address!");
         }
-        
+
         return responseData;
       }
     } else {
@@ -46,7 +48,7 @@ async function registerUser(username: string, email: string, password: string) {
   }
 }
 
-export default function useRegisterUser() {
+export default function useRegisterUser(onSuccess: () => void) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({
@@ -63,6 +65,7 @@ export default function useRegisterUser() {
         queryKey: ["users"],
         refetchType: "active",
       });
+      onSuccess();
     },
   });
 }

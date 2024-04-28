@@ -1,10 +1,17 @@
-import { SafeAreaView, Text, Button, View } from "react-native";
+import {
+  SafeAreaView,
+  Text,
+  View,
+  Image,
+  TouchableHighlight,
+} from "react-native";
 import { router } from "expo-router";
-import { Input } from "../components/input";
+import { Input } from "../components/ui/input";
 import { useState } from "react";
 import useLogin from "../hooks/useLogin";
 import { User, LockKeyhole } from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
+import CometDivider from "../assets/jsxSvgs/cometDivider";
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -14,10 +21,6 @@ export default function Login() {
   const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
   //console.log(backendUrl);
 
-  const mutation = useLogin(() => {
-    router.navigate("/");
-  });
-
   const navigation = useNavigation();
 
   const navigateregister = () => {
@@ -26,17 +29,22 @@ export default function Login() {
 
   return (
     <SafeAreaView className="flex-1 justify-center items-center space-y-8">
-      <View className="space-y-4">
+      <Image
+        source={require("../assets/MissleWarsTitle.png")}
+        className="w-[425px] h-[200px] absolute top-[25]"
+        resizeMode="contain"
+      />
+      <View className="space-y-4 absolute top-[25%]">
         <Input
           placeholder="Username"
           onChangeText={(text) => setUsername(text)}
-          className="w-[50vw] rounded-2xl"
+          className="w-[90vw] h-[5vh] rounded-[20px]"
           icon={<User size={24} color="black" />}
         />
         <Input
           placeholder="Password"
           onChangeText={(text) => setPassword(text)}
-          className="w-[50vw] rounded-2xl"
+          className="w-[90vw] h-[5vh] rounded-[20px]"
           icon={
             <View className="inset-y-[7px]">
               <LockKeyhole size={24} color="black" />
@@ -44,15 +52,56 @@ export default function Login() {
           }
         />
       </View>
-      <Button
-        title="Login!"
-        onPress={() => mutation.mutate({ username, password })}
-      />
+      <LoginButton username={username} password={password} />
       {isError && (
         <Text className={"text-red-700 text-lg"}>
           Invalid username or password
         </Text>
       )}
+      <CometDivider
+        width={1000}
+        height={1000}
+        className="absolute bottom-[-25%]"
+      />
+      <SignUpButton />
     </SafeAreaView>
+  );
+}
+
+function LoginButton({
+  username,
+  password,
+}: {
+  username: string;
+  password: string;
+}) {
+  const mutation = useLogin(() => {
+    router.navigate("/");
+  });
+
+  return (
+    <TouchableHighlight
+      onPress={() => mutation.mutate({ username, password })}
+      className="bg-purple-500 rounded-[20px] w-[375px] h-[45px] flex items-center justify-center absolute top-[44%]"
+    >
+      <View>
+        <Text className="text-white font-bold">Let's Fight</Text>
+      </View>
+    </TouchableHighlight>
+  );
+}
+
+function SignUpButton() {
+  return (
+    <TouchableHighlight
+      onPress={() => {
+        router.navigate("/register");
+      }}
+      className="rounded-[20px] w-[375px] h-[45px] flex items-center justify-center absolute bottom-[10%] border-2"
+    >
+      <View>
+        <Text className=" font-bold">Sign up with Email</Text>
+      </View>
+    </TouchableHighlight>
   );
 }
