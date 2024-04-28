@@ -1,19 +1,17 @@
-import axios from "axios";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { isAxiosError } from "axios";
+import axiosInstance from "../api/axios-instance";
 
-async function login(username: string, password: string) {
+export async function login(username: string, password: string) {
   try {
-    const response = await axios.post(
-      `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/login`,
-      {
-        username,
-        password,
-      }
-    );
+    const response = await axiosInstance.post("/api/login", {
+      username,
+      password,
+    });
 
     return response.data;
   } catch (error) {
-    if (axios.isAxiosError(error)) {
+    if (isAxiosError(error)) {
       return error.response?.data;
     }
 
