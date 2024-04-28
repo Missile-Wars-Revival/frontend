@@ -17,8 +17,8 @@ export async function dispatch(
     return response.data;
   } catch (error) {
     if (isAxiosError(error)) {
-      return error.response?.data;
+      throw new Error(error.response?.data);
     }
-    console.error(error);
+    throw error;
   }
 }

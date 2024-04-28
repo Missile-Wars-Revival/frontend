@@ -11,22 +11,12 @@ import { Input } from "../components/ui/input";
 import { useState } from "react";
 import useLogin from "../hooks/api/useLogin";
 import { User, LockKeyhole } from "lucide-react-native";
-import { useNavigation } from "@react-navigation/native";
 import CometDivider from "../assets/jsxSvgs/cometDivider";
 
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isError, setIsError] = useState(false);
-
-  const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
-  //console.log(backendUrl);
-
-  const navigation = useNavigation();
-
-  const navigateregister = () => {
-    navigation.navigate("register" as never); // Navigate to 'register' page
-  };
 
   return (
     <SafeAreaView className="flex-1 justify-center items-center space-y-8">
@@ -35,30 +25,38 @@ export default function Login() {
         className="w-[425px] h-[200px] absolute top-[25]"
         resizeMode="contain"
       />
-      <View className="space-y-4 absolute top-[25%]">
-        <Input
-          placeholder="Username"
-          onChangeText={(text) => setUsername(text)}
-          className="w-[90vw] h-[5vh] rounded-[20px]"
-          icon={<User size={24} color="black" />}
-        />
-        <Input
-          placeholder="Password"
-          onChangeText={(text) => setPassword(text)}
-          className="w-[90vw] h-[5vh] rounded-[20px]"
-          icon={
-            <View className="inset-y-[7px]">
-              <LockKeyhole size={24} color="black" />
-            </View>
-          }
-        />
+      <View className="absolute top-[25%]">
+        <View className="space-y-4">
+          <Input
+            placeholder="Username"
+            onChangeText={(text) => setUsername(text)}
+            className="w-[90vw] h-[5vh] rounded-[20px]"
+            icon={<User size={24} color="black" />}
+          />
+          <View>
+            <Input
+              placeholder="Password"
+              onChangeText={(text) => setPassword(text)}
+              className="w-[90vw] h-[5vh] rounded-[20px]"
+              icon={
+                <View className="inset-y-[-1px]">
+                  <LockKeyhole size={24} color="black" />
+                </View>
+              }
+            />
+            {isError && (
+              <Text className="text-red-500 text-sm text-center">
+                Invalid username or password
+              </Text>
+            )}
+          </View>
+        </View>
       </View>
-      <LoginButton username={username} password={password} />
-      {isError && (
-        <Text className={"text-red-700 text-lg"}>
-          Invalid username or password
-        </Text>
-      )}
+      <LoginButton
+        username={username}
+        password={password}
+        setIsError={setIsError}
+      />
       <CometDivider
         width={Dimensions.get("window").width * 2.4}
         height={Dimensions.get("window").height * 1.15}
@@ -72,18 +70,25 @@ export default function Login() {
 function LoginButton({
   username,
   password,
+  setIsError,
 }: {
   username: string;
   password: string;
+  setIsError: (error: boolean) => void;
 }) {
-  const mutation = useLogin(() => {
-    router.navigate("/");
-  });
+  const mutation = useLogin(
+    () => {
+      router.navigate("/");
+    },
+    () => {
+      setIsError(true);
+    }
+  );
 
   return (
     <TouchableHighlight
       onPress={() => mutation.mutate({ username, password })}
-      className="bg-[#773765] rounded-[20px] w-[375px] h-[45px] flex items-center justify-center absolute top-[44%]"
+      className="bg-[#773765] rounded-[20px] w-[375px] h-[45px] flex items-center justify-center absolute top-[45%]"
     >
       <View>
         <Text className="text-white font-bold">Let's Fight</Text>

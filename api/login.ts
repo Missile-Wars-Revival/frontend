@@ -11,9 +11,9 @@ export async function login(username: string, password: string) {
     return response.data;
   } catch (error) {
     if (isAxiosError(error)) {
-      return error.response?.data;
+      throw new Error(error.response?.data);
     }
 
-    console.log(error);
+    throw error;
   }
 }
