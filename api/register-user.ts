@@ -1,8 +1,11 @@
-import { AxiosError, isAxiosError } from "axios";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import axiosInstance from "../api/axios-instance";
+import { isAxiosError, AxiosError } from "axios";
+import axiosInstance from "./axios-instance";
 
-async function registerUser(username: string, email: string, password: string) {
+export async function registerUser(
+  username: string,
+  email: string,
+  password: string
+) {
   try {
     const response = await axiosInstance.post(
       `${process.env.EXPO_PUBLIC_BACKEND_URL}:3000/api/register`,
@@ -47,25 +50,4 @@ async function registerUser(username: string, email: string, password: string) {
     }
     throw error; // Rethrow the error to handle it in the mutation hook
   }
-}
-
-export default function useRegisterUser() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({
-      username,
-      email,
-      password,
-    }: {
-      username: string;
-      email: string;
-      password: string;
-    }) => registerUser(username, email, password),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["users"],
-        refetchType: "active",
-      });
-    },
-  });
 }
