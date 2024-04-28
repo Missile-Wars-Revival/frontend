@@ -2,7 +2,7 @@ import { SafeAreaView, Text, Button, View } from "react-native";
 import { router } from "expo-router";
 import { Input } from "../components/input";
 import { useState } from "react";
-import useRegisterUser from "../hooks/useRegisterUser";
+import useRegisterUser from "../hooks/api/useRegisterUser";
 
 export default function Register() {
   const [username, setUsername] = useState("");
