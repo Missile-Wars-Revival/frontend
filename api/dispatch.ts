@@ -3,12 +3,14 @@ import axiosInstance from "./axios-instance";
 
 export async function dispatch(
   username: string,
+  password: string,
   latitude: number,
   longitude: number
 ) {
   try {
     const response = await axiosInstance.post("/api/dispatch", {
       username,
+      password,
       latitude,
       longitude,
     });
