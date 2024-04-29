@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { Text, View, TouchableOpacity, Image, Button } from "react-native";
+import { Text, View, TouchableOpacity, Image, Button, Modal, Dimensions } from "react-native";
 import MapView, { PROVIDER_GOOGLE, Circle, Marker } from "react-native-maps";
 import * as ExpoLocation from "expo-location";
 
@@ -366,6 +366,8 @@ export default function Map() {
   const resizedMarkerImage = require("../assets/Female_Avatar_PNG.png"); // Your custom image path
   const resizedImageStyle = { width: 30, height: 30 }; // Custom size for image
 
+  const [isModalVisible, setIsModalVisible] = useState(false);
+
   return (
     <View className="flex-1 bg-gray-200">
       <MapView
@@ -410,58 +412,73 @@ export default function Map() {
         ))}
 
 {otherPlayersData
-  .filter(player => player.username !== userNAME) // Filter out the current user
-  .map((player: Player, index) => {
-    const { text } = getTimeDifference(player.updatedAt);
+          .filter(player => player.username !== userNAME) // Filter out the current user
+          .map((player, index) => {
+            const { text } = getTimeDifference(player.updatedAt);
 
-    //console.log(`Player ${player.username}: Latitude - ${player.latitude}, Longitude - ${player.longitude}`);
-    
-    return (
-      <React.Fragment key={index}>
-        <Circle
-          center={{
-            latitude: player.latitude,
-            longitude: player.longitude,
-          }}
-          radius={6} // Assuming a radius for other players
-          fillColor="rgba(0, 255, 0, 0.2)" // Green color
-          strokeColor="rgba(0, 255, 0, 0.8)"
-        />
-        <Marker
-          key={index}
-          coordinate={{
-            latitude: player.latitude,
-            longitude: player.longitude,
-          }}
-          title={player.username}
-          description={text} //Finding it really hard to set "just now" as green
-          onPress={() => {
-            if (selectedMarkerIndex === index) {
-              setSelectedMarkerIndex(null); // Deselect the marker
-            } else {
-              setSelectedMarkerIndex(index); // Select the marker
-            }
-          }}
-        >
-          {/* Use resized image for the Marker */}
-          <Image source={resizedMarkerImage} style={resizedImageStyle} />
-        </Marker>
-        {selectedMarkerIndex !== null && ( // Conditionally render button
-              <View style={{ backgroundColor: 'red', borderRadius: 5, marginTop: 2 }}>
-              <Button
-                title={`Fire Missile at ${player.username}`}
-                onPress={() => {
-                  alert("Fire Missile logic");
-                }}
-                color="white" // Set text color to white
-              />
-            </View>
-            )}
-      </React.Fragment>
-    );
-})}
-
+            return (
+              <React.Fragment key={index}>
+                <Circle
+                  center={{
+                    latitude: player.latitude,
+                    longitude: player.longitude,
+                  }}
+                  radius={6} // Assuming a radius for other players
+                  fillColor="rgba(0, 255, 0, 0.2)" // Green color
+                  strokeColor="rgba(0, 255, 0, 0.8)"
+                />
+                <Marker
+                  key={index}
+                  coordinate={{
+                    latitude: player.latitude,
+                    longitude: player.longitude,
+                  }}
+                  title={player.username}
+                  description={text} //Finding it really hard to set "just now" as green
+                  onPress={() => {
+                    if (selectedMarkerIndex === index) {
+                      setSelectedMarkerIndex(null); // Deselect the marker
+                    } else {
+                      setSelectedMarkerIndex(index); // Select the marker
+                    }
+                  }}
+                >
+                  {/* Use resized image for the Marker */}
+                  <Image source={resizedMarkerImage} style={resizedImageStyle} />
+                </Marker>
+                {selectedMarkerIndex !== null && selectedMarkerIndex === index && ( // Conditionally render button
+                  <View style={{ backgroundColor: 'red', borderRadius: 5, marginTop: 2 }}>
+                    <Button
+                      title={`Fire Missile At Player: ${player.username}`}
+                      onPress={() => setIsModalVisible(true)}
+                      color="white" // Set text color to white
+                    />
+                  </View>
+                )}
+              </React.Fragment>
+            );
+          })}
       </MapView>
+{/* Missile library popup */}
+<Modal
+  animationType="slide"
+  transparent={true}
+  visible={isModalVisible}
+  onRequestClose={() => setIsModalVisible(false)}
+>
+  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
+    <View style={{ backgroundColor: 'white', borderRadius: 10, width: Dimensions.get('window').width - 40, maxHeight: Dimensions.get('window').height -40 }}>
+      {/* Adjust padding as necessary */}
+      <View style={{ padding: 20 }}>
+        <Text>Select your Missile:</Text>
+        {/* Add content of missile library here */}
+      </View>
+      <View style={{ alignSelf: 'flex-end', padding: 10 }}>
+        <Button title="Cancel" onPress={() => setIsModalVisible(false)} />
+      </View>
+    </View>
+  </View>
+</Modal>
 
       {/* Dropdown button */}
       <TouchableOpacity
@@ -473,6 +490,7 @@ export default function Map() {
 
       <MapStylePopup
         visible={popupVisible}
+        transparent={true}
         onClose={closePopup}
         onSelect={selectMapStyle}
       />
