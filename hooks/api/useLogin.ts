@@ -13,7 +13,8 @@ export default function useLogin() {
     }) => {
       try {
         const response = await login(username, password);
-        if (response.status === 200) {
+        //console.log("Response from backend:", response);
+        if (response.message === 'Login successful') { // Check message field instead of status code
           console.log("Login successful");
           alert("Login success!")
         } else {
@@ -32,5 +33,5 @@ export default function useLogin() {
         refetchType: "active",
       });
     },
-  });
+  });  
 }
