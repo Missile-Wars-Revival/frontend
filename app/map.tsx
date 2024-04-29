@@ -38,7 +38,7 @@ export default function Map() {
   const [landminedata, setlandminelocations] = useState<Landmine[]>([]);
   const [userLocation, setUserLocation] = useState<Location | null>(null);
 
-  const [otherPlayersData, setOtherPlayersData] = useState([]);
+  const [otherPlayersData, setOtherPlayersData] = useState([] as Player[]); 
 
   const fetchOtherPlayers = async () => {
     try {
@@ -410,38 +410,40 @@ export default function Map() {
           />
         ))}
 
-        {otherPlayersData.map((player: Player, index) => {
-          const { text, color } = getTimeDifference(player.updatedAt);
+{otherPlayersData
+  .filter(player => player.username !== userNAME) // Filter out the current user
+  .map((player: Player, index) => {
+    const { text } = getTimeDifference(player.updatedAt);
 
-          //console.log(`Player ${player.username}: Latitude - ${player.latitude}, Longitude - ${player.longitude}`);
-          
-          return (
-            <React.Fragment key={index}>
-              <Circle
-                center={{
-                  latitude: player.latitude,
-                  longitude: player.longitude,
-                }}
-                radius={6} // Assuming a radius for other players
-                fillColor="rgba(0, 255, 0, 0.2)" // Green color
-                strokeColor="rgba(0, 255, 0, 0.8)"
-              />
-              <Marker
-                key={index}
-                coordinate={{
-                  latitude: player.latitude,
-                  longitude: player.longitude,
-                }}
-                title={player.username}
-                description={text} //Finding it really hard to set "just now" as green
-                style={{ backgroundColor: color }}
-              >
-                {/* Use resized image for the Marker */}
-                <Image source={resizedMarkerImage} style={resizedImageStyle} />
-              </Marker>
-            </React.Fragment>
-          );
-        })}
+    //console.log(`Player ${player.username}: Latitude - ${player.latitude}, Longitude - ${player.longitude}`);
+    
+    return (
+      <React.Fragment key={index}>
+        <Circle
+          center={{
+            latitude: player.latitude,
+            longitude: player.longitude,
+          }}
+          radius={6} // Assuming a radius for other players
+          fillColor="rgba(0, 255, 0, 0.2)" // Green color
+          strokeColor="rgba(0, 255, 0, 0.8)"
+        />
+        <Marker
+          key={index}
+          coordinate={{
+            latitude: player.latitude,
+            longitude: player.longitude,
+          }}
+          title={player.username}
+          description={text} //Finding it really hard to set "just now" as green
+        >
+          {/* Use resized image for the Marker */}
+          <Image source={resizedMarkerImage} style={resizedImageStyle} />
+        </Marker>
+      </React.Fragment>
+    );
+})}
+
       </MapView>
 
       {/* Dropdown button */}
