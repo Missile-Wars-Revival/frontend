@@ -48,10 +48,17 @@ export default function Map() {
       console.error('Error fetching other players data:', error);
     }
   };
-  
 
   useEffect(() => {
-    fetchOtherPlayers();
+    fetchOtherPlayers(); // Initial send
+
+    // Set interval to send location to backend every 30 seconds
+    const intervalId = setInterval(fetchOtherPlayers, 30000);
+
+    // Cleanup interval on component unmount
+    return () => {
+      clearInterval(intervalId);
+    };
   }, []);
 
   const fetchLocation = useCallback(async () => {
