@@ -22,10 +22,10 @@ export interface Location {
 }
 
 export interface Player {
-  updatedAt: string; // Adjust the type as per your data
   username: string;
   latitude: number;
   longitude: number;
+  updatedAt: string; 
 }
 
 export interface Friend {
