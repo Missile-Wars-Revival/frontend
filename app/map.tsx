@@ -9,7 +9,7 @@ import { RadarMapStyle } from "../themes/radarMapStyle";
 import { CherryBlossomMapStyle } from "../themes/cherryBlossomMapStyle";
 
 //Types
-import { Loot, Missile, Landmine, Location, Player } from "../types/types";
+import { Loot, Missile, Landmine, Location, Player, Missilelib, missileImages } from "../types/types";
 
 import { MapStylePopup } from "../components/map-style-popup";
 import { getTimeDifference } from "../util/get-time-difference";
@@ -366,7 +366,54 @@ export default function Map() {
   const resizedMarkerImage = require("../assets/Female_Avatar_PNG.png"); // Your custom image path
   const resizedImageStyle = { width: 30, height: 30 }; // Custom size for image
 
+  //Missile Lib
+
+  // Define the fetchMissileLib function- BACKEND UPDATE
+const fetchMissileLib = (): Promise<Missilelib[]> => {
+  return new Promise((resolve) => {
+    // Simulating asynchronous data fetching
+    setTimeout(() => {
+      const missileLibraryData: Missilelib[] = [
+        { type: 'nuke', quantity: 10 },
+        { type: 'cruise', quantity: 5 },
+      ];
+      resolve(missileLibraryData);
+    }, 1000); // Simulating a delay of 1 second
+  });
+};
+
+const MissileLibrary = () => {
+  // Explicitly type missileLibrary as Missilelib[]
+  const [missileLibrary, setMissileLibrary] = useState<Missilelib[]>([]);
+
+  useEffect(() => {
+    // Fetch missile library data
+    const fetchMissileLibrary = async () => {
+      try {
+        const missileLibraryData = await fetchMissileLib();
+        setMissileLibrary(missileLibraryData);
+      } catch (error) {
+        console.error('Error fetching missile library:', error);
+      }
+    };
+
+    fetchMissileLibrary();
+  }, []);
+  
+    return (
+      <View style={{ padding: 20 }}>
+        <Text>Select your Missile:</Text>
+        {missileLibrary.map((missile, index) => (
+        <View key={index} style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 10 }}>
+          <Image source={missileImages[missile.type]} style={{ width: 50, height: 50, marginRight: 10 }} />
+          <Text>{missile.type} - Quantity: {missile.quantity}</Text>
+          </View>
+        ))}
+      </View>
+    );
+  };
   const [isModalVisible, setIsModalVisible] = useState(false);
+  
 
   return (
     <View className="flex-1 bg-gray-200">
@@ -461,24 +508,21 @@ export default function Map() {
       </MapView>
 {/* Missile library popup */}
 <Modal
-  animationType="slide"
-  transparent={true}
-  visible={isModalVisible}
-  onRequestClose={() => setIsModalVisible(false)}
->
-  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
-    <View style={{ backgroundColor: 'white', borderRadius: 10, width: Dimensions.get('window').width - 40, maxHeight: Dimensions.get('window').height -40 }}>
-      {/* Adjust padding as necessary */}
-      <View style={{ padding: 20 }}>
-        <Text>Select your Missile:</Text>
-        {/* Add content of missile library here */}
-      </View>
-      <View style={{ alignSelf: 'flex-end', padding: 10 }}>
-        <Button title="Cancel" onPress={() => setIsModalVisible(false)} />
-      </View>
-    </View>
-  </View>
-</Modal>
+        animationType="slide"
+        transparent={true}
+        visible={isModalVisible}
+        onRequestClose={() => setIsModalVisible(false)}
+      >
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
+          <View style={{ backgroundColor: 'white', borderRadius: 10, width: Dimensions.get('window').width - 40, maxHeight: Dimensions.get('window').height - 40 }}>
+            {/* Include MissileLibrary component */}
+            <MissileLibrary />
+            <View style={{ alignSelf: 'flex-end', padding: 10 }}>
+              <Button title="Cancel" onPress={() => setIsModalVisible(false)} />
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Dropdown button */}
       <TouchableOpacity

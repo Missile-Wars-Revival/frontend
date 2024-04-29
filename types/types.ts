@@ -5,6 +5,24 @@ export interface Missile {
   };
   radius: number;
 }
+//for missile library
+export interface Missilelib {
+  type: string;
+  quantity: number;
+}
+
+import nukeImage from '../assets/missiles/nuke.png';
+import cruiseImage from '../assets/missiles/cruise.png';
+
+interface MissileImages {
+  [key: string]: any; // Index signature to allow any string key
+}
+
+export const missileImages: MissileImages = {
+  nuke: nukeImage,
+  cruise: cruiseImage,
+  // Add other missile images here
+};
 
 export interface Loot {
   latitude: number;
