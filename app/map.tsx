@@ -15,7 +15,9 @@ import { MapStylePopup } from "../components/map-style-popup";
 import { getTimeDifference } from "../util/get-time-difference";
 
 import { userNAME } from "../temp/login"; // fetch from backend eventually
-import { passWORD } from "../temp/login"; // fetch from backend eventually
+
+//Hooks
+import { dispatch } from "../api/dispatch";
 
 export default function Map() {
   const defaultRegion = {
@@ -43,33 +45,6 @@ export default function Map() {
   useEffect(() => {
     fetchOtherPlayers();
   }, []);
-
-  const sendLocationToBackend = async () => {
-    try {
-      // Ensure location data is available
-      if (userLocation && userLocation.latitude && userLocation.longitude) {
-        const { latitude, longitude } = userLocation;
-        const timestamp = new Date().toISOString();
-
-        const data = {
-          username: userNAME,
-          password: passWORD,
-          latitude,
-          longitude,
-        };
-
-        const response = await fetchData("dispatch", "POST", data);
-        //console.log('Location sent successfully:', response);
-      } else {
-        //console.log('Latitude or longitude is missing. Not sending backend');
-      }
-    } catch (error) {
-      console.log(
-        "Error sending location to backend:",
-        (error as Error).message
-      );
-    }
-  };
 
   const fetchLocation = useCallback(async () => {
     try {
@@ -107,48 +82,31 @@ export default function Map() {
 
   const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
   const apiUrl = `${backendUrl}/api/`;
-  //console.log(apiUrl);
+  //console.log(apiUrl)
 
-  const fetchData = async (
-    endpoint: string,
-    method: string = "GET",
-    body: any | null = null // Adjusted the type to any
-  ) => {
-    let url = apiUrl + endpoint;
-
-    const config: {
-      method: string;
-      headers: {
-        "Content-Type": string;
-      };
-      body?: string;
-    } = {
-      method: method,
-      headers: {
-        "Content-Type": "application/json",
-      },
-    };
-
-    // If method is GET, append data as query parameters
-    if (method === "GET" && body) {
-      url += `?${new URLSearchParams(body).toString()}`;
-    } else if (method === "POST" && body) {
-      config.body = JSON.stringify(body); // Send body as JSON string
-    }
-
+  const sendLocationToBackend = async (): Promise<void> => {
     try {
-      const response = await fetch(url, config);
+        if (!userLocation || !userLocation.latitude || !userLocation.longitude) {
+            console.log('Latitude or longitude is missing. Not sending to backend');
+            return;
+        }
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch data. Status: ${response.status}`);
-      } else {
-        return response.json();
-      }
+        const { latitude, longitude } = userLocation;
+
+        const response = await dispatch(userNAME, latitude, longitude); // Assuming username is available
+
+        if (response && response.success) {
+            console.log('Location sent successfully');
+        } else if (response && response.message !== "Location dispatched") {
+            console.log('Failed to send location:', response.message);
+        } else {
+            console.log('Location dispatched');
+        }
     } catch (error) {
-      console.log(`Error fetching data: ${(error as Error).message}`);
-      throw error;
+        console.log("Error sending location to backend:", (error as Error).message);
     }
-  };
+};
+
 
   useEffect(() => {
     sendLocationToBackend(); // Initial send
@@ -163,33 +121,33 @@ export default function Map() {
   }, [userLocation]); // Add userLocation to dependency array
 
   //Pending update from backend....
-  const fetchOtherPlayersData = async () => {
-    try {
-      const data = await fetchData("getOtherPlayersData");
+  // const fetchOtherPlayersData = async () => {
+  //   try {
+  //     const data = await fetchData("getOtherPlayersData");
 
-      // Filter out players with the same username
-      const filteredData = data.filter(
-        (player: Player) => player.username !== userNAME
-      );
+  //     // Filter out players with the same username
+  //     const filteredData = data.filter(
+  //       (player: Player) => player.username !== userNAME
+  //     );
 
-      // Filter out players with timestamps older than 2 weeks
-      const currentTime = new Date().getTime();
-      const twoWeeksInMillis = 2 * 7 * 24 * 60 * 60 * 1000; // 2 weeks in milliseconds
+  //     // Filter out players with timestamps older than 2 weeks
+  //     const currentTime = new Date().getTime();
+  //     const twoWeeksInMillis = 2 * 7 * 24 * 60 * 60 * 1000; // 2 weeks in milliseconds
 
-      const recentPlayersData = filteredData.filter((player: Player) => {
-        const playerTime = new Date(player.timestamp).getTime();
-        return currentTime - playerTime <= twoWeeksInMillis;
-      });
+  //     const recentPlayersData = filteredData.filter((player: Player) => {
+  //       const playerTime = new Date(player.timestamp).getTime();
+  //       return currentTime - playerTime <= twoWeeksInMillis;
+  //     });
 
-      return recentPlayersData;
-    } catch (error) {
-      console.log(
-        "Error fetching other players data:",
-        (error as Error).message
-      );
-      return [];
-    }
-  };
+  //     return recentPlayersData;
+  //   } catch (error) {
+  //     console.log(
+  //       "Error fetching other players data:",
+  //       (error as Error).message
+  //     );
+  //     return [];
+  //   }
+  // };
 
   useEffect(() => {
     fetchOtherPlayers();
