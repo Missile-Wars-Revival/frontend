@@ -1,37 +1,33 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { login } from "../../api/login";
 
-export default function useLogin() {
+export default function useLogin(onSuccess?: () => void, onError?: () => void) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({
+    mutationFn: ({
       username,
       password,
     }: {
       username: string;
       password: string;
-    }) => {
-      try {
-        const response = await login(username, password);
-        //console.log("Response from backend:", response);
-        if (response.message === 'Login successful') { // Check message field instead of status code
-          console.log("Login successful");
-          alert("Login success!")
-        } else {
-          console.log("Invalid username or password");
-          alert("Invalid username or password")
-        }
-        return response;
-      } catch (error) {
-        console.error("Error occurred during login:", error);
-        throw error;
-      }
-    },
+    }) => login(username, password),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["currentUser"],
         refetchType: "active",
       });
+      if (onSuccess) {
+        alert("Login success!")
+        onSuccess();
+      }
     },
-  });  
+    onError: (error) => {
+      console.error(error);
+      alert("Login failed!")
+
+      if (onError) {
+        onError();
+      }
+    },
+  });
 }
