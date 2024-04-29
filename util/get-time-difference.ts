@@ -10,10 +10,10 @@ export const getTimeDifference = (timestamp: TimeStamp) => {
   );
 
   if (differenceInSeconds < 120) {
-    return { text: "Last seen: Just now", color: "green" };
+    return { text: "Last seen: Just now" };
   }
 
-  const differenceInMinutes = Math.floor(differenceInSeconds / 60);
+  const differenceInMinutes = Math.floor(differenceInSeconds / 120);
 
-  return { text: `Last seen: ${differenceInMinutes} min ago`, color: "black" };
+  return { text: `Last seen: ${differenceInMinutes} min ago` };
 };
