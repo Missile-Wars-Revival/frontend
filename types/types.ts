@@ -21,13 +21,11 @@ export interface Location {
   longitude: number;
 }
 
-interface Player {
+export interface Player {
+  updatedAt: string; // Adjust the type as per your data
   username: string;
-  coords: {
-    latitude: number;
-    longitude: number;
-  };
-  updatedAt: string;
+  latitude: number;
+  longitude: number;
 }
 
 export interface Friend {
