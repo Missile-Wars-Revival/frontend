@@ -1,2 +1,2 @@
-export const userNAME = "test";
-export const password = "test1!";
+export const userNAME = "Test";
+//export const passWORD = "Testing123!";

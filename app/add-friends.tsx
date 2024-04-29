@@ -6,12 +6,8 @@ import { Input } from "../components/ui/input";
 const backendUrl: string = process.env.EXPO_PUBLIC_BACKEND_URL!;
 const apiUrl: string = `${backendUrl}:3000/api/`;
 import { userNAME } from "../temp/login";
+import { Player } from "../types/types";
 
-interface Player {
-  username: string;
-  timestamp: string;
-  // Add other properties if necessary
-}
 
 const QuickAddPage: React.FC = () => {
   const [userLocation, setUserLocation] = useState<{
@@ -96,7 +92,7 @@ const QuickAddPage: React.FC = () => {
 
       if (data && data.nearbyUsers) {
         const recentPlayersData = data.nearbyUsers.filter((player: Player) => {
-          const playerTime = new Date(player.timestamp).getTime();
+          const playerTime = new Date(player.updatedAt).getTime();
           const currentTime = new Date().getTime();
           const twoWeeksInMillis = 2 * 7 * 24 * 60 * 60 * 1000;
           return currentTime - playerTime <= twoWeeksInMillis;
@@ -126,29 +122,11 @@ const QuickAddPage: React.FC = () => {
   }, [userLocation]);
 
   const addFriend = async (friendUsername: string) => {
-    try {
-      const data = await fetchData("addFriend", "POST", { friendUsername });
-      if (data && data.message === "Friend added") {
-        Alert.alert("Success", "Friend added successfully!");
-      }
-    } catch (error) {
-      console.log("Error adding friend:", error);
-      Alert.alert("Error", "Failed to add friend. Please try again.");
-    }
+    
   };
 
   const removeFriend = async (friendUsername: string) => {
-    try {
-      const data = await fetchData("removeFriend", "DELETE", {
-        friendUsername,
-      });
-      if (data && data.message === "Friend removed") {
-        Alert.alert("Success", "Friend removed successfully!");
-      }
-    } catch (error) {
-      console.log("Error removing friend:", error);
-      Alert.alert("Error", "Failed to remove friend. Please try again.");
-    }
+    
   };
 
   const renderItem = ({ item }: { item: Player }) => (

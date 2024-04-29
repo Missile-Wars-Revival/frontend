@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { Text, View, TouchableOpacity, Image } from "react-native";
+import { Text, View, TouchableOpacity, Image, Button } from "react-native";
 import MapView, { PROVIDER_GOOGLE, Circle, Marker } from "react-native-maps";
 import * as ExpoLocation from "expo-location";
 
@@ -15,7 +15,10 @@ import { MapStylePopup } from "../components/map-style-popup";
 import { getTimeDifference } from "../util/get-time-difference";
 
 import { userNAME } from "../temp/login"; // fetch from backend eventually
-import { passWORD } from "../temp/login"; // fetch from backend eventually
+
+//Hooks
+import { dispatch } from "../api/dispatch";
+import { fetchOtherPlayersData } from "../api/getplayerlocations";
 
 export default function Map() {
   const defaultRegion = {
@@ -32,44 +35,30 @@ export default function Map() {
   const [missileData, setMissileData] = useState<Missile[]>([]);
   const [landminedata, setlandminelocations] = useState<Landmine[]>([]);
   const [userLocation, setUserLocation] = useState<Location | null>(null);
+  const [selectedMarkerIndex, setSelectedMarkerIndex] = useState<number | null>(null);
 
-  const [otherPlayersData, setOtherPlayersData] = useState([]);
+  const [otherPlayersData, setOtherPlayersData] = useState([] as Player[]); // Type assertion to inform TypeScript about the correct type
 
   const fetchOtherPlayers = async () => {
-    const data = await fetchOtherPlayersData();
-    setOtherPlayersData(data);
+    try {
+      const data = await fetchOtherPlayersData();
+      setOtherPlayersData(data); 
+    } catch (error) {
+      console.error('Error fetching other players data:', error);
+    }
   };
 
   useEffect(() => {
-    fetchOtherPlayers();
+    fetchOtherPlayers(); // Initial send
+
+    // Set interval to send location to backend every 30 seconds
+    const intervalId = setInterval(fetchOtherPlayers, 30000);
+
+    // Cleanup interval on component unmount
+    return () => {
+      clearInterval(intervalId);
+    };
   }, []);
-
-  const sendLocationToBackend = async () => {
-    try {
-      // Ensure location data is available
-      if (userLocation && userLocation.latitude && userLocation.longitude) {
-        const { latitude, longitude } = userLocation;
-        const timestamp = new Date().toISOString();
-
-        const data = {
-          username: userNAME,
-          password: passWORD,
-          latitude,
-          longitude,
-        };
-
-        const response = await fetchData("dispatch", "POST", data);
-        //console.log('Location sent successfully:', response);
-      } else {
-        //console.log('Latitude or longitude is missing. Not sending backend');
-      }
-    } catch (error) {
-      console.log(
-        "Error sending location to backend:",
-        (error as Error).message
-      );
-    }
-  };
 
   const fetchLocation = useCallback(async () => {
     try {
@@ -107,54 +96,37 @@ export default function Map() {
 
   const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
   const apiUrl = `${backendUrl}/api/`;
-  //console.log(apiUrl);
+  //console.log(apiUrl)
 
-  const fetchData = async (
-    endpoint: string,
-    method: string = "GET",
-    body: any | null = null // Adjusted the type to any
-  ) => {
-    let url = apiUrl + endpoint;
-
-    const config: {
-      method: string;
-      headers: {
-        "Content-Type": string;
-      };
-      body?: string;
-    } = {
-      method: method,
-      headers: {
-        "Content-Type": "application/json",
-      },
-    };
-
-    // If method is GET, append data as query parameters
-    if (method === "GET" && body) {
-      url += `?${new URLSearchParams(body).toString()}`;
-    } else if (method === "POST" && body) {
-      config.body = JSON.stringify(body); // Send body as JSON string
-    }
-
+  const sendLocationToBackend = async (): Promise<void> => {
     try {
-      const response = await fetch(url, config);
+        if (!userLocation || !userLocation.latitude || !userLocation.longitude) {
+            console.log('Latitude or longitude is missing. Not sending to backend');
+            return;
+        }
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch data. Status: ${response.status}`);
-      } else {
-        return response.json();
-      }
+        const { latitude, longitude } = userLocation;
+
+        const response = await dispatch(userNAME, latitude, longitude); 
+
+        if (response && response.success) {
+            console.log('Location sent successfully');
+        } else if (response && response.message !== "Location dispatched") {
+            console.log('Failed to send location:', response.message);
+        } else {
+            console.log('Location dispatched');
+        }
     } catch (error) {
-      console.log(`Error fetching data: ${(error as Error).message}`);
-      throw error;
+        console.log("Error sending location to backend:", (error as Error).message);
     }
-  };
+};
+
 
   useEffect(() => {
     sendLocationToBackend(); // Initial send
 
-    // Set interval to send location to backend every 30 seconds
-    const intervalId = setInterval(sendLocationToBackend, 30000);
+    // Set interval to send location to backend every 60 seconds
+    const intervalId = setInterval(sendLocationToBackend, 60000);
 
     // Cleanup interval on component unmount
     return () => {
@@ -163,39 +135,20 @@ export default function Map() {
   }, [userLocation]); // Add userLocation to dependency array
 
   //Pending update from backend....
-  const fetchOtherPlayersData = async () => {
+  async function fetchplayerlocation() {
     try {
-      const data = await fetchData("getOtherPlayersData");
-
-      // Filter out players with the same username
-      const filteredData = data.filter(
-        (player: Player) => player.username !== userNAME
-      );
-
-      // Filter out players with timestamps older than 2 weeks
-      const currentTime = new Date().getTime();
-      const twoWeeksInMillis = 2 * 7 * 24 * 60 * 60 * 1000; // 2 weeks in milliseconds
-
-      const recentPlayersData = filteredData.filter((player: Player) => {
-        const playerTime = new Date(player.timestamp).getTime();
-        return currentTime - playerTime <= twoWeeksInMillis;
-      });
-
-      return recentPlayersData;
+        const playerdata = await fetchOtherPlayersData();
+        console.log(playerdata);
     } catch (error) {
-      console.log(
-        "Error fetching other players data:",
-        (error as Error).message
-      );
-      return [];
+        console.error('Error:', error);
     }
-  };
+}
 
   useEffect(() => {
-    fetchOtherPlayers();
+    fetchplayerlocation();
 
     // Fetch other players' data every 30 seconds
-    const intervalId = setInterval(fetchOtherPlayers, 30000); // 30 seconds
+    const intervalId = setInterval(fetchplayerlocation, 60000); // 30 seconds
 
     // Cleanup interval on component unmount
     return () => {
@@ -456,36 +409,58 @@ export default function Map() {
           />
         ))}
 
-        {otherPlayersData.map((player: Player, index) => {
-          const { text, color } = getTimeDifference(player.timestamp);
+{otherPlayersData
+  .filter(player => player.username !== userNAME) // Filter out the current user
+  .map((player: Player, index) => {
+    const { text } = getTimeDifference(player.updatedAt);
 
-          return (
-            <React.Fragment key={index}>
-              <Circle
-                center={{
-                  latitude: player.latitude,
-                  longitude: player.longitude,
+    //console.log(`Player ${player.username}: Latitude - ${player.latitude}, Longitude - ${player.longitude}`);
+    
+    return (
+      <React.Fragment key={index}>
+        <Circle
+          center={{
+            latitude: player.latitude,
+            longitude: player.longitude,
+          }}
+          radius={6} // Assuming a radius for other players
+          fillColor="rgba(0, 255, 0, 0.2)" // Green color
+          strokeColor="rgba(0, 255, 0, 0.8)"
+        />
+        <Marker
+          key={index}
+          coordinate={{
+            latitude: player.latitude,
+            longitude: player.longitude,
+          }}
+          title={player.username}
+          description={text} //Finding it really hard to set "just now" as green
+          onPress={() => {
+            if (selectedMarkerIndex === index) {
+              setSelectedMarkerIndex(null); // Deselect the marker
+            } else {
+              setSelectedMarkerIndex(index); // Select the marker
+            }
+          }}
+        >
+          {/* Use resized image for the Marker */}
+          <Image source={resizedMarkerImage} style={resizedImageStyle} />
+        </Marker>
+        {selectedMarkerIndex !== null && ( // Conditionally render button
+              <View style={{ backgroundColor: 'red', borderRadius: 5, marginTop: 2 }}>
+              <Button
+                title={`Fire Missile at ${player.username}`}
+                onPress={() => {
+                  alert("Fire Missile logic");
                 }}
-                radius={6} // Assuming a radius for other players
-                fillColor="rgba(0, 255, 0, 0.2)" // Green color
-                strokeColor="rgba(0, 255, 0, 0.8)"
+                color="white" // Set text color to white
               />
-              <Marker
-                key={index}
-                coordinate={{
-                  latitude: player.latitude,
-                  longitude: player.longitude,
-                }}
-                title={player.username}
-                description={text} //Finding it really hard to set "just now" as green
-                style={{ backgroundColor: color }}
-              >
-                {/* Use resized image for the Marker */}
-                <Image source={resizedMarkerImage} style={resizedImageStyle} />
-              </Marker>
-            </React.Fragment>
-          );
-        })}
+            </View>
+            )}
+      </React.Fragment>
+    );
+})}
+
       </MapView>
 
       {/* Dropdown button */}
