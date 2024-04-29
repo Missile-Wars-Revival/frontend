@@ -13,7 +13,7 @@ export default function Index() {
         Map Page
       </Link>
       <Link href="/friends" className="text-blue-500">
-        Click here for: friends
+        Friends Page
       </Link>
       <Link href="/register" className="text-blue-500">
         Click here for: register
