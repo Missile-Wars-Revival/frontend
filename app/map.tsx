@@ -41,8 +41,14 @@ export default function Map() {
   const [otherPlayersData, setOtherPlayersData] = useState([]);
 
   const fetchOtherPlayers = async () => {
-    const data = await fetchplayerlocation();
+    try {
+      const data = await fetchOtherPlayersData();
+      setOtherPlayersData(data); //idk why its red but it works...
+    } catch (error) {
+      console.error('Error fetching other players data:', error);
+    }
   };
+  
 
   useEffect(() => {
     fetchOtherPlayers();
@@ -125,8 +131,8 @@ export default function Map() {
   //Pending update from backend....
   async function fetchplayerlocation() {
     try {
-        const playersData = await fetchOtherPlayersData();
-        console.log(playersData);
+        const playerdata = await fetchOtherPlayersData();
+        console.log(playerdata);
     } catch (error) {
         console.error('Error:', error);
     }
@@ -400,6 +406,8 @@ export default function Map() {
         {otherPlayersData.map((player: Player, index) => {
           const { text, color } = getTimeDifference(player.updatedAt);
 
+          //console.log(`Player ${player.username}: Latitude - ${player.latitude}, Longitude - ${player.longitude}`);
+          
           return (
             <React.Fragment key={index}>
               <Circle
