@@ -92,7 +92,7 @@ const QuickAddPage: React.FC = () => {
 
       if (data && data.nearbyUsers) {
         const recentPlayersData = data.nearbyUsers.filter((player: Player) => {
-          const playerTime = new Date(player.timestamp).getTime();
+          const playerTime = new Date(player.updatedAt).getTime();
           const currentTime = new Date().getTime();
           const twoWeeksInMillis = 2 * 7 * 24 * 60 * 60 * 1000;
           return currentTime - playerTime <= twoWeeksInMillis;
