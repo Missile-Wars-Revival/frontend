@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { Text, View, TouchableOpacity, Image } from "react-native";
+import { Text, View, TouchableOpacity, Image, Button } from "react-native";
 import MapView, { PROVIDER_GOOGLE, Circle, Marker } from "react-native-maps";
 import * as ExpoLocation from "expo-location";
 
@@ -37,8 +37,9 @@ export default function Map() {
   const [missileData, setMissileData] = useState<Missile[]>([]);
   const [landminedata, setlandminelocations] = useState<Landmine[]>([]);
   const [userLocation, setUserLocation] = useState<Location | null>(null);
+  const [selectedMarkerIndex, setSelectedMarkerIndex] = useState<number | null>(null);
 
-  const [otherPlayersData, setOtherPlayersData] = useState([] as Player[]); 
+  const [otherPlayersData, setOtherPlayersData] = useState([] as Player[]); // Type assertion to inform TypeScript about the correct type
 
   const fetchOtherPlayers = async () => {
     try {
@@ -108,7 +109,7 @@ export default function Map() {
 
         const { latitude, longitude } = userLocation;
 
-        const response = await dispatch(userNAME, latitude, longitude); // Assuming username is available
+        const response = await dispatch(userNAME, latitude, longitude); 
 
         if (response && response.success) {
             console.log('Location sent successfully');
@@ -126,8 +127,8 @@ export default function Map() {
   useEffect(() => {
     sendLocationToBackend(); // Initial send
 
-    // Set interval to send location to backend every 30 seconds
-    const intervalId = setInterval(sendLocationToBackend, 30000);
+    // Set interval to send location to backend every 60 seconds
+    const intervalId = setInterval(sendLocationToBackend, 60000);
 
     // Cleanup interval on component unmount
     return () => {
@@ -149,7 +150,7 @@ export default function Map() {
     fetchplayerlocation();
 
     // Fetch other players' data every 30 seconds
-    const intervalId = setInterval(fetchplayerlocation, 30000); // 30 seconds
+    const intervalId = setInterval(fetchplayerlocation, 60000); // 30 seconds
 
     // Cleanup interval on component unmount
     return () => {
@@ -436,10 +437,28 @@ export default function Map() {
           }}
           title={player.username}
           description={text} //Finding it really hard to set "just now" as green
+          onPress={() => {
+            if (selectedMarkerIndex === index) {
+              setSelectedMarkerIndex(null); // Deselect the marker
+            } else {
+              setSelectedMarkerIndex(index); // Select the marker
+            }
+          }}
         >
           {/* Use resized image for the Marker */}
           <Image source={resizedMarkerImage} style={resizedImageStyle} />
         </Marker>
+        {selectedMarkerIndex !== null && ( // Conditionally render button
+              <View style={{ backgroundColor: 'red', borderRadius: 5, marginTop: 2 }}>
+              <Button
+                title={`Fire Missile at ${player.username}`}
+                onPress={() => {
+                  alert("Fire Missile logic");
+                }}
+                color="white" // Set text color to white
+              />
+            </View>
+            )}
       </React.Fragment>
     );
 })}
