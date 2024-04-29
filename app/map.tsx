@@ -3,8 +3,6 @@ import { Text, View, TouchableOpacity, Image, Button } from "react-native";
 import MapView, { PROVIDER_GOOGLE, Circle, Marker } from "react-native-maps";
 import * as ExpoLocation from "expo-location";
 
-import axios from "axios";
-
 //Themes
 import { DefaultMapStyle } from "../themes/defaultMapStyle";
 import { RadarMapStyle } from "../themes/radarMapStyle";
@@ -44,7 +42,7 @@ export default function Map() {
   const fetchOtherPlayers = async () => {
     try {
       const data = await fetchOtherPlayersData();
-      setOtherPlayersData(data); //idk why its red but it works...
+      setOtherPlayersData(data); 
     } catch (error) {
       console.error('Error fetching other players data:', error);
     }
