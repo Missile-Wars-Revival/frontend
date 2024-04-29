@@ -3,6 +3,8 @@ import { Text, View, TouchableOpacity, Image } from "react-native";
 import MapView, { PROVIDER_GOOGLE, Circle, Marker } from "react-native-maps";
 import * as ExpoLocation from "expo-location";
 
+import axios from "axios";
+
 //Themes
 import { DefaultMapStyle } from "../themes/defaultMapStyle";
 import { RadarMapStyle } from "../themes/radarMapStyle";
@@ -18,7 +20,7 @@ import { userNAME } from "../temp/login"; // fetch from backend eventually
 
 //Hooks
 import { dispatch } from "../api/dispatch";
-import { useFetchLocations } from "../hooks/api/usefetchplayerloc";
+import { fetchOtherPlayersData } from "../api/getplayerlocations";
 
 export default function Map() {
   const defaultRegion = {
@@ -39,8 +41,7 @@ export default function Map() {
   const [otherPlayersData, setOtherPlayersData] = useState([]);
 
   const fetchOtherPlayers = async () => {
-    const data = await fetchOtherPlayersData();
-    setOtherPlayersData(data);
+    const data = await fetchplayerlocation();
   };
 
   useEffect(() => {
@@ -122,42 +123,20 @@ export default function Map() {
   }, [userLocation]); // Add userLocation to dependency array
 
   //Pending update from backend....
-  const fetchOtherPlayersData = async () => {
+  async function fetchplayerlocation() {
     try {
-      const { locations, loading, error } = useFetchLocations();
-  
-      if (loading || error) {
-        // Handle loading state or error
-        return [];
-      }
-  
-      // Assert the type of locations
-      const typedLocations: { username: string; updatedAt: string }[] = locations;
-  
-      const filteredData = typedLocations.filter(
-        (player) => player.username !== userNAME
-      );
-  
-      const currentTime = new Date().getTime();
-      const twoWeeksInMillis = 2 * 7 * 24 * 60 * 60 * 1000; // 2 weeks in milliseconds
-  
-      const recentPlayersData = filteredData.filter((player) => {
-        const playerTime = new Date(player.updatedAt).getTime();
-        return currentTime - playerTime <= twoWeeksInMillis;
-      });
-  
-      return recentPlayersData;
+        const playersData = await fetchOtherPlayersData();
+        console.log(playersData);
     } catch (error) {
-      console.error("Error fetching other players data:", error);
-      return [];
+        console.error('Error:', error);
     }
-  };
+}
 
   useEffect(() => {
-    fetchOtherPlayers();
+    fetchplayerlocation();
 
     // Fetch other players' data every 30 seconds
-    const intervalId = setInterval(fetchOtherPlayers, 30000); // 30 seconds
+    const intervalId = setInterval(fetchplayerlocation, 30000); // 30 seconds
 
     // Cleanup interval on component unmount
     return () => {
@@ -419,7 +398,7 @@ export default function Map() {
         ))}
 
         {otherPlayersData.map((player: Player, index) => {
-          const { text, color } = getTimeDifference(player.timestamp);
+          const { text, color } = getTimeDifference(player.updatedAt);
 
           return (
             <React.Fragment key={index}>
