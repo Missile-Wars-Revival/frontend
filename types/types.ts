@@ -21,11 +21,13 @@ export interface Location {
   longitude: number;
 }
 
-export interface Player {
+interface Player {
   username: string;
-  latitude: number;
-  longitude: number;
-  timestamp: any;
+  coords: {
+    latitude: number;
+    longitude: number;
+  };
+  updatedAt: string;
 }
 
 export interface Friend {

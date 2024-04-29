@@ -18,6 +18,7 @@ import { userNAME } from "../temp/login"; // fetch from backend eventually
 
 //Hooks
 import { dispatch } from "../api/dispatch";
+import { useFetchLocations } from "../hooks/api/usefetchplayerloc";
 
 export default function Map() {
   const defaultRegion = {
@@ -121,33 +122,36 @@ export default function Map() {
   }, [userLocation]); // Add userLocation to dependency array
 
   //Pending update from backend....
-  // const fetchOtherPlayersData = async () => {
-  //   try {
-  //     const data = await fetchData("getOtherPlayersData");
-
-  //     // Filter out players with the same username
-  //     const filteredData = data.filter(
-  //       (player: Player) => player.username !== userNAME
-  //     );
-
-  //     // Filter out players with timestamps older than 2 weeks
-  //     const currentTime = new Date().getTime();
-  //     const twoWeeksInMillis = 2 * 7 * 24 * 60 * 60 * 1000; // 2 weeks in milliseconds
-
-  //     const recentPlayersData = filteredData.filter((player: Player) => {
-  //       const playerTime = new Date(player.timestamp).getTime();
-  //       return currentTime - playerTime <= twoWeeksInMillis;
-  //     });
-
-  //     return recentPlayersData;
-  //   } catch (error) {
-  //     console.log(
-  //       "Error fetching other players data:",
-  //       (error as Error).message
-  //     );
-  //     return [];
-  //   }
-  // };
+  const fetchOtherPlayersData = async () => {
+    try {
+      const { locations, loading, error } = useFetchLocations();
+  
+      if (loading || error) {
+        // Handle loading state or error
+        return [];
+      }
+  
+      // Assert the type of locations
+      const typedLocations: { username: string; updatedAt: string }[] = locations;
+  
+      const filteredData = typedLocations.filter(
+        (player) => player.username !== userNAME
+      );
+  
+      const currentTime = new Date().getTime();
+      const twoWeeksInMillis = 2 * 7 * 24 * 60 * 60 * 1000; // 2 weeks in milliseconds
+  
+      const recentPlayersData = filteredData.filter((player) => {
+        const playerTime = new Date(player.updatedAt).getTime();
+        return currentTime - playerTime <= twoWeeksInMillis;
+      });
+  
+      return recentPlayersData;
+    } catch (error) {
+      console.error("Error fetching other players data:", error);
+      return [];
+    }
+  };
 
   useEffect(() => {
     fetchOtherPlayers();
