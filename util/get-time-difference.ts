@@ -5,13 +5,15 @@ export const getTimeDifference = (timestamp: TimeStamp) => {
   const currentTime = new Date().getTime();
   const lastSeenTime = new Date(timestamp).getTime();
   const differenceInMilliseconds = currentTime - lastSeenTime;
-  const differenceInMinutes = Math.floor(
-    differenceInMilliseconds / (1000 * 60)
+  const differenceInSeconds = Math.floor(
+    differenceInMilliseconds / 1000
   );
 
-  if (differenceInMinutes < 1) {
-    return { text: "Last seen: Just now", color: "green" };
+  if (differenceInSeconds < 120) {
+    return { text: "Last seen: Just now" };
   }
 
-  return { text: `Last seen: ${differenceInMinutes} min ago`, color: "black" };
+  const differenceInMinutes = Math.floor(differenceInSeconds / 120);
+
+  return { text: `Last seen: ${differenceInMinutes} min ago` };
 };
