@@ -375,7 +375,7 @@ const fetchMissileLib = (): Promise<Missilelib[]> => {
     setTimeout(() => {
       const missileLibraryData: Missilelib[] = [
         { type: 'TheNuke', quantity: 10, description: "Nucular missile" },
-        { type: 'Ballista', quantity: 5 , description: "mid everything"},
+        { type: 'BigBertha', quantity: 5 , description: "mid everything"},
       ];
       resolve(missileLibraryData);
     }, 0); // Simulating a delay of 1 second
