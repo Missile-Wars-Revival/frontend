@@ -3,9 +3,9 @@ import Svg, { Defs, ClipPath, Path, G } from "react-native-svg";
 const CometDivider = (props) => (
   <Svg
     xmlns="http://www.w3.org/2000/svg"
-    width={1366}
-    height={768}
-    viewBox="0 0 1024.5 576"
+    viewBox="0 0 700 50"
+    width="100%"
+    height="100%"
     {...props}
   >
     <Defs>
