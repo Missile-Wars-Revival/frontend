@@ -1,9 +1,16 @@
+//Missile 
 export interface Missile {
-  location: {
+  destination: {
+    latitude: number;
+    longitude: number;
+  };
+  currentLocation: {
     latitude: number;
     longitude: number;
   };
   radius: number;
+  type: string;
+  status: string,
 }
 //for missile library
 export interface Missilelib {
@@ -11,7 +18,7 @@ export interface Missilelib {
   quantity: number;
   description: string;
 }
-//images
+//images for missile lib
 import AmplifierImage from '../assets/missiles/Amplifier.png';
 import BallistaImage from '../assets/missiles/Ballista.png';
 import BigBerthaImage from '../assets/missiles/BigBertha.png';

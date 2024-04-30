@@ -175,11 +175,11 @@ export default function Map() {
       ];
     };
 
-    const fetchMissilesFromBackend = async () => {
+    const fetchMissilesFromBackend = async (): Promise<Missile[]> => {
       // Simulated fetch function to get missile data:
       return [
-        { location: { latitude: 45.2949318, longitude: -0.852764 }, radius: 100 }, //temp missile location
-        { location: { latitude: 51.025316, longitude: -3.115612 }, radius: 50 }, //2nd temp missle location TS
+        { destination: { latitude: 45.2949318, longitude: -0.852764 }, currentLocation: { latitude: 45.2949318, longitude: -0.852764 },radius: 100, type: "TheNuke", status:"Hit"  }, //temp missile location
+        { destination: { latitude: 51.025316, longitude: -3.115612 }, currentLocation: { latitude: 52.025316, longitude: -3.115612 },radius: 50, type: "Ballista", status:"Approaching" }, //2nd temp missle location TS
       ];
     };
 
@@ -253,32 +253,47 @@ export default function Map() {
       console.log("Error: User location not available");
       return;
     }
-
+  
     for (let missile of missileData) {
       if (
-        !missile.location ||
-        !missile.location.latitude ||
-        !missile.location.longitude
+        !missile.destination ||
+        !missile.destination.latitude ||
+        !missile.destination.longitude ||
+        !missile.currentLocation ||
+        !missile.currentLocation.latitude ||
+        !missile.currentLocation.longitude
       ) {
         console.log("Error: Missile location data incomplete");
         continue;
       }
-
-      const distance = getDistance(
+  
+      const userDistanceToDestination = getDistance(
         userLocation.latitude,
         userLocation.longitude,
-        missile.location.latitude,
-        missile.location.longitude
+        missile.destination.latitude,
+        missile.destination.longitude
       );
-      if (distance <= missile.radius) {
-        alert("Warning: You are in the radius of a missile!");
+  
+      const userDistanceToCurrentLocation = getDistance(
+        userLocation.latitude,
+        userLocation.longitude,
+        missile.currentLocation.latitude,
+        missile.currentLocation.longitude
+      );
+  
+      if (userDistanceToDestination <= missile.radius && userDistanceToCurrentLocation > missile.radius) {
+        alert("Warning: Missile approaching!");
+        break;
+      }
+  
+      if (userDistanceToDestination <= missile.radius && userDistanceToCurrentLocation <= missile.radius) {
+        alert("Player died");
         console.log("Player died");
-        //Missile impact info here....
+        // Handle player death here...
         break;
       }
     }
-  };
-
+  };  
   const checkLandmineCollision = () => {
     if (!userLocation || !userLocation.latitude || !userLocation.longitude) {
       console.log("Error: User location not available");
@@ -444,11 +459,9 @@ const MissileLibrary = () => {
       ))}
     </ScrollView>
   );
-};
-  
+}; 
 
 const [isModalVisible, setIsModalVisible] = useState(false);
-  
 
   return (
     <View className="flex-1 bg-gray-200">
@@ -494,15 +507,48 @@ const [isModalVisible, setIsModalVisible] = useState(false);
         ))}
 
         {/* Render Missiles */}
-        {missileData.map(({ location, radius }, index) => (
-          <Circle
-            key={index}
-            center={location}
-            radius={radius}
-            fillColor="rgba(255, 0, 0, 0.2)"
-            strokeColor="rgba(255, 0, 0, 0.8)"
-          />
-        ))}
+{/* Render Missiles */}
+{missileData.map(({ destination, currentLocation, radius, type, status }, index) => {
+
+// Define a mapping of image paths with an index signature
+const missileImagePaths: { [key: string]: any } = {
+  Amplifier: require("../assets/missiles/Amplifier.png"),
+  Ballista: require("../assets/missiles/Ballista.png"),
+  BigBertha: require("../assets/missiles/BigBertha.png"),
+  Bombabom: require("../assets/missiles/Bombabom.png"),
+  BunkerBlocker: require("../assets/missiles/BunkerBlocker.png"),
+  ClusterBomb: require("../assets/missiles/ClusterBomb.png"),
+  CorporateRaider: require("../assets/missiles/CorporateRaider.png"),
+  GutShot: require("../assets/missiles/GutShot.png"),
+  TheNuke: require("../assets/missiles/TheNuke.png"),
+  Yokozuna: require("../assets/missiles/Yokozuna.png"),
+  Zippy: require("../assets/missiles/Zippy.png"),
+
+  // Add other missile types here
+};
+  const resizedmissileimage = missileImagePaths[type];
+  const resizedmissileicon = { width: 50, height: 50 }; // Custom size for image
+  
+  return (
+    <React.Fragment key={index}>
+      {/* Render Circle at destination coords */}
+      <Circle
+        center={destination}
+        radius={radius}
+        fillColor="rgba(255, 0, 0, 0.2)"
+        strokeColor="rgba(255, 0, 0, 0.8)"
+      />
+      {/* Render Marker at current coords */}
+      <Marker
+        coordinate={currentLocation}
+        title={`Missile: ${type}`}
+        description={`${status}`}
+      >
+        <Image source={resizedmissileimage} style={resizedmissileicon} />
+      </Marker>
+    </React.Fragment>
+  );
+})}
 
 {otherPlayersData
           .filter(player => player.username !== userNAME && !isInactiveFor24Hours(player.updatedAt)) // Filter out inactive players(12) and the player's own username
