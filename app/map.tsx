@@ -12,7 +12,7 @@ import { CherryBlossomMapStyle } from "../themes/cherryBlossomMapStyle";
 import { Loot, Missile, Landmine, Location, Player, Missilelib, missileImages } from "../types/types";
 
 import { MapStylePopup } from "../components/map-style-popup";
-import { getTimeDifference } from "../util/get-time-difference";
+import { getTimeDifference, isInactiveFor24Hours } from "../util/get-time-difference";
 
 import { userNAME } from "../temp/login"; // fetch from backend eventually
 
@@ -459,7 +459,7 @@ const MissileLibrary = () => {
         ))}
 
 {otherPlayersData
-          .filter(player => player.username !== userNAME) // Filter out the current user
+          .filter(player => player.username !== userNAME && !isInactiveFor24Hours(player.updatedAt)) // Filter out inactive players(12) and the player's own username
           .map((player, index) => {
             const { text } = getTimeDifference(player.updatedAt);
 
@@ -484,7 +484,7 @@ const MissileLibrary = () => {
                   description={text} //Finding it really hard to set "just now" as green
                   onPress={() => {
                     if (selectedMarkerIndex === index) {
-                      setSelectedMarkerIndex(null); // Deselect the marker
+                      setSelectedMarkerIndex(null); // Deselect the marker NOT WORKING
                     } else {
                       setSelectedMarkerIndex(index); // Select the marker
                     }
@@ -493,7 +493,7 @@ const MissileLibrary = () => {
                   {/* Use resized image for the Marker */}
                   <Image source={resizedMarkerImage} style={resizedImageStyle} />
                 </Marker>
-                {selectedMarkerIndex !== null && selectedMarkerIndex === index && ( // Conditionally render button
+                {selectedMarkerIndex !== null && selectedMarkerIndex === index && ( // Conditionally render button... maybe
                   <View style={{ backgroundColor: 'red', borderRadius: 5, marginTop: 2 }}>
                     <Button
                       title={`Fire Missile At Player: ${player.username}`}
