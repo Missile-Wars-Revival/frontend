@@ -363,8 +363,11 @@ export default function Map() {
   //console.log("missileData:", missileData);
 
   //To allow player to upload their own this is modular
-  const resizedMarkerImage = require("../assets/mapassets/Female_Avatar_PNG.png"); // Your custom image path
-  const resizedImageStyle = { width: 30, height: 30 }; // Custom size for image
+  const resizedplayerimage = require("../assets/mapassets/Female_Avatar_PNG.png"); // Your custom image path
+  const resizedplayericon = { width: 30, height: 30 }; // Custom size for image
+
+  const resizedlootimage = require("../assets/mapassets/Airdropicon.png"); // Your custom image path
+  const resizedlooticon = { width: 50, height: 50 }; // Custom size for image
 
   //Missile Lib
 
@@ -392,7 +395,7 @@ const fetchMissileLib = (): Promise<Missilelib[]> => {
   });
 };
 
-
+//Missile types
 //   Amplifier:
 //   Ballista: 
 //   BigBertha:
@@ -458,15 +461,26 @@ const [isModalVisible, setIsModalVisible] = useState(false);
         customMapStyle={selectedMapStyle}
       >
         {/* Render Loot Drops */}
-        {lootLocations.map((location, index) => (
-          <Circle
-            key={index}
-            center={location}
-            radius={20} //actual radius size
-            fillColor="rgba(0, 0, 255, 0.2)"
-            strokeColor="rgba(0, 0, 255, 0.8)"
-          />
-        ))}
+{lootLocations.map((location, index) => (
+  <React.Fragment key={index}>
+    {/* Render Circle */}
+    <Circle
+      center={location}
+      radius={20} //actual radius size
+      fillColor="rgba(0, 0, 255, 0.2)"
+      strokeColor="rgba(0, 0, 255, 0.8)"
+    />
+    {/* Render Marker */}
+    <Marker
+      coordinate={{
+        latitude: location.latitude,
+        longitude: location.longitude,
+      }}
+    >
+      <Image source={resizedlootimage} style={resizedlooticon} />
+    </Marker>
+  </React.Fragment>
+))}
 
         {/* Render landmine Drops */}
         {landminedata.map((location, index) => (
@@ -523,7 +537,7 @@ const [isModalVisible, setIsModalVisible] = useState(false);
                   }}
                 >
                   {/* Use resized image for the Marker */}
-                  <Image source={resizedMarkerImage} style={resizedImageStyle} />
+                  <Image source={resizedplayerimage} style={resizedplayericon} />
                 </Marker>
                 {selectedMarkerIndex !== null && selectedMarkerIndex === index && ( // Conditionally render button... maybe
                   <View style={{ backgroundColor: 'red', borderRadius: 5, marginTop: 2 }}>
