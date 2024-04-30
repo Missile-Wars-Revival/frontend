@@ -363,7 +363,7 @@ export default function Map() {
   //console.log("missileData:", missileData);
 
   //To allow player to upload their own this is modular
-  const resizedMarkerImage = require("../assets/Female_Avatar_PNG.png"); // Your custom image path
+  const resizedMarkerImage = require("../assets/mapassets/Female_Avatar_PNG.png"); // Your custom image path
   const resizedImageStyle = { width: 30, height: 30 }; // Custom size for image
 
   //Missile Lib
@@ -374,11 +374,11 @@ const fetchMissileLib = (): Promise<Missilelib[]> => {
     // Simulating asynchronous data fetching
     setTimeout(() => {
       const missileLibraryData: Missilelib[] = [
-        { type: 'nuke', quantity: 10, description: "nucular missile" },
-        { type: 'cruise', quantity: 5 , description: "cruise missile"},
+        { type: 'TheNuke', quantity: 10, description: "Nucular missile" },
+        { type: 'Ballista', quantity: 5 , description: "mid everything"},
       ];
       resolve(missileLibraryData);
-    }, 1000); // Simulating a delay of 1 second
+    }, 0); // Simulating a delay of 1 second
   });
 };
 
@@ -398,6 +398,7 @@ const MissileLibrary = () => {
     };
 
     fetchMissileLibrary();
+    
   }, []);
   
     return (
