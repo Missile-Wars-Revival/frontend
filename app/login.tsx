@@ -19,13 +19,13 @@ export default function Login() {
   const [isError, setIsError] = useState(false);
 
   return (
-    <SafeAreaView className="flex-1 justify-center items-center space-y-8">
+    <SafeAreaView className="flex-1 items-center">
       <Image
         source={require("../assets/MissleWarsTitle.png")}
-        className="w-[425px] h-[200px] absolute top-[25]"
+        className="w-[425] h-[200] mt-[0]"
         resizeMode="contain"
       />
-      <View className="absolute top-[25%]">
+      <View>
         <View className="space-y-4">
           <Input
             placeholder="Username"
@@ -57,10 +57,10 @@ export default function Login() {
         password={password}
         setIsError={setIsError}
       />
-      <CometDivider
-        width={Dimensions.get("window").width * 2.4}
-        height={Dimensions.get("window").height * 1.15}
-        className="absolute bottom-[-25%] fill-gray-400"
+      <Image
+        source={require("../assets/cometDivider.png")}
+        resizeMode="stretch"
+        className="w-[425] h-[10%] mt-[240]"
       />
       <SignUpButton />
     </SafeAreaView>
@@ -71,10 +71,12 @@ function LoginButton({
   username,
   password,
   setIsError,
+  className,
 }: {
   username: string;
   password: string;
   setIsError: (error: boolean) => void;
+  className?: string;
 }) {
   const mutation = useLogin(
     () => {
@@ -88,7 +90,7 @@ function LoginButton({
   return (
     <TouchableHighlight
       onPress={() => mutation.mutate({ username, password })}
-      className="bg-[#773765] rounded-[20px] w-[375px] h-[45px] flex items-center justify-center absolute top-[45%]"
+      className={`bg-[#773765] rounded-[20px] w-[375] h-[45] flex items-center justify-center mt-[40]`}
     >
       <View>
         <Text className="text-white font-bold">Let's Fight</Text>
@@ -103,7 +105,7 @@ function SignUpButton() {
       onPress={() => {
         router.navigate("/register");
       }}
-      className="rounded-[20px] w-[375px] h-[45px] flex items-center justify-center absolute bottom-[10%] border-2"
+      className="rounded-[20px] w-[375px] h-[45px] flex items-center justify-center border-2 mt-[5]"
     >
       <View>
         <Text className=" font-bold">Sign up with Email</Text>
