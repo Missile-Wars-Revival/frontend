@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { Text, View, TouchableOpacity, Image, Button, Modal, Dimensions } from "react-native";
+import { Text, View, TouchableOpacity, Image, Button, Modal, Dimensions, ScrollView } from "react-native";
 import MapView, { PROVIDER_GOOGLE, Circle, Marker } from "react-native-maps";
 import * as ExpoLocation from "expo-location";
 
@@ -374,46 +374,77 @@ const fetchMissileLib = (): Promise<Missilelib[]> => {
     // Simulating asynchronous data fetching
     setTimeout(() => {
       const missileLibraryData: Missilelib[] = [
-        { type: 'TheNuke', quantity: 10, description: "Nucular missile" },
-        { type: 'BigBertha', quantity: 5 , description: "mid everything"},
+        { type: 'Amplifier', quantity: 10, description: " Missile" },
+        { type: 'Ballista', quantity: 9 , description: " Missile "},
+        { type: 'BigBertha', quantity: 8 , description: " Missile "},
+        { type: 'Bombabom', quantity: 7 , description: " Missile "},
+        { type: 'BunkerBlocker', quantity: 6 , description: " Missile "},
+        { type: 'Buzzard', quantity: 5 , description: " Missile "},
+        { type: 'ClusterBomb', quantity: 4 , description: " Missile "},
+        { type: 'CorporateRaider', quantity: 3 , description: " Missile "},
+        { type: 'GutShot', quantity: 2 , description: " Missile "},
+        { type: 'TheNuke', quantity: 1 , description: " Missile "},
+        { type: 'Yokozuna', quantity: 5 , description: " Missile "},
+        { type: 'Zippy', quantity: 3 , description: " Missile "},
       ];
       resolve(missileLibraryData);
     }, 0); // Simulating a delay of 1 second
   });
 };
 
+
+//   Amplifier:
+//   Ballista: 
+//   BigBertha:
+//   Bombabom: 
+//   BunkerBlocker:
+//   Buzzard: 
+//   ClusterBomb: 
+//   CorporateRaider: 
+//   GutShot: 
+//   TheNuke: 
+//   Yokozuna: 
+//   Zippy: 
+
+
 const MissileLibrary = () => {
-  // Explicitly type missileLibrary as Missilelib[]
   const [missileLibrary, setMissileLibrary] = useState<Missilelib[]>([]);
+  const [loading, setLoading] = useState(true); // Add loading state
 
   useEffect(() => {
-    // Fetch missile library data
     const fetchMissileLibrary = async () => {
       try {
         const missileLibraryData = await fetchMissileLib();
         setMissileLibrary(missileLibraryData);
       } catch (error) {
         console.error('Error fetching missile library:', error);
+      } finally {
+        setLoading(false); // Set loading to false regardless of success or failure
       }
     };
 
     fetchMissileLibrary();
-    
   }, []);
-  
-    return (
-      <View style={{ padding: 20 }}>
-        <Text>Select your Missile:</Text>
-        {missileLibrary.map((missile, index) => (
+
+  if (loading) {
+    return 
+  }
+
+  return (
+    <ScrollView contentContainerStyle={{ padding: 20 }}>
+      <Text>Select your Missile:</Text>
+      {missileLibrary.map((missile, index) => (
         <View key={index} style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 10 }}>
           <Image source={missileImages[missile.type]} style={{ width: 50, height: 50, marginRight: 10 }} />
           <Text>{missile.type} - Quantity: {missile.quantity}</Text>
-          </View>
-        ))}
-      </View>
-    );
-  };
-  const [isModalVisible, setIsModalVisible] = useState(false);
+        </View>
+      ))}
+    </ScrollView>
+  );
+};
+  
+
+const [isModalVisible, setIsModalVisible] = useState(false);
   
 
   return (
@@ -515,7 +546,7 @@ const MissileLibrary = () => {
         onRequestClose={() => setIsModalVisible(false)}
       >
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
-          <View style={{ backgroundColor: 'white', borderRadius: 10, width: Dimensions.get('window').width - 40, maxHeight: Dimensions.get('window').height - 40 }}>
+          <View style={{ backgroundColor: 'white', borderRadius: 10, width: Dimensions.get('window').width - 40, maxHeight: Dimensions.get('window').height - 200 }}>
             {/* Include MissileLibrary component */}
             <MissileLibrary />
             <View style={{ alignSelf: 'flex-end', padding: 10 }}>
