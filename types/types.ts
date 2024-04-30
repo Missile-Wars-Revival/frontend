@@ -9,6 +9,7 @@ export interface Missile {
 export interface Missilelib {
   type: string;
   quantity: number;
+  description: string;
 }
 
 import nukeImage from '../assets/missiles/nuke.png';
