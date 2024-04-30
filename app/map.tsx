@@ -240,7 +240,7 @@ export default function Map() {
         checkMissileCollision();
         checkLootCollection();
       }
-    }, 5000); // 30 seconds
+    }, 5000); // 5 seconds
 
     // Clear interval on component unmount to prevent memory leaks
     return () => clearInterval(intervalId);
@@ -250,50 +250,49 @@ export default function Map() {
 
   const checkMissileCollision = () => {
     if (!userLocation || !userLocation.latitude || !userLocation.longitude) {
-      console.log("Error: User location not available");
-      return;
+        console.log("Error: User location not available");
+        return;
     }
-  
+
     for (let missile of missileData) {
-      if (
-        !missile.destination ||
-        !missile.destination.latitude ||
-        !missile.destination.longitude ||
-        !missile.currentLocation ||
-        !missile.currentLocation.latitude ||
-        !missile.currentLocation.longitude
-      ) {
-        console.log("Error: Missile location data incomplete");
-        continue;
-      }
-  
-      const userDistanceToDestination = getDistance(
-        userLocation.latitude,
-        userLocation.longitude,
-        missile.destination.latitude,
-        missile.destination.longitude
-      );
-  
-      const userDistanceToCurrentLocation = getDistance(
-        userLocation.latitude,
-        userLocation.longitude,
-        missile.currentLocation.latitude,
-        missile.currentLocation.longitude
-      );
-  
-      if (userDistanceToDestination <= missile.radius && userDistanceToCurrentLocation > missile.radius) {
-        alert("Warning: Missile approaching!");
-        break;
-      }
-  
-      if (userDistanceToDestination <= missile.radius && userDistanceToCurrentLocation <= missile.radius) {
-        alert("Player died");
-        console.log("Player died");
-        // Handle player death here...
-        break;
-      }
+        if (
+            !missile.destination ||
+            !missile.destination.latitude ||
+            !missile.destination.longitude ||
+            !missile.currentLocation ||
+            !missile.currentLocation.latitude ||
+            !missile.currentLocation.longitude
+        ) {
+            console.log("Error: Missile location data incomplete");
+            continue;
+        }
+
+        const userDistanceToDestination = getDistance(
+            userLocation.latitude,
+            userLocation.longitude,
+            missile.destination.latitude,
+            missile.destination.longitude
+        );
+
+        if (userDistanceToDestination <= missile.radius && 
+            (missile.destination.latitude !== missile.currentLocation.latitude ||
+            missile.destination.longitude !== missile.currentLocation.longitude)) {
+            alert("Missile inbound! Run!");
+            console.log("Missile inbound");
+            // Handle missile inbound here...
+        }
+
+        if (userDistanceToDestination <= missile.radius && 
+            missile.destination.latitude === missile.currentLocation.latitude &&
+            missile.destination.longitude === missile.currentLocation.longitude) {
+            alert("Player died");
+            console.log("Player died");
+            // Handle player death here...
+            break;
+        }
     }
-  };  
+};
+  
   const checkLandmineCollision = () => {
     if (!userLocation || !userLocation.latitude || !userLocation.longitude) {
       console.log("Error: User location not available");
