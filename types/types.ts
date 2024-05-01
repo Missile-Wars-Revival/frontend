@@ -18,7 +18,7 @@ export interface Missilelib {
   quantity: number;
   description: string;
 }
-//images for missile lib
+//images for missile libaray (Missile markers use different system)
 import AmplifierImage from '../assets/missiles/Amplifier.png';
 import BallistaImage from '../assets/missiles/Ballista.png';
 import BigBerthaImage from '../assets/missiles/BigBertha.png';

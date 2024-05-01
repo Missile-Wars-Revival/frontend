@@ -9,10 +9,14 @@ import { RadarMapStyle } from "../themes/radarMapStyle";
 import { CherryBlossomMapStyle } from "../themes/cherryBlossomMapStyle";
 
 //Types
-import { Loot, Missile, Landmine, Location, Player, Missilelib, missileImages } from "../types/types";
+import { Loot, Missile, Landmine, Location, Player  } from "../types/types";
+
+//Components:
+import { missileImagePaths, MissileLibrary } from "../components/missile";
 
 import { MapStylePopup } from "../components/map-style-popup";
 import { getTimeDifference, isInactiveFor24Hours } from "../util/get-time-difference";
+import { getDistance } from "../util/get-dist";
 
 import { userNAME } from "../temp/login"; // fetch from backend eventually
 
@@ -37,7 +41,7 @@ export default function Map() {
   const [userLocation, setUserLocation] = useState<Location | null>(null);
   const [selectedMarkerIndex, setSelectedMarkerIndex] = useState<number | null>(null);
 
-  const [otherPlayersData, setOtherPlayersData] = useState([] as Player[]); // Type assertion to inform TypeScript about the correct type
+  const [otherPlayersData, setOtherPlayersData] = useState([] as Player[]);
 
   const fetchOtherPlayers = async () => {
     try {
@@ -49,7 +53,7 @@ export default function Map() {
   };
 
   useEffect(() => {
-    fetchOtherPlayers(); // Initial send
+    fetchOtherPlayers(); // Initial fetch
 
     // Set interval to send location to backend every 30 seconds
     const intervalId = setInterval(fetchOtherPlayers, 30000);
@@ -93,10 +97,6 @@ export default function Map() {
       clearInterval(intervalId);
     };
   }, [fetchLocation]);
-
-  const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
-  const apiUrl = `${backendUrl}/api/`;
-  //console.log(apiUrl)
 
   const sendLocationToBackend = async (): Promise<void> => {
     try {
@@ -208,30 +208,6 @@ export default function Map() {
   useEffect(() => {
     fetchLootAndMissiles();
   }, [fetchLootAndMissiles]);
-
-  const getDistance = (
-    lat1: Location["latitude"],
-    lon1: Location["longitude"],
-    lat2: Location["latitude"],
-    lon2: Location["longitude"]
-  ) => {
-    const R = 6371; // Radius of the earth in km
-    const dLat = deg2rad(lat2 - lat1);
-    const dLon = deg2rad(lon2 - lon1);
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(deg2rad(lat1)) *
-        Math.cos(deg2rad(lat2)) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const d = R * c; // Distance in km
-    return d * 1000; // Distance in meters
-  };
-
-  const deg2rad = (deg: number) => {
-    return deg * (Math.PI / 180);
-  };
 
   useEffect(() => {
     const intervalId = setInterval(() => {
@@ -383,83 +359,6 @@ export default function Map() {
   const resizedlootimage = require("../assets/mapassets/Airdropicon.png"); // Your custom image path
   const resizedlooticon = { width: 50, height: 50 }; // Custom size for image
 
-  //Missile Lib
-
-  // Define the fetchMissileLib function- BACKEND UPDATE
-const fetchMissileLib = (): Promise<Missilelib[]> => {
-  return new Promise((resolve) => {
-    // Simulating asynchronous data fetching
-    setTimeout(() => {
-      const missileLibraryData: Missilelib[] = [
-        { type: 'Amplifier', quantity: 10, description: " Missile" },
-        { type: 'Ballista', quantity: 9 , description: " Missile "},
-        { type: 'BigBertha', quantity: 8 , description: " Missile "},
-        { type: 'Bombabom', quantity: 7 , description: " Missile "},
-        { type: 'BunkerBlocker', quantity: 6 , description: " Missile "},
-        { type: 'Buzzard', quantity: 5 , description: " Missile "},
-        { type: 'ClusterBomb', quantity: 4 , description: " Missile "},
-        { type: 'CorporateRaider', quantity: 3 , description: " Missile "},
-        { type: 'GutShot', quantity: 2 , description: " Missile "},
-        { type: 'TheNuke', quantity: 1 , description: " Missile "},
-        { type: 'Yokozuna', quantity: 5 , description: " Missile "},
-        { type: 'Zippy', quantity: 3 , description: " Missile "},
-      ];
-      resolve(missileLibraryData);
-    }, 0); // Simulating a delay of 1 second
-  });
-};
-
-//Missile types
-//   Amplifier:
-//   Ballista: 
-//   BigBertha:
-//   Bombabom: 
-//   BunkerBlocker:
-//   Buzzard: 
-//   ClusterBomb: 
-//   CorporateRaider: 
-//   GutShot: 
-//   TheNuke: 
-//   Yokozuna: 
-//   Zippy: 
-
-
-const MissileLibrary = () => {
-  const [missileLibrary, setMissileLibrary] = useState<Missilelib[]>([]);
-  const [loading, setLoading] = useState(true); // Add loading state
-
-  useEffect(() => {
-    const fetchMissileLibrary = async () => {
-      try {
-        const missileLibraryData = await fetchMissileLib();
-        setMissileLibrary(missileLibraryData);
-      } catch (error) {
-        console.error('Error fetching missile library:', error);
-      } finally {
-        setLoading(false); // Set loading to false regardless of success or failure
-      }
-    };
-
-    fetchMissileLibrary();
-  }, []);
-
-  if (loading) {
-    return 
-  }
-
-  return (
-    <ScrollView contentContainerStyle={{ padding: 20 }}>
-      <Text>Select your Missile:</Text>
-      {missileLibrary.map((missile, index) => (
-        <View key={index} style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 10 }}>
-          <Image source={missileImages[missile.type]} style={{ width: 50, height: 50, marginRight: 10 }} />
-          <Text>{missile.type} - Quantity: {missile.quantity}</Text>
-        </View>
-      ))}
-    </ScrollView>
-  );
-}; 
-
 const [isModalVisible, setIsModalVisible] = useState(false);
 
   return (
@@ -509,22 +408,7 @@ const [isModalVisible, setIsModalVisible] = useState(false);
 {/* Render Missiles */}
 {missileData.map(({ destination, currentLocation, radius, type, status }, index) => {
 
-// Define a mapping of image paths with an index signature
-const missileImagePaths: { [key: string]: any } = {
-  Amplifier: require("../assets/missiles/Amplifier.png"),
-  Ballista: require("../assets/missiles/Ballista.png"),
-  BigBertha: require("../assets/missiles/BigBertha.png"),
-  Bombabom: require("../assets/missiles/Bombabom.png"),
-  BunkerBlocker: require("../assets/missiles/BunkerBlocker.png"),
-  ClusterBomb: require("../assets/missiles/ClusterBomb.png"),
-  CorporateRaider: require("../assets/missiles/CorporateRaider.png"),
-  GutShot: require("../assets/missiles/GutShot.png"),
-  TheNuke: require("../assets/missiles/TheNuke.png"),
-  Yokozuna: require("../assets/missiles/Yokozuna.png"),
-  Zippy: require("../assets/missiles/Zippy.png"),
-
-  // Add other missile types here
-};
+// Define a mapping of image paths with an index signature (paths found in components)
   const resizedmissileimage = missileImagePaths[type];
   const resizedmissileicon = { width: 50, height: 50 }; // Custom size for image
   
@@ -598,7 +482,7 @@ const missileImagePaths: { [key: string]: any } = {
           })}
       </MapView>
 {/* Missile library popup */}
-<Modal
+      <Modal
         animationType="slide"
         transparent={true}
         visible={isModalVisible}
