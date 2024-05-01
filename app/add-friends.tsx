@@ -2,15 +2,15 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Text, View, FlatList, TouchableOpacity, Alert } from "react-native";
 import * as Location from "expo-location";
 import { Input } from "../components/ui/input";
-
-const backendUrl: string = process.env.EXPO_PUBLIC_BACKEND_URL!;
-const apiUrl: string = `${backendUrl}:3000/api/`;
 import { userNAME } from "../temp/login";
 import { Player } from "../types/types";
-
+import { searchOtherPlayersData } from "../api/getplayerlocations"; // Import searchOtherPlayersData for searches....
 
 const QuickAddPage: React.FC = () => {
-  const [userLocation, setUserLocation] = useState<{latitude: number; longitude: number;} | null>(null);
+  const [userLocation, setUserLocation] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [playersData, setPlayersData] = useState<Player[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -30,83 +30,9 @@ const QuickAddPage: React.FC = () => {
       };
       setUserLocation(userLoc);
     } catch (error) {
-      console.log("Error fetching location:");
+      console.log("Error fetching location:", error);
     }
   }, []);
-
-  const fetchData = async (
-    endpoint: string,
-    method: string = "GET",
-    data: any = null
-  ) => {
-    const config: {
-      method: string;
-      headers: { "Content-Type": string };
-      body?: string | null;
-    } = {
-      method: method,
-      headers: {
-        "Content-Type": "application/json",
-      },
-    };
-
-    if (data) {
-      config.body = JSON.stringify(data as object);
-    }
-
-    try {
-      const response = await fetch(apiUrl + endpoint, config);
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch data. Status: ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.log(`Error fetching data`);
-      throw error;
-    }
-  };
-
-  const fetchOtherPlayersData = async () => {
-    try {
-      // Check if userLocation is available
-      if (!userLocation) {
-        console.log("User location is not available");
-        setLoading(false);
-        return;
-      }
-
-      const { latitude, longitude } = userLocation;
-
-      const requestData = {
-        username: userNAME, // Assuming userNAME is available from the state or props
-        latitude: latitude,
-        longitude: longitude,
-      };
-
-      const data = await fetchData("nearby", "POST", requestData);
-
-      if (data && data.nearbyUsers) {
-        const recentPlayersData = data.nearbyUsers.filter((player: Player) => {
-          const playerTime = new Date(player.updatedAt).getTime();
-          const currentTime = new Date().getTime();
-          const twoWeeksInMillis = 2 * 7 * 24 * 60 * 60 * 1000;
-          return currentTime - playerTime <= twoWeeksInMillis;
-        });
-
-        setPlayersData(recentPlayersData);
-        setLoading(false);
-      } else {
-        console.log("No nearby users found");
-        setPlayersData([]);
-        setLoading(false);
-      }
-    } catch (error) {
-      console.log("Error fetching other players data:", error);
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
     fetchLocation();
@@ -114,16 +40,19 @@ const QuickAddPage: React.FC = () => {
 
   useEffect(() => {
     if (userLocation) {
-      fetchOtherPlayersData();
+        searchOtherPlayersData(searchTerm).then((data) => {
+            setPlayersData(data);
+            setLoading(false);
+        });
     }
-  }, [userLocation]);
+}, [userLocation, searchTerm]);
 
   const addFriend = async (friendUsername: string) => {
-    
+    // Implement addFriend functionality
   };
 
   const removeFriend = async (friendUsername: string) => {
-    
+    // Implement removeFriend functionality
   };
 
   const renderItem = ({ item }: { item: Player }) => (
