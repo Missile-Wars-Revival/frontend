@@ -1,11 +1,5 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  FlatList,
-} from "react-native";
+import { View, Text, TouchableOpacity, FlatList } from "react-native";
 import { Friend } from "../types/types";
 import { router } from "expo-router";
 
@@ -27,14 +21,14 @@ const FriendsPage: React.FC = () => {
       <View className="flex-row justify-between mb-[20px]">
         {/* Plus button */}
         <TouchableOpacity
-          className="w-[30px] h-[30px] rounded-[15px] flex justify-center items-center bg-blue-400"
+          className="w-[30px] h-[px] rounded-[15px] flex justify-center items-center bg-blue-400"
           onPress={() => router.navigate("/add-friends")}
         >
           <Text className="text-[20px] leading-none text-white">+</Text>
         </TouchableOpacity>
-
-        {/* Bell icon */}
-        <TouchableOpacity>
+  
+        {/* Bell icon with navigation */}
+        <TouchableOpacity onPress={() => router.navigate("/notifications")}>
           <Text className="text-[24px]">🔔</Text>
         </TouchableOpacity>
       </View>
