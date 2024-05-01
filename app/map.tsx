@@ -7,6 +7,8 @@ import * as ExpoLocation from "expo-location";
 import { DefaultMapStyle } from "../themes/defaultMapStyle";
 import { RadarMapStyle } from "../themes/radarMapStyle";
 import { CherryBlossomMapStyle } from "../themes/cherryBlossomMapStyle";
+import { CyberpunkMapStyle } from "../themes/cyberpunkstyle";
+import { ColorblindMapStyle } from "../themes/colourblindstyle";
 
 //Types
 import { Loot, Missile, Landmine, Location, Player  } from "../types/types";
@@ -343,6 +345,12 @@ export default function Map() {
         break;
       case "cherry":
         setSelectedMapStyle(CherryBlossomMapStyle);
+        break;
+      case "cyber":
+        setSelectedMapStyle(CyberpunkMapStyle);
+        break;
+      case "colourblind":
+        setSelectedMapStyle(ColorblindMapStyle);
         break;
       default:
         break;
