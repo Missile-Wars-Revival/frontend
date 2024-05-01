@@ -10,10 +10,7 @@ import { Player } from "../types/types";
 
 
 const QuickAddPage: React.FC = () => {
-  const [userLocation, setUserLocation] = useState<{
-    latitude: number;
-    longitude: number;
-  } | null>(null);
+  const [userLocation, setUserLocation] = useState<{latitude: number; longitude: number;} | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [playersData, setPlayersData] = useState<Player[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
