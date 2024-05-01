@@ -164,16 +164,16 @@ export default function Map() {
     const fetchLootFromBackend = async () => {
       // Simulated fetch function to get loot data:
       return [
-        { latitude: 51.026281, longitude: -3.113764 }, // Loot location 1 TS
-        { latitude: 45.305, longitude: -0.86 }, // Loot location 2
+        { latitude: 51.026281, longitude: -3.113764, rarity: "" }, // Loot location 1 TS
+        { latitude: 45.305, longitude: -0.86, rarity: "" }, // Loot location 2
       ];
     };
 
     const fetchlandmineFromBackend = async () => {
       // Simulated fetch function to get landmine data:
       return [
-        { latitude: 45.2949318, longitude: -0.852764 }, //temp landmine location
-        { latitude: 51.025682, longitude: -3.1174578 }, //2nd temp landmine location TS
+        { latitude: 45.2949318, longitude: -0.852764, placedby: "" }, //temp landmine location
+        { latitude: 51.025682, longitude: -3.1174578, placedby: ""}, //2nd temp landmine location TS
       ];
     };
 

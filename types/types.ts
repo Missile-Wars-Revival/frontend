@@ -11,7 +11,7 @@ export interface Missile {
   radius: number;
   type: string;
   sentbyusername: string,
-  status: string,
+  status: string;
 }
 //for missile library
 export interface Missilelib {
@@ -23,11 +23,13 @@ export interface Missilelib {
 export interface Loot {
   latitude: number;
   longitude: number;
+  rarity: string;
 }
 
 export interface Landmine {
   latitude: number;
   longitude: number;
+  placedby: string;
 }
 
 export interface Location {
