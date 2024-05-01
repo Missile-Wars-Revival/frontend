@@ -85,6 +85,33 @@ export const MapStylePopup = ({
           >
             <Text style={{ fontSize: 16 }}>Cherry Blossom</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => onSelect("cyber")}
+            style={{
+              borderRadius: 10,
+              padding: 10,
+              marginBottom: 5,
+              backgroundColor: "#ccc",
+              width: 200,
+              alignItems: "center",
+            }}
+          >
+            <Text style={{ fontSize: 16 }}>CyberPunk</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => onSelect("colourblind")}
+            style={{
+              borderRadius: 10,
+              padding: 10,
+              marginBottom: 5,
+              backgroundColor: "#ccc",
+              width: 200,
+              alignItems: "center",
+            }}
+          >
+            <Text style={{ fontSize: 16 }}>Colour Blind</Text>
+          </TouchableOpacity>
+
         </View>
       </TouchableOpacity>
     </Modal>
