@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Missilelib, missileImages } from "../types/types";
+import { Missilelib } from "../types/types";
 import { Text, View, Image, ScrollView } from "react-native";
 
 //Missile types
@@ -15,6 +15,7 @@ import { Text, View, Image, ScrollView } from "react-native";
 //   TheNuke: 
 //   Yokozuna: 
 //   Zippy: 
+
 //Missile Library:
 const fetchMissileLib = (): Promise<Missilelib[]> => {
   return new Promise((resolve) => {
@@ -37,6 +38,26 @@ const fetchMissileLib = (): Promise<Missilelib[]> => {
       resolve(missileLibraryData);
     }, 0); // Simulating a delay of 1 second
   });
+};
+interface MissileImages {
+  [key: string]: any;
+}
+// For Missile Library
+export const missileImages: MissileImages = {
+  Amplifier: require('../assets/missiles/Amplifier.png'),
+  Ballista: require('../assets/missiles/Ballista.png'),
+  BigBertha: require('../assets/missiles/BigBertha.png'),
+  Bombabom: require('../assets/missiles/Bombabom.png'),
+  BunkerBlocker: require('../assets/missiles/BunkerBlocker.png'),
+  Buzzard: require('../assets/missiles/Buzzard.png'),
+  ClusterBomb: require('../assets/missiles/ClusterBomb.png'),
+  CorporateRaider: require('../assets/missiles/CorporateRaider.png'),
+  GutShot: require('../assets/missiles/GutShot.png'),
+  TheNuke: require('../assets/missiles/TheNuke.png'),
+  Yokozuna: require('../assets/missiles/Yokozuna.png'),
+  Zippy: require('../assets/missiles/Zippy.png'),
+
+  // Add other missile images here
 };
 
 export const MissileLibrary = () => {
@@ -76,7 +97,7 @@ export const MissileLibrary = () => {
 }; 
 
 
-//Missile Markers
+//Missile Markers images
 export const missileImagePaths: { [key: string]: any } = {
   Amplifier: require("../assets/missiles/Amplifier.png"),
   Ballista: require("../assets/missiles/Ballista.png"),
