@@ -180,8 +180,22 @@ export default function Map() {
     const fetchMissilesFromBackend = async (): Promise<Missile[]> => {
       // Simulated fetch function to get missile data:
       return [
-        { destination: { latitude: 45.2949318, longitude: -0.852764 }, currentLocation: { latitude: 45.2949318, longitude: -0.852764 },radius: 100, type: "TheNuke", status:"Hit"  }, //temp missile location
-        { destination: { latitude: 51.025316, longitude: -3.115612 }, currentLocation: { latitude: 52.025316, longitude: -3.115612 },radius: 50, type: "Ballista", status:"Approaching" }, //2nd temp missle location TS
+        {
+          destination: { latitude: 45.2949318, longitude: -0.852764 }, 
+          currentLocation: { latitude: 45.2949318, longitude: -0.852764 }, 
+          radius: 100, 
+          type: "TheNuke", 
+          status: "Hit", 
+          sentbyusername: ""
+        }, //temp missile location
+        {
+          destination: { latitude: 51.025316, longitude: -3.115612 }, 
+          currentLocation: { latitude: 52.025316, longitude: -3.115612 }, 
+          radius: 50, 
+          type: "Ballista", 
+          status: "Approaching",
+          sentbyusername: ""
+        }, //2nd temp missle location TS
       ];
     };
 
