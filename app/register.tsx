@@ -2,14 +2,14 @@ import { SafeAreaView, Text, Button, View } from "react-native";
 import { router } from "expo-router";
 import { Input } from "../components/input";
 import { useState } from "react";
-import useRegisterUser from "../hooks/useRegisterUser";
+import useRegister from "../hooks/api/useRegister";
 
 export default function Register() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const mutate = useRegisterUser(() => {
+  const mutate = useRegister(() => {
     router.navigate("/login");
   });
 
