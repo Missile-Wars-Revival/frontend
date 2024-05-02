@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { Text, View, TouchableOpacity, Image } from "react-native";
+import { Text, View, TouchableOpacity, Image, Button, Modal, Dimensions, ScrollView } from "react-native";
 import MapView, { PROVIDER_GOOGLE, Circle, Marker } from "react-native-maps";
 import * as ExpoLocation from "expo-location";
 
@@ -7,15 +7,24 @@ import * as ExpoLocation from "expo-location";
 import { DefaultMapStyle } from "../themes/defaultMapStyle";
 import { RadarMapStyle } from "../themes/radarMapStyle";
 import { CherryBlossomMapStyle } from "../themes/cherryBlossomMapStyle";
+import { CyberpunkMapStyle } from "../themes/cyberpunkstyle";
+import { ColorblindMapStyle } from "../themes/colourblindstyle";
 
 //Types
-import { Loot, Missile, Landmine, Location, Player } from "../types/types";
+import { Loot, Missile, Landmine, Location, Player  } from "../types/types";
+
+//Components:
+import { missileImagePaths, MissileLibrary } from "../components/missile";
 
 import { MapStylePopup } from "../components/map-style-popup";
-import { getTimeDifference } from "../util/get-time-difference";
+import { getTimeDifference, isInactiveFor24Hours } from "../util/get-time-difference";
+import { getDistance } from "../util/get-dist";
 
 import { userNAME } from "../temp/login"; // fetch from backend eventually
-import { passWORD } from "../temp/login"; // fetch from backend eventually
+
+//Hooks
+import { dispatch } from "../api/dispatch";
+import { fetchOtherPlayersData } from "../api/getplayerlocations";
 
 export default function Map() {
   const defaultRegion = {
@@ -32,44 +41,30 @@ export default function Map() {
   const [missileData, setMissileData] = useState<Missile[]>([]);
   const [landminedata, setlandminelocations] = useState<Landmine[]>([]);
   const [userLocation, setUserLocation] = useState<Location | null>(null);
+  const [selectedMarkerIndex, setSelectedMarkerIndex] = useState<number | null>(null);
 
-  const [otherPlayersData, setOtherPlayersData] = useState([]);
+  const [otherPlayersData, setOtherPlayersData] = useState([] as Player[]);
 
   const fetchOtherPlayers = async () => {
-    const data = await fetchOtherPlayersData();
-    setOtherPlayersData(data);
+    try {
+      const data = await fetchOtherPlayersData();
+      setOtherPlayersData(data); 
+    } catch (error) {
+      console.error('Error fetching other players data:', error);
+    }
   };
 
   useEffect(() => {
-    fetchOtherPlayers();
+    fetchOtherPlayers(); // Initial fetch
+
+    // Set interval to send location to backend every 30 seconds
+    const intervalId = setInterval(fetchOtherPlayers, 30000);
+
+    // Cleanup interval on component unmount
+    return () => {
+      clearInterval(intervalId);
+    };
   }, []);
-
-  const sendLocationToBackend = async () => {
-    try {
-      // Ensure location data is available
-      if (userLocation && userLocation.latitude && userLocation.longitude) {
-        const { latitude, longitude } = userLocation;
-        const timestamp = new Date().toISOString();
-
-        const data = {
-          username: userNAME,
-          password: passWORD,
-          latitude,
-          longitude,
-        };
-
-        const response = await fetchData("dispatch", "POST", data);
-        //console.log('Location sent successfully:', response);
-      } else {
-        //console.log('Latitude or longitude is missing. Not sending backend');
-      }
-    } catch (error) {
-      console.log(
-        "Error sending location to backend:",
-        (error as Error).message
-      );
-    }
-  };
 
   const fetchLocation = useCallback(async () => {
     try {
@@ -105,56 +100,35 @@ export default function Map() {
     };
   }, [fetchLocation]);
 
-  const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
-  const apiUrl = `${backendUrl}/api/`;
-  //console.log(apiUrl);
-
-  const fetchData = async (
-    endpoint: string,
-    method: string = "GET",
-    body: any | null = null // Adjusted the type to any
-  ) => {
-    let url = apiUrl + endpoint;
-
-    const config: {
-      method: string;
-      headers: {
-        "Content-Type": string;
-      };
-      body?: string;
-    } = {
-      method: method,
-      headers: {
-        "Content-Type": "application/json",
-      },
-    };
-
-    // If method is GET, append data as query parameters
-    if (method === "GET" && body) {
-      url += `?${new URLSearchParams(body).toString()}`;
-    } else if (method === "POST" && body) {
-      config.body = JSON.stringify(body); // Send body as JSON string
-    }
-
+  const sendLocationToBackend = async (): Promise<void> => {
     try {
-      const response = await fetch(url, config);
+        if (!userLocation || !userLocation.latitude || !userLocation.longitude) {
+            console.log('Latitude or longitude is missing. Not sending to backend');
+            return;
+        }
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch data. Status: ${response.status}`);
-      } else {
-        return response.json();
-      }
+        const { latitude, longitude } = userLocation;
+
+        const response = await dispatch(userNAME, latitude, longitude); 
+
+        if (response && response.success) {
+            console.log('Location sent successfully');
+        } else if (response && response.message !== "Location dispatched") {
+            console.log('Failed to send location:', response.message);
+        } else {
+            console.log('Location dispatched');
+        }
     } catch (error) {
-      console.log(`Error fetching data: ${(error as Error).message}`);
-      throw error;
+        console.log("Error sending location to backend:", (error as Error).message);
     }
-  };
+};
+
 
   useEffect(() => {
     sendLocationToBackend(); // Initial send
 
-    // Set interval to send location to backend every 30 seconds
-    const intervalId = setInterval(sendLocationToBackend, 30000);
+    // Set interval to send location to backend every 60 seconds
+    const intervalId = setInterval(sendLocationToBackend, 60000);
 
     // Cleanup interval on component unmount
     return () => {
@@ -163,39 +137,20 @@ export default function Map() {
   }, [userLocation]); // Add userLocation to dependency array
 
   //Pending update from backend....
-  const fetchOtherPlayersData = async () => {
+  async function fetchplayerlocation() {
     try {
-      const data = await fetchData("getOtherPlayersData");
-
-      // Filter out players with the same username
-      const filteredData = data.filter(
-        (player: Player) => player.username !== userNAME
-      );
-
-      // Filter out players with timestamps older than 2 weeks
-      const currentTime = new Date().getTime();
-      const twoWeeksInMillis = 2 * 7 * 24 * 60 * 60 * 1000; // 2 weeks in milliseconds
-
-      const recentPlayersData = filteredData.filter((player: Player) => {
-        const playerTime = new Date(player.timestamp).getTime();
-        return currentTime - playerTime <= twoWeeksInMillis;
-      });
-
-      return recentPlayersData;
+        const playerdata = await fetchOtherPlayersData();
+        console.log(playerdata);
     } catch (error) {
-      console.log(
-        "Error fetching other players data:",
-        (error as Error).message
-      );
-      return [];
+        console.error('Error:', error);
     }
-  };
+}
 
   useEffect(() => {
-    fetchOtherPlayers();
+    fetchplayerlocation();
 
     // Fetch other players' data every 30 seconds
-    const intervalId = setInterval(fetchOtherPlayers, 30000); // 30 seconds
+    const intervalId = setInterval(fetchplayerlocation, 60000); // 30 seconds
 
     // Cleanup interval on component unmount
     return () => {
@@ -209,24 +164,38 @@ export default function Map() {
     const fetchLootFromBackend = async () => {
       // Simulated fetch function to get loot data:
       return [
-        { latitude: 51.026281, longitude: -3.113764 }, // Loot location 1 TS
-        { latitude: 45.305, longitude: -0.86 }, // Loot location 2
+        { latitude: 51.026281, longitude: -3.113764, rarity: "" }, // Loot location 1 TS
+        { latitude: 45.305, longitude: -0.86, rarity: "" }, // Loot location 2
       ];
     };
 
     const fetchlandmineFromBackend = async () => {
       // Simulated fetch function to get landmine data:
       return [
-        { latitude: 45.2949318, longitude: -0.852764 }, //temp landmine location
-        { latitude: 51.025682, longitude: -3.1174578 }, //2nd temp landmine location TS
+        { latitude: 45.2949318, longitude: -0.852764, placedby: "" }, //temp landmine location
+        { latitude: 51.025682, longitude: -3.1174578, placedby: ""}, //2nd temp landmine location TS
       ];
     };
 
-    const fetchMissilesFromBackend = async () => {
+    const fetchMissilesFromBackend = async (): Promise<Missile[]> => {
       // Simulated fetch function to get missile data:
       return [
-        { location: { latitude: 45.2949318, longitude: -0.852764 }, radius: 100 }, //temp missile location
-        { location: { latitude: 51.025316, longitude: -3.115612 }, radius: 50 }, //2nd temp missle location TS
+        {
+          destination: { latitude: 45.2949318, longitude: -0.852764 }, 
+          currentLocation: { latitude: 45.2949318, longitude: -0.852764 }, 
+          radius: 100, 
+          type: "TheNuke", 
+          status: "Hit", 
+          sentbyusername: ""
+        }, //temp missile location
+        {
+          destination: { latitude: 51.025316, longitude: -3.115612 }, 
+          currentLocation: { latitude: 52.025316, longitude: -3.115612 }, 
+          radius: 50, 
+          type: "Ballista", 
+          status: "Approaching",
+          sentbyusername: ""
+        }, //2nd temp missle location TS
       ];
     };
 
@@ -256,30 +225,6 @@ export default function Map() {
     fetchLootAndMissiles();
   }, [fetchLootAndMissiles]);
 
-  const getDistance = (
-    lat1: Location["latitude"],
-    lon1: Location["longitude"],
-    lat2: Location["latitude"],
-    lon2: Location["longitude"]
-  ) => {
-    const R = 6371; // Radius of the earth in km
-    const dLat = deg2rad(lat2 - lat1);
-    const dLon = deg2rad(lon2 - lon1);
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(deg2rad(lat1)) *
-        Math.cos(deg2rad(lat2)) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const d = R * c; // Distance in km
-    return d * 1000; // Distance in meters
-  };
-
-  const deg2rad = (deg: number) => {
-    return deg * (Math.PI / 180);
-  };
-
   useEffect(() => {
     const intervalId = setInterval(() => {
       if (userLocation) {
@@ -287,7 +232,7 @@ export default function Map() {
         checkMissileCollision();
         checkLootCollection();
       }
-    }, 5000); // 30 seconds
+    }, 5000); // 5 seconds
 
     // Clear interval on component unmount to prevent memory leaks
     return () => clearInterval(intervalId);
@@ -297,35 +242,49 @@ export default function Map() {
 
   const checkMissileCollision = () => {
     if (!userLocation || !userLocation.latitude || !userLocation.longitude) {
-      console.log("Error: User location not available");
-      return;
+        console.log("Error: User location not available");
+        return;
     }
 
     for (let missile of missileData) {
-      if (
-        !missile.location ||
-        !missile.location.latitude ||
-        !missile.location.longitude
-      ) {
-        console.log("Error: Missile location data incomplete");
-        continue;
-      }
+        if (
+            !missile.destination ||
+            !missile.destination.latitude ||
+            !missile.destination.longitude ||
+            !missile.currentLocation ||
+            !missile.currentLocation.latitude ||
+            !missile.currentLocation.longitude
+        ) {
+            console.log("Error: Missile location data incomplete");
+            continue;
+        }
 
-      const distance = getDistance(
-        userLocation.latitude,
-        userLocation.longitude,
-        missile.location.latitude,
-        missile.location.longitude
-      );
-      if (distance <= missile.radius) {
-        alert("Warning: You are in the radius of a missile!");
-        console.log("Player died");
-        //Missile impact info here....
-        break;
-      }
+        const userDistanceToDestination = getDistance(
+            userLocation.latitude,
+            userLocation.longitude,
+            missile.destination.latitude,
+            missile.destination.longitude
+        );
+
+        if (userDistanceToDestination <= missile.radius && 
+            (missile.destination.latitude !== missile.currentLocation.latitude ||
+            missile.destination.longitude !== missile.currentLocation.longitude)) {
+            alert("Missile inbound! Run!");
+            console.log("Missile inbound");
+            // Handle missile inbound here...
+        }
+
+        if (userDistanceToDestination <= missile.radius && 
+            missile.destination.latitude === missile.currentLocation.latitude &&
+            missile.destination.longitude === missile.currentLocation.longitude) {
+            alert("Player died");
+            console.log("Player died");
+            // Handle player death here...
+            break;
+        }
     }
-  };
-
+};
+  
   const checkLandmineCollision = () => {
     if (!userLocation || !userLocation.latitude || !userLocation.longitude) {
       console.log("Error: User location not available");
@@ -401,6 +360,12 @@ export default function Map() {
       case "cherry":
         setSelectedMapStyle(CherryBlossomMapStyle);
         break;
+      case "cyber":
+        setSelectedMapStyle(CyberpunkMapStyle);
+        break;
+      case "colourblind":
+        setSelectedMapStyle(ColorblindMapStyle);
+        break;
       default:
         break;
     }
@@ -410,8 +375,13 @@ export default function Map() {
   //console.log("missileData:", missileData);
 
   //To allow player to upload their own this is modular
-  const resizedMarkerImage = require("../assets/Female_Avatar_PNG.png"); // Your custom image path
-  const resizedImageStyle = { width: 30, height: 30 }; // Custom size for image
+  const resizedplayerimage = require("../assets/mapassets/Female_Avatar_PNG.png"); // Your custom image path
+  const resizedplayericon = { width: 30, height: 30 }; // Custom size for image
+
+  const resizedlootimage = require("../assets/mapassets/Airdropicon.png"); // Your custom image path
+  const resizedlooticon = { width: 50, height: 50 }; // Custom size for image
+
+const [isModalVisible, setIsModalVisible] = useState(false);
 
   return (
     <View className="flex-1 bg-gray-200">
@@ -424,15 +394,26 @@ export default function Map() {
         customMapStyle={selectedMapStyle}
       >
         {/* Render Loot Drops */}
-        {lootLocations.map((location, index) => (
-          <Circle
-            key={index}
-            center={location}
-            radius={20} //actual radius size
-            fillColor="rgba(0, 0, 255, 0.2)"
-            strokeColor="rgba(0, 0, 255, 0.8)"
-          />
-        ))}
+{lootLocations.map((location, index) => (
+  <React.Fragment key={index}>
+    {/* Render Circle */}
+    <Circle
+      center={location}
+      radius={20} //actual radius size
+      fillColor="rgba(0, 0, 255, 0.2)"
+      strokeColor="rgba(0, 0, 255, 0.8)"
+    />
+    {/* Render Marker */}
+    <Marker
+      coordinate={{
+        latitude: location.latitude,
+        longitude: location.longitude,
+      }}
+    >
+      <Image source={resizedlootimage} style={resizedlooticon} />
+    </Marker>
+  </React.Fragment>
+))}
 
         {/* Render landmine Drops */}
         {landminedata.map((location, index) => (
@@ -446,47 +427,99 @@ export default function Map() {
         ))}
 
         {/* Render Missiles */}
-        {missileData.map(({ location, radius }, index) => (
-          <Circle
-            key={index}
-            center={location}
-            radius={radius}
-            fillColor="rgba(255, 0, 0, 0.2)"
-            strokeColor="rgba(255, 0, 0, 0.8)"
-          />
-        ))}
+{/* Render Missiles */}
+{missileData.map(({ destination, currentLocation, radius, type, status }, index) => {
 
-        {otherPlayersData.map((player: Player, index) => {
-          const { text, color } = getTimeDifference(player.timestamp);
+// Define a mapping of image paths with an index signature (paths found in components)
+  const resizedmissileimage = missileImagePaths[type];
+  const resizedmissileicon = { width: 50, height: 50 }; // Custom size for image
+  
+  return (
+    <React.Fragment key={index}>
+      {/* Render Circle at destination coords */}
+      <Circle
+        center={destination}
+        radius={radius}
+        fillColor="rgba(255, 0, 0, 0.2)"
+        strokeColor="rgba(255, 0, 0, 0.8)"
+      />
+      {/* Render Marker at current coords */}
+      <Marker
+        coordinate={currentLocation}
+        title={`Missile: ${type}`}
+        description={`${status}`}
+      >
+        <Image source={resizedmissileimage} style={resizedmissileicon} />
+      </Marker>
+    </React.Fragment>
+  );
+})}
 
-          return (
-            <React.Fragment key={index}>
-              <Circle
-                center={{
-                  latitude: player.latitude,
-                  longitude: player.longitude,
-                }}
-                radius={6} // Assuming a radius for other players
-                fillColor="rgba(0, 255, 0, 0.2)" // Green color
-                strokeColor="rgba(0, 255, 0, 0.8)"
-              />
-              <Marker
-                key={index}
-                coordinate={{
-                  latitude: player.latitude,
-                  longitude: player.longitude,
-                }}
-                title={player.username}
-                description={text} //Finding it really hard to set "just now" as green
-                style={{ backgroundColor: color }}
-              >
-                {/* Use resized image for the Marker */}
-                <Image source={resizedMarkerImage} style={resizedImageStyle} />
-              </Marker>
-            </React.Fragment>
-          );
-        })}
+{otherPlayersData
+          .filter(player => player.username !== userNAME && !isInactiveFor24Hours(player.updatedAt)) // Filter out inactive players(12) and the player's own username
+          .map((player, index) => {
+            const { text } = getTimeDifference(player.updatedAt);
+
+            return (
+              <React.Fragment key={index}>
+                <Circle
+                  center={{
+                    latitude: player.latitude,
+                    longitude: player.longitude,
+                  }}
+                  radius={6} // Assuming a radius for other players
+                  fillColor="rgba(0, 255, 0, 0.2)" // Green color
+                  strokeColor="rgba(0, 255, 0, 0.8)"
+                />
+                <Marker
+                  key={index}
+                  coordinate={{
+                    latitude: player.latitude,
+                    longitude: player.longitude,
+                  }}
+                  title={player.username}
+                  description={text} //Finding it really hard to set "just now" as green
+                  onPress={() => {
+                    if (selectedMarkerIndex === index) {
+                      setSelectedMarkerIndex(null); // Deselect the marker NOT WORKING
+                    } else {
+                      setSelectedMarkerIndex(index); // Select the marker
+                    }
+                  }}
+                >
+                  {/* Use resized image for the Marker */}
+                  <Image source={resizedplayerimage} style={resizedplayericon} />
+                </Marker>
+                {selectedMarkerIndex !== null && selectedMarkerIndex === index && ( // Conditionally render button... maybe
+                  <View style={{ backgroundColor: 'red', borderRadius: 5, marginTop: 2 }}>
+                    <Button
+                      title={`Fire Missile At Player: ${player.username}`}
+                      onPress={() => setIsModalVisible(true)}
+                      color="white" // Set text color to white
+                    />
+                  </View>
+                )}
+              </React.Fragment>
+            );
+          })}
       </MapView>
+{/* Missile library popup */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isModalVisible}
+        onRequestClose={() => setIsModalVisible(false)}
+      >
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
+          <View style={{ backgroundColor: 'white', borderRadius: 10, width: Dimensions.get('window').width - 40, maxHeight: Dimensions.get('window').height - 200 }}>
+            {/* Include MissileLibrary component */}
+            <MissileLibrary />
+            <View style={{ alignSelf: 'flex-end', padding: 10 }}>
+              <Button title="Cancel" onPress={() => setIsModalVisible(false)} />
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Dropdown button */}
       <TouchableOpacity
@@ -498,6 +531,7 @@ export default function Map() {
 
       <MapStylePopup
         visible={popupVisible}
+        transparent={true}
         onClose={closePopup}
         onSelect={selectMapStyle}
       />

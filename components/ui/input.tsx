@@ -18,7 +18,7 @@ const Input = React.forwardRef<React.ElementRef<typeof TextInput>, InputProps>(
         )}
         <TextInput
           ref={ref}
-          className={`border-[1.5px] border-black rounded-md p-2 w-full pl-8 ${className}`}
+          className={`border-[2.5px] border-black rounded-md p-2 w-full pl-8 ${className}`}
           {...props}
         />
       </View>

@@ -1,10 +1,17 @@
-import { SafeAreaView, Text, Button, View } from "react-native";
+import {
+  SafeAreaView,
+  Text,
+  View,
+  Image,
+  TouchableHighlight,
+  Dimensions,
+} from "react-native";
 import { router } from "expo-router";
-import { Input } from "../components/input";
+import { Input } from "../components/ui/input";
 import { useState } from "react";
 import useLogin from "../hooks/api/useLogin";
 import { User, LockKeyhole } from "lucide-react-native";
-import { useNavigation } from "@react-navigation/native";
+import CometDivider from "../assets/jsxSvgs/cometDivider";
 import Constants from "expo-constants";
 
 const uri = Constants?.expoConfig?.hostUri
@@ -40,44 +47,98 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [isError, setIsError] = useState(false);
 
-  const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
-  //console.log(backendUrl);
+  return (
+    <SafeAreaView className="flex-1 items-center">
+      <Image
+        source={require("../assets/MissleWarsTitle.png")}
+        className="w-[425] h-[200] mt-[0]"
+        resizeMode="contain"
+      />
+      <View>
+        <View className="space-y-4">
+          <Input
+            placeholder="Username"
+            onChangeText={(text) => setUsername(text)}
+            className="w-[90vw] h-[5vh] rounded-[20px]"
+            icon={<User size={24} color="black" />}
+          />
+          <View>
+            <Input
+              placeholder="Password"
+              onChangeText={(text) => setPassword(text)}
+              className="w-[90vw] h-[5vh] rounded-[20px]"
+              icon={
+                <View className="inset-y-[-1px]">
+                  <LockKeyhole size={24} color="black" />
+                </View>
+              }
+            />
+            {isError && (
+              <Text className="text-red-500 text-sm text-center">
+                Invalid username or password
+              </Text>
+            )}
+          </View>
+        </View>
+      </View>
+      <LoginButton
+        username={username}
+        password={password}
+        setIsError={setIsError}
+      />
+      <Image
+        source={require("../assets/cometDivider.png")}
+        resizeMode="stretch"
+        className="w-[425] h-[10%] mt-[240]"
+      />
+      <SignUpButton />
+    </SafeAreaView>
+  );
+}
 
-  const navigation = useNavigation();
-
-  const navigateregister = () => {
-    navigation.navigate("register" as never); // Navigate to 'register' page
-  };
+function LoginButton({
+  username,
+  password,
+  setIsError,
+  className,
+}: {
+  username: string;
+  password: string;
+  setIsError: (error: boolean) => void;
+  className?: string;
+}) {
+  const mutation = useLogin(
+    () => {
+      router.navigate("/");
+    },
+    () => {
+      setIsError(true);
+    }
+  );
 
   return (
-    <SafeAreaView className="flex-1 justify-center items-center space-y-8">
-      <View className="space-y-4">
-        <Input
-          placeholder="Username"
-          onChangeText={(text) => setUsername(text)}
-          className="w-[50vw] rounded-2xl"
-          icon={<User size={24} color="black" />}
-        />
-        <Input
-          placeholder="Password"
-          onChangeText={(text) => setPassword(text)}
-          className="w-[50vw] rounded-2xl"
-          icon={
-            <View className="inset-y-[7px]">
-              <LockKeyhole size={24} color="black" />
-            </View>
-          }
-        />
+    <TouchableHighlight
+      onPress={() => mutation.mutate({ username, password })}
+      className={`bg-[#773765] rounded-[20px] w-[375] h-[45] flex items-center justify-center mt-[40]`}
+    >
+      <View>
+        <Text className="text-white font-bold">Let's Fight</Text>
       </View>
-      <Button
-        title="Login!"
-        onPress={async () => await handleLogin(username, password)}
-      />
-      {isError && (
-        <Text className={"text-red-700 text-lg"}>
-          Invalid username or password
-        </Text>
-      )}
-    </SafeAreaView>
+    </TouchableHighlight>
+  );
+}
+
+function SignUpButton() {
+  return (
+    <TouchableHighlight
+      onPress={() => {
+        router.navigate("/register");
+      }}
+      className="rounded-[20px] w-[375px] h-[45px] flex items-center justify-center border-2 mt-[5]"
+    >
+      <View>
+        <Text className=" font-bold">Sign up with Email</Text>
+      </View>
+    </TouchableHighlight>
   );
 }
