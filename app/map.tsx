@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { Text, View, TouchableOpacity, Image, Button, Modal, Dimensions, ScrollView } from "react-native";
-import MapView, { PROVIDER_GOOGLE, Circle, Marker } from "react-native-maps";
+import MapView, { PROVIDER_GOOGLE, Circle, Marker, Polyline } from "react-native-maps";
 import * as ExpoLocation from "expo-location";
 
 //Themes
@@ -433,6 +433,13 @@ const [isModalVisible, setIsModalVisible] = useState(false);
 // Define a mapping of image paths with an index signature (paths found in components)
   const resizedmissileimage = missileImagePaths[type];
   const resizedmissileicon = { width: 50, height: 50 }; // Custom size for image
+
+  // Calculate coordinates for trajectory line
+  const trajectoryCoordinates = [
+    { latitude: currentLocation.latitude, longitude: currentLocation.longitude },
+    { latitude: destination.latitude, longitude: destination.longitude },
+  ];
+
   
   return (
     <React.Fragment key={index}>
@@ -451,7 +458,13 @@ const [isModalVisible, setIsModalVisible] = useState(false);
       >
         <Image source={resizedmissileimage} style={resizedmissileicon} />
       </Marker>
-    </React.Fragment>
+    {/* Render trajectory line */}
+    <Polyline
+        coordinates={trajectoryCoordinates}
+        strokeColor="red"
+        strokeWidth={3}
+       />
+  </React.Fragment>
   );
 })}
 
