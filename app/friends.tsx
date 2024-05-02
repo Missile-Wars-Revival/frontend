@@ -1,21 +1,18 @@
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity, FlatList } from "react-native";
-import { Friend } from "../types/types";
 import { router } from "expo-router";
+import { useFetchFriends } from "../api/friends"
+import { userNAME } from "../temp/login"
 
 const fireMissile = (username: string) => {
-  //fireing missile logic
+  //firing missile logic
   console.log(`Firing missile for friend with username: ${username}`);
 };
 
 const FriendsPage: React.FC = () => {
-  const [friends, setFriends] = useState<Friend[]>([
-    //fetch friends from backend for user
-    { username: "Alice" },
-    { username: "Bob" },
-    { username: "Charlie" },
-  ]);
+  const { friends, loading, error } = useFetchFriends(userNAME);
 
+  // Always display the bell icon and plus button
   return (
     <View className="p-[20px]">
       <View className="flex-row justify-between mb-[20px]">
@@ -33,21 +30,30 @@ const FriendsPage: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      <FlatList
-        data={friends}
-        keyExtractor={(item, index) => index.toString()}
-        renderItem={({ item }) => (
-          <View className="flex-row justify-between items-center p-2.5 border-b border-gray-300">
-            <Text>{item.username}</Text>
-            <TouchableOpacity
-              className="bg-red-500 p-[5px] rounded-[5px]"
-              onPress={() => fireMissile(item.username)}
-            >
-              <Text className="text-white">Fire Missile</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      />
+      {/* Display loading text if loading */}
+      {loading && <Text>Loading...</Text>}
+
+      {/* Display error text if error */}
+      {error && <Text>{error}</Text>}
+
+      {/* Display friends list if no loading or error */}
+      {!loading && !error && (
+        <FlatList
+          data={friends}
+          keyExtractor={(item, index) => index.toString()}
+          renderItem={({ item }) => (
+            <View className="flex-row justify-between items-center p-2.5 border-b border-gray-300">
+              <Text>{item.username}</Text>
+              <TouchableOpacity
+                className="bg-red-500 p-[5px] rounded-[5px]"
+                onPress={() => fireMissile(item.username)}
+              >
+                <Text className="text-white">Fire Missile</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        />
+      )}
     </View>
   );
 };
