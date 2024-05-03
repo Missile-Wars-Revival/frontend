@@ -2,46 +2,116 @@ import { Modal, View, Text, TouchableOpacity } from "react-native";
 
 interface MapStylePopupProps {
   visible: boolean;
+  transparent: boolean;
   onClose: () => void;
   onSelect: (style: string) => void;
 }
 
 export const MapStylePopup = ({
   visible,
+  transparent,
   onClose,
   onSelect,
 }: MapStylePopupProps) => {
   return (
     <Modal
       animationType="slide"
-      transparent={true}
+      transparent={transparent}
       visible={visible}
       onRequestClose={onClose}
     >
       <TouchableOpacity
-        className="flex-1 justify-center items-center bg-black bg-opacity-50"
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: "rgba(0, 0, 0, 0.5)", // Semi-transparent black background
+        }}
         activeOpacity={1}
         onPressOut={onClose}
       >
-        <View className="bg-white rounded-lg p-5 items-center shadow-md">
+        <View
+          style={{
+            backgroundColor: "white",
+            borderRadius: 10,
+            padding: 20,
+            alignItems: "center",
+            shadowColor: "#000",
+            shadowOffset: {
+              width: 0,
+              height: 2,
+            },
+            shadowOpacity: 0.25,
+            shadowRadius: 3.84,
+            elevation: 5,
+          }}
+        >
           <TouchableOpacity
             onPress={() => onSelect("default")}
-            className="rounded p-[10px] my-[5px] bg-gray-200 w-[200px] items-center"
+            style={{
+              borderRadius: 10,
+              padding: 10,
+              marginBottom: 5,
+              backgroundColor: "#ccc",
+              width: 200,
+              alignItems: "center",
+            }}
           >
-            <Text className="text-[16px]">Default</Text>
+            <Text style={{ fontSize: 16 }}>Default</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => onSelect("radar")}
-            className="rounded p-[10px] my-[5px] bg-gray-200 w-[200px] items-center"
+            style={{
+              borderRadius: 10,
+              padding: 10,
+              marginBottom: 5,
+              backgroundColor: "#ccc",
+              width: 200,
+              alignItems: "center",
+            }}
           >
-            <Text className="text-[16px]">Radar</Text>
+            <Text style={{ fontSize: 16 }}>Radar</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => onSelect("cherry")}
-            className="rounded p-[10px] my-[5px] bg-gray-200 w-[200px] items-center"
+            style={{
+              borderRadius: 10,
+              padding: 10,
+              marginBottom: 5,
+              backgroundColor: "#ccc",
+              width: 200,
+              alignItems: "center",
+            }}
           >
-            <Text className="text-[16px]">Cherry Blossom</Text>
+            <Text style={{ fontSize: 16 }}>Cherry Blossom</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => onSelect("cyber")}
+            style={{
+              borderRadius: 10,
+              padding: 10,
+              marginBottom: 5,
+              backgroundColor: "#ccc",
+              width: 200,
+              alignItems: "center",
+            }}
+          >
+            <Text style={{ fontSize: 16 }}>CyberPunk</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => onSelect("colourblind")}
+            style={{
+              borderRadius: 10,
+              padding: 10,
+              marginBottom: 5,
+              backgroundColor: "#ccc",
+              width: 200,
+              alignItems: "center",
+            }}
+          >
+            <Text style={{ fontSize: 16 }}>Colour Blind</Text>
+          </TouchableOpacity>
+
         </View>
       </TouchableOpacity>
     </Modal>

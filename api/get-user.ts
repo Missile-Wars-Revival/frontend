@@ -12,9 +12,9 @@ export async function getUser(username: string) {
     return response.data;
   } catch (error) {
     if (isAxiosError(error)) {
-      return error.response?.data;
+      throw new Error(error.response?.data);
     }
 
-    console.log(error);
+    throw error;
   }
 }
