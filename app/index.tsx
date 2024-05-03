@@ -6,6 +6,10 @@ export default function Index() {
   return (
     <SafeAreaView className="flex-1 justify-center items-center">
       <Text className="text-2xl text-green-700">Index</Text>
+      <Text>Welcome to Missile Wars</Text>
+      <Text>Let the Missles fly!</Text>
+      <Text> </Text>
+      <Text> </Text>
       <Link href="/login" className="text-blue-500">
         Login Page
       </Link>

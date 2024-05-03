@@ -8,9 +8,9 @@ export async function testUsers() {
     return response.data;
   } catch (error) {
     if (isAxiosError(error)) {
-      return error.response?.data;
+      throw new Error(error.response?.data);
     }
 
-    console.log(error);
+    throw error;
   }
 }

@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { login } from "../../api/login";
 
-export default function useLogin() {
+export default function useLogin(onSuccess?: () => void, onError?: () => void) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({
@@ -16,6 +16,17 @@ export default function useLogin() {
         queryKey: ["currentUser"],
         refetchType: "active",
       });
+      if (onSuccess) {
+        alert("Login success!")
+        onSuccess();
+      }
+    },
+    onError: (error) => {
+      console.error(error);
+
+      if (onError) {
+        onError();
+      }
     },
   });
 }
