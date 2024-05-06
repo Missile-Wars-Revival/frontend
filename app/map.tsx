@@ -21,6 +21,7 @@ import { getTimeDifference, isInactiveFor24Hours } from "../util/get-time-differ
 import { getDistance } from "../util/get-dist";
 
 import { userNAME } from "../temp/login"; // fetch from backend eventually
+import { storeMapStyle, getStoredMapStyle } from "../components/ui/mapthemestore"; //cache map theme 
 
 //Hooks
 import { dispatch } from "../api/dispatch";
@@ -385,7 +386,21 @@ export default function Map() {
       default:
         break;
     }
+    // Store selected map style using storeMapStyle function from MapStorage.ts
+    storeMapStyle(style);
   };
+  
+  // Call getStoredMapStyle from MapStorage.ts on component mount to retrieve selected map style
+  useEffect(() => {
+    const fetchStoredMapStyle = async () => {
+      const storedStyle = await getStoredMapStyle();
+      if (storedStyle) {
+        selectMapStyle(storedStyle);
+      }
+    };
+    fetchStoredMapStyle();
+  }, []);
+  
   //logs for location
   //console.log("lootLocations:", lootLocations);
   //console.log("missileData:", missileData);
