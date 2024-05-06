@@ -1,3 +1,4 @@
+// This file is for using Async storage to cache users theme choice
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const MAP_STYLE_KEY = 'selectedMapStyle';
