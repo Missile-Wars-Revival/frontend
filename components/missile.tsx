@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Missilelib } from "../types/types";
-import { Text, View, Image, ScrollView } from "react-native";
+import { Text, View, TouchableOpacity, Image, ScrollView } from "react-native";
 
 //Missile types
 //   Amplifier:
@@ -83,18 +83,30 @@ export const MissileLibrary = () => {
     return 
   }
 
+  const handleMissileClick = (missileType: string) => {
+    console.log('Selected Missile:', missileType);
+  };
+
+  if (loading) {
+    return (
+      <View>
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
+
   return (
     <ScrollView contentContainerStyle={{ padding: 20 }}>
       <Text>Select your Missile:</Text>
       {missileLibrary.map((missile, index) => (
-        <View key={index} style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 10 }}>
+        <TouchableOpacity key={index} onPress={() => handleMissileClick(missile.type)} style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 10 }}>
           <Image source={missileImages[missile.type]} style={{ width: 50, height: 50, marginRight: 10 }} />
           <Text>{missile.type} - Quantity: {missile.quantity}</Text>
-        </View>
+        </TouchableOpacity>
       ))}
     </ScrollView>
   );
-}; 
+};
 
 
 //Missile Markers images
