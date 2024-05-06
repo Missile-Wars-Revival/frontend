@@ -13,15 +13,23 @@ export default function Index() {
       <Link href="/login" className="text-blue-500">
         Login Page
       </Link>
+      <Text> </Text>
+      <Text> </Text>
       <Link href="/map" className="text-blue-500">
         Map Page
       </Link>
+      <Text> </Text>
+      <Text> </Text>
       <Link href="/friends" className="text-blue-500">
         Friends Page
       </Link>
+      <Text> </Text>
+      <Text> </Text>
       <Link href="/register" className="text-blue-500">
         Click here for: register
       </Link>
+      <Text> </Text>
+      <Text> </Text>
     </SafeAreaView>
   );
 }
