@@ -45,6 +45,14 @@ export default function Map() {
 
   const [otherPlayersData, setOtherPlayersData] = useState([] as Player[]);
 
+  const [isModalVisible, setIsModalVisible] = useState(false);  
+//marker images
+  const resizedplayerimage = require("../assets/mapassets/Female_Avatar_PNG.png"); // Your custom image path
+  const resizedplayericon = { width: 30, height: 30 }; // Custom size for image
+
+  const resizedlootimage = require("../assets/mapassets/Airdropicon.png"); // Your custom image path
+  const resizedlooticon = { width: 50, height: 50 }; // Custom size for image
+
   const fetchOtherPlayers = async () => {
     try {
       const data = await fetchOtherPlayersData();
@@ -231,6 +239,8 @@ export default function Map() {
         checkLandmineCollision();
         checkMissileCollision();
         checkLootCollection();
+
+        //console.log("isModalVisible:", isModalVisible);
       }
     }, 5000); // 5 seconds
 
@@ -341,11 +351,17 @@ export default function Map() {
   };
 
   const showPopup = () => {
+    //console.log("Popup button clicked");
     setPopupVisible(true);
   };
+  
 
   const closePopup = () => {
     setPopupVisible(false);
+  };
+
+  const fireMissile = (username: string) => {
+    setIsModalVisible(true);
   };
 
   const selectMapStyle = (style: string) => {
@@ -375,13 +391,6 @@ export default function Map() {
   //console.log("missileData:", missileData);
 
   //To allow player to upload their own this is modular
-  const resizedplayerimage = require("../assets/mapassets/Female_Avatar_PNG.png"); // Your custom image path
-  const resizedplayericon = { width: 30, height: 30 }; // Custom size for image
-
-  const resizedlootimage = require("../assets/mapassets/Airdropicon.png"); // Your custom image path
-  const resizedlooticon = { width: 50, height: 50 }; // Custom size for image
-
-const [isModalVisible, setIsModalVisible] = useState(false);
 
   return (
     <View className="flex-1 bg-gray-200">
@@ -469,52 +478,59 @@ const [isModalVisible, setIsModalVisible] = useState(false);
 })}
 
 {otherPlayersData
-          .filter(player => player.username !== userNAME && !isInactiveFor24Hours(player.updatedAt)) // Filter out inactive players(12) and the player's own username
-          .map((player, index) => {
-            const { text } = getTimeDifference(player.updatedAt);
+  .filter(player => player.username !== userNAME && !isInactiveFor24Hours(player.updatedAt))
+  .map((player, index) => {
+    const { text } = getTimeDifference(player.updatedAt);
 
-            return (
-              <React.Fragment key={index}>
-                <Circle
-                  center={{
-                    latitude: player.latitude,
-                    longitude: player.longitude,
-                  }}
-                  radius={6} // Assuming a radius for other players
-                  fillColor="rgba(0, 255, 0, 0.2)" // Green color
-                  strokeColor="rgba(0, 255, 0, 0.8)"
-                />
-                <Marker
-                  key={index}
-                  coordinate={{
-                    latitude: player.latitude,
-                    longitude: player.longitude,
-                  }}
-                  title={player.username}
-                  description={text} //Finding it really hard to set "just now" as green
-                  onPress={() => {
-                    if (selectedMarkerIndex === index) {
-                      setSelectedMarkerIndex(null); // Deselect the marker NOT WORKING
-                    } else {
-                      setSelectedMarkerIndex(index); // Select the marker
-                    }
-                  }}
-                >
-                  {/* Use resized image for the Marker */}
-                  <Image source={resizedplayerimage} style={resizedplayericon} />
-                </Marker>
-                {selectedMarkerIndex !== null && selectedMarkerIndex === index && ( // Conditionally render button... maybe
-                  <View style={{ backgroundColor: 'red', borderRadius: 5, marginTop: 2 }}>
-                    <Button
-                      title={`Fire Missile At Player: ${player.username}`}
-                      onPress={() => setIsModalVisible(true)}
-                      color="white" // Set text color to white
-                    />
-                  </View>
-                )}
-              </React.Fragment>
-            );
-          })}
+    return (
+      <React.Fragment key={index}>
+        <Circle
+          center={{
+            latitude: player.latitude,
+            longitude: player.longitude,
+          }}
+          radius={6}
+          fillColor="rgba(0, 255, 0, 0.2)"
+          strokeColor="rgba(0, 255, 0, 0.8)"
+        />
+        <Marker
+          coordinate={{
+            latitude: player.latitude,
+            longitude: player.longitude,
+          }}
+          title={player.username}
+          description={text}
+          onPress={() => {
+            if (selectedMarkerIndex === index) {
+              setSelectedMarkerIndex(null);
+            } else {
+              setSelectedMarkerIndex(index);
+            }
+            console.log("selectedMarkerIndex:", selectedMarkerIndex);
+          }}
+        >
+          {/* Wrap image and button inside a View */}
+          <View style={{ alignItems: 'center' }}>
+            <Image source={resizedplayerimage} style={resizedplayericon} />
+
+{selectedMarkerIndex !== null && selectedMarkerIndex === index && (
+  <View style={{ backgroundColor: 'red', borderRadius: 5, marginTop: 2 }}> 
+    {/* Ensure onPress event is passed the player's username */}
+    <Button
+      title={`Fire Missile At Player: ${player.username}`}
+      onPress={() => {
+        console.log("Button clicked for player:", player.username);
+        fireMissile(player.username);
+      }}
+      color="white"
+    />
+  </View>
+)}
+          </View>
+        </Marker>
+      </React.Fragment>
+    );
+  })}
       </MapView>
 {/* Missile library popup */}
       <Modal
