@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { Text, View, TouchableOpacity, Image, Button, Modal, Dimensions, ScrollView } from "react-native";
-import MapView, { PROVIDER_GOOGLE, Circle, Marker, Polyline, Callout } from "react-native-maps";
+import MapView, { PROVIDER_GOOGLE, Circle, Marker, Polyline } from "react-native-maps";
 import * as ExpoLocation from "expo-location";
 
 //Themes
@@ -491,7 +491,7 @@ export default function Map() {
   </React.Fragment>
   );
 })}
-
+{/* Render Players */}
 {otherPlayersData
   .filter(player => player.username !== userNAME && !isInactiveFor24Hours(player.updatedAt))
   .map((player, index) => {
@@ -528,7 +528,7 @@ export default function Map() {
           {/* Wrap image and button inside a View */}
           <View style={{ alignItems: 'center' }}>
             <Image source={resizedplayerimage} style={resizedplayericon} />
-
+{/* Missile Lib Button */}
 {selectedMarkerIndex !== 10 && selectedMarkerIndex === index && (
   <View style={{ backgroundColor: 'red', borderRadius: 5, marginTop: 2 }}> 
     {/* Ensure onPress event is passed the player's username */}
