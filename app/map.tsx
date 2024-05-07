@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { Text, View, TouchableOpacity, Image, Button, Modal, Dimensions, ScrollView } from "react-native";
-import MapView, { PROVIDER_GOOGLE, Circle, Marker, Polyline } from "react-native-maps";
+import MapView, { PROVIDER_GOOGLE, Circle, Marker, Polyline, Callout } from "react-native-maps";
 import * as ExpoLocation from "expo-location";
 
 //Themes
@@ -517,7 +517,8 @@ export default function Map() {
           description={text}
           onPress={() => {
             if (selectedMarkerIndex === index) {
-              setSelectedMarkerIndex(null);
+              setSelectedMarkerIndex(10);
+              fireMissile(player.username);
             } else {
               setSelectedMarkerIndex(index);
             }
@@ -528,7 +529,7 @@ export default function Map() {
           <View style={{ alignItems: 'center' }}>
             <Image source={resizedplayerimage} style={resizedplayericon} />
 
-{selectedMarkerIndex !== null && selectedMarkerIndex === index && (
+{selectedMarkerIndex !== 10 && selectedMarkerIndex === index && (
   <View style={{ backgroundColor: 'red', borderRadius: 5, marginTop: 2 }}> 
     {/* Ensure onPress event is passed the player's username */}
     <Button
