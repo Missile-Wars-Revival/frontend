@@ -1,5 +1,10 @@
 import { Landmine } from "../types/types";
 
+export type LandminePlacementPopupProps = {
+  visible: boolean;
+  onClose: () => void;
+};
+
 export const fetchLandminesFromBackend = async (): Promise<Landmine[]> => {
   // Simulated data for demonstration
   return [
@@ -9,7 +14,7 @@ export const fetchLandminesFromBackend = async (): Promise<Landmine[]> => {
 };
 
 // Function to add a landmine to the map
-export const addLandmineToMap = (latitude: number, longitude: number, placedby: string): void => {
-  // Add logic here to add the landmine to the map backend
-  console.log(`Landmine added at: Latitude ${latitude}, Longitude ${longitude}, Placed by ${placedby}`);
-};
+export function addLandmine(latitude: number, longitude: number) {
+  throw new Error("Function not implemented.");
+}
+
