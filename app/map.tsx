@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { Text, View, TouchableOpacity, Image, Button, Modal, Dimensions, ScrollView } from "react-native";
+import { Text, View, TouchableOpacity, Image, Button, Modal, Dimensions } from "react-native";
 import MapView, { PROVIDER_GOOGLE, Circle, Marker, Polyline } from "react-native-maps";
 import * as ExpoLocation from "expo-location";
 
@@ -14,7 +14,7 @@ import { ColorblindMapStyle } from "../themes/colourblindstyle";
 import { Loot, Missile, Landmine, Location, Player  } from "../types/types";
 
 //Components:
-import { missileImagePaths, MissileLibrary } from "../components/missile";
+import { missileImages, MissileLibrary } from "../components/missile";
 
 import { MapStylePopup } from "../components/map-style-popup";
 import { getTimeDifference, isInactiveFor24Hours } from "../util/get-time-difference";
@@ -43,10 +43,9 @@ export default function Map() {
   const [landminedata, setlandminelocations] = useState<Landmine[]>([]);
   const [userLocation, setUserLocation] = useState<Location | null>(null);
   const [selectedMarkerIndex, setSelectedMarkerIndex] = useState<number | null>(null);
-
   const [otherPlayersData, setOtherPlayersData] = useState([] as Player[]);
-
   const [isModalVisible, setIsModalVisible] = useState(false);  
+  const [selectedPlayerUsername, setSelectedPlayerUsername] = useState('');
 //marker images
   const resizedplayerimage = require("../assets/mapassets/Female_Avatar_PNG.png"); // Your custom image path
   const resizedplayericon = { width: 30, height: 30 }; // Custom size for image
@@ -361,7 +360,7 @@ export default function Map() {
     setPopupVisible(false);
   };
 
-  const fireMissile = (username: string) => {
+  const fireMissile = (playerName: string) => {
     setIsModalVisible(true);
   };
 
@@ -455,7 +454,7 @@ export default function Map() {
 {missileData.map(({ destination, currentLocation, radius, type, status }, index) => {
 
 // Define a mapping of image paths with an index signature (paths found in components)
-  const resizedmissileimage = missileImagePaths[type];
+  const resizedmissileimage = missileImages[type];
   const resizedmissileicon = { width: 50, height: 50 }; // Custom size for image
 
   // Calculate coordinates for trajectory line
@@ -518,6 +517,7 @@ export default function Map() {
           onPress={() => {
             if (selectedMarkerIndex === index) {
               setSelectedMarkerIndex(10);
+              setSelectedPlayerUsername(player.username);
               fireMissile(player.username);
             } else {
               setSelectedMarkerIndex(index);
@@ -558,7 +558,7 @@ export default function Map() {
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
           <View style={{ backgroundColor: 'white', borderRadius: 10, width: Dimensions.get('window').width - 40, maxHeight: Dimensions.get('window').height - 200 }}>
             {/* Include MissileLibrary component */}
-            <MissileLibrary />
+            <MissileLibrary playerName={selectedPlayerUsername} />
             <View style={{ alignSelf: 'flex-end', padding: 10 }}>
               <Button title="Cancel" onPress={() => setIsModalVisible(false)} />
             </View>
