@@ -15,7 +15,7 @@ import { Loot, Missile, Landmine, Location, Player  } from "../types/types";
 
 //Components:
 import { missileImages, MissileLibrary } from "../components/missile";
-import { fetchLandminesFromBackend, addLandmineToMap } from "../components/landmine";
+import { fetchLandminesFromBackend, addLandmine, LandminePlacementPopupProps} from "../components/landmine";
 
 import { MapStylePopup } from "../components/map-style-popup";
 import { FireTypeStyle } from "../components/fire-type-popup";
@@ -43,6 +43,8 @@ export default function Map() {
   const [FirepopupVisible, setFirePopupVisible] = useState(false);
   const [lootLocations, setLootLocations] = useState<Loot[]>([]);
   const [missileData, setMissileData] = useState<Missile[]>([]);
+
+  const [LandminePopupVisible, setLandminePopupVisible] = useState(false);
   const [landminedata, setlandminelocations] = useState<Landmine[]>([]);
   const [userLocation, setUserLocation] = useState<Location | null>(null);
   const [selectedMarkerIndex, setSelectedMarkerIndex] = useState<number | null>(null);
@@ -358,14 +360,6 @@ export default function Map() {
     setIsModalVisible(true);
   };
 
-  const addLandmine = () => {
-    // Example coordinates (replace with actual values)
-    const latitude = 45.12345;
-    const longitude = -0.67890;
-    const placedby = "CurrentPlayer"; // Replace with actual username
-    addLandmineToMap(latitude, longitude, placedby);
-  };
-
   const FireshowPopup = () => {
     //console.log("Popup button clicked");
     setFirePopupVisible(true);
@@ -382,7 +376,7 @@ export default function Map() {
       case "firelandmine":
         console.log("place landmine")
         //place landminecode;
-        //addLandmine;
+        setLandminePopupVisible(true);
         break;
       case "firemissile":
         console.log("Fire Missile")
@@ -391,6 +385,61 @@ export default function Map() {
       default:
         break;
     }
+  };
+
+  const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ visible, onClose }) => {
+    const [landmineLocation, setLandmineLocation] = useState<Location | null>(null);
+  
+    const handleMapPress = (event: { nativeEvent: { coordinate: any; }; }) => {
+      const { coordinate } = event.nativeEvent;
+      setLandmineLocation(coordinate);
+    };
+  
+    const placeLandmine = () => {
+      // Place landmine logic here using the selected location
+      if (landmineLocation) {
+        addLandmine(landmineLocation.latitude, landmineLocation.longitude);
+        // Close the popup
+        onClose();
+      }
+    };
+  
+    return (
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={visible}
+        onRequestClose={onClose}
+      >
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
+          <View style={{ backgroundColor: 'white', borderRadius: 10, padding: 20 }}>
+            <Text>Place Landmine: </Text>
+            {/* Conditional rendering of MapView */}
+            {userLocation && (
+              <MapView
+                style={{ width: 300, height: 300 }}
+                onPress={handleMapPress}
+                provider={PROVIDER_GOOGLE}
+                showsUserLocation={true}
+                customMapStyle={selectedMapStyle}
+                initialRegion={{
+                  latitude: userLocation.latitude,
+                  longitude: userLocation.longitude,
+                  latitudeDelta: 0.01,
+                  longitudeDelta: 0.01,
+                }}
+              >
+                {landmineLocation && (
+                  <Marker coordinate={landmineLocation} />
+                )}
+              </MapView>
+            )}
+            <Button title="Place Landmine" onPress={placeLandmine} />
+            <Button title="Close" onPress={onClose} />
+          </View>
+        </View>
+      </Modal>
+    );
   };
 
   const ThemeshowPopup = () => {
@@ -504,7 +553,6 @@ export default function Map() {
     { latitude: currentLocation.latitude, longitude: currentLocation.longitude },
     { latitude: destination.latitude, longitude: destination.longitude },
   ];
-
   
   return (
     <React.Fragment key={index}>
@@ -638,6 +686,8 @@ export default function Map() {
         onClose={FireclosePopup}
         onSelect={selectFiretype}
       />
+
+        <LandminePlacementPopup visible={LandminePopupVisible} onClose={() => setLandminePopupVisible(false)} />
     </View>
   );
 }
