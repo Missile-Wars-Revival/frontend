@@ -522,7 +522,7 @@ export default function Map() {
             } else {
               setSelectedMarkerIndex(index);
             }
-            console.log("selectedMarkerIndex:", selectedMarkerIndex);
+            //console.log("selectedMarkerIndex:", selectedMarkerIndex);
           }}
         >
           {/* Wrap image and button inside a View */}
