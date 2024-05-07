@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Missilelib } from "../types/types";
-import { Text, View, Image, ScrollView } from "react-native";
+import { Text, View, TouchableOpacity, Image, Button, Modal, ScrollView } from "react-native";
 
 //Missile types
 //   Amplifier:
@@ -42,7 +42,7 @@ const fetchMissileLib = (): Promise<Missilelib[]> => {
 interface MissileImages {
   [key: string]: any;
 }
-// For Missile Library
+// For Missile Images for both markers and library
 export const missileImages: MissileImages = {
   Amplifier: require('../assets/missiles/Amplifier.png'),
   Ballista: require('../assets/missiles/Ballista.png'),
@@ -60,9 +60,11 @@ export const missileImages: MissileImages = {
   // Add other missile images here
 };
 
-export const MissileLibrary = () => {
+export const MissileLibrary = ({ playerName }: { playerName: string }) => {
   const [missileLibrary, setMissileLibrary] = useState<Missilelib[]>([]);
-  const [loading, setLoading] = useState(true); // Add loading state
+  const [loading, setLoading] = useState(true);
+  const [selectedMissile, setSelectedMissile] = useState<string | null>(null);
+  const [showPopup, setShowPopup] = useState(false);
 
   useEffect(() => {
     const fetchMissileLibrary = async () => {
@@ -72,44 +74,55 @@ export const MissileLibrary = () => {
       } catch (error) {
         console.error('Error fetching missile library:', error);
       } finally {
-        setLoading(false); // Set loading to false regardless of success or failure
+        setLoading(false);
       }
     };
 
     fetchMissileLibrary();
   }, []);
 
+  const handleMissileClick = (missileType: string) => {
+    setSelectedMissile(missileType);
+    setShowPopup(true);
+  };
+
+  const handleFire = () => {
+    // Implement fire logic here
+    console.log("Firing missile:", selectedMissile, "at player:", playerName);
+    setShowPopup(false);
+  };
+
+  const handleCancel = () => {
+    setShowPopup(false);
+  };
+
   if (loading) {
-    return 
+    return (
+      <View>
+        <Text>Loading...</Text>
+      </View>
+    );
   }
 
   return (
     <ScrollView contentContainerStyle={{ padding: 20 }}>
       <Text>Select your Missile:</Text>
       {missileLibrary.map((missile, index) => (
-        <View key={index} style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 10 }}>
+        <TouchableOpacity key={index} onPress={() => handleMissileClick(missile.type)} style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 10 }}>
           <Image source={missileImages[missile.type]} style={{ width: 50, height: 50, marginRight: 10 }} />
           <Text>{missile.type} - Quantity: {missile.quantity}</Text>
-        </View>
+        </TouchableOpacity>
       ))}
+      <Modal visible={showPopup} animationType="slide">
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Target: {playerName}</Text>
+          <Text>Missile Type: {selectedMissile}</Text>
+          {/* Add player name input */}
+          <Image source={missileImages[selectedMissile || ""]} style={{ width: 100, height: 100, marginVertical: 10 }} />
+          <Button title="Fire" onPress={handleFire} color="red" />
+          <Button title="Cancel" onPress={handleCancel} />
+        </View>
+      </Modal>
     </ScrollView>
   );
-}; 
-
-
-//Missile Markers images
-export const missileImagePaths: { [key: string]: any } = {
-  Amplifier: require("../assets/missiles/Amplifier.png"),
-  Ballista: require("../assets/missiles/Ballista.png"),
-  BigBertha: require("../assets/missiles/BigBertha.png"),
-  Bombabom: require("../assets/missiles/Bombabom.png"),
-  BunkerBlocker: require("../assets/missiles/BunkerBlocker.png"),
-  ClusterBomb: require("../assets/missiles/ClusterBomb.png"),
-  CorporateRaider: require("../assets/missiles/CorporateRaider.png"),
-  GutShot: require("../assets/missiles/GutShot.png"),
-  TheNuke: require("../assets/missiles/TheNuke.png"),
-  Yokozuna: require("../assets/missiles/Yokozuna.png"),
-  Zippy: require("../assets/missiles/Zippy.png"),
-
-  // Add other missile types here
 };
