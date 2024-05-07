@@ -15,6 +15,7 @@ import { Loot, Missile, Landmine, Location, Player  } from "../types/types";
 
 //Components:
 import { missileImages, MissileLibrary } from "../components/missile";
+import { fetchLandminesFromBackend, addLandmineToMap } from "../components/landmine";
 
 import { MapStylePopup } from "../components/map-style-popup";
 import { getTimeDifference, isInactiveFor24Hours } from "../util/get-time-difference";
@@ -177,13 +178,13 @@ export default function Map() {
       ];
     };
 
-    const fetchlandmineFromBackend = async () => {
-      // Simulated fetch function to get landmine data:
-      return [
-        { latitude: 45.2949318, longitude: -0.852764, placedby: "Test2" }, //temp landmine location
-        { latitude: 51.025682, longitude: -3.1174578, placedby: "Test"}, //2nd temp landmine location TS
-      ];
-    };
+    // const fetchlandmineFromBackend = async () => {
+    //   // Simulated fetch function to get landmine data:
+    //   return [
+    //     { latitude: 45.2949318, longitude: -0.852764, placedby: "Test2", Expire: "" }, //temp landmine location
+    //     { latitude: 51.025682, longitude: -3.1174578, placedby: "Test", Expire: ""}, //2nd temp landmine location TS
+    //   ];
+    // };
 
     const fetchMissilesFromBackend = async (): Promise<Missile[]> => {
       // Simulated fetch function to get missile data:
@@ -209,7 +210,7 @@ export default function Map() {
 
     const updateData = async () => {
       const lootData = await fetchLootFromBackend();
-      const landminedata = await fetchlandmineFromBackend();
+      const landminedata = await fetchLandminesFromBackend();
       const missileData = await fetchMissilesFromBackend();
 
       setLootLocations(lootData);
@@ -360,9 +361,19 @@ export default function Map() {
     setPopupVisible(false);
   };
 
+  //dispatching Missile, landmines
   const fireMissile = (playerName: string) => {
     setIsModalVisible(true);
   };
+
+  const addLandmine = () => {
+    // Example coordinates (replace with actual values)
+    const latitude = 45.12345;
+    const longitude = -0.67890;
+    const placedby = "CurrentPlayer"; // Replace with actual username
+    addLandmineToMap(latitude, longitude, placedby);
+  };
+  
 
   const selectMapStyle = (style: string) => {
     closePopup();

@@ -1,12 +1,15 @@
-import { Circle } from "react-native-maps";
-import { Location } from "../types/types";
+import { Landmine } from "../types/types";
 
-// landmine Component
-export const Landmine = ({ location }: { location: Location }) => (
-  <Circle
-    center={location}
-    radius={20} //radius 20
-    fillColor="rgba(128, 128, 128, 0.5)" //gray colour
-    strokeColor="rgba(128, 128, 128, 0.8)"
-  />
-);
+export const fetchLandminesFromBackend = async (): Promise<Landmine[]> => {
+  // Simulated data for demonstration
+  return [
+    { latitude: 45.2949318, longitude: -0.852764, placedby: "Test2", Expire: "" },
+    { latitude: 51.025682, longitude: -3.1174578, placedby: "Test", Expire: ""},
+  ];
+};
+
+// Function to add a landmine to the map
+export const addLandmineToMap = (latitude: number, longitude: number, placedby: string): void => {
+  // Add logic here to add the landmine to the map backend
+  console.log(`Landmine added at: Latitude ${latitude}, Longitude ${longitude}, Placed by ${placedby}`);
+};
