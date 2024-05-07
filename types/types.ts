@@ -19,6 +19,11 @@ export interface Missilelib {
   quantity: number;
   description: string;
 }
+export interface LandmineLib {
+  type: string;
+  quantity: number;
+  description: string;
+}
 
 export interface Loot {
   latitude: number;

@@ -15,7 +15,7 @@ import { Loot, Missile, Landmine, Location, Player  } from "../types/types";
 
 //Components:
 import { missileImages, MissileLibrary } from "../components/missile";
-import { fetchLandminesFromBackend, addLandmine, LandminePlacementPopupProps} from "../components/landmine";
+import { addLandmine, LandminePlacementPopupProps} from "../components/landmine";
 
 import { MapStylePopup } from "../components/map-style-popup";
 import { FireTypeStyle } from "../components/fire-type-popup";
@@ -182,13 +182,13 @@ export default function Map() {
       ];
     };
 
-    // const fetchlandmineFromBackend = async () => {
-    //   // Simulated fetch function to get landmine data:
-    //   return [
-    //     { latitude: 45.2949318, longitude: -0.852764, placedby: "Test2", Expire: "" }, //temp landmine location
-    //     { latitude: 51.025682, longitude: -3.1174578, placedby: "Test", Expire: ""}, //2nd temp landmine location TS
-    //   ];
-    // };
+    const fetchlandmineFromBackend = async () => {
+      // Simulated fetch function to get landmine data:
+      return [
+        { latitude: 45.2949318, longitude: -0.852764, placedby: "Test2", Expire: "" }, //temp landmine location
+        { latitude: 51.025682, longitude: -3.1174578, placedby: "Test", Expire: ""}, //2nd temp landmine location TS
+      ];
+    };
 
     const fetchMissilesFromBackend = async (): Promise<Missile[]> => {
       // Simulated fetch function to get missile data:
@@ -214,7 +214,7 @@ export default function Map() {
 
     const updateData = async () => {
       const lootData = await fetchLootFromBackend();
-      const landminedata = await fetchLandminesFromBackend();
+      const landminedata = await fetchlandmineFromBackend();
       const missileData = await fetchMissilesFromBackend();
 
       setLootLocations(lootData);
