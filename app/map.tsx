@@ -18,6 +18,7 @@ import { missileImages, MissileLibrary } from "../components/missile";
 import { fetchLandminesFromBackend, addLandmineToMap } from "../components/landmine";
 
 import { MapStylePopup } from "../components/map-style-popup";
+import { FireTypeStyle } from "../components/fire-type-popup";
 import { getTimeDifference, isInactiveFor24Hours } from "../util/get-time-difference";
 import { getDistance } from "../util/get-dist";
 
@@ -38,7 +39,8 @@ export default function Map() {
 
   const [region, setRegion] = useState(defaultRegion); //null was defaultRegion but zoomed in ugly
   const [selectedMapStyle, setSelectedMapStyle] = useState(DefaultMapStyle);
-  const [popupVisible, setPopupVisible] = useState(false);
+  const [ThemepopupVisible, setThemePopupVisible] = useState(false);
+  const [FirepopupVisible, setFirePopupVisible] = useState(false);
   const [lootLocations, setLootLocations] = useState<Loot[]>([]);
   const [missileData, setMissileData] = useState<Missile[]>([]);
   const [landminedata, setlandminelocations] = useState<Landmine[]>([]);
@@ -351,16 +353,6 @@ export default function Map() {
     }
   };
 
-  const showPopup = () => {
-    //console.log("Popup button clicked");
-    setPopupVisible(true);
-  };
-  
-
-  const closePopup = () => {
-    setPopupVisible(false);
-  };
-
   //dispatching Missile, landmines
   const fireMissile = (playerName: string) => {
     setIsModalVisible(true);
@@ -373,10 +365,46 @@ export default function Map() {
     const placedby = "CurrentPlayer"; // Replace with actual username
     addLandmineToMap(latitude, longitude, placedby);
   };
+
+  const FireshowPopup = () => {
+    //console.log("Popup button clicked");
+    setFirePopupVisible(true);
+  };
   
 
+  const FireclosePopup = () => {
+    setFirePopupVisible(false);
+  };
+
+  const selectFiretype = (style: string) => {
+    FireclosePopup();
+    switch (style) {
+      case "firelandmine":
+        console.log("place landmine")
+        //place landminecode;
+        //addLandmine;
+        break;
+      case "firemissile":
+        console.log("Fire Missile")
+        //Fire missile code;
+        break;
+      default:
+        break;
+    }
+  };
+
+  const ThemeshowPopup = () => {
+    //console.log("Popup button clicked");
+    setThemePopupVisible(true);
+  };
+  
+
+  const ThemeclosePopup = () => {
+    setThemePopupVisible(false);
+  };
+  
   const selectMapStyle = (style: string) => {
-    closePopup();
+    ThemeclosePopup();
     switch (style) {
       case "default":
         setSelectedMapStyle(DefaultMapStyle);
@@ -583,16 +611,32 @@ export default function Map() {
       {/* Dropdown button */}
       <TouchableOpacity
         className="absolute bottom-[20px] left-[20px] rounded-[5px] p-[10px] bg-white shadow-md"
-        onPress={showPopup}
+        onPress={ThemeshowPopup}
       >
         <Text className="text-[16px]">Theme</Text>
       </TouchableOpacity>
 
       <MapStylePopup
-        visible={popupVisible}
+        visible={ThemepopupVisible}
         transparent={true}
-        onClose={closePopup}
+        onClose={ThemeclosePopup}
         onSelect={selectMapStyle}
+      />
+
+
+      {/* Fire Select button */}
+      <TouchableOpacity
+        className="absolute bottom-[70px] left-[20px] rounded-[5px] p-[10px] bg-white shadow-md"
+        onPress={FireshowPopup}
+      >
+        <Text className="text-[16px]">+</Text>
+      </TouchableOpacity>
+
+      <FireTypeStyle
+        visible={FirepopupVisible}
+        transparent={true}
+        onClose={FireclosePopup}
+        onSelect={selectFiretype}
       />
     </View>
   );

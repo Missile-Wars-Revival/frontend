@@ -20,3 +20,4 @@ export const getStoredMapStyle = async (): Promise<string | null> => {
     throw error;
   }
 };
+
