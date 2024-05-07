@@ -56,7 +56,7 @@ export const LandmineImages: LandmineImages = {
   // Add other Landmine images here
 };
 
-export const LandmineLibrary = ({ playerName }: { playerName: string }) => {
+export const LandmineLibrary = () => {
   const [LandmineLibrary, setLandmineLibrary] = useState<LandmineLib[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedLandmine, setSelectedLandmine] = useState<string | null>(null);
@@ -84,7 +84,7 @@ export const LandmineLibrary = ({ playerName }: { playerName: string }) => {
 
   const handleFire = () => {
     // Implement fire logic here
-    console.log("Firing Landmine:", selectedLandmine, "at player:", playerName);
+    console.log("Firing Landmine:", selectedLandmine);
     setShowPopup(false);
   };
 
