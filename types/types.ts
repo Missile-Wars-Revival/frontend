@@ -30,6 +30,7 @@ export interface Landmine {
   latitude: number;
   longitude: number;
   placedby: string;
+  Expire: string;
 }
 
 export interface Location {
