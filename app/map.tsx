@@ -389,12 +389,12 @@ export default function Map() {
 
   const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ visible, onClose }) => {
     const [landmineLocation, setLandmineLocation] = useState<Location | null>(null);
-  
+
     const handleMapPress = (event: { nativeEvent: { coordinate: any; }; }) => {
       const { coordinate } = event.nativeEvent;
       setLandmineLocation(coordinate);
     };
-  
+
     const placeLandmine = () => {
       // Place landmine logic here using the selected location
       if (landmineLocation) {
@@ -403,7 +403,7 @@ export default function Map() {
         onClose();
       }
     };
-  
+
     return (
       <Modal
         animationType="slide"
