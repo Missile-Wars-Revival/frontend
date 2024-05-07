@@ -180,8 +180,8 @@ export default function Map() {
     const fetchlandmineFromBackend = async () => {
       // Simulated fetch function to get landmine data:
       return [
-        { latitude: 45.2949318, longitude: -0.852764, placedby: "" }, //temp landmine location
-        { latitude: 51.025682, longitude: -3.1174578, placedby: ""}, //2nd temp landmine location TS
+        { latitude: 45.2949318, longitude: -0.852764, placedby: "Test2" }, //temp landmine location
+        { latitude: 51.025682, longitude: -3.1174578, placedby: "Test"}, //2nd temp landmine location TS
       ];
     };
 
@@ -439,7 +439,9 @@ export default function Map() {
 ))}
 
         {/* Render landmine Drops */}
-        {landminedata.map((location, index) => (
+        {landminedata
+        .filter(landmine => landmine.placedby === userNAME)
+        .map((location, index) => (
           <Circle
             key={index}
             center={location}
@@ -449,7 +451,8 @@ export default function Map() {
           />
         ))}
 
-        {/* Render Missiles */}
+        
+
 {/* Render Missiles */}
 {missileData.map(({ destination, currentLocation, radius, type, status }, index) => {
 
