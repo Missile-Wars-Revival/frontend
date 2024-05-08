@@ -5,7 +5,7 @@
     "scheme": "missle-wars",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/logo.gif",
+    "icon": "./assets/logo.png",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/logo.png",
@@ -19,21 +19,15 @@
     "ios": {
       "supportsTablet": true,
       "config": {
-        "googleMapsApiKey": "${GOOGLE_MAPS_API_KEY}",
-        "backendUrl": "${BACKEND_URL}",
-        "permissions": ["ACCESS_FINE_LOCATION"]
+        "googleMapsApiKey": "${GOOGLE_MAPS_API_KEY}"
       }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/logo.gif",
+        "foregroundImage": "./assets/logo.png",
         "backgroundColor": "#ffffff"
       },
       "config": {
-        "googleMaps": {
-          "googleMapsApiKey": "${GOOGLE_MAPS_API_KEY}"
-        },
-        "permissions": ["ACCESS_FINE_LOCATION"]
       }
     },
     "web": {

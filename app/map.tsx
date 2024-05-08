@@ -409,7 +409,7 @@ export default function Map() {
   return (
     <View className="flex-1 bg-gray-200">
       <MapView
-        provider={PROVIDER_GOOGLE}
+        // provider={PROVIDER_GOOGLE}
         className="flex-1"
         region={region}
         showsUserLocation={true}
