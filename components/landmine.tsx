@@ -1,4 +1,5 @@
-import { Landmine, LandmineLib } from "../types/types";
+import React from "react";
+import { LandmineLib } from "../types/types";
 import { useEffect, useState } from "react";
 import { Text, View, TouchableOpacity, Image, Button, Modal, ScrollView } from "react-native";
 

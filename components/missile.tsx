@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Missilelib } from "../types/types";
 import { Text, View, TouchableOpacity, Image, Button, Modal, ScrollView } from "react-native";
+import React from "react";
 
 //Missile types
 //   Amplifier:

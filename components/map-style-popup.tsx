@@ -1,4 +1,5 @@
 import { Modal, View, Text, TouchableOpacity } from "react-native";
+import React from "react";
 
 interface MapStylePopupProps {
   visible: boolean;
