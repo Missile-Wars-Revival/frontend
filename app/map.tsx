@@ -420,7 +420,7 @@ export default function Map() {
               <MapView
                 style={{ width: 300, height: 300 }}
                 onPress={handleMapPress}
-                provider={PROVIDER_GOOGLE}
+                //Result of expo update -> provider={PROVIDER_GOOGLE}
                 showsUserLocation={true}
                 customMapStyle={selectedMapStyle}
                 initialRegion={{
@@ -676,18 +676,36 @@ export default function Map() {
         shadowRadius: 3.84,
         elevation: 5,
       }}
-      onPress={showPopup}
+      onPress={ThemeshowPopup}
     >
       <Text style={{ fontSize: 16 }}>Theme</Text>
     </TouchableOpacity>
   )}
 
   <MapStylePopup
-    visible={popupVisible}
+    visible={ThemepopupVisible}
     transparent={true}
-    onClose={closePopup}
+    onClose={ThemeclosePopup}
     onSelect={selectMapStyle}
   />
-</View>
+
+
+      {/* Fire Select button */}
+      <TouchableOpacity
+        className="absolute bottom-[70px] left-[20px] rounded-[5px] p-[10px] bg-white shadow-md"
+        onPress={FireshowPopup}
+      >
+        <Text className="text-[16px]">+</Text>
+      </TouchableOpacity>
+
+      <FireTypeStyle
+        visible={FirepopupVisible}
+        transparent={true}
+        onClose={FireclosePopup}
+        onSelect={selectFiretype}
+      />
+
+        <LandminePlacementPopup visible={LandminePopupVisible} onClose={() => setLandminePopupVisible(false)} />
+    </View>
   );
 }
