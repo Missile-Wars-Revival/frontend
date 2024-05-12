@@ -631,6 +631,8 @@ export default function Map() {
           {/* Wrap image and button inside a View */}
           <View style={{ alignItems: 'center' }}>
             <Image source={resizedplayerimage} style={resizedplayericon} />
+            <Text style={{ color: 'grey' }}>{player.username}</Text>
+            
 {/* Missile Lib Button */}
 {selectedMarkerIndex !== 10 && selectedMarkerIndex === index && (
   <View style={{ backgroundColor: 'red', borderRadius: 5, marginTop: 2 }}> 
