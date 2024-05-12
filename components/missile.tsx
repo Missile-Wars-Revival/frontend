@@ -133,7 +133,7 @@ export const MissilefireposLibrary = () => {
   const [missileLibrary, setMissileLibrary] = useState<Missilelib[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMissile, setSelectedMissile] = useState<string | null>(null);
-  const [showPopup, setShowPopup] = useState(false);
+  const [showposPopup, setShowposPopup] = useState(false);
 
   useEffect(() => {
     const fetchMissileLibrary = async () => {
@@ -153,17 +153,17 @@ export const MissilefireposLibrary = () => {
   const handleMissileClick = (missileType: string) => {
     setSelectedMissile(missileType);
     //Shows confirm fire page 
-    setShowPopup(true);
+    setShowposPopup(true);
   };
 
   const handleFire = () => {
     // Implement fire logic here
-    console.log("Firing missile:", selectedMissile);
-    setShowPopup(false);
+    console.log("Selected missile:", selectedMissile);
+    setShowposPopup(false);
   };
 
   const handleCancel = () => {
-    setShowPopup(false);
+    setShowposPopup(false);
   };
 
   if (loading) {
@@ -183,7 +183,7 @@ export const MissilefireposLibrary = () => {
           <Text>{missile.type} - Quantity: {missile.quantity}</Text>
         </TouchableOpacity>
       ))}
-      <Modal visible={showPopup} animationType="slide">
+      <Modal visible={showposPopup} animationType="slide">
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <Text>Missile Type: {selectedMissile}</Text>
           {/* Add player name input */}

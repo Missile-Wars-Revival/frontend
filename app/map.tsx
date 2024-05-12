@@ -383,7 +383,7 @@ export default function Map() {
         break;
       case "firemissile":
         console.log("Fire Missile")
-        setMissileModalVisible(true);
+        setMissilefireposModalVisible(true);
         //Fire missile code;
         break;
       default:
@@ -675,7 +675,7 @@ export default function Map() {
       <Modal
         animationType="slide"
         transparent={true}
-        visible={MissileModalVisible}
+        visible={MissilefireposModalVisible}
         onRequestClose={() => setMissilefireposModalVisible(false)}
       >
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
