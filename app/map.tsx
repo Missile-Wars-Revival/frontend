@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { Text, View, TouchableOpacity, Image, Button, Modal, Dimensions } from "react-native";
 import MapView, { PROVIDER_GOOGLE, Circle, Marker, Polyline } from "react-native-maps";
 import * as ExpoLocation from "expo-location";
+import { Platform } from 'react-native';
 
 //Themes
 import { DefaultMapStyle } from "../themes/defaultMapStyle";
@@ -497,7 +498,7 @@ export default function Map() {
   return (
     <View className="flex-1 bg-gray-200">
       <MapView
-        provider={PROVIDER_GOOGLE}
+        // no longer supported -> provider={PROVIDER_GOOGLE}
         className="flex-1"
         region={region}
         showsUserLocation={true}
@@ -657,37 +658,36 @@ export default function Map() {
       </Modal>
 
       {/* Dropdown button */}
-      <TouchableOpacity
-        className="absolute bottom-[20px] left-[20px] rounded-[5px] p-[10px] bg-white shadow-md"
-        onPress={ThemeshowPopup}
-      >
-        <Text className="text-[16px]">Theme</Text>
-      </TouchableOpacity>
+      {Platform.OS === 'android' && (
+    <TouchableOpacity
+      style={{
+        position: 'absolute',
+        bottom: 20,
+        left: 20,
+        borderRadius: 5,
+        padding: 10,
+        backgroundColor: 'white',
+        shadowColor: '#000',
+        shadowOffset: {
+          width: 0,
+          height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+      }}
+      onPress={showPopup}
+    >
+      <Text style={{ fontSize: 16 }}>Theme</Text>
+    </TouchableOpacity>
+  )}
 
-      <MapStylePopup
-        visible={ThemepopupVisible}
-        transparent={true}
-        onClose={ThemeclosePopup}
-        onSelect={selectMapStyle}
-      />
-
-
-      {/* Fire Select button */}
-      <TouchableOpacity
-        className="absolute bottom-[70px] left-[20px] rounded-[5px] p-[10px] bg-white shadow-md"
-        onPress={FireshowPopup}
-      >
-        <Text className="text-[16px]">+</Text>
-      </TouchableOpacity>
-
-      <FireTypeStyle
-        visible={FirepopupVisible}
-        transparent={true}
-        onClose={FireclosePopup}
-        onSelect={selectFiretype}
-      />
-
-        <LandminePlacementPopup visible={LandminePopupVisible} onClose={() => setLandminePopupVisible(false)} />
-    </View>
+  <MapStylePopup
+    visible={popupVisible}
+    transparent={true}
+    onClose={closePopup}
+    onSelect={selectMapStyle}
+  />
+</View>
   );
 }
