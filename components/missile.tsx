@@ -152,6 +152,7 @@ export const MissilefireposLibrary = () => {
 
   const handleMissileClick = (missileType: string) => {
     setSelectedMissile(missileType);
+    //Shows confirm fire page 
     setShowPopup(true);
   };
 
