@@ -19,18 +19,18 @@ const fetchLandmineLib = (): Promise<LandmineLib[]> => {
     // Simulating asynchronous data fetching
     setTimeout(() => {
       const LandmineLibraryData: LandmineLib[] = [
-        { type: 'Amplifier', quantity: 10, description: " Landmine" },
-        { type: 'Ballista', quantity: 9 , description: " Landmine "},
-        { type: 'BigBertha', quantity: 8 , description: " Landmine "},
-        { type: 'Bombabom', quantity: 7 , description: " Landmine "},
-        { type: 'BunkerBlocker', quantity: 6 , description: " Landmine "},
-        { type: 'Buzzard', quantity: 5 , description: " Landmine "},
-        { type: 'ClusterBomb', quantity: 4 , description: " Landmine "},
-        { type: 'CorporateRaider', quantity: 3 , description: " Landmine "},
-        { type: 'GutShot', quantity: 2 , description: " Landmine "},
-        { type: 'TheNuke', quantity: 1 , description: " Landmine "},
-        { type: 'Yokozuna', quantity: 5 , description: " Landmine "},
-        { type: 'Zippy', quantity: 3 , description: " Landmine "},
+        { type: 'Amplifier', quantity: 10, description: "Landmine" },
+        { type: 'Ballista', quantity: 9 , description: "Landmine"},
+        { type: 'BigBertha', quantity: 8 , description: "Landmine"},
+        { type: 'Bombabom', quantity: 7 , description: "Landmine"},
+        { type: 'BunkerBlocker', quantity: 6 , description: "Landmine"},
+        { type: 'Buzzard', quantity: 5 , description: "Landmine"},
+        { type: 'ClusterBomb', quantity: 4 , description: "Landmine"},
+        { type: 'CorporateRaider', quantity: 3 , description: "Landmine"},
+        { type: 'GutShot', quantity: 2 , description: "Landmine"},
+        { type: 'TheNuke', quantity: 1 , description: "Landmine"},
+        { type: 'Yokozuna', quantity: 5 , description: "Landmine"},
+        { type: 'Zippy', quantity: 3 , description: "Landmine"},
       ];
       resolve(LandmineLibraryData);
     }, 0); // Simulating a delay of 1 second

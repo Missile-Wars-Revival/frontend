@@ -15,7 +15,7 @@ import { ColorblindMapStyle } from "../themes/colourblindstyle";
 import { Loot, Missile, Landmine, Location, Player  } from "../types/types";
 
 //Components:
-import { missileImages, MissileLibrary } from "../components/missile";
+import { missileImages, MissileLibrary, MissilefireposLibrary } from "../components/missile";
 import { addLandmine, LandmineLibrary, LandminePlacementPopupProps} from "../components/landmine";
 
 import { MapStylePopup } from "../components/map-style-popup";
@@ -50,7 +50,8 @@ export default function Map() {
   const [userLocation, setUserLocation] = useState<Location | null>(null);
   const [selectedMarkerIndex, setSelectedMarkerIndex] = useState<number | null>(null);
   const [otherPlayersData, setOtherPlayersData] = useState([] as Player[]);
-  const [MissileModalVisible, setMissileModalVisible] = useState(false);  
+  const [MissileModalVisible, setMissileModalVisible] = useState(false); 
+  const [MissilefireposModalVisible, setMissilefireposModalVisible] = useState(false);   
   const [LandmineModalVisible, setLandmineModalVisible] = useState(false);  
   const [selectedPlayerUsername, setSelectedPlayerUsername] = useState('');
 //marker images
@@ -382,6 +383,7 @@ export default function Map() {
         break;
       case "firemissile":
         console.log("Fire Missile")
+        setMissileModalVisible(true);
         //Fire missile code;
         break;
       default:
@@ -662,6 +664,24 @@ export default function Map() {
             <MissileLibrary playerName={selectedPlayerUsername} />
             <View style={{ alignSelf: 'flex-end', padding: 10 }}>
               <Button title="Cancel" onPress={() => setMissileModalVisible(false)} />
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Missile Fire at position library popup */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={MissileModalVisible}
+        onRequestClose={() => setMissilefireposModalVisible(false)}
+      >
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
+          <View style={{ backgroundColor: 'white', borderRadius: 10, width: Dimensions.get('window').width - 40, maxHeight: Dimensions.get('window').height - 200 }}>
+            {/* Include MissileLibrary component */}
+            <MissilefireposLibrary/>
+            <View style={{ alignSelf: 'flex-end', padding: 10 }}>
+              <Button title="Cancel" onPress={() => setMissilefireposModalVisible(false)} />
             </View>
           </View>
         </View>
