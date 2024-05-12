@@ -387,7 +387,7 @@ export default function Map() {
         break;
     }
   };
-
+// This is on main map page because is requires userlocation 
   const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ visible, onClose }) => {
     const [landmineLocation, setLandmineLocation] = useState<Location | null>(null);
 
@@ -404,6 +404,15 @@ export default function Map() {
         onClose();
       }
     };
+// furture place missile 
+    // const placeMissile = () => {
+    //   // Place landmine logic here using the selected location
+    //   if (missileplacelocation) {
+    //     addMissile(missileplacelocation.latitude, missileplacelocation.longitude);
+    //     // Close the popup
+    //     onClose();
+    //   }
+    // };
 
     return (
       <Modal
