@@ -1,4 +1,5 @@
 import { Stack } from "expo-router";
+import 'react-native-reanimated';
 import React from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
