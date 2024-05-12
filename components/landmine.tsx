@@ -39,7 +39,7 @@ const fetchLandmineLib = (): Promise<LandmineLib[]> => {
 interface LandmineImages {
   [key: string]: any;
 }
-// For Landmine Images for both markers and library
+// For Landmine Images for library
 export const LandmineImages: LandmineImages = {
   Amplifier: require('../assets/missiles/Amplifier.png'),
   Ballista: require('../assets/missiles/Ballista.png'),
@@ -89,9 +89,9 @@ export const LandmineLibrary = () => {
     setShowPopup(false);
   };
 
-  const handleCancel = () => {
-    setShowPopup(false);
-  };
+  // const handleCancel = () => {
+  //   setShowPopup(false);
+  // };
 
   if (loading) {
     return (
@@ -103,7 +103,7 @@ export const LandmineLibrary = () => {
 
   return (
     <ScrollView contentContainerStyle={{ padding: 20 }}>
-      <Text>Select your LandMine:</Text>
+      <Text>Select your Landmine:</Text>
       {LandmineLibrary.map((Landmine, index) => (
         <TouchableOpacity key={index} onPress={() => handleLandmineClick(Landmine.type)} style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 10 }}>
           <Image source={LandmineImages[Landmine.type]} style={{ width: 50, height: 50, marginRight: 10 }} />

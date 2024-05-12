@@ -16,7 +16,7 @@ import { Loot, Missile, Landmine, Location, Player  } from "../types/types";
 
 //Components:
 import { missileImages, MissileLibrary } from "../components/missile";
-import { addLandmine, LandminePlacementPopupProps} from "../components/landmine";
+import { addLandmine, LandmineLibrary, LandminePlacementPopupProps} from "../components/landmine";
 
 import { MapStylePopup } from "../components/map-style-popup";
 import { FireTypeStyle } from "../components/fire-type-popup";
@@ -50,7 +50,8 @@ export default function Map() {
   const [userLocation, setUserLocation] = useState<Location | null>(null);
   const [selectedMarkerIndex, setSelectedMarkerIndex] = useState<number | null>(null);
   const [otherPlayersData, setOtherPlayersData] = useState([] as Player[]);
-  const [isModalVisible, setIsModalVisible] = useState(false);  
+  const [MissileModalVisible, setMissileModalVisible] = useState(false);  
+  const [LandmineModalVisible, setLandmineModalVisible] = useState(false);  
   const [selectedPlayerUsername, setSelectedPlayerUsername] = useState('');
 //marker images
   const resizedplayerimage = require("../assets/mapassets/Female_Avatar_PNG.png"); // Your custom image path
@@ -246,7 +247,7 @@ export default function Map() {
         checkMissileCollision();
         checkLootCollection();
 
-        //console.log("isModalVisible:", isModalVisible);
+        //console.log("MissileModalVisible:", MissileModalVisible);
       }
     }, 5000); // 5 seconds
 
@@ -358,7 +359,7 @@ export default function Map() {
 
   //dispatching Missile, landmines
   const fireMissile = (playerName: string) => {
-    setIsModalVisible(true);
+    setMissileModalVisible(true);
   };
 
   const FireshowPopup = () => {
@@ -377,7 +378,7 @@ export default function Map() {
       case "firelandmine":
         console.log("place landmine")
         //place landminecode;
-        setLandminePopupVisible(true);
+        setLandmineModalVisible(true);
         break;
       case "firemissile":
         console.log("Fire Missile")
@@ -652,15 +653,33 @@ export default function Map() {
       <Modal
         animationType="slide"
         transparent={true}
-        visible={isModalVisible}
-        onRequestClose={() => setIsModalVisible(false)}
+        visible={MissileModalVisible}
+        onRequestClose={() => setMissileModalVisible(false)}
       >
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
           <View style={{ backgroundColor: 'white', borderRadius: 10, width: Dimensions.get('window').width - 40, maxHeight: Dimensions.get('window').height - 200 }}>
             {/* Include MissileLibrary component */}
             <MissileLibrary playerName={selectedPlayerUsername} />
             <View style={{ alignSelf: 'flex-end', padding: 10 }}>
-              <Button title="Cancel" onPress={() => setIsModalVisible(false)} />
+              <Button title="Cancel" onPress={() => setMissileModalVisible(false)} />
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Landmine library popup */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={LandmineModalVisible}
+        onRequestClose={() => setLandmineModalVisible(false)}
+      >
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
+          <View style={{ backgroundColor: 'white', borderRadius: 10, width: Dimensions.get('window').width - 40, maxHeight: Dimensions.get('window').height - 200 }}>
+            {/* Include Landmine component */}
+            <LandmineLibrary/>
+            <View style={{ alignSelf: 'flex-end', padding: 10 }}>
+              <Button title="Cancel" onPress={() => setLandmineModalVisible(false)} />
             </View>
           </View>
         </View>
