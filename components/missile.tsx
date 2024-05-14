@@ -89,6 +89,7 @@ export const MissileLibrary = ({ playerName }: { playerName: string }) => {
 
   const handleFire = () => {
     // Implement fire logic here
+    // edit to also send current coords and that players coords (for curr and dest coords) 
     console.log("Firing missile:", selectedMissile, "at player:", playerName);
     setShowPopup(false);
   };
@@ -128,7 +129,9 @@ export const MissileLibrary = ({ playerName }: { playerName: string }) => {
   );
 };
 
-//For when fire button is used without player
+
+
+//For when fire button is used without selected player
 export const MissilefireposLibrary = () => {
   const [missileLibrary, setMissileLibrary] = useState<Missilelib[]>([]);
   const [loading, setLoading] = useState(true);
@@ -157,7 +160,8 @@ export const MissilefireposLibrary = () => {
   };
 
   const handleFire = () => {
-    // Implement fire logic here
+    // Implement fire logic here. So add mapview 
+    // submission to backend with, missile dest coords, current player coords 
     console.log("Selected missile:", selectedMissile);
     setShowposPopup(false);
   };
