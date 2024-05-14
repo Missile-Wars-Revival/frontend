@@ -53,6 +53,7 @@ export default function Map() {
   const [MissilefireposModalVisible, setMissilefireposModalVisible] = useState(false);   
   const [LandmineModalVisible, setLandmineModalVisible] = useState(false);  
   const [selectedPlayerUsername, setSelectedPlayerUsername] = useState('');
+
 //marker images
   const resizedplayerimage = require("../assets/mapassets/Female_Avatar_PNG.png"); // Your custom image path
   const resizedplayericon = { width: 30, height: 30 }; // Custom size for image
@@ -390,7 +391,7 @@ export default function Map() {
     }
   };
 // This is on main map page because is requires userlocation 
-  const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ visible, onClose }) => {
+const LandminePlacementPopup: React.FC<LandminePlacementPopupProps & { selectedLandmine: string | null }> = ({ visible, onClose, selectedLandmine }) => {
     const [landmineLocation, setLandmineLocation] = useState<Location | null>(null);
 
     const handleMapPress = (event: { nativeEvent: { coordinate: any; }; }) => {
@@ -400,22 +401,13 @@ export default function Map() {
 
     const placeLandmine = () => {
       // Place landmine logic here using the selected location
-      if (landmineLocation) {
-        addLandmine(landmineLocation.latitude, landmineLocation.longitude);
+      if (landmineLocation && selectedLandmine) {
+        addLandmine(landmineLocation.latitude, landmineLocation.longitude, selectedLandmine, userNAME); // Add landmine type
         // Close the popup
         onClose();
       }
     };
-// furture place missile 
-    // const placeMissile = () => {
-    //   // Place landmine logic here using the selected location
-    //   if (missileplacelocation) {
-    //     addMissile(missileplacelocation.latitude, missileplacelocation.longitude);
-    //     // Close the popup
-    //     onClose();
-    //   }
-    // };
-
+    
     return (
       <Modal
         animationType="slide"
@@ -697,6 +689,7 @@ export default function Map() {
       >
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
           <View style={{ backgroundColor: 'white', borderRadius: 10, width: Dimensions.get('window').width - 40, maxHeight: Dimensions.get('window').height - 200 }}>
+            
             {/* Include Landmine component */}
             <LandmineLibrary/>
             <View style={{ alignSelf: 'flex-end', padding: 10 }}>
@@ -754,7 +747,7 @@ export default function Map() {
         onSelect={selectFiretype}
       />
 
-        <LandminePlacementPopup visible={LandminePopupVisible} onClose={() => setLandminePopupVisible(false)} />
+        <LandminePlacementPopup visible={LandminePopupVisible} onClose={() => setLandminePopupVisible(false)} selectedLandmine={null} />
     </View>
   );
 }

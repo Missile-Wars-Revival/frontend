@@ -10,7 +10,7 @@ export type LandminePlacementPopupProps = {
 };
 
 // Function to add a landmine to the map
-export function addLandmine(latitude: number, longitude: number) {
+export function addLandmine(latitude: number, longitude: number,selectedLandmine: string, username: string) {
   throw new Error("Function not implemented.");
 }
 
@@ -80,6 +80,8 @@ export const LandmineLibrary = () => {
 
   const handleLandmineClick = (LandmineType: string) => {
     setSelectedLandmine(LandmineType);
+
+    console.log("Landmine pressed:", LandmineType)
     setShowPopup(true);
   };
 
@@ -89,9 +91,9 @@ export const LandmineLibrary = () => {
     setShowPopup(false);
   };
 
-  // const handleCancel = () => {
-  //   setShowPopup(false);
-  // };
+  const handleCancel = () => {
+    setShowPopup(false);
+  };
 
   if (loading) {
     return (
