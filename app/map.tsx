@@ -502,6 +502,7 @@ const LandminePlacementPopup: React.FC<LandminePlacementPopupProps & { selectedL
     <View className="flex-1 bg-gray-200">
       <MapView
         // no longer supported -> provider={PROVIDER_GOOGLE}
+        // no longer supported -> provider={PROVIDER_GOOGLE}
         className="flex-1"
         region={region}
         showsUserLocation={true}
