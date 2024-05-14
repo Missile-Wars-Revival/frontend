@@ -76,7 +76,7 @@ export const sendWebsocket = async (data: any) => {
     websocket.send(JSON.stringify(data));
 }
 
-export default function useWebhook() {
+export default function useWebSocket() {
     let [data, setData] = useState<any>(null);
     // Create a WebSocket connection
     getWebsocket();

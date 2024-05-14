@@ -14,7 +14,7 @@ import useLogin from "../hooks/api/useLogin";
 import { User, LockKeyhole } from "lucide-react-native";
 import CometDivider from "../assets/jsxSvgs/cometDivider";
 import { SocketContext } from "./_layout";
-import { sendWebsocket } from "../hooks/api/webhook";
+import { sendWebsocket } from "../hooks/api/websocket";
 
 
 export default function Login() {
