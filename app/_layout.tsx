@@ -1,18 +1,27 @@
 import { Stack } from "expo-router";
-import React from "react";
+import React, { createContext } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
+import useWebhook from "../hooks/api/webhook";
+
+
+export const SocketContext = createContext('websocket');
+
 
 export default function RootLayout() {
   const queryClient = new QueryClient();
+  const data = useWebhook();
   return (
     <QueryClientProvider client={queryClient}>
-      <RootLayoutNav />
+      <SocketContext.Provider value={data}>
+        <RootLayoutNav />
+      </SocketContext.Provider>
     </QueryClientProvider>
   );
 }
 
 function RootLayoutNav() {
+
   return (
     <SafeAreaProvider>
       <Stack>

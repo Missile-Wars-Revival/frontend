@@ -1,10 +1,14 @@
 import { Text, SafeAreaView } from "react-native";
-import React from "react";
+import React, { useContext } from "react";
 import { Link } from "expo-router";
+import { SocketContext } from "./_layout";
 
 export default function Index() {
+  const data = useContext(SocketContext);
+  console.log("data:", data);
   return (
     <SafeAreaView className="flex-1 justify-center items-center">
+      <Text>data: {data}</Text>
       <Text className="text-2xl text-green-700">Index</Text>
       <Text>Welcome to Missile Wars</Text>
       <Text>Let the Missles fly!</Text>
