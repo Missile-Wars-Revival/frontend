@@ -1,8 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { Text, View, TouchableOpacity, Image, Button, Modal, Dimensions } from "react-native";
+import { Text, View, TouchableOpacity, Image, Button, Modal, Dimensions, Platform } from "react-native";
 import MapView, { PROVIDER_GOOGLE, Circle, Marker, Polyline } from "react-native-maps";
 import * as ExpoLocation from "expo-location";
-import { Platform } from 'react-native';
 
 //Themes
 import { DefaultMapStyle } from "../themes/defaultMapStyle";
