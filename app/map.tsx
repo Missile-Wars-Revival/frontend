@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { Text, View, TouchableOpacity, Image, Button, Modal, Dimensions } from "react-native";
-import MapView, { PROVIDER_GOOGLE, Circle, Marker, Polyline } from "react-native-maps";
-import { Platform } from 'react-native';
+import { Text, View, TouchableOpacity, Button, Modal, Dimensions, Platform } from "react-native";
+import MapView, { Circle, Marker } from "react-native-maps";
 
 //Themes
 import { DefaultMapStyle } from "../themes/defaultMapStyle";
@@ -14,7 +13,7 @@ import { ColorblindMapStyle } from "../themes/colourblindstyle";
 import { Loot, Missile, Landmine, Location, Player  } from "../types/types";
 
 //Components:
-import { missileImages, MissileLibrary, MissilefireposLibrary } from "../components/missile";
+import { MissileLibrary, MissilefireposLibrary } from "../components/missile";
 import { addLandmine, LandmineLibrary, LandminePlacementPopupProps} from "../components/landmine";
 
 import { MapStylePopup } from "../components/map-style-popup";
@@ -26,13 +25,10 @@ import { storeMapStyle, getStoredMapStyle } from "../components/ui/mapthemestore
 
 //Hooks
 import { fetchOtherPlayersData } from "../api/getplayerlocations";
-import { NavBar } from "../components/navbar";
 import { PlayerComp } from "../components/player";
 import { MapMissile } from "../components/map-missile";
 import { LootDrop } from "../components/loot-drop";
-
-const resizedlootimage = require("../assets/mapassets/Airdropicon.png"); // Your custom image path
-const resizedlooticon = { width: 50, height: 50 }; // Custom size for image
+import { fetchMissilesFromBackend, fetchLootFromBackend, fetchlandmineFromBackend } from "../temp/fetchMethods";
 
 export default function Map() {
   const defaultRegion = {
@@ -80,78 +76,36 @@ export default function Map() {
       clearInterval(intervalId);
     };
   }, []);
-
-  //fetch dist
-
   const fetchLootAndMissiles = useCallback(() => {
-    const fetchLootFromBackend = async () => {
-      // Simulated fetch function to get loot data:
-      return [
-        { latitude: 51.026281, longitude: -3.113764, rarity: "" }, // Loot location 1 TS
-        { latitude: 45.305, longitude: -0.86, rarity: "" }, // Loot location 2
-      ];
-    };
-
-    const fetchlandmineFromBackend = async () => {
-      // Simulated fetch function to get landmine data:
-      return [
-        { latitude: 45.2949318, longitude: -0.852764, placedby: "Test2", Type: "", Expire: "" }, //temp landmine location
-        { latitude: 51.025682, longitude: -3.1174578, placedby: "Test", Type: "", Expire: ""}, //2nd temp landmine location TS
-      ];
-    };
-
-    const fetchMissilesFromBackend = async (): Promise<Missile[]> => {
-      // Simulated fetch function to get missile data:
-      return [
-        {
-          destination: { latitude: 45.2949318, longitude: -0.852764 }, 
-          currentLocation: { latitude: 45.2949318, longitude: -0.852764 }, 
-          radius: 100, 
-          type: "TheNuke", 
-          status: "Hit", 
-          sentbyusername: ""
-        }, //temp missile location
-        {
-          destination: { latitude: 51.025316, longitude: -3.115612 }, 
-          currentLocation: { latitude: 52.025316, longitude: -3.115612 }, 
-          radius: 50, 
-          type: "Ballista", 
-          status: "Approaching",
-          sentbyusername: ""
-        }, //2nd temp missle location TS
-      ];
-    };
-
+  //fetch dist
     const updateData = async () => {
-      const lootData = await fetchLootFromBackend();
-      const landminedata = await fetchlandmineFromBackend();
-      const missileData = await fetchMissilesFromBackend();
+    const lootData = await fetchLootFromBackend();
+    const landminedata = await fetchlandmineFromBackend();
+    const missileData = await fetchMissilesFromBackend();
 
-      setLootLocations(lootData);
-      setlandminelocations(landminedata);
-      setMissileData(missileData);
-    };
+    setLootLocations(lootData);
+    setlandminelocations(landminedata);
+    setMissileData(missileData);
+  };
 
-    // Initial fetch
-    updateData();
 
-    // Fetch data every 30 seconds
-    const intervalId = setInterval(updateData, 30000); // 30 seconds
+  // Initial fetch
+  updateData();
 
-    // Cleanup interval on component unmount
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, []);
+  // Fetch data every 30 seconds
+  const intervalId = setInterval(updateData, 30000); // 30 seconds
+
+  // Cleanup interval on component unmount
+  return () => {
+    clearInterval(intervalId);
+  };
+}, []);
+
+
 
   useEffect(() => {
     fetchLootAndMissiles();
   }, [fetchLootAndMissiles]);
-
-  //dispatching Missile, landmines
-  const fireMissile = (playerName: string) => {
-    setMissileModalVisible(true);
-  };
 
   const FireshowPopup = () => {
     //console.log("Popup button clicked");
@@ -290,10 +244,6 @@ export default function Map() {
     };
     fetchStoredMapStyle();
   }, []);
-  
-  //logs for location
-  //console.log("lootLocations:", lootLocations);
-  //console.log("missileData:", missileData);
 
   //To allow player to upload their own this is modular
 
