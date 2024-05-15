@@ -29,6 +29,7 @@ import { PlayerComp } from "../components/player";
 import { MapMissile } from "../components/map-missile";
 import { LootDrop } from "../components/loot-drop";
 import { fetchMissilesFromBackend, fetchLootFromBackend, fetchlandmineFromBackend } from "../temp/fetchMethods";
+import { ThemeSelectButton } from "../components/theme-select-button";
 
 export default function Map() {
   const defaultRegion = {
@@ -367,55 +368,35 @@ export default function Map() {
         </View>
       </Modal>
 
-      {/* Dropdown button */}
-      {Platform.OS === 'android' && (
+    {/* Dropdown button */}
+    {Platform.OS === 'android' && (
+      <ThemeSelectButton onPress={ThemeshowPopup}>Theme</ThemeSelectButton>
+    )}
+
+    <MapStylePopup
+      visible={ThemepopupVisible}
+      transparent={true}
+      onClose={ThemeclosePopup}
+      onSelect={selectMapStyle}
+    />
+
+
+    {/* Fire Select button */}
     <TouchableOpacity
-      style={{
-        position: 'absolute',
-        bottom: 20,
-        left: 20,
-        borderRadius: 5,
-        padding: 10,
-        backgroundColor: 'white',
-        shadowColor: '#000',
-        shadowOffset: {
-          width: 0,
-          height: 2,
-        },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
-        elevation: 5,
-      }}
-      onPress={ThemeshowPopup}
+      className="absolute bottom-[70px] left-[20px] rounded-[5px] p-[10px] bg-white shadow-md"
+      onPress={FireshowPopup}
     >
-      <Text style={{ fontSize: 16 }}>Theme</Text>
+      <Text className="text-[16px]">+</Text>
     </TouchableOpacity>
-  )}
 
-  <MapStylePopup
-    visible={ThemepopupVisible}
-    transparent={true}
-    onClose={ThemeclosePopup}
-    onSelect={selectMapStyle}
-  />
+    <FireTypeStyle
+      visible={FirepopupVisible}
+      transparent={true}
+      onClose={FireclosePopup}
+      onSelect={selectFiretype}
+    />
 
-
-      {/* Fire Select button */}
-      <TouchableOpacity
-        className="absolute bottom-[70px] left-[20px] rounded-[5px] p-[10px] bg-white shadow-md"
-        onPress={FireshowPopup}
-      >
-        <Text className="text-[16px]">+</Text>
-      </TouchableOpacity>
-
-      <FireTypeStyle
-        visible={FirepopupVisible}
-        transparent={true}
-        onClose={FireclosePopup}
-        onSelect={selectFiretype}
-      />
-
-        <LandminePlacementPopup visible={LandminePopupVisible} onClose={() => setLandminePopupVisible(false)} />
-    </View>
+      <LandminePlacementPopup visible={LandminePopupVisible} onClose={() => setLandminePopupVisible(false)} />
+  </View>
   );
 }
