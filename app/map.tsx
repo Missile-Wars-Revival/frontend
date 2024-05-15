@@ -14,7 +14,7 @@ import { Loot, Missile, Landmine, Location, Player  } from "../types/types";
 
 //Components:
 import { MissileLibrary, MissilefireposLibrary } from "../components/missile";
-import { addLandmine, LandmineLibrary, LandminePlacementPopupProps} from "../components/landmine";
+import { addLandmine, LandmineLibrary, LandmineLibraryView, LandminePlacementPopupProps} from "../components/landmine";
 
 import { MapStylePopup } from "../components/map-style-popup";
 import { FireTypeStyle } from "../components/fire-type-popup";
@@ -351,22 +351,8 @@ export default function Map() {
       </Modal>
 
       {/* Landmine library popup */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={LandmineModalVisible}
-        onRequestClose={() => setLandmineModalVisible(false)}
-      >
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
-          <View style={{ backgroundColor: 'white', borderRadius: 10, width: Dimensions.get('window').width - 40, maxHeight: Dimensions.get('window').height - 200 }}>
-            {/* Include Landmine component */}
-            <LandmineLibrary/>
-            <View style={{ alignSelf: 'flex-end', padding: 10 }}>
-              <Button title="Cancel" onPress={() => setLandmineModalVisible(false)} />
-            </View>
-          </View>
-        </View>
-      </Modal>
+      <LandmineLibraryView LandmineModalVisible={LandmineModalVisible} landminePlaceHandler={() => setLandmineModalVisible(false)} />
+
 
     {/* Dropdown button */}
     {Platform.OS === 'android' && (

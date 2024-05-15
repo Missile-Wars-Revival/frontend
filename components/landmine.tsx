@@ -1,7 +1,7 @@
 import React from "react";
 import { LandmineLib } from "../types/types";
 import { useEffect, useState } from "react";
-import { Text, View, TouchableOpacity, Image, Button, Modal, ScrollView } from "react-native";
+import { Text, View, TouchableOpacity, Image, Button, Modal, ScrollView, Dimensions } from "react-native";
 
 
 export type LandminePlacementPopupProps = {
@@ -56,6 +56,32 @@ export const LandmineImages: LandmineImages = {
 
   // Add other Landmine images here
 };
+
+interface LandmineLibViewProps {
+  LandmineModalVisible: boolean;
+  landminePlaceHandler: () => void;
+};
+
+export const LandmineLibraryView = (props: LandmineLibViewProps) => {
+  return (
+      <Modal
+      animationType="slide"
+      transparent={true}
+      visible={props.LandmineModalVisible}
+      onRequestClose={props.landminePlaceHandler}
+    >
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
+        <View style={{ backgroundColor: 'white', borderRadius: 10, width: Dimensions.get('window').width - 40, maxHeight: Dimensions.get('window').height - 200 }}>
+          {/* Include Landmine component */}
+          <LandmineLibrary/>
+          <View style={{ alignSelf: 'flex-end', padding: 10 }}>
+            <Button title="Cancel" onPress={props.landminePlaceHandler} />
+          </View>
+        </View>
+      </View>
+    </Modal>
+  )
+}
 
 export const LandmineLibrary = () => {
   const [LandmineLibrary, setLandmineLibrary] = useState<LandmineLib[]>([]);
