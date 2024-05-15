@@ -69,7 +69,7 @@ function SignUpForm() {
   }, [register]);
 
   const mutation = useRegister(() => {
-    router.navigate("/");
+    router.navigate("/map");
   });
 
   const onSubmit = (data: SignUpFormInputs) => {
