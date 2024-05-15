@@ -7,26 +7,43 @@ interface Product {
   id: number;
   name: string;
   price: number;
+  image: string; // Added image field
 }
 
 const products: Product[] = [
-  { id: 1, name: 'Product 1', price: 29.99 },
-  { id: 2, name: 'Product 2', price: 19.99 },
-  { id: 3, name: 'Product 3', price: 39.99 },
+  { id: 1, name: 'Product 1', price: 29.99, image: require('../assets/missiles/Amplifier.png') },
+  { id: 2, name: 'Product 2', price: 19.99, image: require('../assets/missiles/Ballista.png') },
+  { id: 3, name: 'Product 3', price: 39.99, image: require('../assets/missiles/BigBertha.png') },
 ];
 
 const StorePage: React.FC = () => {
-  const [cart, setCart] = useState<Product[]>([]);
+  const [cart, setCart] = useState<{ product: Product; quantity: number }[]>([]);
   const [isCartVisible, setCartVisible] = useState<boolean>(false);
 
   const addToCart = (product: Product) => {
-    setCart([...cart, product]);
+    setCart((prevCart) => {
+      const cartItem = prevCart.find((item) => item.product.id === product.id);
+      if (cartItem) {
+        return prevCart.map((item) =>
+          item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+        );
+      } else {
+        return [...prevCart, { product, quantity: 1 }];
+      }
+    });
+  };
+
+  const handleRemove = (productId: number) => {
+    // Implement logic to remove the product from the cart
+    // For example:
+    setCart(cart.filter(item => item.product.id !== productId));
   };
 
   return (
     <View style={styles.container}>
       {isCartVisible ? (
-        <Cart cart={cart} />
+        <Cart cart={cart} onRemove={handleRemove} />
+
       ) : (
         <>
           <FlatList
