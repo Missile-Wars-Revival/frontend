@@ -9,7 +9,7 @@
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/logo.png",
-      "resizeMode": "center",
+      "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "extra": {
