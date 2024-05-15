@@ -417,7 +417,7 @@ export default function Map() {
         customMapStyle={selectedMapStyle}
       >
         <UrlTile
-          urlTemplate="https://api.maptiler.com/maps/basic/{z}/{x}/{y}.png?key=vWrdb8dH1tRzKtQTa9KH"
+          urlTemplate={"https://api.maptiler.com/maps/basic/{z}/{x}/{y}.png?key=" + process.env.EXPO_PUBLIC_TILE_API}
           maximumZ={19}
         />
 
