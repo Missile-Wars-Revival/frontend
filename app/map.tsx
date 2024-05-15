@@ -29,6 +29,7 @@ import { dispatch } from "../api/dispatch";
 import { fetchOtherPlayersData } from "../api/getplayerlocations";
 import { NavBar } from "../components/navbar";
 import { PlayerComp } from "../components/player";
+import { MapMissile } from "../components/map-missile";
 
 export default function Map() {
   const defaultRegion = {
@@ -78,29 +79,6 @@ export default function Map() {
       clearInterval(intervalId);
     };
   }, []);
-
-  const sendLocationToBackend = async (): Promise<void> => {
-    try {
-        if (!userLocation || !userLocation.latitude || !userLocation.longitude) {
-            console.log('Latitude or longitude is missing. Not sending to backend');
-            return;
-        }
-
-        const { latitude, longitude } = userLocation;
-
-        const response = await dispatch(userNAME, latitude, longitude); 
-
-        if (response && response.success) {
-            console.log('Location sent successfully');
-        } else if (response && response.message !== "Location dispatched") {
-            console.log('Failed to send location:', response.message);
-        } else {
-            console.log('Location dispatched');
-        }
-    } catch (error) {
-        console.log("Error sending location to backend:", (error as Error).message);
-    }
-};
 
   //fetch dist
 
@@ -369,8 +347,6 @@ export default function Map() {
 {missileData.map(({ destination, currentLocation, radius, type, status }, index) => {
 
 // Define a mapping of image paths with an index signature (paths found in components)
-  const resizedmissileimage = missileImages[type];
-  const resizedmissileicon = { width: 50, height: 50 }; // Custom size for image
 
   // Calculate coordinates for trajectory line
   const trajectoryCoordinates = [
@@ -380,28 +356,13 @@ export default function Map() {
   
   return (
     <React.Fragment key={index}>
-      {/* Render Circle at destination coords */}
-      <Circle
-        center={destination}
-        radius={radius}
-        fillColor="rgba(255, 0, 0, 0.2)"
-        strokeColor="rgba(255, 0, 0, 0.8)"
-      />
-      {/* Render Marker at current coords */}
-      <Marker
-        coordinate={currentLocation}
-        title={`Missile: ${type}`}
-        description={`${status}`}
-      >
-        <Image source={resizedmissileimage} style={resizedmissileicon} />
-      </Marker>
-    {/* Render trajectory line */}
-    <Polyline
-        coordinates={trajectoryCoordinates}
-        strokeColor="red"
-        strokeWidth={3}
-       />
-  </React.Fragment>
+      <MapMissile destination={destination}
+       currentLocation={currentLocation} 
+       trajectoryCoordinates={trajectoryCoordinates} 
+       radius={radius} 
+       type={type} 
+       status={status} />
+    </React.Fragment>
   );
 })}
 {/* Render Players */}
