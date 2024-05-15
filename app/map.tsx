@@ -204,7 +204,6 @@ export default function Map() {
     setThemePopupVisible(true);
   };
   
-
   const ThemeclosePopup = () => {
     setThemePopupVisible(false);
   };
