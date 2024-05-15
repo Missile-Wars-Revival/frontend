@@ -25,11 +25,14 @@ import { userNAME } from "../temp/login"; // fetch from backend eventually
 import { storeMapStyle, getStoredMapStyle } from "../components/ui/mapthemestore"; //cache map theme 
 
 //Hooks
-import { dispatch } from "../api/dispatch";
 import { fetchOtherPlayersData } from "../api/getplayerlocations";
 import { NavBar } from "../components/navbar";
 import { PlayerComp } from "../components/player";
 import { MapMissile } from "../components/map-missile";
+import { LootDrop } from "../components/loot-drop";
+
+const resizedlootimage = require("../assets/mapassets/Airdropicon.png"); // Your custom image path
+const resizedlooticon = { width: 50, height: 50 }; // Custom size for image
 
 export default function Map() {
   const defaultRegion = {
@@ -56,8 +59,6 @@ export default function Map() {
   const [selectedPlayerUsername, setSelectedPlayerUsername] = useState('');
 //marker images
 
-  const resizedlootimage = require("../assets/mapassets/Airdropicon.png"); // Your custom image path
-  const resizedlooticon = { width: 50, height: 50 }; // Custom size for image
 
   const fetchOtherPlayers = async () => {
     try {
@@ -307,25 +308,10 @@ export default function Map() {
         customMapStyle={selectedMapStyle}
       >
         {/* Render Loot Drops */}
-{lootLocations.map((location, index) => (
-  <React.Fragment key={index}>
-    {/* Render Circle */}
-    <Circle
-      center={location}
-      radius={20} //actual radius size
-      fillColor="rgba(0, 0, 255, 0.2)"
-      strokeColor="rgba(0, 0, 255, 0.8)"
-    />
-    {/* Render Marker */}
-    <Marker
-      coordinate={{
-        latitude: location.latitude,
-        longitude: location.longitude,
-      }}
-    >
-      <Image source={resizedlootimage} style={resizedlooticon} />
-    </Marker>
-  </React.Fragment>
+        {lootLocations.map((location, index) => (
+        <React.Fragment key={index}>
+          <LootDrop location={location} />
+        </React.Fragment>
 ))}
 
         {/* Render landmine Drops */}
