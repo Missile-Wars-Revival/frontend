@@ -7,13 +7,14 @@ interface Product {
   id: number;
   name: string;
   price: number;
-  image: string; // Added image field
+  image: string;
+  description: string;
 }
 
 const products: Product[] = [
-  { id: 1, name: 'Product 1', price: 29.99, image: require('../assets/missiles/Amplifier.png') },
-  { id: 2, name: 'Product 2', price: 19.99, image: require('../assets/missiles/Ballista.png') },
-  { id: 3, name: 'Product 3', price: 39.99, image: require('../assets/missiles/BigBertha.png') },
+  { id: 1, name: 'Amplifier', price: 9.99, image: require('../assets/missiles/Amplifier.png'), description: 'Missile' },
+  { id: 2, name: 'Ballista', price: 8.99, image: require('../assets/missiles/Ballista.png'), description: 'Missile' },
+  { id: 3, name: 'Big Bertha', price: 10.00, image: require('../assets/missiles/BigBertha.png'), description: 'Missile' },
 ];
 
 const StorePage: React.FC = () => {
