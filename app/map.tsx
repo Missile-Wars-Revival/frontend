@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { Text, View, TouchableOpacity, Image, Button, Modal, Dimensions, Platform } from "react-native";
-import MapView, { PROVIDER_GOOGLE, Circle, Marker, Polyline } from "react-native-maps";
+import MapView, { PROVIDER_GOOGLE, Circle, Marker, Polyline, UrlTile } from "react-native-maps";
 import * as ExpoLocation from "expo-location";
 
 //Themes
@@ -408,7 +408,7 @@ export default function Map() {
 
   return (
     <View className="flex-1 bg-gray-200">
-      <MapView
+<MapView
         // no longer supported -> provider={PROVIDER_GOOGLE}
         className="flex-1"
         region={region}
@@ -416,27 +416,32 @@ export default function Map() {
         showsMyLocationButton={true}
         customMapStyle={selectedMapStyle}
       >
+        <UrlTile
+          urlTemplate="http://c.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          maximumZ={19}
+        />
+
         {/* Render Loot Drops */}
-{lootLocations.map((location, index) => (
-  <React.Fragment key={index}>
-    {/* Render Circle */}
-    <Circle
-      center={location}
-      radius={20} //actual radius size
-      fillColor="rgba(0, 0, 255, 0.2)"
-      strokeColor="rgba(0, 0, 255, 0.8)"
-    />
-    {/* Render Marker */}
-    <Marker
-      coordinate={{
-        latitude: location.latitude,
-        longitude: location.longitude,
-      }}
-    >
-      <Image source={resizedlootimage} style={resizedlooticon} />
-    </Marker>
-  </React.Fragment>
-))}
+        {lootLocations.map((location, index) => (
+          <React.Fragment key={index}>
+{/* Render Circle */}
+            <Circle
+              center={location}
+              radius={20} //actual radius size
+              fillColor="rgba(0, 0, 255, 0.2)"
+              strokeColor="rgba(0, 0, 255, 0.8)"
+            />
+{/* Render Marker */}
+            <Marker
+              coordinate={{
+                latitude: location.latitude,
+                longitude: location.longitude,
+              }}
+            >
+              <Image source={resizedlootimage} style={resizedlooticon} />
+            </Marker>
+          </React.Fragment>
+        ))}
 
         {/* Render landmine Drops */}
         {landminedata.map((location, index) => (
@@ -449,104 +454,104 @@ export default function Map() {
           />
         ))}
 
-        {/* Render Missiles */}
 {/* Render Missiles */}
-{missileData.map(({ destination, currentLocation, radius, type, status }, index) => {
+        {/* Render Missiles */}
+        {missileData.map(({ destination, currentLocation, radius, type, status }, index) => {
 
 // Define a mapping of image paths with an index signature (paths found in components)
-  const resizedmissileimage = missileImages[type];
-  const resizedmissileicon = { width: 50, height: 50 }; // Custom size for image
+          const resizedmissileimage = missileImages[type];
+          const resizedmissileicon = { width: 50, height: 50 }; // Custom size for image
 
-  // Calculate coordinates for trajectory line
-  const trajectoryCoordinates = [
-    { latitude: currentLocation.latitude, longitude: currentLocation.longitude },
-    { latitude: destination.latitude, longitude: destination.longitude },
-  ];
+// Calculate coordinates for trajectory line
+          const trajectoryCoordinates = [
+            { latitude: currentLocation.latitude, longitude: currentLocation.longitude },
+            { latitude: destination.latitude, longitude: destination.longitude },
+          ];
 
-  
-  return (
-    <React.Fragment key={index}>
-      {/* Render Circle at destination coords */}
-      <Circle
-        center={destination}
-        radius={radius}
-        fillColor="rgba(255, 0, 0, 0.2)"
-        strokeColor="rgba(255, 0, 0, 0.8)"
-      />
-      {/* Render Marker at current coords */}
-      <Marker
-        coordinate={currentLocation}
-        title={`Missile: ${type}`}
-        description={`${status}`}
-      >
-        <Image source={resizedmissileimage} style={resizedmissileicon} />
-      </Marker>
-    {/* Render trajectory line */}
-    <Polyline
-        coordinates={trajectoryCoordinates}
-        strokeColor="red"
-        strokeWidth={3}
-       />
-  </React.Fragment>
-  );
-})}
-{/* Render Players */}
-{otherPlayersData
-  .filter(player => player.username !== userNAME && !isInactiveFor24Hours(player.updatedAt))
-  .map((player, index) => {
-    const { text } = getTimeDifference(player.updatedAt);
 
-    return (
-      <React.Fragment key={index}>
-        <Circle
-          center={{
-            latitude: player.latitude,
-            longitude: player.longitude,
-          }}
-          radius={6}
-          fillColor="rgba(0, 255, 0, 0.2)"
-          strokeColor="rgba(0, 255, 0, 0.8)"
-        />
-        <Marker
-          coordinate={{
-            latitude: player.latitude,
-            longitude: player.longitude,
-          }}
-          title={player.username}
-          description={text}
-          onPress={() => {
-            if (selectedMarkerIndex === index) {
-              setSelectedMarkerIndex(10);
-              setSelectedPlayerUsername(player.username);
-              fireMissile(player.username);
-            } else {
-              setSelectedMarkerIndex(index);
-            }
-            //console.log("selectedMarkerIndex:", selectedMarkerIndex);
-          }}
-        >
-          {/* Wrap image and button inside a View */}
-          <View style={{ alignItems: 'center' }}>
-            <Image source={resizedplayerimage} style={resizedplayericon} />
+          return (
+            <React.Fragment key={index}>
+{/* Render Circle at destination coords */}
+              <Circle
+                center={destination}
+                radius={radius}
+                fillColor="rgba(255, 0, 0, 0.2)"
+                strokeColor="rgba(255, 0, 0, 0.8)"
+              />
+{/* Render Marker at current coords */}
+              <Marker
+                coordinate={currentLocation}
+                title={`Missile: ${type}`}
+                description={`${status}`}
+              >
+                <Image source={resizedmissileimage} style={resizedmissileicon} />
+              </Marker>
+{/* Render trajectory line */}
+              <Polyline
+                coordinates={trajectoryCoordinates}
+                strokeColor="red"
+                strokeWidth={3}
+              />
+            </React.Fragment>
+          );
+        })}
+        {/* Render Players */}
+        {otherPlayersData
+          .filter(player => player.username !== userNAME && !isInactiveFor24Hours(player.updatedAt))
+          .map((player, index) => {
+            const { text } = getTimeDifference(player.updatedAt);
+
+            return (
+              <React.Fragment key={index}>
+                <Circle
+                  center={{
+                    latitude: player.latitude,
+                    longitude: player.longitude,
+                  }}
+                  radius={6}
+                  fillColor="rgba(0, 255, 0, 0.2)"
+                  strokeColor="rgba(0, 255, 0, 0.8)"
+                />
+                <Marker
+                  coordinate={{
+                    latitude: player.latitude,
+                    longitude: player.longitude,
+                  }}
+                  title={player.username}
+                  description={text}
+                  onPress={() => {
+                    if (selectedMarkerIndex === index) {
+                      setSelectedMarkerIndex(10);
+                      setSelectedPlayerUsername(player.username);
+                      fireMissile(player.username);
+                    } else {
+                      setSelectedMarkerIndex(index);
+                    }
+//console.log("selectedMarkerIndex:", selectedMarkerIndex);
+                  }}
+                >
+{/* Wrap image and button inside a View */}
+                  <View style={{ alignItems: 'center' }}>
+                    <Image source={resizedplayerimage} style={resizedplayericon} />
 {/* Missile Lib Button */}
-{selectedMarkerIndex !== 10 && selectedMarkerIndex === index && (
-  <View style={{ backgroundColor: 'red', borderRadius: 5, marginTop: 2 }}> 
-    {/* Ensure onPress event is passed the player's username */}
-    <Button
-      title={`Fire Missile At Player: ${player.username}`}
-      onPress={() => {
-        console.log("Button clicked for player:", player.username);
-        fireMissile(player.username);
-      }}
-      color="white"
-    />
-  </View>
-)}
-          </View>
-        </Marker>
-      </React.Fragment>
-    );
-  })}
+                    {selectedMarkerIndex !== 10 && selectedMarkerIndex === index && (
+                      <View style={{ backgroundColor: 'red', borderRadius: 5, marginTop: 2 }}>
+{/* Ensure onPress event is passed the player's username */}
+                        <Button
+                          title={`Fire Missile At Player: ${player.username}`}
+                          onPress={() => {
+                            console.log("Button clicked for player:", player.username);
+                            fireMissile(player.username);
+                          }}
+                          color="white"
+                        />
+                      </View>
+                    )}
+                  </View>
+                </Marker>
+              </React.Fragment>
+            );
+          })}
       </MapView>
 {/* Missile library popup */}
       <Modal
