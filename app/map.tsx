@@ -417,7 +417,8 @@ export default function Map() {
         customMapStyle={selectedMapStyle}
       >
         <UrlTile
-          urlTemplate="http://c.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        
+          urlTemplate="https://api.maptiler.com/maps/basic/{z}/{x}/{y}.png?key=vWrdb8dH1tRzKtQTa9KH"
           maximumZ={19}
         />
 
