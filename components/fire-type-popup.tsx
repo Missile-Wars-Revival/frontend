@@ -1,5 +1,58 @@
-import React from "react";
+import React, { useState } from "react";
 import { Modal, View, Text, TouchableOpacity } from "react-native";
+
+interface FireTypeProps {
+  landmineFireHandler: () => void;
+  missileFireHandler: () => void;
+}
+
+export const FireType = (props: FireTypeProps) => {
+  const [FirepopupVisible, setFirePopupVisible] = useState(false);
+  const FireshowPopup = () => {
+    //console.log("Popup button clicked");
+    setFirePopupVisible(true);
+  };
+  
+
+  const FireclosePopup = () => {
+    setFirePopupVisible(false);
+  };
+
+  const selectFiretype = (style: string) => {
+    FireclosePopup();
+    switch (style) {
+      case "firelandmine":
+        console.log("place landmine")
+        //place landminecode;
+        props.landmineFireHandler();
+        break;
+      case "firemissile":
+        console.log("Fire Missile")
+        props.missileFireHandler();
+        //Fire missile code;
+        break;
+      default:
+        break;
+    }
+  };
+  return (
+    <View>
+      <TouchableOpacity
+      className="absolute bottom-[70px] left-[20px] rounded-[5px] p-[10px] bg-white shadow-md"
+      onPress={FireshowPopup}
+    >
+      <Text className="text-[16px]">+</Text>
+    </TouchableOpacity>
+
+    <FireTypeStyle
+      visible={FirepopupVisible}
+      transparent={true}
+      onClose={FireclosePopup}
+      onSelect={selectFiretype} />
+    </View>
+  )
+};
+
 
 interface MapStylePopupProps {
   visible: boolean;
