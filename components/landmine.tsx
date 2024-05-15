@@ -83,7 +83,7 @@ export const LandmineLibraryView = (props: LandmineLibViewProps) => {
   )
 }
 
-export const LandmineLibrary = () => {
+const LandmineLibrary = () => {
   const [LandmineLibrary, setLandmineLibrary] = useState<LandmineLib[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedLandmine, setSelectedLandmine] = useState<string | null>(null);
