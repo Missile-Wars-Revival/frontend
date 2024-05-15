@@ -30,6 +30,11 @@ export default function Index() {
       </Link>
       <Text> </Text>
       <Text> </Text>
+      <Link href="/store" className="text-blue-500">
+        Click here for: store
+      </Link>
+      <Text> </Text>
+      <Text> </Text>
     </SafeAreaView>
   );
 }

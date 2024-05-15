@@ -23,6 +23,7 @@ function RootLayoutNav() {
         <Stack.Screen name="map" />
         <Stack.Screen name="friends" />
         <Stack.Screen name="add-friends" />
+        <Stack.Screen name="store" />
       </Stack>
     </SafeAreaProvider>
   );
