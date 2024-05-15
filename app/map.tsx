@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { Text, View, TouchableOpacity, Button, Modal, Dimensions, Platform } from "react-native";
+import { View,  Platform } from "react-native";
 import MapView, { Circle, Marker } from "react-native-maps";
 
 //Themes
@@ -10,18 +10,14 @@ import { CyberpunkMapStyle } from "../themes/cyberpunkstyle";
 import { ColorblindMapStyle } from "../themes/colourblindstyle";
 
 //Types
-import { Loot, Missile, Landmine, Location, Player  } from "../types/types";
+import { Loot, Missile, Landmine, Player  } from "../types/types";
 
 //Components:
-import { MissileLibrary, MissilefireposLibrary } from "../components/missile";
-import { addLandmine, LandmineLibraryView, LandminePlacementPopupProps} from "../components/landmine";
-
 import { MapStylePopup } from "../components/map-style-popup";
-import { FireTypeStyle } from "../components/fire-type-popup";
 import { getTimeDifference, isInactiveFor24Hours } from "../util/get-time-difference";
 
 import { userNAME } from "../temp/login"; // fetch from backend eventually
-import { storeMapStyle, getStoredMapStyle } from "../components/ui/mapthemestore"; //cache map theme 
+import { getStoredMapStyle, storeMapStyle} from "../components/ui/mapthemestore"; //cache map theme 
 
 //Hooks
 import { fetchOtherPlayersData } from "../api/getplayerlocations";
@@ -30,7 +26,7 @@ import { MapMissile } from "../components/map-missile";
 import { LootDrop } from "../components/loot-drop";
 import { fetchMissilesFromBackend, fetchLootFromBackend, fetchlandmineFromBackend } from "../temp/fetchMethods";
 import { ThemeSelectButton } from "../components/theme-select-button";
-import { MissileFireConfirmationPopup } from "../components/missile-confirmation-popup";
+import { FireSelector } from "../components/fire-selector";
 
 export default function Map() {
   const defaultRegion = {
@@ -43,18 +39,11 @@ export default function Map() {
   const [region, setRegion] = useState(defaultRegion); //null was defaultRegion but zoomed in ugly
   const [selectedMapStyle, setSelectedMapStyle] = useState(DefaultMapStyle);
   const [ThemepopupVisible, setThemePopupVisible] = useState(false);
-  const [FirepopupVisible, setFirePopupVisible] = useState(false);
   const [lootLocations, setLootLocations] = useState<Loot[]>([]);
   const [missileData, setMissileData] = useState<Missile[]>([]);
 
-  const [LandminePopupVisible, setLandminePopupVisible] = useState(false);
   const [landminedata, setlandminelocations] = useState<Landmine[]>([]);
-  const [userLocation, setUserLocation] = useState<Location | null>(null);
-  const [otherPlayersData, setOtherPlayersData] = useState([] as Player[]);
-  const [MissileModalVisible, setMissileModalVisible] = useState(false); 
-  const [MissilefireposModalVisible, setMissilefireposModalVisible] = useState(false);   
-  const [LandmineModalVisible, setLandmineModalVisible] = useState(false);  
-  const [selectedPlayerUsername, setSelectedPlayerUsername] = useState('');
+  const [otherPlayersData, setOtherPlayersData] = useState([] as Player[]); 
 //marker images
 
 
@@ -106,105 +95,6 @@ export default function Map() {
     fetchLootAndMissiles();
   }, [fetchLootAndMissiles]);
 
-  const FireshowPopup = () => {
-    //console.log("Popup button clicked");
-    setFirePopupVisible(true);
-  };
-  
-
-  const FireclosePopup = () => {
-    setFirePopupVisible(false);
-  };
-
-  const selectFiretype = (style: string) => {
-    FireclosePopup();
-    switch (style) {
-      case "firelandmine":
-        console.log("place landmine")
-        //place landminecode;
-        setLandmineModalVisible(true);
-        break;
-      case "firemissile":
-        console.log("Fire Missile")
-        setMissilefireposModalVisible(true);
-        //Fire missile code;
-        break;
-      default:
-        break;
-    }
-  };
-// This is on main map page because is requires userlocation 
-  const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ visible, onClose }) => {
-    const [landmineLocation, setLandmineLocation] = useState<Location | null>(null);
-
-    const handleMapPress = (event: { nativeEvent: { coordinate: any; }; }) => {
-      const { coordinate } = event.nativeEvent;
-      setLandmineLocation(coordinate);
-    };
-
-    const placeLandmine = () => {
-      // Place landmine logic here using the selected location
-      if (landmineLocation) {
-        addLandmine(landmineLocation.latitude, landmineLocation.longitude);
-        // Close the popup
-        onClose();
-      }
-    };
-    
-    // Call getStoredMapStyle from MapStorage.ts on component mount to retrieve selected map style
-    useEffect(() => {
-      const fetchStoredMapStyle = async () => {
-        const storedStyle = await getStoredMapStyle();
-        if (storedStyle) {
-          selectMapStyle(storedStyle);
-        }
-      };
-      fetchStoredMapStyle();
-    }, []);
-  
-// furture place missile 
-    // const placeMissile = () => {
-    //   // Place landmine logic here using the selected location
-    //   if (missileplacelocation) {
-    //     addMissile(missileplacelocation.latitude, missileplacelocation.longitude);
-    //     // Close the popup
-    //     onClose();
-    //   }
-    // };
-
-    return (
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={visible}
-        onRequestClose={onClose} >
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
-          <View style={{ backgroundColor: 'white', borderRadius: 10, padding: 20 }}>
-            <Text>Place Landmine: </Text>
-            {/* Conditional rendering of MapView */}
-            {userLocation && (
-              <MapView
-                style={{ width: 300, height: 300 }}
-                onPress={handleMapPress}
-                //Result of expo update -> provider={PROVIDER_GOOGLE}
-                showsUserLocation={true}
-                customMapStyle={selectedMapStyle}
-                initialRegion={{
-                  latitude: userLocation.latitude,
-                  longitude: userLocation.longitude,
-                  latitudeDelta: 0.01,
-                  longitudeDelta: 0.01,
-                }} >
-                  {landmineLocation && ( <Marker coordinate={landmineLocation} /> )}
-              </MapView>
-            )}
-            <Button title="Place Landmine" onPress={placeLandmine} />
-            <Button title="Close" onPress={onClose} />
-          </View>
-        </View>
-      </Modal>
-    );
-  };
   //To allow player to upload their own this is modular
 
   const ThemeshowPopup = () => {
@@ -267,34 +157,32 @@ export default function Map() {
             center={location}
             radius={30} //actual radius size
             fillColor="rgba(128, 128, 128, 0.3)"
-            strokeColor="rgba(128, 128, 128, 0.8)"
-          />
-        ))}
-
-        
+            strokeColor="rgba(128, 128, 128, 0.8)" />
+        ))}     
 
       {/* Render Missiles */}
       {missileData.map(({ destination, currentLocation, radius, type, status }, index) => {
 
         // Define a mapping of image paths with an index signature (paths found in components)
 
-          // Calculate coordinates for trajectory line
-          const trajectoryCoordinates = [
-            { latitude: currentLocation.latitude, longitude: currentLocation.longitude },
-            { latitude: destination.latitude, longitude: destination.longitude },
-          ];
-          
-          return (
-            <React.Fragment key={index}>
-              <MapMissile destination={destination}
-              currentLocation={currentLocation} 
-              trajectoryCoordinates={trajectoryCoordinates} 
-              radius={radius} 
-              type={type} 
-              status={status} />
-            </React.Fragment>
-          );
-        })}
+        // Calculate coordinates for trajectory line
+        const trajectoryCoordinates = [
+          { latitude: currentLocation.latitude, longitude: currentLocation.longitude },
+          { latitude: destination.latitude, longitude: destination.longitude },
+        ];
+        
+        return (
+          <React.Fragment key={index}>
+            <MapMissile destination={destination}
+            currentLocation={currentLocation} 
+            trajectoryCoordinates={trajectoryCoordinates} 
+            radius={radius} 
+            type={type} 
+            status={status} />
+          </React.Fragment>
+        );
+      })}
+      
       {/* Render Players */}
       {otherPlayersData
         .filter(player => player.username !== userNAME && !isInactiveFor24Hours(player.updatedAt))
@@ -308,14 +196,6 @@ export default function Map() {
           );
         })}
         </MapView>
-        {/* Missile library popup */}
-        
-        {/* Missile Fire at position library popup */}
-        <MissileFireConfirmationPopup MissilefireposModalVisible={MissilefireposModalVisible} exitHandler={() => setMissilefireposModalVisible(false)} />
-
-        {/* Landmine library popup */}
-        <LandmineLibraryView LandmineModalVisible={LandmineModalVisible} landminePlaceHandler={() => setLandmineModalVisible(false)} />
-
 
         {/* Dropdown button */}
         {Platform.OS === 'android' && (
@@ -326,24 +206,9 @@ export default function Map() {
           visible={ThemepopupVisible}
           transparent={true}
           onClose={ThemeclosePopup}
-          onSelect={selectMapStyle}
-        />
+          onSelect={selectMapStyle} />
 
-        {/* Fire Select button */}
-        <TouchableOpacity
-          className="absolute bottom-[70px] left-[20px] rounded-[5px] p-[10px] bg-white shadow-md"
-          onPress={FireshowPopup}
-        >
-          <Text className="text-[16px]">+</Text>
-        </TouchableOpacity>
-
-        <FireTypeStyle
-          visible={FirepopupVisible}
-          transparent={true}
-          onClose={FireclosePopup}
-          onSelect={selectFiretype} />
-
-        <LandminePlacementPopup visible={LandminePopupVisible} onClose={() => setLandminePopupVisible(false)} />
+        <FireSelector selectedMapStyle={[]} getStoredMapStyle={getStoredMapStyle} selectMapStyle={selectMapStyle} />
   </View>
   );
 }
