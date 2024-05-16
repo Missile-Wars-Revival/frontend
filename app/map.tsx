@@ -96,6 +96,7 @@ export default function Map() {
 
   return (
     <View className="flex-1 bg-gray-200">
+      {/* The Actual Map where the magic happens */}
       <MapComp lootLocations={lootLocations} missileData={missileData} landminedata={landminedata} selectedMapStyle={selectedMapStyle} />
 
       {/* Dropdown button */}
