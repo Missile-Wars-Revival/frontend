@@ -23,10 +23,7 @@ export default function Map() {
   const [selectedMapStyle, setSelectedMapStyle] = useState(DefaultMapStyle);
   const [ThemepopupVisible, setThemePopupVisible] = useState(false);
 
-  //To allow player to upload their own this is modular
-
   const ThemeshowPopup = () => {
-    //console.log("Popup button clicked");
     setThemePopupVisible(true);
   };
   
