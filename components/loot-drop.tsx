@@ -5,6 +5,23 @@ import { Location } from "../types/types";
 const resizedlootimage = require("../assets/mapassets/Airdropicon.png"); // Your custom image path
 const resizedlooticon = { width: 50, height: 50 }; // Custom size for image
 
+interface AllLootDropsProps {
+    lootLocations: Location[];
+}
+
+export const AllLootDrops = (props: AllLootDropsProps) => {
+    return (
+        <>
+            {props.lootLocations.map((location, index) => (
+            <React.Fragment key={index}>
+                <LootDrop location={location} />
+            </React.Fragment>
+            ))}
+        </>
+    )
+}
+
+
 interface LootProps {
     location: Location;
 
