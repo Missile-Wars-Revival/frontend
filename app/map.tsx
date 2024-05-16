@@ -160,21 +160,21 @@ export default function Map() {
             strokeColor="rgba(128, 128, 128, 0.8)" />
         ))}     
 
-      {/* Render Missiles */}
-      <AllMissiles missileData={missileData} />
-      
-      {/* Render Players */}
-      {otherPlayersData
-        .filter(player => player.username !== userNAME && !isInactiveFor24Hours(player.updatedAt))
-        .map((player, index) => {
-          const { text } = getTimeDifference(player.updatedAt);
+        {/* Render Missiles */}
+        <AllMissiles missileData={missileData} />
+        
+        {/* Render Players */}
+        {otherPlayersData
+          .filter(player => player.username !== userNAME && !isInactiveFor24Hours(player.updatedAt))
+          .map((player, index) => {
+            const { text } = getTimeDifference(player.updatedAt);
 
-          return (
-            <React.Fragment key={index}>
-              <PlayerComp index={index} player={player} location={location} description={text}></PlayerComp>
-            </React.Fragment>
-          );
-        })}
+            return (
+              <React.Fragment key={index}>
+                <PlayerComp index={index} player={player} location={location} description={text}></PlayerComp>
+              </React.Fragment>
+            );
+          })}
         </MapView>
 
         {/* Dropdown button */}
