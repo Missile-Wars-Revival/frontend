@@ -2,9 +2,39 @@ import React from "react";
 import { View, Image } from "react-native";
 import { Circle, Marker, Polyline } from "react-native-maps";
 import { missileImages } from "../components/missile";
-import { Location } from "../types/types";
+import { Location, Missile } from "../types/types";
 
+interface AllMissilesProps {
+    missileData: Missile[];
+}
 
+export const AllMissiles = (props: AllMissilesProps) => {
+    return (
+        <>
+        {props.missileData.map(({ destination, currentLocation, radius, type, status }, index) => {
+
+            // Define a mapping of image paths with an index signature (paths found in components)
+    
+            // Calculate coordinates for trajectory line
+            const trajectoryCoordinates = [
+            { latitude: currentLocation.latitude, longitude: currentLocation.longitude },
+            { latitude: destination.latitude, longitude: destination.longitude },
+            ];
+            
+            return (
+            <React.Fragment key={index}>
+                <MapMissile destination={destination}
+                currentLocation={currentLocation} 
+                trajectoryCoordinates={trajectoryCoordinates} 
+                radius={radius} 
+                type={type} 
+                status={status} />
+            </React.Fragment>
+            );
+        })}
+        </>
+    );
+}
 
 interface MissileProps {
     destination: Location;

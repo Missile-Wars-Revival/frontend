@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { View,  Platform } from "react-native";
-import MapView, { Circle, Marker } from "react-native-maps";
+import MapView, { Circle } from "react-native-maps";
 
 //Themes
 import { DefaultMapStyle } from "../themes/defaultMapStyle";
@@ -22,7 +22,7 @@ import { getStoredMapStyle, storeMapStyle} from "../components/ui/mapthemestore"
 //Hooks
 import { fetchOtherPlayersData } from "../api/getplayerlocations";
 import { PlayerComp } from "../components/player";
-import { MapMissile } from "../components/map-missile";
+import { AllMissiles, MapMissile } from "../components/map-missile";
 import { LootDrop } from "../components/loot-drop";
 import { fetchMissilesFromBackend, fetchLootFromBackend, fetchlandmineFromBackend } from "../temp/fetchMethods";
 import { ThemeSelectButton } from "../components/theme-select-button";
@@ -161,27 +161,7 @@ export default function Map() {
         ))}     
 
       {/* Render Missiles */}
-      {missileData.map(({ destination, currentLocation, radius, type, status }, index) => {
-
-        // Define a mapping of image paths with an index signature (paths found in components)
-
-        // Calculate coordinates for trajectory line
-        const trajectoryCoordinates = [
-          { latitude: currentLocation.latitude, longitude: currentLocation.longitude },
-          { latitude: destination.latitude, longitude: destination.longitude },
-        ];
-        
-        return (
-          <React.Fragment key={index}>
-            <MapMissile destination={destination}
-            currentLocation={currentLocation} 
-            trajectoryCoordinates={trajectoryCoordinates} 
-            radius={radius} 
-            type={type} 
-            status={status} />
-          </React.Fragment>
-        );
-      })}
+      <AllMissiles missileData={missileData} />
       
       {/* Render Players */}
       {otherPlayersData
