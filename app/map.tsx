@@ -1,78 +1,88 @@
 import React, { useState } from "react";
 import { View,  Platform } from "react-native";
 
-//Themes
-import { DefaultMapStyle } from "../themes/defaultMapStyle";
-import { RadarMapStyle } from "../themes/radarMapStyle";
-import { CherryBlossomMapStyle } from "../themes/cherryBlossomMapStyle";
-import { CyberpunkMapStyle } from "../themes/cyberpunkstyle";
-import { ColorblindMapStyle } from "../themes/colourblindstyle";
+//Android Themes
+import { androidDefaultMapStyle } from "../map-themes/Android-themes/defaultMapStyle";
+import { androidRadarMapStyle } from "../map-themes/Android-themes/radarMapStyle";
+import { androidCherryBlossomMapStyle } from "../map-themes/Android-themes/cherryBlossomMapStyle";
+import { androidCyberpunkMapStyle } from "../map-themes/Android-themes/cyberpunkstyle";
+import { androidColorblindMapStyle } from "../map-themes/Android-themes/colourblindstyle";
+//Ignore errors here for now 
+import { IOSDefaultMapStyle } from "../map-themes/Android-themes/defaultMapStyle";
+import { IOSRadarMapStyle } from "../map-themes/Android-themes/radarMapStyle";
+import { IOSCherryBlossomMapStyle } from "../map-themes/Android-themes/cherryBlossomMapStyle";
+import { IOSCyberpunkMapStyle } from "../map-themes/Android-themes/cyberpunkstyle";
+import { IOSColorblindMapStyle } from "../map-themes/Android-themes/colourblindstyle";
 
-//Components:
+// Components
 import { MapStylePopup } from "../components/map-style-popup";
-import { getStoredMapStyle, storeMapStyle} from "../components/ui/mapthemestore"; //cache map theme 
-
-//Hooks
+import { getStoredMapStyle, storeMapStyle } from "../components/ui/mapthemestore";
 import { ThemeSelectButton } from "../components/theme-select-button";
 import { FireSelector } from "../components/fire-selector";
 import { MapComp } from "../components/map-comp";
 
-
 export default function Map() {
+  const [selectedMapStyle, setSelectedMapStyle] = useState(
+    Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle
+  );
+  const [themePopupVisible, setThemePopupVisible] = useState(false);
 
-  const [selectedMapStyle, setSelectedMapStyle] = useState(DefaultMapStyle);
-  const [ThemepopupVisible, setThemePopupVisible] = useState(false);
-
-  const ThemeshowPopup = () => {
+  const showPopup = () => {
     setThemePopupVisible(true);
   };
-  
-  const ThemeclosePopup = () => {
+
+  const closePopup = () => {
     setThemePopupVisible(false);
   };
-  
+
   const selectMapStyle = (style: string) => {
-    ThemeclosePopup();
+    closePopup();
+    let selectedStyle;
     switch (style) {
       case "default":
-        setSelectedMapStyle(DefaultMapStyle);
+        selectedStyle = Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle;
         break;
       case "radar":
-        setSelectedMapStyle(RadarMapStyle);
+        selectedStyle = Platform.OS === 'android' ? androidRadarMapStyle : IOSRadarMapStyle;
         break;
       case "cherry":
-        setSelectedMapStyle(CherryBlossomMapStyle);
+        selectedStyle = Platform.OS === 'android' ? androidCherryBlossomMapStyle : IOSCherryBlossomMapStyle;
         break;
       case "cyber":
-        setSelectedMapStyle(CyberpunkMapStyle);
+        selectedStyle = Platform.OS === 'android' ? androidCyberpunkMapStyle : IOSCyberpunkMapStyle;
         break;
       case "colourblind":
-        setSelectedMapStyle(ColorblindMapStyle);
+        selectedStyle = Platform.OS === 'android' ? androidColorblindMapStyle : IOSColorblindMapStyle;
         break;
       default:
-        break;
+        selectedStyle = Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle;
     }
-    // Store selected map style using storeMapStyle function from MapStorage.ts
+    setSelectedMapStyle(selectedStyle);
     storeMapStyle(style);
   };
 
   return (
-    <View className="flex-1 bg-gray-200">
-      {/* The Actual Map where the magic happens */}
+    <View style={{ flex: 1, backgroundColor: 'gray' }}>
       <MapComp selectedMapStyle={selectedMapStyle} />
 
-      {/* Dropdown button */}
-      {Platform.OS === 'android' && (
-        <ThemeSelectButton onPress={ThemeshowPopup}>Theme</ThemeSelectButton>
-      )}
+      {/* 
+        To hide the theme button on iOS, uncomment the next line
+        {Platform.OS === 'android' && (
+      */}
+      <ThemeSelectButton onPress={showPopup}>Theme</ThemeSelectButton>
+      {/* )} */}
 
       <MapStylePopup
-        visible={ThemepopupVisible}
+        visible={themePopupVisible}
         transparent={true}
-        onClose={ThemeclosePopup}
-        onSelect={selectMapStyle} />
-
-      <FireSelector selectedMapStyle={[]} getStoredMapStyle={getStoredMapStyle} selectMapStyle={selectMapStyle} />
-  </View>
+        onClose={closePopup}
+        onSelect={selectMapStyle}
+      />
+      <FireSelector 
+        selectedMapStyle={selectedMapStyle} 
+        getStoredMapStyle={getStoredMapStyle} 
+        selectMapStyle={selectMapStyle} 
+      />
+    </View>
   );
 }

@@ -1,8 +1,8 @@
-export const DefaultMapStyle = [
+export const androidCherryBlossomMapStyle = [
     {
       "elementType": "geometry",
       "stylers": [
-        { "color": "#f5f5f5" }
+        { "color": "#f5f5f5" } // Light grey color
       ]
     },
     {
@@ -14,20 +14,20 @@ export const DefaultMapStyle = [
     {
       "elementType": "labels.text.fill",
       "stylers": [
-        { "color": "#616161" }
+        { "color": "#8C4356" } // Cherry blossom pink color
       ]
     },
     {
       "elementType": "labels.text.stroke",
       "stylers": [
-        { "color": "#f5f5f5" }
+        { "color": "#f5f5f5" } // Light grey color
       ]
     },
     {
       "featureType": "administrative",
       "elementType": "labels.text.fill",
       "stylers": [
-        { "color": "#757575" }
+        { "color": "#8C4356" } // Cherry blossom pink color
       ]
     },
     {
@@ -40,7 +40,7 @@ export const DefaultMapStyle = [
       "featureType": "road",
       "elementType": "geometry",
       "stylers": [
-        { "color": "#ffffff" }
+        { "color": "#ffffff" } // White color
       ]
     },
     {
@@ -54,35 +54,35 @@ export const DefaultMapStyle = [
       "featureType": "road.arterial",
       "elementType": "labels.text.fill",
       "stylers": [
-        { "color": "#757575" }
+        { "color": "#8C4356" } // Cherry blossom pink color
       ]
     },
     {
       "featureType": "road.highway",
       "elementType": "geometry",
       "stylers": [
-        { "color": "#dadada" }
+        { "color": "#dadada" } // Light grey color
       ]
     },
     {
       "featureType": "road.highway",
       "elementType": "labels.text.fill",
       "stylers": [
-        { "color": "#616161" }
+        { "color": "#8C4356" } // Cherry blossom pink color
       ]
     },
     {
       "featureType": "water",
       "elementType": "geometry",
       "stylers": [
-        { "color": "#0077be" } // Ocean blue color
+        { "color": "#E8B3C2" } // Light cherry blossom pink color
       ]
     },
     {
       "featureType": "water",
       "elementType": "labels.text.fill",
       "stylers": [
-        { "color": "#9e9e9e" }
+        { "color": "#9e9e9e" } // Grey color
       ]
     }
   ];
