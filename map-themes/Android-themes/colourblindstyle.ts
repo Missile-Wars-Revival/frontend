@@ -1,4 +1,4 @@
-export const ColorblindMapStyle = [
+export const androidColorblindMapStyle = [
   {
       "elementType": "geometry",
       "stylers": [

@@ -106,6 +106,7 @@ const LandmineLibrary = () => {
 
   const handleLandmineClick = (LandmineType: string) => {
     setSelectedLandmine(LandmineType);
+    console.log("Landmine pressed:", LandmineType)
     setShowPopup(true);
   };
 

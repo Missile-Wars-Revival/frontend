@@ -128,7 +128,9 @@ export const MissileLibrary = ({ playerName }: { playerName: string }) => {
   );
 };
 
+
 //For when fire button is used without player
+//This is what should be used when using fire-selector button
 export const MissilefireposLibrary = () => {
   const [missileLibrary, setMissileLibrary] = useState<Missilelib[]>([]);
   const [loading, setLoading] = useState(true);
