@@ -17,7 +17,6 @@ export default function useLogin(onSuccess?: () => void, onError?: () => void) {
         refetchType: "active",
       });
       if (onSuccess) {
-        alert("Login success!")
         onSuccess();
       }
     },
