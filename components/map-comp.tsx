@@ -54,7 +54,6 @@ export const MapComp = (props: MapCompProps) => {
       
     return (
         <MapView
-        // no longer supported -> provider={PROVIDER_GOOGLE}
         className="flex-1"
         region={region}
         showsCompass={true}

@@ -7,17 +7,30 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { Input } from "../components/ui/input";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import useLogin from "../hooks/api/useLogin";
 import { User, LockKeyhole } from "lucide-react-native";
 import React from "react";
-//import { saveCredentials, getCredentials } from "../util/logincache";
+import { saveCredentials, getCredentials } from "../util/logincache";
 
 
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isError, setIsError] = useState(false);
+
+  // Check if user is already logged in
+  useEffect(() => {
+    const checkLogin = async () => {
+      const credentials = await getCredentials();
+      if (credentials) {
+        // If credentials exist, navigate directly to the main page
+        router.navigate("/map");
+      }
+    };
+
+    checkLogin();
+  }, []);
 
   return (
     <SafeAreaView className="flex-1 items-center">
@@ -81,7 +94,7 @@ function LoginButton({
 }) {
   const mutation = useLogin(
     async () => {
-      //await saveCredentials(username, password);
+      await saveCredentials(username, password);
       router.navigate("/map");
     },
     () => {
