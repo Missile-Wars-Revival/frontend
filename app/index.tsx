@@ -1,129 +1,112 @@
-import {
-  SafeAreaView,
-  Text,
-  View,
-  Image,
-  TouchableHighlight,
-} from "react-native";
+import React, { useEffect, useState } from "react";
+import { View,  Platform } from "react-native";
+
+//Android Themes
+import { androidDefaultMapStyle } from "../map-themes/Android-themes/defaultMapStyle";
+import { androidRadarMapStyle } from "../map-themes/Android-themes/radarMapStyle";
+import { androidCherryBlossomMapStyle } from "../map-themes/Android-themes/cherryBlossomMapStyle";
+import { androidCyberpunkMapStyle } from "../map-themes/Android-themes/cyberpunkstyle";
+import { androidColorblindMapStyle } from "../map-themes/Android-themes/colourblindstyle";
+//Ignore errors here for now 
+import { IOSDefaultMapStyle } from "../map-themes/IOS-themes/themestemp";
+import { IOSRadarMapStyle } from "../map-themes/IOS-themes/themestemp";
+import { IOSCherryBlossomMapStyle } from "../map-themes/IOS-themes/themestemp";
+import { IOSCyberpunkMapStyle } from "../map-themes/IOS-themes/themestemp";
+import { IOSColorblindMapStyle } from "../map-themes/IOS-themes/themestemp";
+
+// Components
+import { MapStylePopup } from "../components/map-style-popup";
+import { getStoredMapStyle, storeMapStyle } from "../util/mapthemestore";
+import { ThemeSelectButton } from "../components/theme-select-button";
+import { FireSelector } from "../components/fire-selector";
+import { MapComp } from "../components/map-comp";
+import { MapStyle } from "../types/types";
+import { getCredentials } from "../util/logincache";
 import { router } from "expo-router";
-import { Input } from "../components/ui/input";
-import { useEffect, useState } from "react";
-import useLogin from "../hooks/api/useLogin";
-import { User, LockKeyhole } from "lucide-react-native";
-import React from "react";
-import { saveCredentials, getCredentials } from "../util/logincache";
 
+export default function Map() {
+  const [userNAME, setUsername] = useState("");
 
-export default function Login() {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [isError, setIsError] = useState(false);
-
-  // Check if user is already logged in
+  // Fetch username from secure storage
   useEffect(() => {
-    const checkLogin = async () => {
+    const fetchCredentials = async () => {
       const credentials = await getCredentials();
       if (credentials) {
-        // If credentials exist, navigate directly to the main page
-        router.navigate("/map");
+        setUsername(credentials.username);
+        console.log('logged in with user:', userNAME, ':fetched from cache');
+
+      } else {
+        console.log('Credentials not found, please log in');
+        // Optionally redirect to login page
+        router.navigate("/login");
       }
     };
 
-    checkLogin();
+    fetchCredentials();
   }, []);
+  
+  const [selectedMapStyle, setSelectedMapStyle] = useState<MapStyle[]>(Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle);
+  const [themePopupVisible, setThemePopupVisible] = useState(false);
 
-  return (
-    <SafeAreaView className="flex-1 items-center">
-      <Image
-        source={require("../assets/MissleWarsTitle.png")}
-        className="w-[425] h-[200] mt-[0]"
-        resizeMode="contain"
-      />
-      <View>
-        <View className="space-y-4">
-          <Input
-            placeholder="Username"
-            onChangeText={(text) => setUsername(text)}
-            className="w-[90vw] h-[5vh] rounded-[20px]"
-            icon={<User size={24} color="black" />}
-          />
-          <View>
-            <Input
-              placeholder="Password"
-              onChangeText={(text) => setPassword(text)}
-              className="w-[90vw] h-[5vh] rounded-[20px]"
-              icon={
-                <View className="inset-y-[-1px]">
-                  <LockKeyhole size={24} color="black" />
-                </View>
-              }
-            />
-            {isError && (
-              <Text className="text-red-500 text-sm text-center">
-                Invalid username or password
-              </Text>
-            )}
-          </View>
-        </View>
-      </View>
-      <LoginButton
-        username={username}
-        password={password}
-        setIsError={setIsError}
-      />
-      <Image
-        source={require("../assets/cometDivider.png")}
-        resizeMode="stretch"
-        className="w-[425] h-[10%] mt-[240]"
-      />
-      <SignUpButton />
-    </SafeAreaView>
-  );
-}
+  const showPopup = () => {
+    setThemePopupVisible(true);
+  };
 
-function LoginButton({
-  username,
-  password,
-  setIsError,
-  className,
-}: {
-  username: string;
-  password: string;
-  setIsError: (error: boolean) => void;
-  className?: string;
-}) {
-  const mutation = useLogin(
-    async () => {
-      await saveCredentials(username, password);
-      router.navigate("/map");
-    },
-    () => {
-      setIsError(true);
+  const closePopup = () => {
+    setThemePopupVisible(false);
+  };
+
+  const selectMapStyle = (style: string) => {
+    closePopup();
+
+    //chooses style based on platform version
+    let selectedStyle;
+    switch (style) {
+      case "default":
+        selectedStyle = Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle;
+        break;
+      case "radar":
+        selectedStyle = Platform.OS === 'android' ? androidRadarMapStyle : IOSRadarMapStyle;
+        break;
+      case "cherry":
+        selectedStyle = Platform.OS === 'android' ? androidCherryBlossomMapStyle : IOSCherryBlossomMapStyle;
+        break;
+      case "cyber":
+        selectedStyle = Platform.OS === 'android' ? androidCyberpunkMapStyle : IOSCyberpunkMapStyle;
+        break;
+      case "colourblind":
+        selectedStyle = Platform.OS === 'android' ? androidColorblindMapStyle : IOSColorblindMapStyle;
+        break;
+      default:
+        selectedStyle = Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle;
     }
-  );
-  return (
-    <TouchableHighlight
-      onPress={() => mutation.mutate({ username, password })}
-      className={`bg-[#773765] rounded-[20px] w-[375] h-[45] flex items-center justify-center mt-[40]`}
-    >
-      <View>
-        <Text className="text-white font-bold">Let's Fight</Text>
-      </View>
-    </TouchableHighlight>
-  );
-}
+    setSelectedMapStyle(selectedStyle);
+    storeMapStyle(style);
+  };
 
-function SignUpButton() {
   return (
-    <TouchableHighlight
-      onPress={() => {
-        router.navigate("/register");
-      }}
-      className="rounded-[20px] w-[375px] h-[45px] flex items-center justify-center border-2 mt-[5]"
-    >
-      <View>
-        <Text className=" font-bold">Sign up with Email</Text>
-      </View>
-    </TouchableHighlight>
+    <View style={{ flex: 1, backgroundColor: 'gray' }}>
+      <MapComp selectedMapStyle={selectedMapStyle} />
+
+       
+        {/* To hide the theme button on iOS, uncomment the next line  */}
+        {Platform.OS === 'android' && (
+     
+      <ThemeSelectButton onPress={showPopup}>Theme</ThemeSelectButton>
+       )}
+       {/* and this bracket above */}
+
+      <MapStylePopup
+        visible={themePopupVisible}
+        transparent={true}
+        onClose={closePopup}
+        onSelect={selectMapStyle}
+      />
+      <FireSelector 
+        selectedMapStyle={selectedMapStyle} 
+        getStoredMapStyle={getStoredMapStyle} 
+        selectMapStyle={selectMapStyle} 
+      />
+    </View>
   );
 }
