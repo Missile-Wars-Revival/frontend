@@ -1,9 +1,13 @@
-import React, { useState } from "react";
+// needs reviewing and updating
+
+import React, { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, FlatList, Modal } from "react-native";
 import { router } from "expo-router";
 import { useFetchFriends } from "../api/friends";
-import { userNAME } from "../temp/login";
+import { getCredentials } from "../util/logincache";
 import { removeFriend } from "../api/remove-friend";
+
+
 
 const fireMissile = (username: string) => {
   //firing missile logic
@@ -11,12 +15,29 @@ const fireMissile = (username: string) => {
 };
 
 const FriendsPage: React.FC = () => {
+  const [userNAME, setUsername] = useState("");
   const { friends, loading, error } = useFetchFriends(userNAME);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedFriend, setSelectedFriend] = useState("");
 
-  const handleCogPress = (username: string) => {
-    setSelectedFriend(username);
+  // Fetch username from secure storage
+  useEffect(() => {
+    const fetchCredentials = async () => {
+      const credentials = await getCredentials();
+      if (credentials) {
+        setUsername(credentials.username);
+      } else {
+        console.log('Credentials not found, please log in');
+        // Optionally redirect to login page
+        // router.navigate("/login");
+      }
+    };
+
+    fetchCredentials();
+  }, []);
+
+  const handleCogPress = (friendUsername: string) => {
+    setSelectedFriend(friendUsername);
     setModalVisible(true);
   };
 

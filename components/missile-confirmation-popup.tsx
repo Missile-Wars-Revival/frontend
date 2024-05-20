@@ -1,6 +1,6 @@
 import { Dimensions, Modal, Button, View } from "react-native";
-import React, { useState } from "react";
-import { MissileLibrary, MissilefireposLibrary } from "./missile";
+import React from "react";
+import { MissilefireposLibrary } from "./missile";
 
 interface MissileFireProps {
     MissilefireposModalVisible: boolean;
