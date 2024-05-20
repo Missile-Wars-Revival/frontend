@@ -1,6 +1,7 @@
 
 import { useState } from "react";
 import { Location } from "../../types/types";
+import Constants from "expo-constants";
 let websocket!: WebSocket;
 
 let data!: any;
@@ -11,9 +12,11 @@ interface OutgoingWebsocketData {
 }
 
 const connectWebsocket = () => new Promise<WebSocket>((resolve, reject) => {
-    //const url = "ws://192.168.1.185:3000";
-    const url = process.env.EXPO_PUBLIC_WEBSOCKET_URL || "ws://localhost:3000";
-    const websocket = new WebSocket(url);
+    const uri = Constants?.expoConfig?.hostUri
+        ? `ws://` + Constants.expoConfig.hostUri.split(`:`).shift()?.concat(`:3000`)
+        : `missilewars.com`;
+
+    const websocket = new WebSocket(uri, 'missilewars');
 
     websocket.onopen = () => {
         console.log("Connected to websocket");
@@ -35,12 +38,12 @@ const getWebsocket = () => {
             connectWebsocket();
             console.log("Connecting to websocket");
         }
-    
+
         websocket.onclose = async () => {
             console.log('WebSocket connection closed');
             let connected = false;
             for (let i = 0; i < 100 && !connected; i++) {
-                
+
                 try {
                     websocket = await connectWebsocket()
                     connected = true;
@@ -51,16 +54,16 @@ const getWebsocket = () => {
                 }
             }
         };
-      
-          websocket.onmessage = (event) => {
+
+        websocket.onmessage = (event) => {
             data = JSON.parse(event.data);
             console.log("Received data from websocket", data);
             websocket.send(JSON.stringify({ type: 'authenticate', token: 'missilewars' }));
-          };
+        };
     }).catch((error) => {
         console.error("Failed to connect to websocket:", error);
     });
-  }
+}
 
 
 export const sendWebsocket = async (data: any) => {
