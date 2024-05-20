@@ -9,7 +9,7 @@ import { androidCyberpunkMapStyle } from "../map-themes/Android-themes/cyberpunk
 import { androidColorblindMapStyle } from "../map-themes/Android-themes/colourblindstyle";
 //Ignore errors here for now 
 import { IOSDefaultMapStyle } from "../map-themes/Android-themes/defaultMapStyle";
-import { IOSRadarMapStyle } from "../map-themes/Android-themes/radarMapStyle";
+import { IOSRadarMapStyle } from "../map-themes/IOS-themes/IOSRadarMapStyle";
 import { IOSCherryBlossomMapStyle } from "../map-themes/Android-themes/cherryBlossomMapStyle";
 import { IOSCyberpunkMapStyle } from "../map-themes/Android-themes/cyberpunkstyle";
 import { IOSColorblindMapStyle } from "../map-themes/Android-themes/colourblindstyle";
@@ -65,12 +65,13 @@ export default function Map() {
     <View style={{ flex: 1, backgroundColor: 'gray' }}>
       <MapComp selectedMapStyle={selectedMapStyle} />
 
-      {/* 
-        To hide the theme button on iOS, uncomment the next line
-        {Platform.OS === 'android' && (
-      */}
+       {/*
+        To hide the theme button on iOS, uncomment the next line 
+        {Platform.OS === 'android' && ( */}
+     
       <ThemeSelectButton onPress={showPopup}>Theme</ThemeSelectButton>
-      {/* )} */}
+       {/*)}
+       {/* To comment out android comment out line above and plat.os line */}
 
       <MapStylePopup
         visible={themePopupVisible}
