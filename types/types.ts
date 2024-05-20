@@ -54,3 +54,8 @@ export interface Player {
 export interface Friend {
   username: string;
 }
+
+export type MapStyle = {
+  elementType?: string; //element is optional
+  stylers: Array<{ color?: string; visibility?: string }>;
+};

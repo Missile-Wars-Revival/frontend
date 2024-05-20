@@ -20,11 +20,7 @@ import { getStoredMapStyle, storeMapStyle } from "../components/ui/mapthemestore
 import { ThemeSelectButton } from "../components/theme-select-button";
 import { FireSelector } from "../components/fire-selector";
 import { MapComp } from "../components/map-comp";
-
-type MapStyle = {
-  elementType?: string; //element is optional
-  stylers: Array<{ color?: string; visibility?: string }>;
-};
+import { MapStyle } from "../types/types";
 
 export default function Map() {
   
