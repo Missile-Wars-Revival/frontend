@@ -11,6 +11,8 @@ import { useState } from "react";
 import useLogin from "../hooks/api/useLogin";
 import { User, LockKeyhole } from "lucide-react-native";
 import React from "react";
+//import { saveCredentials, getCredentials } from "../util/logincache";
+
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -78,14 +80,14 @@ function LoginButton({
   className?: string;
 }) {
   const mutation = useLogin(
-    () => {
+    async () => {
+      //await saveCredentials(username, password);
       router.navigate("/map");
     },
     () => {
       setIsError(true);
     }
   );
-
   return (
     <TouchableHighlight
       onPress={() => mutation.mutate({ username, password })}
