@@ -8,11 +8,11 @@ import { androidCherryBlossomMapStyle } from "../map-themes/Android-themes/cherr
 import { androidCyberpunkMapStyle } from "../map-themes/Android-themes/cyberpunkstyle";
 import { androidColorblindMapStyle } from "../map-themes/Android-themes/colourblindstyle";
 //Ignore errors here for now 
-import { IOSDefaultMapStyle } from "../map-themes/Android-themes/defaultMapStyle";
-import { IOSRadarMapStyle } from "../map-themes/IOS-themes/IOSRadarMapStyle";
-import { IOSCherryBlossomMapStyle } from "../map-themes/Android-themes/cherryBlossomMapStyle";
-import { IOSCyberpunkMapStyle } from "../map-themes/Android-themes/cyberpunkstyle";
-import { IOSColorblindMapStyle } from "../map-themes/Android-themes/colourblindstyle";
+import { IOSDefaultMapStyle } from "../map-themes/IOS-themes/themestemp";
+import { IOSRadarMapStyle } from "../map-themes/IOS-themes/themestemp";
+import { IOSCherryBlossomMapStyle } from "../map-themes/IOS-themes/themestemp";
+import { IOSCyberpunkMapStyle } from "../map-themes/IOS-themes/themestemp";
+import { IOSColorblindMapStyle } from "../map-themes/IOS-themes/themestemp";
 
 // Components
 import { MapStylePopup } from "../components/map-style-popup";
@@ -21,10 +21,14 @@ import { ThemeSelectButton } from "../components/theme-select-button";
 import { FireSelector } from "../components/fire-selector";
 import { MapComp } from "../components/map-comp";
 
+type MapStyle = {
+  elementType?: string; //element is optional
+  stylers: Array<{ color?: string; visibility?: string }>;
+};
+
 export default function Map() {
-  const [selectedMapStyle, setSelectedMapStyle] = useState(
-    Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle
-  );
+  
+  const [selectedMapStyle, setSelectedMapStyle] = useState<MapStyle[]>(Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle);
   const [themePopupVisible, setThemePopupVisible] = useState(false);
 
   const showPopup = () => {
@@ -37,6 +41,8 @@ export default function Map() {
 
   const selectMapStyle = (style: string) => {
     closePopup();
+
+    //chooses style based on platform version
     let selectedStyle;
     switch (style) {
       case "default":
@@ -65,13 +71,13 @@ export default function Map() {
     <View style={{ flex: 1, backgroundColor: 'gray' }}>
       <MapComp selectedMapStyle={selectedMapStyle} />
 
-       {/*
-        To hide the theme button on iOS, uncomment the next line 
-        {Platform.OS === 'android' && ( */}
+       
+        {/* To hide the theme button on iOS, uncomment the next line  */}
+        {Platform.OS === 'android' && (
      
       <ThemeSelectButton onPress={showPopup}>Theme</ThemeSelectButton>
-       {/*)}
-       {/* To comment out android comment out line above and plat.os line */}
+       )}
+       {/* and this bracket above */}
 
       <MapStylePopup
         visible={themePopupVisible}
