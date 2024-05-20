@@ -8,7 +8,7 @@
     "noImplicitOverride": true, // Enforce explicit override in class methods, enhancing code readability and maintainability
 
     /* Module Resolution */
-    "module": "commonjs", // or "es6"
+    "module": "CommonJS", // or "es6"
     "isolatedModules": true, // Ensures all files can be safely transpiled independently
     "resolveJsonModule": true, // Enable importing of JSON modules
 

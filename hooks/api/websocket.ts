@@ -1,19 +1,27 @@
 
 import { useState } from "react";
-import { Location } from "../../types/types";
+import { MessageBuilder, Types} from "middle-earth";
+import { encode, decode } from 'msgpack-lite';
+
 let websocket!: WebSocket;
 
-let data!: any;
+let location: Types.GeoLocation = {
+    lat: 0,
+    lon: 0
+};
 
-interface OutgoingWebsocketData {
-    uniqueId?: string;
-    location: Location;
-}
+let data = {};
+
 
 const connectWebsocket = () => new Promise<WebSocket>((resolve, reject) => {
+
+    if (websocket && websocket.readyState === WebSocket.OPEN) {
+        resolve(websocket);
+    }
     //const url = "ws://192.168.1.185:3000";
     const url = process.env.EXPO_PUBLIC_WEBSOCKET_URL || "ws://localhost:3000";
-    const websocket = new WebSocket(url);
+    console.log("Connecting to websocket at", url);
+    websocket = new WebSocket(url, ["missilewars"]);
 
     websocket.onopen = () => {
         console.log("Connected to websocket");
@@ -63,7 +71,7 @@ const getWebsocket = () => {
   }
 
 
-export const sendWebsocket = async (data: any) => {
+export const sendWebsocket = async (data: Types.WebSocketMsg) => {
     console.log("Sending data to websocket", data);
 
     // Ensure the WebSocket connection is open before sending data
@@ -73,7 +81,7 @@ export const sendWebsocket = async (data: any) => {
         });
     }
 
-    websocket.send(JSON.stringify(data));
+    websocket.send(encode(data));
 }
 
 export default function useWebSocket() {
@@ -83,11 +91,3 @@ export default function useWebSocket() {
 
     return data;
 }
-
-const updateLocation = (location: Location) => {
-    const outgoingData: OutgoingWebsocketData = {
-        uniqueId: "player1",
-        location: location
-    };
-    sendWebsocket(outgoingData);
-};
