@@ -57,8 +57,6 @@ export const PlayerComp = (playerProps: PlayerProps) => {
             title={`Fire Missile At Player: ${playerProps.player.username}`}
             onPress={() => {
                 console.log("Button clicked for player:", playerProps.player.username);
-                //fireMissile(playerProps.player.username);
-                // TODO fix this
             }}
             color="white"
             />

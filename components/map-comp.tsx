@@ -57,13 +57,15 @@ export const MapComp = (props: MapCompProps) => {
         // no longer supported -> provider={PROVIDER_GOOGLE}
         className="flex-1"
         region={region}
+        showsCompass={true}
+        showsTraffic={false}
         showsUserLocation={true}
         showsMyLocationButton={true}
         customMapStyle={props.selectedMapStyle} >
         
         {/* Render Loot Drops */}
         <AllLootDrops lootLocations={lootLocations} />
-
+ 
         {/* Render landmine Drops */}
         <AllLandMines landminedata={landminedata} />    
 
