@@ -6,13 +6,32 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Text, View, FlatList, TouchableOpacity, Alert } from "react-native";
 import * as Location from "expo-location";
 import { Input } from "../components/ui/input";
-import { userNAME } from "../temp/login";
 import { Player } from "../types/types";
 import { searchOtherPlayersData } from "../api/getplayerlocations";
 import { addFriend } from "../api/add-friend"; // Import the addFriend function
 import { removeFriend } from "../api/remove-friend";
+import { router } from "expo-router";
+import { getCredentials } from "../util/logincache";
+
+
 
 const QuickAddPage: React.FC = () => {
+  const [userNAME, setUsername] = useState("");
+
+  useEffect(() => {
+    const fetchCredentials = async () => {
+      const credentials = await getCredentials();
+      if (credentials) {
+        setUsername(credentials.username);
+      } else {
+        console.log('Credentials not found, please log in');
+        // Optionally redirect to login page
+        router.navigate("/login");
+      }
+    };
+
+    fetchCredentials();
+  }, []);
   const [userLocation, setUserLocation] = useState<{
     latitude: number;
     longitude: number;

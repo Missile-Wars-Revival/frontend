@@ -29,7 +29,7 @@ const FriendsPage: React.FC = () => {
       } else {
         console.log('Credentials not found, please log in');
         // Optionally redirect to login page
-        // router.navigate("/login");
+        router.navigate("/login");
       }
     };
 
