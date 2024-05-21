@@ -3,23 +3,21 @@
 The offficial frontend for Missile Wars 
 A React Native app with Expo
 
-# Running the frontend
+## Running the frontend
 
 Make sure to install all dependencies before proceeding:
 
-```sh
-$ npm i
 ```
-
-Make sure you set your ip in .env
+npm i
 ```
-EXPO_PUBLIC_BACKEND_URL=http://localhost:3000
-```
-
-Next modify the .env to have your local ip address (not localhost or 127.0.0.1)
 Make sure to run the backend server before running.
-To build and run:
 
-```sh
-$ npm start
+## To build and run:
+
 ```
+npm start
+```
+
+## Login 
+To login to an account use either Test or Test2 and the password is Testing123!
+

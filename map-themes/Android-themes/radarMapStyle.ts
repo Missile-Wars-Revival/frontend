@@ -1,4 +1,4 @@
-export const RadarMapStyle = [
+export const androidRadarMapStyle = [
     {
       "elementType": "geometry",
       "stylers": [
