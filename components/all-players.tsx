@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { Player } from "../types/types"
 import { PlayerComp } from "./player";
-import { userNAME } from "../temp/login";
+import { useUserName } from "../util/fetchusernameglobal";
 import { getTimeDifference, isInactiveFor24Hours } from "../util/get-time-difference";
 import { fetchOtherPlayersData } from "../api/getplayerlocations";
 
 
 export const AllPlayers = () => {
+
+  const userNAME = useUserName();
 
     const [otherPlayersData, setOtherPlayersData] = useState([] as Player[]); 
 

@@ -1,12 +1,13 @@
 import { Circle } from "react-native-maps";
 import { Landmine  } from "../types/types";
 import React from "react";
-import { userNAME } from "../temp/login";
+import { useUserName } from "../util/fetchusernameglobal";
 
 interface LandMineRenderProps {
     landminedata: Landmine[];
 }
 export const AllLandMines = (props: LandMineRenderProps) => {
+    const userNAME = useUserName();
     return (
         <>
             {props.landminedata
