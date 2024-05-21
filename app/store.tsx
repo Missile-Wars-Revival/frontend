@@ -38,6 +38,7 @@ const StorePage: React.FC = () => {
   };
 
   const handleRemove = (productId: number) => {
+    
     // Implement logic to remove the product from the cart
     // For example:
     setCart(cart.filter(item => item.product.id !== productId));
