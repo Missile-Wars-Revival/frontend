@@ -80,7 +80,7 @@ import {
     const mutation = useLogin(
       async () => {
         await saveCredentials(username, password);
-        router.navigate("/index");
+        router.push('/');
       },
       () => {
         setIsError(true);
