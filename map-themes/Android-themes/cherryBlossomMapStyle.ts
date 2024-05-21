@@ -1,4 +1,4 @@
-export const CherryBlossomMapStyle = [
+export const androidCherryBlossomMapStyle = [
     {
       "elementType": "geometry",
       "stylers": [

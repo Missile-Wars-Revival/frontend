@@ -19,6 +19,11 @@ export interface Missilelib {
   quantity: number;
   description: string;
 }
+export interface LandmineLib {
+  type: string;
+  quantity: number;
+  description: string;
+}
 
 export interface Loot {
   latitude: number;
@@ -30,6 +35,8 @@ export interface Landmine {
   latitude: number;
   longitude: number;
   placedby: string;
+  Type: String;
+  Expire: string;
 }
 
 export interface Location {
@@ -47,3 +54,8 @@ export interface Player {
 export interface Friend {
   username: string;
 }
+
+export type MapStyle = {
+  elementType?: string; //element is optional
+  stylers: Array<{ color?: string; visibility?: string }>;
+};
