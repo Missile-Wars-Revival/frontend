@@ -9,12 +9,16 @@ import { AllPlayers } from "./all-players";
 import { Landmine, Loot, Missile } from "../types/types";
 import { fetchLootFromBackend, fetchMissilesFromBackend, fetchlandmineFromBackend } from "../temp/fetchMethods";
 import { loadLastKnownLocation, saveLocation } from '../util/mapstore';
+import { useUserName } from "../util/fetchusernameglobal";
+import { dispatch } from "../api/dispatch";
 
 interface MapCompProps {
     selectedMapStyle: any;
 }
 
 export const MapComp = (props: MapCompProps) => {
+    const userNAME = useUserName(); //logged in user
+
     const [region, setRegion] = useState({
         latitude: 0,
         longitude: 0,
@@ -34,6 +38,15 @@ export const MapComp = (props: MapCompProps) => {
         setlandminelocations(landminedata);
         setMissileData(missileData);
     }, []);
+
+    //when implementing websockets this is what should be changed
+
+    const dispatchLocation = async () => {
+        if (userNAME && region.latitude && region.longitude) {
+            const dispatchResponse = await dispatch(userNAME, region.latitude, region.longitude);
+            console.log('Dispatch Response:', dispatchResponse);  // Optionally handle the response
+        }
+    };
 
     const getLocationPermission = async () => {
         let { status } = await Location.requestForegroundPermissionsAsync();
@@ -66,10 +79,13 @@ export const MapComp = (props: MapCompProps) => {
         fetchLootAndMissiles();
         initializeRegion();
 
-        const intervalId = setInterval(fetchLootAndMissiles, 30000); // Refresh data every 30 seconds
+        const intervalId = setInterval(() => {
+            fetchLootAndMissiles();
+            dispatchLocation();  // Dispatch location every 30 seconds
+        }, 30000);
 
         return () => clearInterval(intervalId); // Cleanup interval on component unmount
-    }, [fetchLootAndMissiles]);
+    }, [fetchLootAndMissiles, userNAME]); // Remove `region` from the dependencies
 
     return (
         <MapView
