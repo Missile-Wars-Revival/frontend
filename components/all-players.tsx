@@ -5,7 +5,6 @@ import { useUserName } from "../util/fetchusernameglobal";
 import { getTimeDifference, isInactiveFor24Hours } from "../util/get-time-difference";
 import { fetchOtherPlayersData } from "../api/getplayerlocations";
 
-
 export const AllPlayers = () => {
 
   const userNAME = useUserName();
@@ -16,6 +15,7 @@ export const AllPlayers = () => {
       try {
         const data = await fetchOtherPlayersData();
         setOtherPlayersData(data); 
+        //console.log("Data fetching...", data);
       } catch (error) {
         console.error('Error fetching other players data:', error);
       }
@@ -38,6 +38,11 @@ export const AllPlayers = () => {
             .filter(player => player.username !== userNAME && !isInactiveFor24Hours(player.updatedAt))
             .map((player, index) => {
             const { text } = getTimeDifference(player.updatedAt);
+
+            const location = {
+              latitude: player.latitude ?? 0, // Fallback to 0 if undefined
+              longitude: player.longitude ?? 0 // Fallback to 0 if undefined
+            };            
 
             return (
                 <React.Fragment key={index}>

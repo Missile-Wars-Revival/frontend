@@ -51,6 +51,11 @@ export interface Player {
   updatedAt: string; 
 }
 
+export interface playerlocation {
+  latitude: number;
+  longitude: number;
+}
+
 export interface Friend {
   username: string;
 }
