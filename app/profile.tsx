@@ -1,9 +1,27 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { SafeAreaView, StyleSheet, Text, View, Image, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
-import { clearCredentials } from '../util/logincache';
+import { clearCredentials, getCredentials } from '../util/logincache';
 
 const ProfilePage: React.FC = () => {
+
+  const [userNAME, setUsername] = useState("");
+
+  // Fetch username from secure storage
+  useEffect(() => {
+    const fetchCredentials = async () => {
+      const credentials = await getCredentials();
+      if (credentials) {
+        setUsername(credentials.username);
+      } else {
+        console.log('Credentials not found, please log in');
+        // Optionally redirect to login page
+        router.navigate("/login");
+      }
+    };
+  
+    fetchCredentials();
+  }, []);
   const router = useRouter();
 
   const handleLogout = async () => {
@@ -21,9 +39,9 @@ const ProfilePage: React.FC = () => {
           style={styles.profileImage}
           source={{ uri: 'https://via.placeholder.com/150' }}
         />
-        <Text style={styles.profileName}>John Doe</Text>
-        <Text style={styles.profileDetails}>Email: john.doe@example.com</Text>
-        <Text style={styles.profileDetails}>Phone: (123) 456-7890</Text>
+        <Text style={styles.profileName}>{userNAME}</Text>
+        <Text style={styles.profileDetails}>Email: example@example.com</Text>
+        <Text style={styles.profileDetails}>rank or somthing here</Text>
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Text style={styles.logoutButtonText}>Sign Out</Text>
         </TouchableOpacity>
