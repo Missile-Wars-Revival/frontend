@@ -26,14 +26,12 @@ import { router } from "expo-router";
 
 export default function Map() {
   const [userNAME, setUsername] = useState("");
-
   // Fetch username from secure storage
   useEffect(() => {
     const fetchCredentials = async () => {
       const credentials = await getCredentials();
       if (credentials) {
         setUsername(credentials.username);
-        console.log('logged in with user:', credentials.username, ':fetched from cache');
       } else {
         console.log('Credentials not found, please log in');
         // Optionally redirect to login page

@@ -7,7 +7,7 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { Input } from "../components/ui/input";
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { User, LockKeyhole, Mail } from "lucide-react-native";
 import useRegister from "../hooks/api/useRegister";
 import { useForm } from "react-hook-form";
