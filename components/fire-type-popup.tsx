@@ -1,5 +1,58 @@
+import React, { useState } from "react";
 import { Modal, View, Text, TouchableOpacity } from "react-native";
-import React from "react";
+
+interface FireTypeProps {
+  landmineFireHandler: () => void;
+  missileFireHandler: () => void;
+}
+
+export const FireType = (props: FireTypeProps) => {
+  const [FirepopupVisible, setFirePopupVisible] = useState(false);
+  const FireshowPopup = () => {
+    //console.log("Popup button clicked");
+    setFirePopupVisible(true);
+  };
+  
+
+  const FireclosePopup = () => {
+    setFirePopupVisible(false);
+  };
+
+  const selectFiretype = (style: string) => {
+    FireclosePopup();
+    switch (style) {
+      case "firelandmine":
+        console.log("place landmine")
+        //place landminecode;
+        props.landmineFireHandler();
+        break;
+      case "firemissile":
+        console.log("Fire Missile")
+        props.missileFireHandler();
+        //Fire missile code;
+        break;
+      default:
+        break;
+    }
+  };
+  return (
+    <View>
+      <TouchableOpacity
+      className="absolute bottom-[70px] left-[20px] rounded-[5px] p-[10px] bg-white shadow-md"
+      onPress={FireshowPopup}
+    >
+      <Text className="text-[16px]">+</Text>
+    </TouchableOpacity>
+
+    <FireTypeStyle
+      visible={FirepopupVisible}
+      transparent={true}
+      onClose={FireclosePopup}
+      onSelect={selectFiretype} />
+    </View>
+  )
+};
+
 
 interface MapStylePopupProps {
   visible: boolean;
@@ -8,7 +61,7 @@ interface MapStylePopupProps {
   onSelect: (style: string) => void;
 }
 
-export const MapStylePopup = ({
+export const FireTypeStyle = ({
   visible,
   transparent,
   onClose,
@@ -48,7 +101,7 @@ export const MapStylePopup = ({
           }}
         >
           <TouchableOpacity
-            onPress={() => onSelect("default")}
+            onPress={() => onSelect("firelandmine")}
             style={{
               borderRadius: 10,
               padding: 10,
@@ -58,10 +111,10 @@ export const MapStylePopup = ({
               alignItems: "center",
             }}
           >
-            <Text style={{ fontSize: 16 }}>Default</Text>
+            <Text style={{ fontSize: 16 }}>Place Landmine</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => onSelect("radar")}
+            onPress={() => onSelect("firemissile")}
             style={{
               borderRadius: 10,
               padding: 10,
@@ -71,9 +124,12 @@ export const MapStylePopup = ({
               alignItems: "center",
             }}
           >
-            <Text style={{ fontSize: 16 }}>Radar</Text>
+            <Text style={{ fontSize: 16 }}>Fire Missile</Text>
           </TouchableOpacity>
-          <TouchableOpacity
+
+{/* Room to expand: */}
+
+          {/* <TouchableOpacity
             onPress={() => onSelect("cherry")}
             style={{
               borderRadius: 10,
@@ -85,8 +141,8 @@ export const MapStylePopup = ({
             }}
           >
             <Text style={{ fontSize: 16 }}>Cherry Blossom</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
+          </TouchableOpacity> */}
+          {/* <TouchableOpacity
             onPress={() => onSelect("cyber")}
             style={{
               borderRadius: 10,
@@ -98,8 +154,8 @@ export const MapStylePopup = ({
             }}
           >
             <Text style={{ fontSize: 16 }}>CyberPunk</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
+          </TouchableOpacity> */}
+          {/* <TouchableOpacity
             onPress={() => onSelect("colourblind")}
             style={{
               borderRadius: 10,
@@ -111,7 +167,7 @@ export const MapStylePopup = ({
             }}
           >
             <Text style={{ fontSize: 16 }}>Colour Blind</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
         </View>
       </TouchableOpacity>

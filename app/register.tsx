@@ -13,6 +13,7 @@ import useRegister from "../hooks/api/useRegister";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import React from "react";
 
 export default function Register() {
   return (
@@ -68,7 +69,7 @@ function SignUpForm() {
   }, [register]);
 
   const mutation = useRegister(() => {
-    router.navigate("/");
+    router.navigate("/map");
   });
 
   const onSubmit = (data: SignUpFormInputs) => {

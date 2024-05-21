@@ -1,5 +1,6 @@
 import { Circle } from "react-native-maps";
 import { Location } from "../types/types";
+import React from "react";
 
 // Loot Component
 export const Loot = ({ location }: { location: Location }) => (
