@@ -9,6 +9,7 @@ import { AllMissiles } from "./map-missile";
 import { AllPlayers } from "./all-players";
 import { Landmine, Loot, Missile } from "../types/types";
 import { fetchLootFromBackend, fetchMissilesFromBackend, fetchlandmineFromBackend } from "../temp/fetchMethods";
+import { loadLastKnownLocation, saveLocation } from '../util/mapstore';
 
 interface MapCompProps {
     selectedMapStyle: any;
@@ -16,12 +17,10 @@ interface MapCompProps {
 
 export const MapComp = (props: MapCompProps) => {
     const [region, setRegion] = useState({
-
-    //going to cache last locaiton and use load up the cache when app is opened 
-        latitude: 37.78825,
-        longitude: -122.4324,
-        latitudeDelta: 0.0922,
-        longitudeDelta: 0.0421,
+        latitude: 0,
+        longitude: 0,
+        latitudeDelta: 0,
+        longitudeDelta: 0,
     });
     const [lootLocations, setLootLocations] = useState<Loot[]>([]);
     const [missileData, setMissileData] = useState<Missile[]>([]);
@@ -45,17 +44,28 @@ export const MapComp = (props: MapCompProps) => {
         }
 
         let location = await Location.getCurrentPositionAsync({});
-        setRegion({
+        const newRegion = {
             latitude: location.coords.latitude,
             longitude: location.coords.longitude,
-            latitudeDelta: 0.0922,
-            longitudeDelta: 0.0421
-        });
+            latitudeDelta: 0.1922,
+            longitudeDelta: 0.1421
+        };
+        setRegion(newRegion);
+        saveLocation(newRegion);
     };
 
     useEffect(() => {
+        const initializeRegion = async () => {
+            const lastKnownLocation = await loadLastKnownLocation();
+            if (lastKnownLocation) {
+                setRegion(lastKnownLocation);
+            } else {
+                getLocationPermission();
+            }
+        };
+
         fetchLootAndMissiles();
-        getLocationPermission();
+        initializeRegion();
 
         const intervalId = setInterval(fetchLootAndMissiles, 30000); // Refresh data every 30 seconds
 
