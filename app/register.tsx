@@ -123,6 +123,14 @@ function SignUpForm() {
           <Text className="text-white font-bold">Sign Up!</Text>
         </View>
       </TouchableHighlight>
+      <TouchableHighlight
+        onPress={() => router.navigate("/login")}
+        className="rounded-[20px] w-[375px] h-[45px] flex items-center justify-center border-2 mt-[5] absolute top-[350%]"
+      >
+        <View>
+          <Text className=" font-bold">Return To Login</Text>
+        </View>
+      </TouchableHighlight>
     </View>
   );
 }
