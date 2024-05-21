@@ -33,7 +33,13 @@ function NavBar() {
         onPress={() => handlePress('/')} 
         disabled={selectedTab === '/'}
       >
-        <Text style={{ paddingVertical: 20, color: selectedTab === '/' ? 'blue' : 'black' }}>Map</Text>
+        <Text style={{ paddingVertical: 20, color: selectedTab === '/store' ? 'blue' : 'black' }}>Map</Text>
+      </TouchableOpacity>
+      <TouchableOpacity 
+        onPress={() => handlePress('/store')} 
+        disabled={selectedTab === '/store'}
+      >
+        <Text style={{ paddingVertical: 20, color: selectedTab === '/' ? 'blue' : 'black' }}>Store</Text>
       </TouchableOpacity>
       <TouchableOpacity 
         onPress={() => handlePress('/friends')} 
@@ -61,7 +67,8 @@ function RootLayoutNav() {
         <Stack>
           <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="login" options={{ headerShown: false, gestureEnabled: false }} />
-          <Stack.Screen name="register" />
+          <Stack.Screen name="register" options={{ headerShown: false }} />
+          <Stack.Screen name="store" options={{ headerShown: false, gestureEnabled: false }} />
           <Stack.Screen name="friends" options={{ headerShown: false }} />
           <Stack.Screen name="add-friends" />
           <Stack.Screen name="profile" options={{ headerShown: false }} />
