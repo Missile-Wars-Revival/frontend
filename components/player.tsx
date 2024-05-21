@@ -1,15 +1,18 @@
 import React, { useState } from "react";
 import { Button, View, Image, Text } from "react-native";
 import { Circle, Marker } from "react-native-maps";
-import { Player } from "../types/types";
+import { Player, playerlocation } from "../types/types";
 const resizedplayerimage = require("../assets/mapassets/Female_Avatar_PNG.png"); // Your custom image path
 const resizedplayericon = { width: 30, height: 30 }; // Custom size for image
 
 interface PlayerProps {
-    location: Location;
-    player: Player;
-    description: string;
-    index: number;
+  index: number;
+  player: Player;
+  location: {
+      latitude: number;
+      longitude: number;
+  };
+  description: string;
 }
 export const PlayerComp = (playerProps: PlayerProps) => {
     const [selectedMarkerIndex, setSelectedMarkerIndex] = useState<number | null>(null);
