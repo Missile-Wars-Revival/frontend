@@ -16,7 +16,7 @@ import { IOSColorblindMapStyle } from "../map-themes/IOS-themes/themestemp";
 
 // Components
 import { MapStylePopup } from "../components/map-style-popup";
-import { getStoredMapStyle, storeMapStyle } from "../util/mapthemestore";
+import { getStoredMapStyle, storeMapStyle } from "../util/mapstore";
 import { ThemeSelectButton } from "../components/theme-select-button";
 import { FireSelector } from "../components/fire-selector";
 import { MapComp } from "../components/map-comp";
