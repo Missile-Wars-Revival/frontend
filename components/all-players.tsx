@@ -11,6 +11,8 @@ export const AllPlayers = () => {
 
     const [otherPlayersData, setOtherPlayersData] = useState([] as Player[]); 
 
+
+    //When implementing websockets this is what needs to be changed
     const fetchOtherPlayers = async () => {
       try {
         const data = await fetchOtherPlayersData();
