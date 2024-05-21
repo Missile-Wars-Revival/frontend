@@ -3,7 +3,7 @@ import { getCredentials } from "../util/logincache";
 import { router } from "expo-router";
 
 export const userNAME = "Test";
-//export const passWORD = "Testing123!";
+export const passWORD = "Testing123!";
 
 //   // Fetch username from secure storage
 
