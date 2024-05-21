@@ -33,13 +33,13 @@ function NavBar() {
         onPress={() => handlePress('/')} 
         disabled={selectedTab === '/'}
       >
-        <Text style={{ paddingVertical: 20, color: selectedTab === '/store' ? 'blue' : 'black' }}>Map</Text>
+        <Text style={{ paddingVertical: 20, color: selectedTab === '/' ? 'blue' : 'black' }}>Map</Text>
       </TouchableOpacity>
       <TouchableOpacity 
         onPress={() => handlePress('/store')} 
         disabled={selectedTab === '/store'}
       >
-        <Text style={{ paddingVertical: 20, color: selectedTab === '/' ? 'blue' : 'black' }}>Store</Text>
+        <Text style={{ paddingVertical: 20, color: selectedTab === '/store' ? 'blue' : 'black' }}>Store</Text>
       </TouchableOpacity>
       <TouchableOpacity 
         onPress={() => handlePress('/friends')} 
