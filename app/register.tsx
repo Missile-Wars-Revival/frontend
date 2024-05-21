@@ -20,7 +20,7 @@ export default function Register() {
   return (
     <SafeAreaView className="flex-1 justify-center items-center space-y-8">
       <Image
-        source={require("../assets/MissleWarsTitle.png")}
+        source={require("../assets/icons/MissleWarsTitle.png")}
         className="w-[425px] h-[200px] absolute top-[25]"
         resizeMode="contain"
       />
