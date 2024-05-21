@@ -92,7 +92,7 @@ export const MapComp = (props: MapCompProps) => {
             className="flex-1"
             region={region}
             showsCompass={true}
-            showsTraffic={false}
+            showsTraffic={true}
             showsUserLocation={true}
             showsMyLocationButton={true}
             customMapStyle={props.selectedMapStyle} >
