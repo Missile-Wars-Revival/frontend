@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, FlatList, Modal } from "react-native";
 import { useRouter } from "expo-router";
-import { getCredentials } from "../util/logincache";
+import { useUserName } from "../util/fetchusernameglobal";
 
 const fireMissile = (username: string) => {
   // Placeholder for firing missile logic
@@ -9,7 +9,6 @@ const fireMissile = (username: string) => {
 };
 
 const FriendsPage: React.FC = () => {
-  const [userNAME, setUsername] = useState("");
   const friends: ArrayLike<any> | null | undefined = []; // Placeholder for friends list
   const loading = false; // Placeholder for loading state
   const error = null; // Placeholder for error state
@@ -18,20 +17,7 @@ const FriendsPage: React.FC = () => {
   const router = useRouter();
 
   // Fetch username from secure storage
-  useEffect(() => {
-    const fetchCredentials = async () => {
-      const credentials = await getCredentials();
-      if (credentials) {
-        setUsername(credentials.username);
-      } else {
-        console.log('Credentials not found, please log in');
-        // Optionally redirect to login page
-        router.navigate("/login");
-      }
-    };
-
-    fetchCredentials();
-  }, []);
+  const userNAME = useUserName(); //logged in user
 
   const handleCogPress = (friendUsername: string) => {
     setSelectedFriend(friendUsername);

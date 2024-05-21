@@ -1,28 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { } from 'react';
 import { SafeAreaView, StyleSheet, Text, View, Image, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
-import { clearCredentials, getCredentials } from '../util/logincache';
+import { router } from 'expo-router';
+import { clearCredentials } from '../util/logincache';
+import { useUserName } from '../util/fetchusernameglobal';
 
 const ProfilePage: React.FC = () => {
 
-  const [userNAME, setUsername] = useState("");
-
-  // Fetch username from secure storage
-  useEffect(() => {
-    const fetchCredentials = async () => {
-      const credentials = await getCredentials();
-      if (credentials) {
-        setUsername(credentials.username);
-      } else {
-        console.log('Credentials not found, please log in');
-        // Optionally redirect to login page
-        router.navigate("/login");
-      }
-    };
-  
-    fetchCredentials();
-  }, []);
-  const router = useRouter();
+  const userNAME = useUserName(); //logged in user
 
   const handleLogout = async () => {
     await clearCredentials();
