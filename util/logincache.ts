@@ -39,13 +39,5 @@ export async function clearCredentials(): Promise<void> {
     }
   }
 
- // example of LogOut
-
-//  const handleLogout = async () => {
-//     await clearCredentials();
-//     // Further actions after logout, like updating state or navigating to login page
-//     setUsername("");  // Clear local state
-//     router.navigate("/login");
-//   };
   
   
