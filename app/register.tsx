@@ -14,6 +14,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import React from "react";
+import { saveCredentials } from "../util/logincache";
 
 export default function Register() {
   return (
@@ -68,9 +69,13 @@ function SignUpForm() {
     register("password");
   }, [register]);
 
-  const mutation = useRegister(() => {
-    router.navigate("/map");
-  });
+  const mutation = useRegister(
+    async () => {
+      const { username, password } = form.getValues();
+      await saveCredentials(username, password);
+      router.navigate("/");
+    },
+  );
 
   const onSubmit = (data: SignUpFormInputs) => {
     console.log("Submission");
