@@ -21,7 +21,7 @@ import {
     return (
       <SafeAreaView className="flex-1 items-center">
         <Image
-          source={require("../assets/MissleWarsTitle.png")}
+          source={require("../assets/icons/MissleWarsTitle.png")}
           className="w-[425] h-[200] mt-[0]"
           resizeMode="contain"
         />
@@ -58,7 +58,7 @@ import {
           setIsError={setIsError}
         />
         <Image
-          source={require("../assets/cometDivider.png")}
+          source={require("../assets/icons/cometDivider.png")}
           resizeMode="stretch"
           className="w-[425] h-[10%] mt-[240]"
         />
