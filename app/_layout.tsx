@@ -60,7 +60,7 @@ function RootLayoutNav() {
       <View style={{ flex: 1 }}>
         <Stack>
           <Stack.Screen name="index" options={{ headerShown: false }} />
-          <Stack.Screen name="login" options={{ headerShown: false }} />
+          <Stack.Screen name="login" options={{ headerShown: false, gestureEnabled: false }} />
           <Stack.Screen name="register" />
           <Stack.Screen name="friends" options={{ headerShown: false }} />
           <Stack.Screen name="add-friends" />
