@@ -7,7 +7,7 @@ import {
   } from "react-native";
   import { router } from "expo-router";
   import { Input } from "../components/ui/input";
-  import { useEffect, useState } from "react";
+  import { useState } from "react";
   import useLogin from "../hooks/api/useLogin";
   import { User, LockKeyhole } from "lucide-react-native";
   import React from "react";
@@ -71,7 +71,6 @@ import {
     username,
     password,
     setIsError,
-    className,
   }: {
     username: string;
     password: string;

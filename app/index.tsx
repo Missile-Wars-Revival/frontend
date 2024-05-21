@@ -16,7 +16,7 @@ import { IOSColorblindMapStyle } from "../map-themes/IOS-themes/themestemp";
 
 // Components
 import { MapStylePopup } from "../components/map-style-popup";
-import { getStoredMapStyle, storeMapStyle } from "../util/mapthemestore";
+import { getStoredMapStyle, storeMapStyle } from "../util/mapstore";
 import { ThemeSelectButton } from "../components/theme-select-button";
 import { FireSelector } from "../components/fire-selector";
 import { MapComp } from "../components/map-comp";
@@ -33,15 +33,14 @@ export default function Map() {
       const credentials = await getCredentials();
       if (credentials) {
         setUsername(credentials.username);
-        console.log('logged in with user:', userNAME, ':fetched from cache');
-
+        console.log('logged in with user:', credentials.username, ':fetched from cache');
       } else {
         console.log('Credentials not found, please log in');
         // Optionally redirect to login page
         router.navigate("/login");
       }
     };
-
+  
     fetchCredentials();
   }, []);
   

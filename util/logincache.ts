@@ -1,15 +1,15 @@
 import * as SecureStore from 'expo-secure-store';
 
-export const saveCredentials = async (username: string, password: string): Promise<void> => {
-  try {
-    // Store encrypted username and password
-    await SecureStore.setItemAsync('username', username);
-    await SecureStore.setItemAsync('password', password);
-  } catch (error) {
-    console.error('Error storing credentials securely:', error);
-    throw error;
-  }
-};
+export async function saveCredentials(username: string, password: string): Promise<void> {
+    try {
+      // Store encrypted username and password
+      await SecureStore.setItemAsync('username', username);
+      await SecureStore.setItemAsync('password', password);
+    } catch (error) {
+      console.error('Error storing credentials securely:', error);
+      throw error;
+    }
+  };  
 
 export async function getCredentials() {
   try {
@@ -28,3 +28,24 @@ export async function getCredentials() {
     return null;
   }
 }
+
+export async function clearCredentials(): Promise<void> {
+    try {
+      await SecureStore.deleteItemAsync('username');
+      await SecureStore.deleteItemAsync('password');
+      console.log('Credentials successfully cleared.');
+    } catch (error) {
+      console.error('Failed to clear credentials:', error);
+    }
+  }
+
+ // example of LogOut
+
+//  const handleLogout = async () => {
+//     await clearCredentials();
+//     // Further actions after logout, like updating state or navigating to login page
+//     setUsername("");  // Clear local state
+//     router.navigate("/login");
+//   };
+  
+  
