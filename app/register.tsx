@@ -7,18 +7,20 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { Input } from "../components/ui/input";
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { User, LockKeyhole, Mail } from "lucide-react-native";
 import useRegister from "../hooks/api/useRegister";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import React from "react";
+import { saveCredentials } from "../util/logincache";
 
 export default function Register() {
   return (
     <SafeAreaView className="flex-1 justify-center items-center space-y-8">
       <Image
-        source={require("../assets/MissleWarsTitle.png")}
+        source={require("../assets/icons/MissleWarsTitle.png")}
         className="w-[425px] h-[200px] absolute top-[25]"
         resizeMode="contain"
       />
@@ -67,9 +69,13 @@ function SignUpForm() {
     register("password");
   }, [register]);
 
-  const mutation = useRegister(() => {
-    router.navigate("/");
-  });
+  const mutation = useRegister(
+    async () => {
+      const { username, password } = form.getValues();
+      await saveCredentials(username, password);
+      router.navigate("/");
+    },
+  );
 
   const onSubmit = (data: SignUpFormInputs) => {
     console.log("Submission");
@@ -120,6 +126,14 @@ function SignUpForm() {
       >
         <View>
           <Text className="text-white font-bold">Sign Up!</Text>
+        </View>
+      </TouchableHighlight>
+      <TouchableHighlight
+        onPress={() => router.navigate("/login")}
+        className="rounded-[20px] w-[375px] h-[45px] flex items-center justify-center border-2 mt-[5] absolute top-[350%]"
+      >
+        <View>
+          <Text className=" font-bold">Return To Login</Text>
         </View>
       </TouchableHighlight>
     </View>

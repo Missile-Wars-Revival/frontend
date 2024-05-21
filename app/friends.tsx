@@ -1,100 +1,124 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, FlatList, Modal } from "react-native";
-import { router } from "expo-router";
-import { useFetchFriends } from "../api/friends";
-import { userNAME } from "../temp/login";
-import { removeFriend } from "../api/remove-friend";
+import { useRouter } from "expo-router";
+import { useUserName } from "../util/fetchusernameglobal";
 
 const fireMissile = (username: string) => {
-  //firing missile logic
+  // Placeholder for firing missile logic
   console.log(`Firing missile for friend with username: ${username}`);
 };
 
 const FriendsPage: React.FC = () => {
-  const { friends, loading, error } = useFetchFriends(userNAME);
+  const friends: ArrayLike<any> | null | undefined = []; // Placeholder for friends list
+  const loading = false; // Placeholder for loading state
+  const error = null; // Placeholder for error state
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedFriend, setSelectedFriend] = useState("");
+  const router = useRouter();
 
-  const handleCogPress = (username: string) => {
-    setSelectedFriend(username);
+  // Fetch username from secure storage
+  const userNAME = useUserName(); //logged in user
+
+  const handleCogPress = (friendUsername: string) => {
+    setSelectedFriend(friendUsername);
     setModalVisible(true);
   };
 
   const handleRemoveFriend = async (friendUsername: string) => {
-    try {
-      await removeFriend(userNAME, "password", friendUsername);
-      console.log(`Friend ${friendUsername} removed successfully`);
-      setModalVisible(false);
-    } catch (error) {
-      console.error("Error removing friend:", error);
-    }
+    // Placeholder for remove friend logic
+    console.log(`Friend ${friendUsername} removed successfully`);
+    setModalVisible(false);
+    // try {
+    //   await removeFriend(userNAME, "password", friendUsername);
+    //   console.log(`Friend ${friendUsername} removed successfully`);
+    //   setModalVisible(false);
+    // } catch (error) {
+    //   console.error("Error removing friend:", error);
+    // }
   };
 
   return (
-    <View className="p-[20px]">
-      <View className="flex-row justify-between mb-[20px]">
+    <View style={{ padding: 20, paddingTop: 60 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 }}>
         <TouchableOpacity
-          className="w-[30px] h-[px] rounded-[15px] flex justify-center items-center bg-blue-400"
+          style={{
+            width: 30,
+            height: 30,
+            borderRadius: 15,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: 'blue',
+          }}
           onPress={() => router.navigate("/add-friends")}
         >
-          <Text className="text-[20px] leading-none text-white">+</Text>
+          <Text style={{ fontSize: 20, color: 'white' }}>+</Text>
         </TouchableOpacity>
-  
-        <TouchableOpacity onPress={() => router.navigate("/notifications")}>
-          <Text className="text-[24px]">🔔</Text>
+        <Text style={{ fontSize: 20 }}>Friends</Text>
+        <TouchableOpacity
+          style={{
+            width: 30,
+            height: 30,
+            borderRadius: 15,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: 'gray',
+          }}
+          onPress={() => router.navigate("/notifications")}
+        >
+          <Text style={{ fontSize: 20, color: 'white' }}>🔔</Text>
         </TouchableOpacity>
       </View>
-
-      {loading && <Text>Loading...</Text>}
-      {error && <Text>{error}</Text>}
-      
-      {!loading && !error && (
+      {loading ? (
+        <Text>Loading...</Text>
+      ) : error ? (
+        <Text>Error loading friends</Text>
+      ) : (
         <FlatList
           data={friends}
-          keyExtractor={(item, index) => index.toString()}
+          keyExtractor={(item) => item.username}
           renderItem={({ item }) => (
-            <View className="flex-row justify-between items-center p-2.5 border-b border-gray-300">
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
               <Text>{item.username}</Text>
               <TouchableOpacity
-                className="bg-red-500 p-[5px] rounded-[5px]"
-                onPress={() => fireMissile(item.username)}
+                style={{
+                  width: 30,
+                  height: 30,
+                  borderRadius: 15,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  backgroundColor: 'gray',
+                }}
+                onPress={() => handleCogPress(item.username)}
               >
-                <Text className="text-white">Fire Missile</Text>
+                <Text>⚙️</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-  style={{ padding: 5, borderRadius: 5 }}
-  onPress={() => handleCogPress(item.username)}
->
-  <Text style={{ color: 'white' }}>⚙️</Text>
-</TouchableOpacity>
             </View>
           )}
         />
       )}
-<Modal
-  animationType="slide"
-  transparent={true}
-  visible={modalVisible}
-  onRequestClose={() => setModalVisible(false)}
->
-  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
-    <View style={{ backgroundColor: 'white', padding: 20, borderRadius: 10 }}>
-      <TouchableOpacity 
-        onPress={() => handleRemoveFriend(selectedFriend)} 
-        style={{ padding: 15, marginBottom: 10, borderRadius: 8, backgroundColor: 'red' }}
+      <Modal
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
       >
-        <Text style={{ color: 'white', textAlign: 'center' }}>Remove Friend</Text>
-      </TouchableOpacity>
-      <TouchableOpacity 
-        onPress={() => setModalVisible(false)} 
-        style={{ padding: 15, borderRadius: 8, backgroundColor: 'gray' }}
-      >
-        <Text style={{ color: 'white', textAlign: 'center' }}>Cancel</Text>
-      </TouchableOpacity>
-    </View>
-  </View>
-</Modal>
-
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
+          <View style={{ width: 300, padding: 20, backgroundColor: 'white', borderRadius: 10 }}>
+            <Text>Remove {selectedFriend}?</Text>
+            <TouchableOpacity
+              style={{ marginTop: 10, padding: 10, backgroundColor: 'red', borderRadius: 5 }}
+              onPress={() => handleRemoveFriend(selectedFriend)}
+            >
+              <Text style={{ color: 'white', textAlign: 'center' }}>Remove</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{ marginTop: 10, padding: 10, backgroundColor: 'gray', borderRadius: 5 }}
+              onPress={() => setModalVisible(false)}
+            >
+              <Text style={{ textAlign: 'center' }}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
