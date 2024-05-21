@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, FlatList, Button, StyleSheet, Text } from 'react-native';
 import ProductItem from '../components/Store/productitem';
 import Cart from '../components/Store/cart';
+import { useUserName } from '../util/fetchusernameglobal';
 
 interface Product {
   id: number;
@@ -18,6 +19,8 @@ const products: Product[] = [
 ];
 
 const StorePage: React.FC = () => {
+  const userNAME = useUserName(); //logged in user
+
   const [cart, setCart] = useState<{ product: Product; quantity: number }[]>([]);
   const [isCartVisible, setCartVisible] = useState<boolean>(false);
 

@@ -1,10 +1,4 @@
-import {
-    SafeAreaView,
-    Text,
-    View,
-    Image,
-    TouchableHighlight,
-  } from "react-native";
+import { SafeAreaView,Text,View,Image,TouchableHighlight } from "react-native";
   import { router } from "expo-router";
   import { Input } from "../components/ui/input";
   import { useState } from "react";
