@@ -8,10 +8,9 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { Input } from "../components/ui/input";
-import { useContext, useState } from "react";
+import { useState } from "react";
 import useLogin from "../hooks/api/useLogin";
 import { User, LockKeyhole } from "lucide-react-native";
-import { webSocketContext } from "./_layout";
 import { sendWebsocket } from "../hooks/api/websocket";
 import React from "react";
 
@@ -21,11 +20,8 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [isError, setIsError] = useState(false);
 
-  const data = useContext(webSocketContext);
-
   return (
     <SafeAreaView className="flex-1 items-center">
-      <Text>from server: {data}</Text>
       <Button title="Press Me" onPress={() => sendWebsocket({ messages: ["hello"]})}></Button>
       <Image
         source={require("../assets/MissleWarsTitle.png")}
