@@ -1,27 +1,18 @@
 
 import { useState } from "react";
-import { MessageBuilder, Types} from "middle-earth";
-import { encode, decode } from 'msgpack-lite';
-
 let websocket!: WebSocket;
+import * as Location from "expo-location";
+import { Types } from "middle-earth";
+import { encode } from "msgpack-lite";
 
-let location: Types.GeoLocation = {
-    lat: 0,
-    lon: 0
-};
-
-let data = {};
-
+let data!: any;
 
 const connectWebsocket = () => new Promise<WebSocket>((resolve, reject) => {
-
-    if (websocket && websocket.readyState === WebSocket.OPEN) {
-        resolve(websocket);
-    }
     //const url = "ws://192.168.1.185:3000";
-    const url = process.env.EXPO_PUBLIC_WEBSOCKET_URL || "ws://localhost:3000";
-    console.log("Connecting to websocket at", url);
-    websocket = new WebSocket(url, ["missilewars"]);
+
+    const uri = process.env.EXPO_PUBLIC_WEBSOCKET_URL || "ws://localhost:3000";
+
+    websocket = new WebSocket(uri, 'missilewars');
 
     websocket.onopen = () => {
         console.log("Connected to websocket");
@@ -74,13 +65,6 @@ const getWebsocket = () => {
 export const sendWebsocket = async (data: Types.WebSocketMsg) => {
     console.log("Sending data to websocket", data);
 
-    // Ensure the WebSocket connection is open before sending data
-    if (!websocket || websocket.readyState !== WebSocket.OPEN) {
-        await new Promise((resolve) => {
-            websocket.onopen = resolve;
-        });
-    }
-
     websocket.send(encode(data));
 }
 
@@ -91,3 +75,28 @@ export default function useWebSocket() {
 
     return data;
 }
+
+export const updateLocation = (): Promise<void> => {
+    return new Promise(async (resolve, reject) => {
+    console.log("Updating location");
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") {
+          reject("Permission to access location was denied");
+        }
+
+        Location.getCurrentPositionAsync({}).then((location_res) => {
+          const loc = {
+              lat: location_res.coords.latitude,
+              lon: location_res.coords.longitude
+          }
+          console.log("Location updated", loc);
+          const msg: Types.WebSocketMsg = {
+              messages: [loc]
+          }
+          sendWebsocket(msg).then(() => resolve()).catch((error) => reject(error));
+        }).catch((error) => {
+          console.error(error);
+          reject(error);
+        });
+    });
+  };
