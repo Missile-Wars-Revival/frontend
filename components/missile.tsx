@@ -189,12 +189,6 @@ export const MissilefireposLibrary = () => {
       animationType="slide"
       transparent={true}
       visible={showplacmentPopup}>
-  {/* <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-    <Text>Missile Type: {selectedMissile}</Text>
-    <Image source={missileImages[selectedMissile || ""]} style={{ width: 100, height: 100, marginVertical: 10 }} />
-    <Button title="Fire" onPress={handleFire} color="red" />
-    <Button title="Done" onPress={handleCancel} />
-  </View> */}
   {showplacmentPopup && <MissilePlacementPopup visible={showplacmentPopup} onClose={handleCancel} selectedMissile={selectedMissile} />}
 </Modal>
 
