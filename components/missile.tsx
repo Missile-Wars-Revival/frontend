@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Missilelib } from "../types/types";
 import { Text, View, TouchableOpacity, Image, Button, Modal, ScrollView } from "react-native";
 import React from "react";
+import { MissilePlacementPopup } from './missileplacement'; 
 
 //Missile types
 //   Amplifier:
@@ -134,6 +135,7 @@ export const MissileLibrary = ({ playerName }: { playerName: string }) => {
 export const MissilefireposLibrary = () => {
   const [missileLibrary, setMissileLibrary] = useState<Missilelib[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showplacmentPopup, setShowplacementPopup] = useState(false);
   const [selectedMissile, setSelectedMissile] = useState<string | null>(null);
   const [showposPopup, setShowposPopup] = useState(false);
 
@@ -152,20 +154,18 @@ export const MissilefireposLibrary = () => {
     fetchMissileLibrary();
   }, []);
 
-  const handleMissileClick = (missileType: string) => {
-    setSelectedMissile(missileType);
+  const handleMissileClick = (selectedMissile: string) => {
+    setSelectedMissile(selectedMissile);
+    //shows map page
+    setShowplacementPopup(true);
+    console.log("button pressed")
     //Shows confirm fire page 
-    setShowposPopup(true);
-  };
-
-  const handleFire = () => {
-    // Implement fire logic here
-    console.log("Selected missile:", selectedMissile);
-    setShowposPopup(false);
+    //setShowposPopup(true);
   };
 
   const handleCancel = () => {
-    setShowposPopup(false);
+    setShowplacementPopup(false);
+    //setShowposPopup(false);
   };
 
   if (loading) {
@@ -185,15 +185,19 @@ export const MissilefireposLibrary = () => {
           <Text>{missile.type} - Quantity: {missile.quantity}</Text>
         </TouchableOpacity>
       ))}
-      <Modal visible={showposPopup} animationType="slide">
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text>Missile Type: {selectedMissile}</Text>
-          {/* Add player name input */}
-          <Image source={missileImages[selectedMissile || ""]} style={{ width: 100, height: 100, marginVertical: 10 }} />
-          <Button title="Fire" onPress={handleFire} color="red" />
-          <Button title="Cancel" onPress={handleCancel} />
-        </View>
-      </Modal>
+      <Modal 
+      animationType="slide"
+      transparent={true}
+      visible={showplacmentPopup}>
+  {/* <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+    <Text>Missile Type: {selectedMissile}</Text>
+    <Image source={missileImages[selectedMissile || ""]} style={{ width: 100, height: 100, marginVertical: 10 }} />
+    <Button title="Fire" onPress={handleFire} color="red" />
+    <Button title="Done" onPress={handleCancel} />
+  </View> */}
+  {showplacmentPopup && <MissilePlacementPopup visible={showplacmentPopup} onClose={handleCancel} selectedMissile={selectedMissile} />}
+</Modal>
+
     </ScrollView>
   );
 };

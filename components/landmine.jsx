@@ -26,7 +26,7 @@ export const LandmineImages = {
 export const LandmineLibraryView = ({ LandmineModalVisible, landminePlaceHandler }) => {
   const [landmineLibrary, setLandmineLibrary] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showPopup, setShowPopup] = useState(false);
+  const [showplacmentPopup, setShowplacementPopup] = useState(false);
   const [selectedLandmine, setSelectedLandmine] = useState(null);
 
   useEffect(() => {
@@ -40,11 +40,11 @@ export const LandmineLibraryView = ({ LandmineModalVisible, landminePlaceHandler
 
   const handleLandmineClick = (landmineType) => {
     setSelectedLandmine(landmineType);
-    setShowPopup(true);
+    setShowplacementPopup(true);
   };
 
   const handleClosePopup = () => {
-    setShowPopup(false);
+    setShowplacementPopup(false);
   };
 
   if (loading) {
@@ -70,11 +70,11 @@ export const LandmineLibraryView = ({ LandmineModalVisible, landminePlaceHandler
             ))}
           </ScrollView>
           <View style={{ alignSelf: 'flex-end', padding: 10 }}>
-            <Button title="Cancel" onPress={landminePlaceHandler} />
+            <Button title="Done" onPress={landminePlaceHandler} />
           </View>
         </View>
       </View>
-      {showPopup && <LandminePlacementPopup visible={showPopup} onClose={handleClosePopup} selectedLandmine={selectedLandmine} />}
+      {showplacmentPopup && <LandminePlacementPopup visible={showplacmentPopup} onClose={handleClosePopup} selectedLandmine={selectedLandmine} />}
     </Modal>
   );
 };

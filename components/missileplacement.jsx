@@ -4,10 +4,10 @@ import MapView, { Marker, Circle } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { loadLastKnownLocation } from '../util/mapstore';
 import { useUserName } from "../util/fetchusernameglobal";
-//set marker image as landmine type
-import { LandmineImages } from './landmine';
+//set marker image as Missile type
+import { MissileImages } from './missile';
 
-export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) => {
+export const MissilePlacementPopup = ({ visible, onClose, selectedMissile }) => {
   const [region, setRegion] = useState(null);
   const [marker, setMarker] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -81,9 +81,10 @@ export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) =
           >
             <Circle
               center={marker}
-              radius={30} 
-              fillColor="rgba(128, 128, 128, 0.3)"
-            strokeColor="rgba(128, 128, 128, 0.8)" />
+              //needs to be fetched depending on missile type!!!
+              radius={40} 
+              fillColor="rgba(255, 0, 0, 0.2)"
+              strokeColor="rgba(255, 0, 0, 0.8)" />
             <Marker
               coordinate={marker}
               draggable
@@ -91,9 +92,9 @@ export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) =
             />
           </MapView>
           <View style={{ flexDirection: 'row', justifyContent: 'space-around', padding: 10 }}>
-            <Button title="Cancel" onPress={onClose} />
+            <Button title="Done" onPress={onClose} />
             <Button title="Fire" onPress={() => {
-                console.log(`FIRING LANDMINE: Coordinates: ${marker.latitude}, ${marker.longitude}; User: ${userName} Landmine Type: ${selectedLandmine}`);
+                console.log(`FIRING Missile: Coordinates: ${marker.latitude}, ${marker.longitude}; User: ${userName} Missile Type: ${selectedMissile}`);
                 onClose();
             }} />
           </View>
