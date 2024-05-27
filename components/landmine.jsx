@@ -12,11 +12,11 @@ const fetchLandmineLib = () => {
         // Add other landmines as needed
       ];
       resolve(LandmineLibraryData);
-    }, 1000); // Simulating a delay for asynchronous fetch
+    }, 1000); 
   });
 };
 
-const LandmineImages = {
+export const LandmineImages = {
   Amplifier: require('../assets/missiles/Amplifier.png'),
   Ballista: require('../assets/missiles/Ballista.png'),
   BigBertha: require('../assets/missiles/BigBertha.png'),
@@ -74,7 +74,7 @@ export const LandmineLibraryView = ({ LandmineModalVisible, landminePlaceHandler
           </View>
         </View>
       </View>
-      {showPopup && <LandminePlacementPopup visible={showPopup} onClose={handleClosePopup} />}
+      {showPopup && <LandminePlacementPopup visible={showPopup} onClose={handleClosePopup} selectedLandmine={selectedLandmine} />}
     </Modal>
   );
 };

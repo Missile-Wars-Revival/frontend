@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, View, Button, Dimensions, ActivityIndicator, Text, Alert } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import MapView, { Marker, Circle } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { loadLastKnownLocation, saveLocation } from '../util/mapstore';
 import { useUserName } from "../util/fetchusernameglobal";
+//set marker image as landmine type
+import { LandmineImages } from './landmine';
 
 export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) => {
   const [region, setRegion] = useState(null);
   const [marker, setMarker] = useState(null);
   const [loading, setLoading] = useState(true);
-  const userName = useUserName(); // Hook to fetch logged in user's name
+  const userName = useUserName(); e
 
   // Function to handle location permission and fetch current location
   async function initializeLocation() {
@@ -32,7 +34,7 @@ export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) =
     setLoading(false);
   }
 
-  // Load last known location or request current location on modal open
+  // Load last known location from cache or request current location on modal open
   useEffect(() => {
     if (visible) {
       (async () => {
@@ -75,6 +77,11 @@ export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) =
               longitudeDelta: 0.01
             })}
           >
+            <Circle
+              center={marker}
+              radius={30} 
+              fillColor="rgba(128, 128, 128, 0.3)"
+            strokeColor="rgba(128, 128, 128, 0.8)" />
             <Marker
               coordinate={marker}
               draggable
@@ -84,7 +91,7 @@ export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) =
           <View style={{ flexDirection: 'row', justifyContent: 'space-around', padding: 10 }}>
             <Button title="Cancel" onPress={onClose} />
             <Button title="Fire" onPress={() => {
-                console.log(`Coordinates: ${marker.latitude}, ${marker.longitude}; User: ${userName}`);
+                console.log(`FIRING LANDMINE: Coordinates: ${marker.latitude}, ${marker.longitude}; User: ${userName} Landmine Type: ${selectedLandmine}`);
                 onClose();
             }} />
           </View>
