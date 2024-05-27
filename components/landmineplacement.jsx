@@ -11,7 +11,7 @@ export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) =
   const [region, setRegion] = useState(null);
   const [marker, setMarker] = useState(null);
   const [loading, setLoading] = useState(true);
-  const userName = useUserName(); e
+  const userName = useUserName(); 
 
   // Function to handle location permission and fetch current location
   async function initializeLocation() {
@@ -26,8 +26,8 @@ export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) =
     const initialRegion = {
       latitude: location.coords.latitude,
       longitude: location.coords.longitude,
-      latitudeDelta: 0.01,
-      longitudeDelta: 0.01
+      latitudeDelta: 0.01, // Smaller value for increased zoom
+      longitudeDelta: 0.01 // Smaller value for increased zoom
     };
     setRegion(initialRegion);
     setMarker(initialRegion); // Set initial marker position to current location
@@ -70,10 +70,12 @@ export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) =
           <MapView
             style={{ flex: 1 }}
             initialRegion={region}
+            showsUserLocation={true}
+            showsMyLocationButton={true}
             onPress={(e) => setMarker({
               latitude: e.nativeEvent.coordinate.latitude,
               longitude: e.nativeEvent.coordinate.longitude,
-              latitudeDelta: 0.01,
+              latitudeDelta: 0.01, 
               longitudeDelta: 0.01
             })}
           >
