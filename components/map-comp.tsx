@@ -9,6 +9,7 @@ import { AllPlayers } from "./all-players";
 import { Landmine, Loot, Missile } from "../types/types";
 import { fetchLootFromBackend, fetchMissilesFromBackend, fetchlandmineFromBackend } from "../temp/fetchMethods";
 import { loadLastKnownLocation, saveLocation } from '../util/mapstore';
+import { getLocationPermission } from "../hooks/userlocation";
 import { useUserName } from "../util/fetchusernameglobal";
 import { dispatch } from "../api/dispatch";
 
@@ -39,15 +40,6 @@ export const MapComp = (props: MapCompProps) => {
         if (userName && region.latitude && region.longitude) {
             console.log('Dispatch Response:', await dispatch(userName, region.latitude, region.longitude));
         }
-    };
-
-    const getLocationPermission = async () => {
-        let { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-            Alert.alert('Permission Denied', 'Location permission is required to use this feature.');
-            return;
-        }
-        return status;
     };
 
     const getCurrentLocation = async () => {
