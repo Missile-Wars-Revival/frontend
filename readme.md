@@ -19,5 +19,7 @@ npm start
 ```
 
 ## Login 
-To login to an account use either Test or Test2 and the password is Testing123!
+To login in to an account use either: 
+`Test` or `Test2`
+Password: is `Testing123!`
 
