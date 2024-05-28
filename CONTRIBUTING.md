@@ -39,4 +39,4 @@ We want to ensure everyone can smoothly develop by removing blockers and reducin
 Our lead devs are currently:
 - **Lead Backend:** @clxud
 - **Lead Frontend:** @thevin (discord) and @graykevinb (github)
-- **Lead Dev:** @robin
+- **Lead Dev:** @Tristan (discord) and @longtimeno-c (github)
