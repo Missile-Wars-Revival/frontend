@@ -5,7 +5,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import { View, Text, TouchableOpacity } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
-import SplashScreen from './splashscreen'; // Adjust the path as needed
+import SplashScreen from './splashscreen'; 
 
 export default function RootLayout() {
   const queryClient = new QueryClient();
