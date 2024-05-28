@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Missilelib } from "../types/types";
+import { Missilelib } from "../../types/types";
 import { Text, View, TouchableOpacity, Image, Button, Modal, ScrollView } from "react-native";
 import React from "react";
 import { MissilePlacementPopup } from './missileplacement'; 
@@ -46,18 +46,18 @@ interface MissileImages {
 }
 // For Missile Images for both markers and library
 export const missileImages: MissileImages = {
-  Amplifier: require('../assets/missiles/Amplifier.png'),
-  Ballista: require('../assets/missiles/Ballista.png'),
-  BigBertha: require('../assets/missiles/BigBertha.png'),
-  Bombabom: require('../assets/missiles/Bombabom.png'),
-  BunkerBlocker: require('../assets/missiles/BunkerBlocker.png'),
-  Buzzard: require('../assets/missiles/Buzzard.png'),
-  ClusterBomb: require('../assets/missiles/ClusterBomb.png'),
-  CorporateRaider: require('../assets/missiles/CorporateRaider.png'),
-  GutShot: require('../assets/missiles/GutShot.png'),
-  TheNuke: require('../assets/missiles/TheNuke.png'),
-  Yokozuna: require('../assets/missiles/Yokozuna.png'),
-  Zippy: require('../assets/missiles/Zippy.png'),
+  Amplifier: require('../../assets/missiles/Amplifier.png'),
+  Ballista: require('../../assets/missiles/Ballista.png'),
+  BigBertha: require('../../assets/missiles/BigBertha.png'),
+  Bombabom: require('../../assets/missiles/Bombabom.png'),
+  BunkerBlocker: require('../../assets/missiles/BunkerBlocker.png'),
+  Buzzard: require('../../assets/missiles/Buzzard.png'),
+  ClusterBomb: require('../../assets/missiles/ClusterBomb.png'),
+  CorporateRaider: require('../../assets/missiles/CorporateRaider.png'),
+  GutShot: require('../../assets/missiles/GutShot.png'),
+  TheNuke: require('../../assets/missiles/TheNuke.png'),
+  Yokozuna: require('../../assets/missiles/Yokozuna.png'),
+  Zippy: require('../../assets/missiles/Zippy.png'),
 
   // Add other missile images here
 };
@@ -137,7 +137,6 @@ export const MissilefireposLibrary = () => {
   const [loading, setLoading] = useState(true);
   const [showplacmentPopup, setShowplacementPopup] = useState(false);
   const [selectedMissile, setSelectedMissile] = useState<string | null>(null);
-  const [showposPopup, setShowposPopup] = useState(false);
 
   useEffect(() => {
     const fetchMissileLibrary = async () => {
@@ -159,8 +158,6 @@ export const MissilefireposLibrary = () => {
     //shows map page
     setShowplacementPopup(true);
     console.log("button pressed")
-    //Shows confirm fire page 
-    //setShowposPopup(true);
   };
 
   const handleCancel = () => {

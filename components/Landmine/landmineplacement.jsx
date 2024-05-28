@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Modal, View, Button, Dimensions, ActivityIndicator, Text, Alert } from 'react-native';
 import MapView, { Marker, Circle } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { loadLastKnownLocation } from '../util/mapstore';
-import { useUserName } from "../util/fetchusernameglobal";
+import { loadLastKnownLocation } from '../../util/mapstore';
+import { useUserName } from "../../util/fetchusernameglobal";
 //set marker image as landmine type
 import { LandmineImages } from './landmine';
 
@@ -81,7 +81,7 @@ export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) =
           >
             <Circle
               center={marker}
-              radius={30} 
+              radius={10} 
               fillColor="rgba(128, 128, 128, 0.3)"
             strokeColor="rgba(128, 128, 128, 0.8)" />
             <Marker

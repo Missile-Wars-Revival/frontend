@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Modal, View, Button, Dimensions, ActivityIndicator, Text, Alert } from 'react-native';
 import MapView, { Marker, Circle } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { loadLastKnownLocation } from '../util/mapstore';
-import { useUserName } from "../util/fetchusernameglobal";
+import { loadLastKnownLocation } from '../../util/mapstore';
+import { useUserName } from "../../util/fetchusernameglobal";
 //set marker image as Missile type
 import { MissileImages } from './missile';
 
@@ -92,7 +92,7 @@ export const MissilePlacementPopup = ({ visible, onClose, selectedMissile }) => 
             />
           </MapView>
           <View style={{ flexDirection: 'row', justifyContent: 'space-around', padding: 10 }}>
-            <Button title="Done" onPress={onClose} />
+            <Button title="Cancel" onPress={onClose} />
             <Button title="Fire" onPress={() => {
                 console.log(`FIRING Missile: Coordinates: ${marker.latitude}, ${marker.longitude}; User: ${userName} Missile Type: ${selectedMissile}`);
                 onClose();

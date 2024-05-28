@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { FireType } from "../components/fire-type-popup";
-import { MissileFireConfirmationPopup, MissileLibraryView } from "../components/missile-confirmation-popup";
+import { MissileFireConfirmationPopup, MissileLibraryView } from "./Missile/missile-confirmation-popup";
 import { Button, Modal, View, Text } from "react-native";
 import MapView, { MapStyleElement, Marker } from "react-native-maps";
-import { LandmineLibraryView, addLandmine } from "./landmine";
+import { LandmineLibraryView, addLandmine } from "./Landmine/landmine";
 import { Location } from "../types/types";
 
 interface LandminePlacementPopupProps {
