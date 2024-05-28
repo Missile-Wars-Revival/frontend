@@ -1,0 +1,58 @@
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator, Image, Animated } from 'react-native';
+
+interface SplashScreenProps {
+  onFinish: () => void;
+}
+
+const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
+  const [fadeAnim] = useState(new Animated.Value(0)); // Initial value for opacity: 0
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onFinish();
+    }, 3000); // 3 seconds splash screen
+
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 2000,
+      useNativeDriver: true,
+    }).start();
+
+    return () => clearTimeout(timer);
+  }, [onFinish, fadeAnim]);
+
+  return (
+    <View style={styles.container}>
+      <Animated.View style={{ ...styles.bannerContainer, opacity: fadeAnim }}>
+        <Image source={require('../assets/icons/MissleWarsTitle.png')} style={styles.banner} />
+      </Animated.View>
+      <Text style={styles.text}>Loading...</Text>
+      <ActivityIndicator size="small" color="#0000ff" />
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  bannerContainer: {
+    marginBottom: 20,
+  },
+  banner: {
+    width: 300, // Adjust as needed
+    height: 100, // Adjust as needed
+    resizeMode: 'contain',
+  },
+  text: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+});
+
+export default SplashScreen;
