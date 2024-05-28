@@ -10,7 +10,6 @@ import { Landmine, Loot, Missile } from "../types/types";
 import { fetchLootFromBackend, fetchMissilesFromBackend, fetchlandmineFromBackend } from "../temp/fetchMethods";
 import { loadLastKnownLocation, saveLocation } from '../util/mapstore';
 import { getLocationPermission } from "../hooks/userlocation";
-import { getLocationPermission } from "../hooks/userlocation";
 import { useUserName } from "../util/fetchusernameglobal";
 import { dispatch } from "../api/dispatch";
 
@@ -19,33 +18,24 @@ interface MapCompProps {
 }
 export const MapComp = (props: MapCompProps) => {
     const userName = useUserName();
-    const userName = useUserName();
 
     const [region, setRegion] = useState({
         latitude: 0,
         longitude: 0,
         latitudeDelta: 0.1922,
         longitudeDelta: 0.1421,
-        latitudeDelta: 0.1922,
-        longitudeDelta: 0.1421,
     });
     const [lootLocations, setLootLocations] = useState<Loot[]>([]);
     const [missileData, setMissileData] = useState<Missile[]>([]);
-    const [landmineData, setLandmineLocations] = useState<Landmine[]>([]);
     const [landmineData, setLandmineLocations] = useState<Landmine[]>([]);
 
     const fetchLootAndMissiles = useCallback(async () => {
         setLootLocations(await fetchLootFromBackend());
         setLandmineLocations(await fetchlandmineFromBackend());
         setMissileData(await fetchMissilesFromBackend());
-        setLootLocations(await fetchLootFromBackend());
-        setLandmineLocations(await fetchlandmineFromBackend());
-        setMissileData(await fetchMissilesFromBackend());
     }, []);
 
     const dispatchLocation = async () => {
-        if (userName && region.latitude && region.longitude) {
-            console.log('Dispatch Response:', await dispatch(userName, region.latitude, region.longitude));
         if (userName && region.latitude && region.longitude) {
             console.log('Dispatch Response:', await dispatch(userName, region.latitude, region.longitude));
         }
@@ -86,15 +76,12 @@ export const MapComp = (props: MapCompProps) => {
         };
         fetchLootAndMissiles();
         initializeLocation();
-        initializeLocation();
         const intervalId = setInterval(() => {
             fetchLootAndMissiles();
             initializeLocation();//checks if user locaiton is disabled
             dispatchLocation();
         }, 30000);
 
-        return () => clearInterval(intervalId);
-    }, [fetchLootAndMissiles]); // Removed `userName` from dependencies as it's only needed in dispatchLocation
         return () => clearInterval(intervalId);
     }, [fetchLootAndMissiles]); // Removed `userName` from dependencies as it's only needed in dispatchLocation
 
