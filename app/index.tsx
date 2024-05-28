@@ -26,6 +26,7 @@ import { router } from "expo-router";
 
 export default function Map() {
   const [userNAME, setUsername] = useState("");
+  const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(true);
   // Fetch username from secure storage
   useEffect(() => {
     const fetchCredentials = async () => {
@@ -99,11 +100,15 @@ export default function Map() {
         onClose={closePopup}
         onSelect={selectMapStyle}
       />
-      <FireSelector 
-        selectedMapStyle={selectedMapStyle} 
-        getStoredMapStyle={getStoredMapStyle} 
-        selectMapStyle={selectMapStyle} 
-      />
+
+      {/* this needs to get value from map-comp */}
+      {isLocationEnabled && (
+        <FireSelector
+          selectedMapStyle={selectedMapStyle}
+          getStoredMapStyle={getStoredMapStyle}
+          selectMapStyle={selectMapStyle}
+        />
+      )}
     </View>
   );
 }
