@@ -5,9 +5,20 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import { View, Text, TouchableOpacity } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
+import SplashScreen from './splashscreen'; 
 
 export default function RootLayout() {
   const queryClient = new QueryClient();
+  const [isSplashVisible, setIsSplashVisible] = useState(true);
+
+  const handleSplashFinish = () => {
+    setIsSplashVisible(false);
+  };
+
+  if (isSplashVisible) {
+    return <SplashScreen onFinish={handleSplashFinish} />;
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <RootLayoutNav />
@@ -66,7 +77,7 @@ function RootLayoutNav() {
       <View style={{ flex: 1 }}>
         <Stack>
           <Stack.Screen name="index" options={{ headerShown: false }} />
-          <Stack.Screen name="login" options={{ headerShown: false, gestureEnabled: false }} />
+          <Stack.Screen name="login" options={{ headerShown: false, gestureEnabled: false, animation: 'slide_from_bottom' }} />
           <Stack.Screen name="register" options={{ headerShown: false, gestureEnabled: false }} />
           <Stack.Screen name="store" options={{ headerShown: false, gestureEnabled: false }} />
           <Stack.Screen name="friends" options={{ headerShown: false }} />

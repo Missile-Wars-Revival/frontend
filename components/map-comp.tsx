@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Alert, View, StyleSheet } from "react-native";
+import { View, StyleSheet } from "react-native";
 import MapView from "react-native-maps";
 import * as Location from 'expo-location';
 import { AllLootDrops } from "./loot-drop";
@@ -18,6 +18,7 @@ interface MapCompProps {
 }
 export const MapComp = (props: MapCompProps) => {
     const userName = useUserName();
+    const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(false);
 
     const [region, setRegion] = useState({
         latitude: 0,
@@ -40,7 +41,6 @@ export const MapComp = (props: MapCompProps) => {
             console.log('Dispatch Response:', await dispatch(userName, region.latitude, region.longitude));
         }
     };
-    const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(false);
 
     const getCurrentLocation = async () => {
         try {
