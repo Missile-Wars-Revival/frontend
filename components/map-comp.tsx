@@ -16,7 +16,6 @@ import { dispatch } from "../api/dispatch";
 interface MapCompProps {
     selectedMapStyle: any;
 }
-
 export const MapComp = (props: MapCompProps) => {
     const userName = useUserName();
 
@@ -41,7 +40,6 @@ export const MapComp = (props: MapCompProps) => {
             console.log('Dispatch Response:', await dispatch(userName, region.latitude, region.longitude));
         }
     };
-
     const getCurrentLocation = async () => {
         try {
             let location = await Location.getCurrentPositionAsync({});
@@ -57,7 +55,6 @@ export const MapComp = (props: MapCompProps) => {
             Alert.alert('Location Error', 'Unable to retrieve the current location.');
         }
     };
-
     useEffect(() => {
         const initializeLocation = async () => {
             const lastKnownLocation = await loadLastKnownLocation();
@@ -70,10 +67,8 @@ export const MapComp = (props: MapCompProps) => {
                 }
             }
         };
-
         fetchLootAndMissiles();
         initializeLocation();
-
         const intervalId = setInterval(() => {
             fetchLootAndMissiles();
             dispatchLocation();
