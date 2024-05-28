@@ -16,7 +16,7 @@ export const AllLandMines = (props: LandMineRenderProps) => {
             <Circle
                 key={index}
                 center={location}
-                radius={30} //actual radius size
+                radius={10} //actual radius size
                 fillColor="rgba(128, 128, 128, 0.3)"
                 strokeColor="rgba(128, 128, 128, 0.8)" />
             ))}     

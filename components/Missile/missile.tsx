@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { Missilelib } from "../types/types";
+import { Missilelib } from "../../types/types";
 import { Text, View, TouchableOpacity, Image, Button, Modal, ScrollView } from "react-native";
 import React from "react";
+import { MissilePlacementPopup } from './missileplacement'; 
 
 //Missile types
 //   Amplifier:
@@ -45,18 +46,18 @@ interface MissileImages {
 }
 // For Missile Images for both markers and library
 export const missileImages: MissileImages = {
-  Amplifier: require('../assets/missiles/Amplifier.png'),
-  Ballista: require('../assets/missiles/Ballista.png'),
-  BigBertha: require('../assets/missiles/BigBertha.png'),
-  Bombabom: require('../assets/missiles/Bombabom.png'),
-  BunkerBlocker: require('../assets/missiles/BunkerBlocker.png'),
-  Buzzard: require('../assets/missiles/Buzzard.png'),
-  ClusterBomb: require('../assets/missiles/ClusterBomb.png'),
-  CorporateRaider: require('../assets/missiles/CorporateRaider.png'),
-  GutShot: require('../assets/missiles/GutShot.png'),
-  TheNuke: require('../assets/missiles/TheNuke.png'),
-  Yokozuna: require('../assets/missiles/Yokozuna.png'),
-  Zippy: require('../assets/missiles/Zippy.png'),
+  Amplifier: require('../../assets/missiles/Amplifier.png'),
+  Ballista: require('../../assets/missiles/Ballista.png'),
+  BigBertha: require('../../assets/missiles/BigBertha.png'),
+  Bombabom: require('../../assets/missiles/Bombabom.png'),
+  BunkerBlocker: require('../../assets/missiles/BunkerBlocker.png'),
+  Buzzard: require('../../assets/missiles/Buzzard.png'),
+  ClusterBomb: require('../../assets/missiles/ClusterBomb.png'),
+  CorporateRaider: require('../../assets/missiles/CorporateRaider.png'),
+  GutShot: require('../../assets/missiles/GutShot.png'),
+  TheNuke: require('../../assets/missiles/TheNuke.png'),
+  Yokozuna: require('../../assets/missiles/Yokozuna.png'),
+  Zippy: require('../../assets/missiles/Zippy.png'),
 
   // Add other missile images here
 };
@@ -134,8 +135,8 @@ export const MissileLibrary = ({ playerName }: { playerName: string }) => {
 export const MissilefireposLibrary = () => {
   const [missileLibrary, setMissileLibrary] = useState<Missilelib[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showplacmentPopup, setShowplacementPopup] = useState(false);
   const [selectedMissile, setSelectedMissile] = useState<string | null>(null);
-  const [showposPopup, setShowposPopup] = useState(false);
 
   useEffect(() => {
     const fetchMissileLibrary = async () => {
@@ -152,20 +153,16 @@ export const MissilefireposLibrary = () => {
     fetchMissileLibrary();
   }, []);
 
-  const handleMissileClick = (missileType: string) => {
-    setSelectedMissile(missileType);
-    //Shows confirm fire page 
-    setShowposPopup(true);
-  };
-
-  const handleFire = () => {
-    // Implement fire logic here
-    console.log("Selected missile:", selectedMissile);
-    setShowposPopup(false);
+  const handleMissileClick = (selectedMissile: string) => {
+    setSelectedMissile(selectedMissile);
+    //shows map page
+    setShowplacementPopup(true);
+    console.log("button pressed")
   };
 
   const handleCancel = () => {
-    setShowposPopup(false);
+    setShowplacementPopup(false);
+    //setShowposPopup(false);
   };
 
   if (loading) {
@@ -185,15 +182,13 @@ export const MissilefireposLibrary = () => {
           <Text>{missile.type} - Quantity: {missile.quantity}</Text>
         </TouchableOpacity>
       ))}
-      <Modal visible={showposPopup} animationType="slide">
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text>Missile Type: {selectedMissile}</Text>
-          {/* Add player name input */}
-          <Image source={missileImages[selectedMissile || ""]} style={{ width: 100, height: 100, marginVertical: 10 }} />
-          <Button title="Fire" onPress={handleFire} color="red" />
-          <Button title="Cancel" onPress={handleCancel} />
-        </View>
-      </Modal>
+      <Modal 
+      animationType="slide"
+      transparent={true}
+      visible={showplacmentPopup}>
+  {showplacmentPopup && <MissilePlacementPopup visible={showplacmentPopup} onClose={handleCancel} selectedMissile={selectedMissile} />}
+</Modal>
+
     </ScrollView>
   );
 };

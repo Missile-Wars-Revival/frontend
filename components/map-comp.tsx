@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Alert } from "react-native";
+import { Alert, View, StyleSheet } from "react-native";
 import MapView from "react-native-maps";
 import * as Location from 'expo-location';
 import { AllLootDrops } from "./loot-drop";
@@ -9,105 +9,139 @@ import { AllPlayers } from "./all-players";
 import { Landmine, Loot, Missile } from "../types/types";
 import { fetchLootFromBackend, fetchMissilesFromBackend, fetchlandmineFromBackend } from "../temp/fetchMethods";
 import { loadLastKnownLocation, saveLocation } from '../util/mapstore';
+import { getLocationPermission } from "../hooks/userlocation";
+import { getLocationPermission } from "../hooks/userlocation";
 import { useUserName } from "../util/fetchusernameglobal";
 import { dispatch } from "../api/dispatch";
 
 interface MapCompProps {
     selectedMapStyle: any;
 }
-
 export const MapComp = (props: MapCompProps) => {
-    const userNAME = useUserName(); //logged in user
+    const userName = useUserName();
+    const userName = useUserName();
 
     const [region, setRegion] = useState({
         latitude: 0,
         longitude: 0,
-        latitudeDelta: 0,
-        longitudeDelta: 0,
+        latitudeDelta: 0.1922,
+        longitudeDelta: 0.1421,
+        latitudeDelta: 0.1922,
+        longitudeDelta: 0.1421,
     });
     const [lootLocations, setLootLocations] = useState<Loot[]>([]);
     const [missileData, setMissileData] = useState<Missile[]>([]);
-    const [landminedata, setlandminelocations] = useState<Landmine[]>([]);
+    const [landmineData, setLandmineLocations] = useState<Landmine[]>([]);
+    const [landmineData, setLandmineLocations] = useState<Landmine[]>([]);
 
     const fetchLootAndMissiles = useCallback(async () => {
-        const lootData = await fetchLootFromBackend();
-        const landminedata = await fetchlandmineFromBackend();
-        const missileData = await fetchMissilesFromBackend();
-
-        setLootLocations(lootData);
-        setlandminelocations(landminedata);
-        setMissileData(missileData);
+        setLootLocations(await fetchLootFromBackend());
+        setLandmineLocations(await fetchlandmineFromBackend());
+        setMissileData(await fetchMissilesFromBackend());
+        setLootLocations(await fetchLootFromBackend());
+        setLandmineLocations(await fetchlandmineFromBackend());
+        setMissileData(await fetchMissilesFromBackend());
     }, []);
 
-    //when implementing websockets this is what should be changed
-
     const dispatchLocation = async () => {
-        if (userNAME && region.latitude && region.longitude) {
-            const dispatchResponse = await dispatch(userNAME, region.latitude, region.longitude);
-            console.log('Dispatch Response:', dispatchResponse);  // Optionally handle the response
+        if (userName && region.latitude && region.longitude) {
+            console.log('Dispatch Response:', await dispatch(userName, region.latitude, region.longitude));
+        if (userName && region.latitude && region.longitude) {
+            console.log('Dispatch Response:', await dispatch(userName, region.latitude, region.longitude));
         }
     };
+    const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(false);
 
-    const getLocationPermission = async () => {
-        let { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-            Alert.alert('Permission Denied', 'Sorry, we need location permissions to make this work!');
-            return;
+    const getCurrentLocation = async () => {
+        try {
+            let location = await Location.getCurrentPositionAsync({});
+            const newRegion = {
+                latitude: location.coords.latitude,
+                longitude: location.coords.longitude,
+                latitudeDelta: 0.1922,
+                longitudeDelta: 0.1421
+            };
+            setRegion(newRegion);
+            saveLocation(newRegion);
+        } catch (error) {
+           //permission not enabled
         }
-
-        let location = await Location.getCurrentPositionAsync({});
-        const newRegion = {
-            latitude: location.coords.latitude,
-            longitude: location.coords.longitude,
-            latitudeDelta: 0.1922,
-            longitudeDelta: 0.1421
-        };
-        setRegion(newRegion);
-        saveLocation(newRegion);
     };
-
     useEffect(() => {
-        const initializeRegion = async () => {
-            const lastKnownLocation = await loadLastKnownLocation();
-            if (lastKnownLocation) {
+        const initializeLocation = async () => {
+            const status = await getLocationPermission();
+            if (status === 'granted') {
+                
+                const lastKnownLocation = await loadLastKnownLocation();
                 setRegion(lastKnownLocation);
+                setIsLocationEnabled(true);
+                
+                getCurrentLocation();
             } else {
-                getLocationPermission();
+                const lastKnownLocation = await loadLastKnownLocation();
+                setRegion(lastKnownLocation);
+                setIsLocationEnabled(false);
+                // Optionally handle the situation when permission is not granted
             }
         };
-
         fetchLootAndMissiles();
-        initializeRegion();
-
+        initializeLocation();
+        initializeLocation();
         const intervalId = setInterval(() => {
             fetchLootAndMissiles();
-            dispatchLocation();  // Dispatch location every 30 seconds
+            initializeLocation();//checks if user locaiton is disabled
+            dispatchLocation();
         }, 30000);
 
-        return () => clearInterval(intervalId); // Cleanup interval on component unmount
-    }, [fetchLootAndMissiles, userNAME]); // Remove `region` from the dependencies
+        return () => clearInterval(intervalId);
+    }, [fetchLootAndMissiles]); // Removed `userName` from dependencies as it's only needed in dispatchLocation
+        return () => clearInterval(intervalId);
+    }, [fetchLootAndMissiles]); // Removed `userName` from dependencies as it's only needed in dispatchLocation
 
     return (
-        <MapView
-            className="flex-1"
-            region={region}
-            showsCompass={true}
-            showsTraffic={true}
-            showsUserLocation={true}
-            showsMyLocationButton={true}
-            customMapStyle={props.selectedMapStyle} >
-
-            {/* Render Loot Drops */}
-            <AllLootDrops lootLocations={lootLocations} />
-
-            {/* Render landmine Drops */}
-            <AllLandMines landminedata={landminedata} />
-
-            {/* Render Missiles */}
-            <AllMissiles missileData={missileData} />
-
-            {/* Render Players */}
-            <AllPlayers />
-        </MapView>
+        <View style={styles.container}>
+            <MapView
+                style={styles.map}
+                region={region}
+                showsCompass={true}
+                showsTraffic={true}
+                showsUserLocation={true}
+                showsMyLocationButton={true}
+                customMapStyle={props.selectedMapStyle}>
+                <AllLootDrops lootLocations={lootLocations} />
+                <AllLandMines landminedata={landmineData} />
+                <AllMissiles missileData={missileData} />
+                <AllPlayers />
+            </MapView>
+            {!isLocationEnabled && (
+                <View 
+                style={styles.overlay} />
+            )}
+        </View>
     );
 };
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+    },
+    map: {
+        flex: 1,
+    },
+    overlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'white',
+        opacity: 0.6,
+        justifyContent: 'center', // Align text vertically
+        alignItems: 'center', // Align text horizontally
+    },
+    centeredText: {
+        fontSize: 16,
+        textAlign: 'center',
+        color: 'black',
+    }
+});
