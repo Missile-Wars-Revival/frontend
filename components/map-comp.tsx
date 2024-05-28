@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Alert } from "react-native";
+import { Alert, View, StyleSheet } from "react-native";
 import MapView from "react-native-maps";
 import * as Location from 'expo-location';
 import { AllLootDrops } from "./loot-drop";
@@ -40,6 +40,8 @@ export const MapComp = (props: MapCompProps) => {
             console.log('Dispatch Response:', await dispatch(userName, region.latitude, region.longitude));
         }
     };
+    const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(false);
+
     const getCurrentLocation = async () => {
         try {
             let location = await Location.getCurrentPositionAsync({});
@@ -52,25 +54,31 @@ export const MapComp = (props: MapCompProps) => {
             setRegion(newRegion);
             saveLocation(newRegion);
         } catch (error) {
-            Alert.alert('Location Error', 'Unable to retrieve the current location.');
+           //permission not enabled
         }
     };
     useEffect(() => {
         const initializeLocation = async () => {
-            const lastKnownLocation = await loadLastKnownLocation();
-            if (lastKnownLocation) {
+            const status = await getLocationPermission();
+            if (status === 'granted') {
+                
+                const lastKnownLocation = await loadLastKnownLocation();
                 setRegion(lastKnownLocation);
+                setIsLocationEnabled(true);
+                
+                getCurrentLocation();
             } else {
-                const status = await getLocationPermission();
-                if (status === 'granted') {
-                    getCurrentLocation();
-                }
+                const lastKnownLocation = await loadLastKnownLocation();
+                setRegion(lastKnownLocation);
+                setIsLocationEnabled(false);
+                // Optionally handle the situation when permission is not granted
             }
         };
         fetchLootAndMissiles();
         initializeLocation();
         const intervalId = setInterval(() => {
             fetchLootAndMissiles();
+            initializeLocation();//checks if user locaiton is disabled
             dispatchLocation();
         }, 30000);
 
@@ -78,19 +86,49 @@ export const MapComp = (props: MapCompProps) => {
     }, [fetchLootAndMissiles]); // Removed `userName` from dependencies as it's only needed in dispatchLocation
 
     return (
-        <MapView
-            className="flex-1"
-            region={region}
-            showsCompass={true}
-            showsTraffic={true}
-            showsUserLocation={true}
-            showsMyLocationButton={true}
-            customMapStyle={props.selectedMapStyle}>
-
-            <AllLootDrops lootLocations={lootLocations} />
-            <AllLandMines landminedata={landmineData} />
-            <AllMissiles missileData={missileData} />
-            <AllPlayers />
-        </MapView>
+        <View style={styles.container}>
+            <MapView
+                style={styles.map}
+                region={region}
+                showsCompass={true}
+                showsTraffic={true}
+                showsUserLocation={true}
+                showsMyLocationButton={true}
+                customMapStyle={props.selectedMapStyle}>
+                <AllLootDrops lootLocations={lootLocations} />
+                <AllLandMines landminedata={landmineData} />
+                <AllMissiles missileData={missileData} />
+                <AllPlayers />
+            </MapView>
+            {!isLocationEnabled && (
+                <View 
+                style={styles.overlay} />
+            )}
+        </View>
     );
 };
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+    },
+    map: {
+        flex: 1,
+    },
+    overlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'white',
+        opacity: 0.6,
+        justifyContent: 'center', // Align text vertically
+        alignItems: 'center', // Align text horizontally
+    },
+    centeredText: {
+        fontSize: 16,
+        textAlign: 'center',
+        color: 'black',
+    }
+});
