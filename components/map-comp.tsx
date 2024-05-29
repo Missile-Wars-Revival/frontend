@@ -12,6 +12,7 @@ import { loadLastKnownLocation, saveLocation } from '../util/mapstore';
 import { getLocationPermission } from "../hooks/userlocation";
 import { useUserName } from "../util/fetchusernameglobal";
 import { dispatch } from "../api/dispatch";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface MapCompProps {
     selectedMapStyle: any;
@@ -20,7 +21,7 @@ interface MapCompProps {
 export const MapComp = (props: MapCompProps) => {
     const userName = useUserName();
     const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(false);
-    const [mode, setMode] = useState<'friends' | 'global'>('friends');
+    const [visibilitymode, setMode] = useState<'friends' | 'global'>('friends');
 
     const [region, setRegion] = useState({
         latitude: 0,
@@ -60,6 +61,19 @@ export const MapComp = (props: MapCompProps) => {
         }
     };
     useEffect(() => {
+
+        const loadCachedMode = async () => {
+            try {
+                const visibilitymode = await AsyncStorage.getItem('visibilitymode');
+                if (visibilitymode !== null) {
+                    setMode(visibilitymode as 'friends' | 'global');
+                    friendsorglobal(visibilitymode as 'friends' | 'global');
+                }
+            } catch (error) {
+                console.error('Error loading cached mode:', error);
+            }
+        };
+
         const initializeLocation = async () => {
             const status = await getLocationPermission();
             if (status === 'granted') {
@@ -78,6 +92,7 @@ export const MapComp = (props: MapCompProps) => {
         };
         fetchLootAndMissiles();
         initializeLocation();
+        loadCachedMode();
         const intervalId = setInterval(() => {
             fetchLootAndMissiles();
             initializeLocation();//checks if user locaiton is disabled
@@ -85,16 +100,18 @@ export const MapComp = (props: MapCompProps) => {
         }, 30000);
 
         return () => clearInterval(intervalId);
-    }, [fetchLootAndMissiles]); // Removed `userName` from dependencies as it's only needed in dispatchLocation
+    }, [fetchLootAndMissiles]); 
 
-    const toggleMode = () => {
-        setMode(mode === 'friends' ? 'global' : 'friends');
-        friendsorglobal(mode === 'friends' ? 'friends' : 'global');
+    const toggleMode = async () => {
+        const newMode = visibilitymode === 'friends' ? 'global' : 'friends';
+        setMode(newMode);
+        friendsorglobal(newMode);
+        await AsyncStorage.setItem('visibilitymode', newMode); // Save the new mode
     };
 
-    const friendsorglobal = (mode: 'friends' | 'global') => {
+    const friendsorglobal = (visibilitymode: 'friends' | 'global') => {
         // Do something based on the mode, e.g., fetch different data
-        console.log("Mode changed to:", mode);
+        console.log("Mode changed to:", visibilitymode);
     };
 
     return (
@@ -119,12 +136,12 @@ export const MapComp = (props: MapCompProps) => {
             <View style={styles.switchContainer}>
                 <Switch
                     trackColor={{ false: "#767577", true: "#81b0ff" }}
-                    thumbColor={mode === 'global' ? "#f4f3f4" : "#f4f3f4"}
+                    thumbColor={visibilitymode === 'global' ? "#f4f3f4" : "#f4f3f4"}
                     ios_backgroundColor="#3e3e3e"
                     onValueChange={toggleMode}
-                    value={mode === 'global'}
+                    value={visibilitymode === 'global'}
                 />
-                <Text style={styles.switchText}>{mode === 'global' ? 'Global' : 'Friends'}</Text>
+                <Text style={styles.switchText}>{visibilitymode === 'global' ? 'Global' : 'Friends'}</Text>
             </View>
         </View>
     );
