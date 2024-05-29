@@ -1,8 +1,8 @@
 import React from "react";
 import { View, Image } from "react-native";
 import { Circle, Marker, Polyline } from "react-native-maps";
-import { missileImages } from "./Missile/missile";
-import { Location, Missile } from "../types/types";
+import { missileImages } from "./missile";
+import { Location, Missile } from "../../types/types";
 
 interface AllMissilesProps {
     missileData: Missile[];
