@@ -3,9 +3,9 @@ import { View, StyleSheet, Text, Switch } from "react-native";
 import MapView from "react-native-maps";
 import * as Location from 'expo-location';
 import { AllLootDrops } from "./loot-drop";
-import { AllLandMines } from "./all-landmines";
-import { AllMissiles } from "./map-missile";
-import { AllPlayers } from "./all-players";
+import { AllLandMines } from "./Landmine/map-landmines";
+import { AllMissiles } from "./Missile/map-missile";
+import { AllPlayers } from "./map-players";
 import { Landmine, Loot, Missile } from "../types/types";
 import { fetchLootFromBackend, fetchMissilesFromBackend, fetchlandmineFromBackend } from "../temp/fetchMethods";
 import { loadLastKnownLocation, saveLocation } from '../util/mapstore';
@@ -119,7 +119,7 @@ export const MapComp = (props: MapCompProps) => {
             <MapView
                 style={styles.map}
                 region={region}
-                showsCompass={true}
+                showsCompass={false}
                 showsTraffic={true}
                 showsUserLocation={true}
                 showsMyLocationButton={true}
