@@ -29,7 +29,7 @@ export const MissileLibraryView = (props: MissileLibView) => {
         {/* Include MissileLibrary component */}
         <MissilefireposLibrary/>
         <View style={{ alignSelf: 'flex-end', padding: 10 }}>
-          <Button title="Cancel" onPress={props.MissileModalHandler} />
+          <Button title="Done" onPress={props.MissileModalHandler} />
         </View>
       </View>
     </View>
