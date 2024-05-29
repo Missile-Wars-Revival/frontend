@@ -1,4 +1,5 @@
 import * as SecureStore from 'expo-secure-store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export async function saveCredentials(username: string, password: string): Promise<void> {
     try {
@@ -30,14 +31,19 @@ export async function getCredentials() {
 }
 
 export async function clearCredentials(): Promise<void> {
-    try {
+  try {
+      // Clearing credentials stored in SecureStore
       await SecureStore.deleteItemAsync('username');
       await SecureStore.deleteItemAsync('password');
-      console.log('Credentials successfully cleared.');
-    } catch (error) {
-      console.error('Failed to clear credentials:', error);
-    }
-  }
 
-  
+      // Clearing additional items stored in AsyncStorage
+      await AsyncStorage.removeItem('visibilitymode');   
+      await AsyncStorage.removeItem('selectedMapStyle'); 
+      await AsyncStorage.removeItem('lastLocation');     
+
+      console.log('All credentials and settings successfully cleared.');
+  } catch (error) {
+      console.error('Failed to clear credentials and settings:', error);
+  }
+}
   
