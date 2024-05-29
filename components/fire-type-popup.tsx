@@ -22,7 +22,7 @@ export const FireType = (props: FireTypeProps) => {
     FireclosePopup();
     switch (style) {
       case "firelandmine":
-        console.log("place landmine")
+        //sconsole.log("place landmine")
         //place landminecode;
         props.landmineFireHandler();
         break;
