@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Text, Switch } from "react-native";
 import MapView from "react-native-maps";
 import * as Location from 'expo-location';
 import { AllLootDrops } from "./loot-drop";
@@ -16,9 +16,11 @@ import { dispatch } from "../api/dispatch";
 interface MapCompProps {
     selectedMapStyle: any;
 }
+
 export const MapComp = (props: MapCompProps) => {
     const userName = useUserName();
     const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(false);
+    const [mode, setMode] = useState<'friends' | 'global'>('friends');
 
     const [region, setRegion] = useState({
         latitude: 0,
@@ -54,18 +56,18 @@ export const MapComp = (props: MapCompProps) => {
             setRegion(newRegion);
             saveLocation(newRegion);
         } catch (error) {
-           //permission not enabled
+            //permission not enabled
         }
     };
     useEffect(() => {
         const initializeLocation = async () => {
             const status = await getLocationPermission();
             if (status === 'granted') {
-                
+
                 const lastKnownLocation = await loadLastKnownLocation();
                 setRegion(lastKnownLocation);
                 setIsLocationEnabled(true);
-                
+
                 getCurrentLocation();
             } else {
                 const lastKnownLocation = await loadLastKnownLocation();
@@ -84,6 +86,16 @@ export const MapComp = (props: MapCompProps) => {
 
         return () => clearInterval(intervalId);
     }, [fetchLootAndMissiles]); // Removed `userName` from dependencies as it's only needed in dispatchLocation
+
+    const toggleMode = () => {
+        setMode(mode === 'friends' ? 'global' : 'friends');
+        friendsorglobal(mode === 'friends' ? 'friends' : 'global');
+    };
+
+    const friendsorglobal = (mode: 'friends' | 'global') => {
+        // Do something based on the mode, e.g., fetch different data
+        console.log("Mode changed to:", mode);
+    };
 
     return (
         <View style={styles.container}>
@@ -104,6 +116,16 @@ export const MapComp = (props: MapCompProps) => {
                 <View 
                 style={styles.overlay} />
             )}
+            <View style={styles.switchContainer}>
+                <Switch
+                    trackColor={{ false: "#767577", true: "#81b0ff" }}
+                    thumbColor={mode === 'global' ? "#f4f3f4" : "#f4f3f4"}
+                    ios_backgroundColor="#3e3e3e"
+                    onValueChange={toggleMode}
+                    value={mode === 'global'}
+                />
+                <Text style={styles.switchText}>{mode === 'global' ? 'Global' : 'Friends'}</Text>
+            </View>
         </View>
     );
 };
@@ -126,9 +148,15 @@ const styles = StyleSheet.create({
         justifyContent: 'center', // Align text vertically
         alignItems: 'center', // Align text horizontally
     },
-    centeredText: {
-        fontSize: 16,
-        textAlign: 'center',
-        color: 'black',
-    }
+    switchContainer: {
+        position: 'absolute',
+        top: 50,
+        left: 330,
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    switchText: {
+        marginLeft: -110,
+        color: 'white',
+    },
 });
