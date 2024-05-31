@@ -4,6 +4,7 @@ import MapView, { Marker, Circle } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { loadLastKnownLocation } from '../../util/mapstore';
 import { useUserName } from "../../util/fetchusernameglobal";
+import { mapstyles } from '../../map-themes/Map-stylesheet';
 //set marker image as Missile type
 import { MissileImages } from './missile';
 
@@ -12,6 +13,9 @@ export const MissilePlacementPopup = ({ visible, onClose, selectedMissile }) => 
   const [marker, setMarker] = useState(null);
   const [loading, setLoading] = useState(true);
   const userName = useUserName(); 
+
+  //import is locaiton enabled from map-comp!!!!!
+  const [isLocationEnabled, setIsLocationEnabled] = useState(false);
 
   // Function to handle location permission and fetch current location
   async function initializeLocation() {
@@ -91,6 +95,10 @@ export const MissilePlacementPopup = ({ visible, onClose, selectedMissile }) => 
               onDragEnd={(e) => setMarker(e.nativeEvent.coordinate)}
             />
           </MapView>
+          {!isLocationEnabled && (
+                <View 
+                style={mapstyles.overlay} />
+            )}
           <View style={{ flexDirection: 'row', justifyContent: 'space-around', padding: 10 }}>
             <Button title="Cancel" onPress={onClose} />
             <Button title="Fire" onPress={() => {

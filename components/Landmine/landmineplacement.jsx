@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, View, Button, Dimensions, ActivityIndicator, Text, Alert } from 'react-native';
+import { Modal, View, Button, Dimensions, ActivityIndicator, Text, Alert, StyleSheet } from 'react-native';
 import MapView, { Marker, Circle } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { loadLastKnownLocation } from '../../util/mapstore';
 import { useUserName } from "../../util/fetchusernameglobal";
+import { mapstyles } from '../../map-themes/Map-stylesheet';
+
 //set marker image as landmine type
 import { LandmineImages } from './landmine';
 
 export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) => {
   const [region, setRegion] = useState(null);
+  //import is locaiton enabled from map-comp!!!!
+  const [isLocationEnabled, setIsLocationEnabled] = useState(true);
   const [marker, setMarker] = useState(null);
   const [loading, setLoading] = useState(true);
   const userName = useUserName(); 
@@ -90,6 +94,11 @@ export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) =
               onDragEnd={(e) => setMarker(e.nativeEvent.coordinate)}
             />
           </MapView>
+          {/* import this from map comp */}
+          {!isLocationEnabled && (
+                <View 
+                style={mapstyles.overlay} />
+            )}
           <View style={{ flexDirection: 'row', justifyContent: 'space-around', padding: 10 }}>
             <Button title="Cancel" onPress={onClose} />
             <Button title="Fire" onPress={() => {

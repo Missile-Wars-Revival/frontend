@@ -162,8 +162,8 @@ const styles = StyleSheet.create({
         bottom: 0,
         backgroundColor: 'white',
         opacity: 0.6,
-        justifyContent: 'center', // Align text vertically
-        alignItems: 'center', // Align text horizontally
+        justifyContent: 'center', 
+        alignItems: 'center', 
     },
     switchContainer: {
         position: 'absolute',
