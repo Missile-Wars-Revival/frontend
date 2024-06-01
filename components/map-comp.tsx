@@ -120,7 +120,7 @@ export const MapComp = (props: MapCompProps) => {
                 style={styles.map}
                 region={region}
                 showsCompass={false}
-                showsTraffic={true}
+                showsTraffic={false}
                 showsUserLocation={true}
                 showsMyLocationButton={true}
                 customMapStyle={props.selectedMapStyle}>

@@ -4,7 +4,7 @@ import MapView, { Marker, Circle } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { loadLastKnownLocation } from '../../util/mapstore';
 import { useUserName } from "../../util/fetchusernameglobal";
-import { mapstyles } from '../../map-themes/Map-stylesheet';
+import { mapstyles } from '../../map-themes/map-stylesheet'; 
 
 //set marker image as landmine type
 import { LandmineImages } from './landmine';
