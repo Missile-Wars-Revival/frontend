@@ -6,7 +6,6 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Text, View, FlatList, TouchableOpacity, Alert } from "react-native";
 import * as Location from "expo-location";
 import { Input } from "../components/ui/input";
-import { Player } from "../types/types";
 import { searchOtherPlayersData } from "../api/getplayerlocations";
 import { addFriend } from "../api/add-friend"; // Import the addFriend function
 import { removeFriend } from "../api/remove-friend";
@@ -37,7 +36,7 @@ const QuickAddPage: React.FC = () => {
     longitude: number;
   } | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [playersData, setPlayersData] = useState<Player[]>([]);
+  const [playersData, setPlayersData] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
   const fetchLocation = useCallback(async () => {
@@ -84,7 +83,7 @@ const QuickAddPage: React.FC = () => {
     }
   };
 
-   const handleRemoveFriend = async (friendUsername: string) => {
+  const handleRemoveFriend = async (friendUsername: string) => {
     try {
       await removeFriend(userNAME, "password", friendUsername);
       console.log(`Friend ${friendUsername} removed successfully`);
@@ -93,7 +92,7 @@ const QuickAddPage: React.FC = () => {
     }
   };
 
-  const renderItem = ({ item }: { item: Player }) => (
+  const renderItem = ({ item }: { item: any }) => (
     <View className="flex-row items-center justify-between mb-[10px]">
       <Text className="text-[16px] flex-1">{item.username}</Text>
       <View className="flex-row items-center">
