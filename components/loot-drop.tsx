@@ -1,12 +1,12 @@
 import React from "react";
 import { View, Image } from "react-native";
 import { Marker, Circle } from "react-native-maps";
-import { Location } from "../types/types";
+import { GeoLocation } from "middle-earth";
 const resizedlootimage = require("../assets/mapassets/Airdropicon.png"); // Your custom image path
 const resizedlooticon = { width: 50, height: 50 }; // Custom size for image
 
 interface AllLootDropsProps {
-    lootLocations: Location[];
+    lootLocations: GeoLocation[];
 }
 
 export const AllLootDrops = (props: AllLootDropsProps) => {
@@ -23,7 +23,7 @@ export const AllLootDrops = (props: AllLootDropsProps) => {
 
 
 interface LootProps {
-    location: Location;
+    location: GeoLocation;
 
 }
 

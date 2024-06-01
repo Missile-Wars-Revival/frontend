@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Player } from "../types/types"
+import { Player } from "middle-earth";
 import { PlayerComp } from "./player";
 import { useUserName } from "../util/fetchusernameglobal";
 import { getTimeDifference, isInactiveFor24Hours } from "../util/get-time-difference";
