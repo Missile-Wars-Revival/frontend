@@ -11,7 +11,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
   useEffect(() => {
     const timer = setTimeout(() => {
       onFinish();
-    }, 3000); // 3 seconds splash screen
+    }, 2000); // 2 seconds splash screen
 
     Animated.timing(fadeAnim, {
       toValue: 1,
