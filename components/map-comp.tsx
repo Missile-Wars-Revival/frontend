@@ -93,11 +93,12 @@ export const MapComp = (props: MapCompProps) => {
         fetchLootAndMissiles();
         initializeLocation();
         loadCachedMode();
+        dispatchLocation();
         const intervalId = setInterval(() => {
             fetchLootAndMissiles();
-            initializeLocation();//checks if user locaiton is disabled
+            initializeLocation();
             dispatchLocation();
-        }, 30000);
+        }, 1000);
 
         return () => clearInterval(intervalId);
     }, [fetchLootAndMissiles]); 
@@ -120,7 +121,7 @@ export const MapComp = (props: MapCompProps) => {
                 style={styles.map}
                 region={region}
                 showsCompass={false}
-                showsTraffic={true}
+                showsTraffic={false}
                 showsUserLocation={true}
                 showsMyLocationButton={true}
                 customMapStyle={props.selectedMapStyle}>
@@ -162,8 +163,8 @@ const styles = StyleSheet.create({
         bottom: 0,
         backgroundColor: 'white',
         opacity: 0.6,
-        justifyContent: 'center', // Align text vertically
-        alignItems: 'center', // Align text horizontally
+        justifyContent: 'center', 
+        alignItems: 'center', 
     },
     switchContainer: {
         position: 'absolute',
