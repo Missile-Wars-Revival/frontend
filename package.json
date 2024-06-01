@@ -26,6 +26,7 @@
     "isomorphic-ws": "^5.0.0",
     "lucide-react-native": "^0.375.0",
     "middle-earth": "github:Missile-Wars-Revival/middle-earth",
+    "msgpack-lite": "^0.1.26",
     "nativewind": "^2.0.11",
     "react": "18.2.0",
     "react-hook-form": "^7.51.3",
@@ -40,6 +41,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
+    "@types/msgpack-lite": "^0.1.11",
     "@types/react": "~18.2.45",
     "tailwindcss": "^3.3.2",
     "typescript": "~5.3.3"

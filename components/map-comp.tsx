@@ -98,7 +98,7 @@ export const MapComp = (props: MapCompProps) => {
             fetchLootAndMissiles();
             initializeLocation();
             dispatchLocation();
-        }, 30000);
+        }, 1000);
 
         return () => clearInterval(intervalId);
     }, [fetchLootAndMissiles]); 
