@@ -1,5 +1,4 @@
 import { Missile } from "../types/types";
-import WebSocket from 'isomorphic-ws';
 
 // export const fetchMissilesFromBackend = async (): Promise<Missile[]> => {
 //     // Simulated fetch function to get missile data:
@@ -39,6 +38,7 @@ export const fetchlandmineFromBackend = async () => {
     ];
 };
 
+import WebSocket from 'isomorphic-ws';
 export const fetchMissilesFromBackend = async (): Promise<Missile[]> => {
   return new Promise((resolve, reject) => {
     // Set the authorization token in the URL

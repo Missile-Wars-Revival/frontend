@@ -15,7 +15,7 @@ export const MissilePlacementPopup = ({ visible, onClose, selectedMissile }) => 
   const userName = useUserName(); 
 
   //import is locaiton enabled from map-comp!!!!!
-  const [isLocationEnabled, setIsLocationEnabled] = useState(false);
+  const [isLocationEnabled, setIsLocationEnabled] = useState(true);
 
   // Function to handle location permission and fetch current location
   async function initializeLocation() {
