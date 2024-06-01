@@ -1,7 +1,7 @@
 import { Circle } from "react-native-maps";
-import { Landmine  } from "../../types/types";
 import React from "react";
 import { useUserName } from "../../util/fetchusernameglobal";
+import { Landmine } from "middle-earth";
 
 interface LandMineRenderProps {
     landminedata: Landmine[];
