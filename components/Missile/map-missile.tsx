@@ -2,7 +2,7 @@ import React from "react";
 import { View, Image } from "react-native";
 import { Circle, Marker, Polyline } from "react-native-maps";
 import { missileImages } from "./missile";
-import { Location, Missile } from "../../types/types";
+import { GeoLocation, Missile } from "middle-earth";
 
 interface AllMissilesProps {
     missileData: Missile[];
@@ -37,9 +37,9 @@ export const AllMissiles = (props: AllMissilesProps) => {
 }
 
 interface MissileProps {
-    destination: Location;
-    currentLocation: Location;
-    trajectoryCoordinates: Location[];
+    destination: GeoLocation;
+    currentLocation: GeoLocation;
+    trajectoryCoordinates: GeoLocation[];
     radius: number;
     type: string;
     status: string;

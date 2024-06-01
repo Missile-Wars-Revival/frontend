@@ -24,6 +24,7 @@
     "expo-secure-store": "^13.0.1",
     "expo-status-bar": "~1.12.1",
     "lucide-react-native": "^0.375.0",
+    "middle-earth": "github:Missile-Wars-Revival/middle-earth",
     "nativewind": "^2.0.11",
     "react": "18.2.0",
     "react-hook-form": "^7.51.3",

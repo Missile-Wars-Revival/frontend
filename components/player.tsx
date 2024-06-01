@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Button, View, Image, Text } from "react-native";
 import { Circle, Marker } from "react-native-maps";
-import { Player, playerlocation } from "../types/types";
+import { Player } from "middle-earth";
 const resizedplayerimage = require("../assets/mapassets/Female_Avatar_PNG.png"); // Your custom image path
 const resizedplayericon = { width: 30, height: 30 }; // Custom size for image
 
