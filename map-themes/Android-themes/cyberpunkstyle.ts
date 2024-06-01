@@ -1,4 +1,4 @@
-export const CyberpunkMapStyle = [
+export const androidCyberpunkMapStyle = [
   {
     "elementType": "geometry",
     "stylers": [

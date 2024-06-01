@@ -4,17 +4,15 @@ import {
   View,
   Image,
   TouchableHighlight,
-  Dimensions,
   Button,
 } from "react-native";
 import { router } from "expo-router";
 import { Input } from "../components/ui/input";
-import { useContext, useState } from "react";
+import { useState } from "react";
 import useLogin from "../hooks/api/useLogin";
 import { User, LockKeyhole } from "lucide-react-native";
-import CometDivider from "../assets/jsxSvgs/cometDivider";
-import { SocketContext } from "./_layout";
 import { sendWebsocket } from "../hooks/api/websocket";
+import React from "react";
 
 
 export default function Login() {
@@ -22,12 +20,9 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [isError, setIsError] = useState(false);
 
-  const data = useContext(SocketContext);
-
   return (
     <SafeAreaView className="flex-1 items-center">
-      <Text>from server: {data}</Text>
-      <Button title="Press Me" onPress={() => sendWebsocket("Hello World!")}></Button>
+      <Button title="Press Me" onPress={() => sendWebsocket({ messages: ["hello"]})}></Button>
       <Image
         source={require("../assets/MissleWarsTitle.png")}
         className="w-[425] h-[200] mt-[0]"

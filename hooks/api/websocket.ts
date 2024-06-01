@@ -1,22 +1,31 @@
 
 import { useState } from "react";
+<<<<<<< HEAD
 import { Location } from "../../types/types";
 import Constants from "expo-constants";
+=======
+>>>>>>> cd883d3b802d391f490c99378854678e1d997d55
 let websocket!: WebSocket;
+import * as Location from "expo-location";
+import { Types } from "middle-earth";
+import { encode } from "msgpack-lite";
 
 let data!: any;
 
-interface OutgoingWebsocketData {
-    uniqueId?: string;
-    location: Location;
-}
-
 const connectWebsocket = () => new Promise<WebSocket>((resolve, reject) => {
+<<<<<<< HEAD
     const uri = Constants?.expoConfig?.hostUri
         ? `ws://` + Constants.expoConfig.hostUri.split(`:`).shift()?.concat(`:3000`)
         : `missilewars.com`;
 
     const websocket = new WebSocket(uri, 'missilewars');
+=======
+    //const url = "ws://192.168.1.185:3000";
+
+    const uri = process.env.EXPO_PUBLIC_WEBSOCKET_URL || "ws://localhost:3000";
+
+    websocket = new WebSocket(uri, 'missilewars');
+>>>>>>> cd883d3b802d391f490c99378854678e1d997d55
 
     websocket.onopen = () => {
         console.log("Connected to websocket");
@@ -66,17 +75,10 @@ const getWebsocket = () => {
 }
 
 
-export const sendWebsocket = async (data: any) => {
+export const sendWebsocket = async (data: Types.WebSocketMsg) => {
     console.log("Sending data to websocket", data);
 
-    // Ensure the WebSocket connection is open before sending data
-    if (!websocket || websocket.readyState !== WebSocket.OPEN) {
-        await new Promise((resolve) => {
-            websocket.onopen = resolve;
-        });
-    }
-
-    websocket.send(JSON.stringify(data));
+    websocket.send(encode(data));
 }
 
 export default function useWebSocket() {
@@ -87,10 +89,27 @@ export default function useWebSocket() {
     return data;
 }
 
-const updateLocation = (location: Location) => {
-    const outgoingData: OutgoingWebsocketData = {
-        uniqueId: "player1",
-        location: location
-    };
-    sendWebsocket(outgoingData);
-};
+export const updateLocation = (): Promise<void> => {
+    return new Promise(async (resolve, reject) => {
+    console.log("Updating location");
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") {
+          reject("Permission to access location was denied");
+        }
+
+        Location.getCurrentPositionAsync({}).then((location_res) => {
+          const loc = {
+              lat: location_res.coords.latitude,
+              lon: location_res.coords.longitude
+          }
+          console.log("Location updated", loc);
+          const msg: Types.WebSocketMsg = {
+              messages: [loc]
+          }
+          sendWebsocket(msg).then(() => resolve()).catch((error) => reject(error));
+        }).catch((error) => {
+          console.error(error);
+          reject(error);
+        });
+    });
+  };

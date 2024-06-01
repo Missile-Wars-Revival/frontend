@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Missilelib } from "../types/types";
 import { Text, View, TouchableOpacity, Image, Button, Modal, ScrollView } from "react-native";
+import React from "react";
 
 //Missile types
 //   Amplifier:
@@ -116,6 +117,76 @@ export const MissileLibrary = ({ playerName }: { playerName: string }) => {
       <Modal visible={showPopup} animationType="slide">
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <Text>Target: {playerName}</Text>
+          <Text>Missile Type: {selectedMissile}</Text>
+          {/* Add player name input */}
+          <Image source={missileImages[selectedMissile || ""]} style={{ width: 100, height: 100, marginVertical: 10 }} />
+          <Button title="Fire" onPress={handleFire} color="red" />
+          <Button title="Cancel" onPress={handleCancel} />
+        </View>
+      </Modal>
+    </ScrollView>
+  );
+};
+
+
+//For when fire button is used without player
+//This is what should be used when using fire-selector button
+export const MissilefireposLibrary = () => {
+  const [missileLibrary, setMissileLibrary] = useState<Missilelib[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedMissile, setSelectedMissile] = useState<string | null>(null);
+  const [showposPopup, setShowposPopup] = useState(false);
+
+  useEffect(() => {
+    const fetchMissileLibrary = async () => {
+      try {
+        const missileLibraryData = await fetchMissileLib();
+        setMissileLibrary(missileLibraryData);
+      } catch (error) {
+        console.error('Error fetching missile library:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMissileLibrary();
+  }, []);
+
+  const handleMissileClick = (missileType: string) => {
+    setSelectedMissile(missileType);
+    //Shows confirm fire page 
+    setShowposPopup(true);
+  };
+
+  const handleFire = () => {
+    // Implement fire logic here
+    console.log("Selected missile:", selectedMissile);
+    setShowposPopup(false);
+  };
+
+  const handleCancel = () => {
+    setShowposPopup(false);
+  };
+
+  if (loading) {
+    return (
+      <View>
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
+
+  return (
+    <ScrollView contentContainerStyle={{ padding: 20 }}>
+      <Text>Select your Missile:</Text>
+      {missileLibrary.map((missile, index) => (
+        <TouchableOpacity key={index} onPress={() => handleMissileClick(missile.type)} style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 10 }}>
+          <Image source={missileImages[missile.type]} style={{ width: 50, height: 50, marginRight: 10 }} />
+          <Text>{missile.type} - Quantity: {missile.quantity}</Text>
+        </TouchableOpacity>
+      ))}
+      <Modal visible={showposPopup} animationType="slide">
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <Text>Missile Type: {selectedMissile}</Text>
           {/* Add player name input */}
           <Image source={missileImages[selectedMissile || ""]} style={{ width: 100, height: 100, marginVertical: 10 }} />
