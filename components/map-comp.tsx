@@ -93,9 +93,10 @@ export const MapComp = (props: MapCompProps) => {
         fetchLootAndMissiles();
         initializeLocation();
         loadCachedMode();
+        dispatchLocation();
         const intervalId = setInterval(() => {
             fetchLootAndMissiles();
-            initializeLocation();//checks if user locaiton is disabled
+            initializeLocation();
             dispatchLocation();
         }, 30000);
 
