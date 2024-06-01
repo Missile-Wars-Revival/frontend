@@ -23,3 +23,9 @@ To login in to an account use either:
 `Test` or `Test2`
 Password: is `Testing123!`
 
+## IP
+
+Set your ip in 
+`/temp/fetchmethods`
+
+This is because localhost doesnt work for me...

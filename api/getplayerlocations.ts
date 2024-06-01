@@ -1,7 +1,6 @@
 import axiosInstance from "./axios-instance";
-import { Player } from "../types/types";
 
-export async function fetchOtherPlayersData(): Promise<Player[]> {
+export async function fetchOtherPlayersData(): Promise<any[]> {
     try {
         const response = await axiosInstance.get('/api/playerlocations');
 
@@ -9,7 +8,7 @@ export async function fetchOtherPlayersData(): Promise<Player[]> {
             throw new Error('Failed to fetch player locations');
         }
 
-        return response.data.map((player: Player) => ({
+        return response.data.map((player: any) => ({
             username: player.username,
             latitude: player.latitude,
             longitude: player.longitude,
@@ -22,7 +21,7 @@ export async function fetchOtherPlayersData(): Promise<Player[]> {
     }
 }
 
-export async function searchOtherPlayersData(searchTerm: string): Promise<Player[]> {
+export async function searchOtherPlayersData(searchTerm: string): Promise<any[]> {
     try {
         const response = await axiosInstance.get('/api/playerlocations', {
             params: {
@@ -34,7 +33,7 @@ export async function searchOtherPlayersData(searchTerm: string): Promise<Player
             throw new Error('Failed to fetch player locations');
         }
 
-        return response.data.map((player: Player) => ({
+        return response.data.map((player: any) => ({
             username: player.username,
             latitude: player.latitude,
             longitude: player.longitude,
