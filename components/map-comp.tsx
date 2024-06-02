@@ -81,7 +81,8 @@ export const MapComp = (props: MapCompProps) => {
                 setRegion(lastKnownLocation);
                 setIsLocationEnabled(true);
 
-                getCurrentLocation();
+                //commented out as it set view region to player ever 10secs
+                //getCurrentLocation();
             } else {
                 const lastKnownLocation = await loadLastKnownLocation();
                 setRegion(lastKnownLocation);
