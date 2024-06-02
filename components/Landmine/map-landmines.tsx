@@ -1,25 +1,47 @@
 import { Circle } from "react-native-maps";
 import React from "react";
 import { useUserName } from "../../util/fetchusernameglobal";
-import { Landmine } from "middle-earth";
+import { GeoLocation, Landmine } from "middle-earth";
+import { View } from "react-native";
 
-interface LandMineRenderProps {
+interface AllLandmineProps {
     landminedata: Landmine[];
 }
-export const AllLandMines = (props: LandMineRenderProps) => {
+
+export const AllLandMines = (props: AllLandmineProps) => {
     const userNAME = useUserName();
     return (
         <>
-            {props.landminedata
-            .filter(landmine => landmine.placedby === userNAME)
-            .map((location, index) => (
-            <Circle
-                key={index}
-                center={location}
-                radius={10} //actual radius size
-                fillColor="rgba(128, 128, 128, 0.3)"
-                strokeColor="rgba(128, 128, 128, 0.8)" />
-            ))}     
+        {props.landminedata .filter(landmine => landmine.placedby === userNAME) .map(({ type, location, placedby, placedtime, etaexpiretime }, index) => {
+
+            return (
+            <React.Fragment key={index}>
+                <MapLandmine location={location} type={type} placedby={placedby} placedtime={placedtime} etaexpiretime={etaexpiretime}  />
+            </React.Fragment>
+            );
+        })}
         </>
+    );
+}
+
+interface LandmineProps {
+    type: string;
+    location: GeoLocation;
+    placedby: string;
+    placedtime: string;
+    etaexpiretime: string;
+  }
+
+export const MapLandmine = (landmineProps: LandmineProps) => {
+    return(
+        <View>
+            {/* Render Circle at destination coords */}
+            <Circle
+                center={landmineProps.location}
+                radius={10}
+                fillColor="rgba(128, 128, 128, 0.3)"
+                strokeColor="rgba(128, 128, 128, 0.8)" 
+                />
+        </View>
     )
 }
