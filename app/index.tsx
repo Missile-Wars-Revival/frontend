@@ -26,6 +26,8 @@ import { router } from "expo-router";
 
 export default function Map() {
   const [userNAME, setUsername] = useState("");
+
+  //pull from map-comp
   const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(true);
   // Fetch username from secure storage
   useEffect(() => {
@@ -34,7 +36,7 @@ export default function Map() {
       if (credentials) {
         setUsername(credentials.username);
       } else {
-        console.log('Credentials not found, please log in');
+        //console.log('Credentials not found, please log in');
         // Optionally redirect to login page
         router.navigate("/login");
       }

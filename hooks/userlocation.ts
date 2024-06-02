@@ -1,5 +1,4 @@
 import * as Location from 'expo-location';
-import { Alert } from 'react-native';
 
 export const getLocationPermission = async () => {
         let { status } = await Location.requestForegroundPermissionsAsync();
