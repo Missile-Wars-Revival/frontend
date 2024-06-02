@@ -33,8 +33,8 @@ export const fetchMissilesFromBackend = async (): Promise<Missile[]> => {
 export const fetchLootFromBackend = async (): Promise<Loot[]> => {
     // Simulated fetch function to get loot data:
     return [
-    { latitude: 51.026281, longitude: -3.113764, rarity: "" }, // Loot location 1 TS
-    { latitude: 45.305, longitude: -0.86, rarity: "" }, // Loot location 2
+    { location: { latitude: 51.026281, longitude: -3.113764}, rarity: "" }, // Loot location 1 TS
+    { location: {latitude: 45.305, longitude: -0.86}, rarity: "" }, // Loot location 2
     ];
 };
 
@@ -42,11 +42,11 @@ export const fetchlandmineFromBackend = async (): Promise<Landmine[]> => {
     // Simulated fetch function to get landmine data:
     return [
     {
-      latitude: 45.2949318, longitude: -0.852764, placedby: "Test2", type: "", etaexpiretime: "",
+      location: {latitude: 45.2949318, longitude: -0.852764}, placedby: "Test2", type: "", etaexpiretime: "",
       placedtime: ""
     }, //temp landmine location
     {
-      latitude: 51.025682, longitude: -3.1174578, placedby: "Test", type: "", etaexpiretime: "",
+      location: { latitude: 51.025682, longitude: -3.1174578}, placedby: "Test", type: "", etaexpiretime: "",
       placedtime: ""
     }, //2nd temp landmine location TS
     ];
