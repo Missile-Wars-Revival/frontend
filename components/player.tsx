@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Button, View, Image, Text, Modal, Dimensions } from "react-native";
 import { Circle, Marker } from "react-native-maps";
-import { Player } from "middle-earth";
+import { GeoLocation, Player } from "middle-earth";
 import { MissileLibrary } from "./Missile/missile";
 const resizedplayerimage = require("../assets/mapassets/Female_Avatar_PNG.png"); // Your custom image path
 const resizedplayericon = { width: 30, height: 30 }; // Custom size for image
@@ -9,10 +9,7 @@ const resizedplayericon = { width: 30, height: 30 }; // Custom size for image
 interface PlayerProps {
   index: number;
   player: Player;
-  location: {
-      latitude: number;
-      longitude: number;
-  };
+  location: GeoLocation;
   description: string;
 }
 export const PlayerComp = (playerProps: PlayerProps) => {

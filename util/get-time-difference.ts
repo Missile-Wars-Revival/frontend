@@ -34,3 +34,27 @@ export const isInactiveFor24Hours = (timestamp: TimeStamp): boolean => {
   
   return differenceInHours >= 12;
 };
+
+
+//landmine timestamp
+export const convertimestamplandmine = (timestamp: string | number | Date) => {
+  const currentTime = new Date().getTime();
+  const eventTime = new Date(timestamp).getTime();
+  const differenceInMilliseconds = eventTime - currentTime;
+  const differenceInSeconds = Math.floor(
+    differenceInMilliseconds / 1000
+  );
+
+  const differenceInMinutes = Math.floor(differenceInSeconds / 60);
+  const differenceInHours = Math.floor(differenceInMinutes / 60);
+
+  if (differenceInMilliseconds < 0) {
+    return { text: `Expired` }; // Handle past timestamps if needed
+  } else if (differenceInHours < 1) {
+    return { text: `Expires in: ${differenceInMinutes} min` };
+  } else if (differenceInHours === 1) {
+    return { text: `Expires in: 1 hour` };
+  } else {
+    return { text: `Expires in: ${differenceInHours} hours` };
+  }
+};
