@@ -42,11 +42,11 @@ export const fetchlandmineFromBackend = async (): Promise<Landmine[]> => {
     // Simulated fetch function to get landmine data:
     return [
     {
-      location: {latitude: 45.2949318, longitude: -0.852764}, placedby: "Test2", type: "", etaexpiretime: "",
+      location: {latitude: 45.2949318, longitude: -0.852764}, placedby: "Test2", type: "BigBertha", etaexpiretime: "10mins",
       placedtime: ""
     }, //temp landmine location
     {
-      location: { latitude: 51.025682, longitude: -3.1174578}, placedby: "Test", type: "", etaexpiretime: "",
+      location: { latitude: 51.025682, longitude: -3.1174578}, placedby: "Test", type: "BigBertha", etaexpiretime: "10mins",
       placedtime: ""
     }, //2nd temp landmine location TS
     ];
