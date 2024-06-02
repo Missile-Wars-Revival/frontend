@@ -30,8 +30,8 @@ export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) =
     const initialRegion = {
       latitude: location.coords.latitude,
       longitude: location.coords.longitude,
-      latitudeDelta: 0.01, // Smaller value for increased zoom
-      longitudeDelta: 0.01 // Smaller value for increased zoom
+      latitudeDelta: 0.001, // Smaller value for increased zoom
+      longitudeDelta: 0.001 // Smaller value for increased zoom
     };
     setRegion(initialRegion);
     setMarker(initialRegion); // Set initial marker position to current location
@@ -79,8 +79,8 @@ export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) =
             onPress={(e) => setMarker({
               latitude: e.nativeEvent.coordinate.latitude,
               longitude: e.nativeEvent.coordinate.longitude,
-              latitudeDelta: 0.01, 
-              longitudeDelta: 0.01
+              latitudeDelta: 0.001, 
+              longitudeDelta: 0.001
             })}
           >
             <Circle
