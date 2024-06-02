@@ -54,7 +54,6 @@ export const MapComp = (props: MapCompProps) => {
                 latitudeDelta: 0.1922,
                 longitudeDelta: 0.1421
             };
-            setRegion(newRegion);
             saveLocation(newRegion);
         } catch (error) {
             //permission not enabled
