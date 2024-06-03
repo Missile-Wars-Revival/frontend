@@ -22,7 +22,7 @@ export const getStoredMapStyle = async (): Promise<string | null> => {
 // Function to load the last known location from storage
 export const loadLastKnownLocation = async () => {
   try {
-      const jsonValue = await AsyncStorage.getItem('lastLocation');
+      const jsonValue = await AsyncStorage.getItem('regionlocation');
       return jsonValue != null ? JSON.parse(jsonValue) : null;
   } catch (e) {
       console.log('Error reading location from AsyncStorage', e);
@@ -33,9 +33,8 @@ export const loadLastKnownLocation = async () => {
 export const saveLocation = async (location: any) => {
   try {
       const jsonValue = JSON.stringify(location);
-      await AsyncStorage.setItem('lastLocation', jsonValue);
+      await AsyncStorage.setItem('regionlocation', jsonValue);
   } catch (e) {
       console.log('Error saving location to AsyncStorage', e);
   }
 };
-

@@ -51,49 +51,43 @@ export const MapComp = (props: MapCompProps) => {
             const newRegion = {
                 latitude: location.coords.latitude,
                 longitude: location.coords.longitude,
-                latitudeDelta: 0.1922,
-                longitudeDelta: 0.1421
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01
             };
-            saveLocation(newRegion);
+            setRegion(newRegion);
+            await saveLocation(newRegion); // Cache the region
         } catch (error) {
-            //permission not enabled
+            console.error('Error getting current location:', error);
         }
     };
-    useEffect(() => {
 
-        const loadCachedMode = async () => {
+    useEffect(() => {
+        const loadCachedData = async () => {
             try {
-                const visibilitymode = await AsyncStorage.getItem('visibilitymode');
-                if (visibilitymode !== null) {
-                    setMode(visibilitymode as 'friends' | 'global');
-                    friendsorglobal(visibilitymode as 'friends' | 'global');
+                const cachedRegion = await loadLastKnownLocation();
+                if (cachedRegion !== null) {
+                    setRegion(cachedRegion);
+                }
+                const cachedMode = await AsyncStorage.getItem('visibilitymode');
+                if (cachedMode !== null) {
+                    setMode(cachedMode as 'friends' | 'global');
                 }
             } catch (error) {
-                console.error('Error loading cached mode:', error);
+                console.error('Error loading cached data:', error);
             }
         };
 
         const initializeLocation = async () => {
             const status = await getLocationPermission();
-            if (status === 'granted') {
-
-                const lastKnownLocation = await loadLastKnownLocation();
-                setRegion(lastKnownLocation);
-                setIsLocationEnabled(true);
-
-                //commented out as it set view region to player ever 10secs
-                //getCurrentLocation();
-            } else {
-                const lastKnownLocation = await loadLastKnownLocation();
-                setRegion(lastKnownLocation);
-                setIsLocationEnabled(false);
-                // Optionally handle the situation when permission is not granted
-            }
+            setIsLocationEnabled(status === 'granted');
         };
-        fetchLootAndMissiles();
+
         initializeLocation();
-        loadCachedMode();
+        loadCachedData();
+        getCurrentLocation();
+        fetchLootAndMissiles();
         dispatchLocation();
+
         const intervalId = setInterval(() => {
             fetchLootAndMissiles();
             initializeLocation();
@@ -108,6 +102,7 @@ export const MapComp = (props: MapCompProps) => {
         setMode(newMode);
         friendsorglobal(newMode);
         await AsyncStorage.setItem('visibilitymode', newMode); // Save the new mode
+        console.log("Mode changed to:", newMode);
     };
 
     const friendsorglobal = (visibilitymode: 'friends' | 'global') => {
