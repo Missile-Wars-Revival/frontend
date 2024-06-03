@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { View, StyleSheet, Text, Switch } from "react-native";
+import { View, StyleSheet, Text, Switch, Alert } from "react-native";
 import MapView from "react-native-maps";
 import * as Location from 'expo-location';
 import { AllLootDrops } from "./loot-drop";
@@ -97,18 +97,43 @@ export const MapComp = (props: MapCompProps) => {
         return () => clearInterval(intervalId);
     }, [fetchLootAndMissiles]); 
 
-    const toggleMode = async () => {
-        const newMode = visibilitymode === 'friends' ? 'global' : 'friends';
-        setMode(newMode);
-        friendsorglobal(newMode);
-        await AsyncStorage.setItem('visibilitymode', newMode); // Save the new mode
-        console.log("Mode changed to:", newMode);
-    };
+const toggleMode = async () => {
+    const newMode = visibilitymode === 'friends' ? 'global' : 'friends';
+    setMode(newMode);
+    friendsorglobal(newMode);
+    if (newMode === 'global') {
+        Alert.alert(
+            "Change to Global Mode",
+            "You are about to change your visibility to global. Everyone will be able to see your location.",
+            [
+                {
+                    text: "Cancel",
+                    onPress: () => {
+                        console.log("Change cancelled");
+                        setMode('friends');  
+                    },
+                    style: "cancel"
+                },
+                {
+                    text: "Confirm",
+                    onPress: async () => {
+                        await AsyncStorage.setItem('visibilitymode', newMode); // Save the new mode only if confirmed
+                        console.log("Mode changed to:", newMode);
+                    }
+                }
+            ]
+        );
+    } else {
+        await AsyncStorage.setItem('visibilitymode', newMode); // Save the new mode directly if not switching to global (e.g. switching from global -> friends)
+    }
 
-    const friendsorglobal = (visibilitymode: 'friends' | 'global') => {
-        // Do something based on the mode, e.g., fetch different data
-        console.log("Mode changed to:", visibilitymode);
-    };
+    console.log("Mode changed to:", newMode);
+};
+
+const friendsorglobal = (visibilitymode: 'friends' | 'global') => {
+    // Do something based on the mode, e.g., fetch different data (friend/global)
+    console.log("Mode changed to:", visibilitymode);
+};
 
     return (
         <View style={styles.container}>
