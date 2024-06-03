@@ -34,11 +34,11 @@ export const fetchLootFromBackend = async (): Promise<Loot[]> => {
     // Simulated fetch function to get loot data:
     return [
     {
-      location: { latitude: 51.026281, longitude: -3.113764 }, rarity: "",
+      location: { latitude: 51.026281, longitude: -3.113764 }, rarity: "Rare",
       expiretime: ""
     }, // Loot location 1 TS
     {
-      location: { latitude: 45.305, longitude: -0.86 }, rarity: "",
+      location: { latitude: 45.305, longitude: -0.86 }, rarity: "Rare",
       expiretime: ""
     }, // Loot location 2
     ];
