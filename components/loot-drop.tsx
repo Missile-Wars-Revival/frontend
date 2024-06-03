@@ -12,7 +12,7 @@ interface AllLootDropsProps {
 export const AllLootDrops = (props: AllLootDropsProps) => {
     return (
     <>
-            {props.lootLocations .map(({location, rarity}, index) => (
+            {props.lootLocations .map(({location, rarity, expiretime}, index) => (
             <React.Fragment key={index}>
                 <LootDrop location={location} />
             </React.Fragment>
