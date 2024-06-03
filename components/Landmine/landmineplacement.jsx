@@ -30,8 +30,8 @@ export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) =
     const initialRegion = {
       latitude: location.coords.latitude,
       longitude: location.coords.longitude,
-      latitudeDelta: 0.001, // Smaller value for increased zoom
-      longitudeDelta: 0.001 // Smaller value for increased zoom
+      latitudeDelta: 0.002, // Smaller value for increased zoom
+      longitudeDelta: 0.002 // Smaller value for increased zoom
     };
     setRegion(initialRegion);
     setMarker(initialRegion); // Set initial marker position to current location
@@ -41,16 +41,7 @@ export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) =
   // Load last known location from cache or request current location on modal open
   useEffect(() => {
     if (visible) {
-      (async () => {
-        const lastKnownLocation = await loadLastKnownLocation();
-        if (lastKnownLocation) {
-          setRegion(lastKnownLocation);
-          setMarker(lastKnownLocation);
-          setLoading(false);
-        } else {
           initializeLocation();
-        }
-      })();
     }
   }, [visible]);
 

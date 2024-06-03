@@ -50,7 +50,20 @@ function NavBar() {
   };
 
   return (
-    <View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-around', backgroundColor: 'rgba(255, 255, 255, 0.0)', height: 90, alignItems: 'center' }}>
+    <View style={{
+      position: 'absolute', 
+      bottom: 0, 
+      left: 0,
+      right: 0,
+      width: '100%',
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      backgroundColor: 'rgba(255, 255, 255, 0.0)', // Ensure transparency
+      height: 90,
+      alignItems: 'center',
+      borderTopWidth: 0, // Optional: adds a subtle border at the top of the NavBar
+      borderColor: 'rgba(0, 0, 0, 0.1)' // Optional: Color of the border
+    }}>
       {['/', '/store', '/friends', '/profile'].map((tab, index) => (
         <TouchableOpacity 
           key={index}
@@ -84,14 +97,13 @@ function NavBar() {
   );
 }
 
-
 function RootLayoutNav() {
   const pathname = usePathname();
   const hideNavBarRoutes = ['/login', '/register', '/add-friends'];
 
   return (
     <SafeAreaProvider>
-      <View style={{ flex: 1 }}>
+      <View style={{ flex: 1, backgroundColor: 'rgba(255, 255, 255, 0.0)' }}>
         <Stack>
           <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="login" options={{ headerShown: false, gestureEnabled: false, animation: 'slide_from_bottom' }} />
