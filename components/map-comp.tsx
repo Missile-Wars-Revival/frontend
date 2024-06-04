@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { View, StyleSheet, Text, Switch, Alert } from "react-native";
-import MapView from "react-native-maps";
+import { View, StyleSheet, Text, Switch, Alert, Platform } from "react-native";
+import MapView, { PROVIDER_DEFAULT, PROVIDER_GOOGLE } from "react-native-maps";
 import { AllLootDrops } from "./loot-drop";
 import { AllLandMines } from "./Landmine/map-landmines";
 import { AllMissiles } from "./Missile/map-missile";
@@ -152,6 +152,7 @@ const friendsorglobal = (visibilitymode: 'friends' | 'global') => {
         <View style={styles.container}>
             <MapView
                 style={styles.map}
+                provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
                 region={region}
                 showsCompass={false}
                 showsTraffic={false}

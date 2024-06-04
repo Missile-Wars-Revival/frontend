@@ -2,7 +2,7 @@
   "expo": {
     "name": "missle-wars",
     "slug": "missilewars",
-    "scheme": "missle-wars",
+    "scheme": "missile-wars",
     "version": "0.0.1",
     "orientation": "portrait",
     "icon": "./assets/logo.png",
@@ -25,14 +25,22 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.longtimenoc.misslewars"
+      "bundleIdentifier": "com.longtimenoc.misslewars",
+      "config": {
+        "googleMapsApiKey": "AIzaSyBKb33CQ0Dbt_IeD7fCfaPC5ugigphNcgY" 
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/logo.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.longtimenoc.misslewars"
+      "package": "com.longtimenoc.misslewars",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyBKb33CQ0Dbt_IeD7fCfaPC5ugigphNcgY" 
+        }
+      }
     },
     "web": {
       "favicon": "./assets/logo.png"
@@ -40,6 +48,6 @@
     "plugins": [
       "expo-router"
     ],
-    "owner": "ogos"
+    "owner": "osog"
   }
 }

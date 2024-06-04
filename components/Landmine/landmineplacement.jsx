@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Modal, View, Button, Dimensions, ActivityIndicator, Alert } from 'react-native';
 import MapView, { Marker, Circle } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { loadLastKnownLocation } from '../../util/mapstore';
 import { useUserName } from "../../util/fetchusernameglobal";
 import { mapstyles } from '../../map-themes/map-stylesheet'; 
 
@@ -66,6 +65,7 @@ export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) =
           <MapView
             style={{ flex: 1 }}
             initialRegion={region}
+            provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
             showsUserLocation={true}
             showsMyLocationButton={true}
             onPress={(e) => setMarker({
