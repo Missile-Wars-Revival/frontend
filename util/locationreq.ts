@@ -4,19 +4,24 @@ import { GeoLocation } from 'middle-earth';
 
 export async function getCurrentLocation(): Promise<GeoLocation> {
     const useBackground = await AsyncStorage.getItem('useBackgroundLocation');
-    let status;
+    let permissionStatus;
 
     if (useBackground === 'true') {
-        ({ status } = await Location.requestBackgroundPermissionsAsync());
+        ({ status: permissionStatus } = await Location.requestBackgroundPermissionsAsync());
     } else {
-        ({ status } = await Location.requestForegroundPermissionsAsync());
+        ({ status: permissionStatus } = await Location.requestForegroundPermissionsAsync());
     }
 
-    if (status !== 'granted') {
-        throw new Error('Permission to access location was denied');
+    // Check if the permission was granted
+    if (permissionStatus !== 'granted') {
+        throw new Error('Location access permission was denied');
     }
 
-    let location = await Location.getCurrentPositionAsync({});
+    // Update the AsyncStorage to reflect the current permission state
+    await AsyncStorage.setItem('useBackgroundLocation', permissionStatus);
+
+    // Fetch the current location using the appropriate permissions
+    const location = await Location.getCurrentPositionAsync({});
     return {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude

@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { clearCredentials } from '../util/logincache';
 import { useUserName } from '../util/fetchusernameglobal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Location from 'expo-location';
 
 const ProfilePage: React.FC = () => {
 
@@ -28,6 +29,7 @@ const ProfilePage: React.FC = () => {
     const toggleSwitch = async () => {
         const newValue = !useBackgroundLocation;
         setUseBackgroundLocation(newValue);
+        await Location.requestBackgroundPermissionsAsync()
         await AsyncStorage.setItem('useBackgroundLocation', newValue.toString());
     };
 

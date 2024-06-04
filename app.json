@@ -3,7 +3,7 @@
     "name": "missile-wars",
     "slug": "missilewars",
     "scheme": "missile-wars",
-    "version": "1.0.0",
+    "version": "0.0.1",
     "orientation": "portrait",
     "icon": "./assets/logo.gif",
     "userInterfaceStyle": "light",
