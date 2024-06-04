@@ -22,6 +22,7 @@ export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) =
     let { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission Denied', 'Location permission is required.');
+      setIsLocationEnabled(false)
       setLoading(false);
       return;
     }

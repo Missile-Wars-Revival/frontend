@@ -37,7 +37,7 @@ export const isInactiveFor24Hours = (timestamp: TimeStamp): boolean => {
 
 
 //landmine timestamp
-export const convertimestamplandmine = (timestamp: string | number | Date) => {
+export const convertimestampfuture = (timestamp: string | number | Date) => {
   const currentTime = new Date().getTime();
   const eventTime = new Date(timestamp).getTime();
   const differenceInMilliseconds = eventTime - currentTime;
