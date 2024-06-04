@@ -1,9 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { View, StyleSheet, Text, Switch, Alert } from "react-native";
 import * as Location from 'expo-location';
 import { GeoLocation, Landmine, Loot, Missile } from "middle-earth";
 import { fetchLootFromBackend, fetchMissilesFromBackend, fetchlandmineFromBackend } from "../temp/fetchMethods";
-import { useUserName } from "../util/fetchusernameglobal";
 import * as Notifications from 'expo-notifications';
 
 
@@ -15,7 +13,7 @@ interface LastNotified {
 
 const proximityThreshold = 0.002;
 
-export const ProximityCheck: React.FC<{}> = () => {
+export const ProximityCheckNotif: React.FC<{}> = () => {
     const [lootLocations, setLootLocations] = useState<Loot[]>([]);
     const [missileData, setMissileData] = useState<Missile[]>([]);
     const [landmineData, setLandmineLocations] = useState<Landmine[]>([]);
@@ -80,7 +78,7 @@ export const ProximityCheck: React.FC<{}> = () => {
                     sendNotification("Incoming Missile", `Incoming missile ETA: ${missile.etatimetoimpact}`);
                     setLastNotified(prev => ({ ...prev, missile: today }));
                 } else if (missile.status === 'Hit' && lastNotified.missile !== today) {
-                    sendNotification("Impacted Missile Nearby", "Impacted missile nearby");
+                    sendNotification("Impacted Missile Nearby", "Impacted missile nearby. Be wary of the fallout!");
                     setLastNotified(prev => ({ ...prev, missile: today }));
                 }
             }

@@ -13,7 +13,7 @@ import { getLocationPermission } from "../hooks/userlocation";
 import { useUserName } from "../util/fetchusernameglobal";
 import { dispatch } from "../api/dispatch";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ProximityCheck } from "./collision";
+import { ProximityCheckNotif } from "./collision";
 
 interface MapCompProps {
     selectedMapStyle: any;
@@ -165,7 +165,7 @@ const friendsorglobal = (visibilitymode: 'friends' | 'global') => {
                 />
                 <Text style={styles.switchText}>{visibilitymode === 'global' ? 'Global' : 'Friends'}</Text>
             </View>
-            <ProximityCheck />
+            <ProximityCheckNotif />
         </View>
     );
 };

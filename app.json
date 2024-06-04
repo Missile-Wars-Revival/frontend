@@ -9,25 +9,36 @@
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/logo.png",
-      "resizeMode": "center",
       "backgroundColor": "#ffffff"
     },
     "extra": {
-      "dotenv": ".env"
+      "dotenv": ".env",
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "a596b2af-22b1-49e1-9e3c-714016198194"
+      }
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.longtimenoc.misslewars"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/logo.gif",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.longtimenoc.misslewars"
     },
     "web": {
       "favicon": "./assets/logo.png"
     },
-    "plugins": ["expo-router"]
+    "plugins": [
+      "expo-router"
+    ]
   }
 }
