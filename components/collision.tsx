@@ -13,14 +13,14 @@ interface LastNotified {
     landmine: string | null;
 }
 
-const proximityThreshold = 0.002; 
-//This fetches and notifies nearby items
-export const Proximitycheck: React.FC<{}> = () => {
+const proximityThreshold = 0.002;
+
+export const ProximityCheck: React.FC<{}> = () => {
     const [lootLocations, setLootLocations] = useState<Loot[]>([]);
     const [missileData, setMissileData] = useState<Missile[]>([]);
     const [landmineData, setLandmineLocations] = useState<Landmine[]>([]);
     const [userLocation, setUserLocation] = useState<GeoLocation | null>(null);
-    const [lastNotified, setLastNotified] = useState({ loot: null, missile: null, landmine: null });
+    const [lastNotified, setLastNotified] = useState<LastNotified>({ loot: null, missile: null, landmine: null });
 
     const fetchLootAndMissiles = useCallback(async () => {
         setLootLocations(await fetchLootFromBackend());
@@ -50,57 +50,53 @@ export const Proximitycheck: React.FC<{}> = () => {
         setUserLocationAsync();
     }, []);
 
-    const sendNotification = async (message: any) => {
+    const sendNotification = async (title: string, message: string) => {
         await Notifications.scheduleNotificationAsync({
-            content: {
-                title: "Proximity Alert!",
-                body: message,
-            },
-            trigger: null, 
+            content: { title, body: message },
+            trigger: null, // sends it immediately
         });
     };
 
-    const checkAndNotify = (type: string, item: Loot | Missile | Landmine) => {
-        const today = new Date().toISOString().slice(0, 10); 
-        if (lastNotified[type as keyof LastNotified] !== today) {
-            sendNotification(`Near ${type} at ${JSON.stringify(item)}`);
-            setLastNotified(prev => ({ ...prev, [type as keyof LastNotified]: today }));
-        }
+    const checkAndNotify = () => {
+        const today = new Date().toISOString().slice(0, 10); // get YYYY-MM-DD format
+        if (!userLocation) return;
+
+        const isWithinRange = (itemLocation: GeoLocation) => {
+            const distanceLat = Math.abs(userLocation.latitude - itemLocation.latitude);
+            const distanceLon = Math.abs(userLocation.longitude - itemLocation.longitude);
+            return distanceLat < proximityThreshold && distanceLon < proximityThreshold;
+        };
+
+        lootLocations.forEach(loot => {
+            if (isWithinRange(loot.location) && lastNotified.loot !== today) {
+                sendNotification("Loot Nearby", "There is loot nearby!");
+                setLastNotified(prev => ({ ...prev, loot: today }));
+            }
+        });
+
+        missileData.forEach(missile => {
+            if (isWithinRange(missile.currentLocation)) {
+                if (missile.status === 'Incoming' && lastNotified.missile !== today) {
+                    sendNotification("Incoming Missile", `Incoming missile ETA: ${missile.etatimetoimpact}`);
+                    setLastNotified(prev => ({ ...prev, missile: today }));
+                } else if (missile.status === 'Hit' && lastNotified.missile !== today) {
+                    sendNotification("Impacted Missile Nearby", "Impacted missile nearby");
+                    setLastNotified(prev => ({ ...prev, missile: today }));
+                }
+            }
+        });
+
+        landmineData.forEach(landmine => {
+            if (isWithinRange(landmine.location) && lastNotified.landmine !== today) {
+                sendNotification("Landmine Proximity Warning", "A landmine is nearby. Be cautious!");
+                setLastNotified(prev => ({ ...prev, landmine: today }));
+            }
+        });
     };
 
     useEffect(() => {
-        const checkProximity = () => {
-            if (!userLocation) return;
-
-            const isWithinRange = (itemLocation: GeoLocation) => {
-                const distanceLat = Math.abs(userLocation.latitude - itemLocation.latitude);
-                const distanceLon = Math.abs(userLocation.longitude - itemLocation.longitude);
-                return distanceLat < proximityThreshold && distanceLon < proximityThreshold;
-            };
-
-            lootLocations.forEach(loot => {
-                if (isWithinRange(loot.location)) {
-                    console.log(`Near loot at ${loot}`);
-                    checkAndNotify('Loot', loot);
-                }
-            });
-
-            missileData.forEach(missile => {
-                if (isWithinRange(missile.destination)) {
-                    console.log(`Near missile at ${missile}`);
-                    checkAndNotify('Missile', missile);
-                }
-            });
-
-            landmineData.forEach(landmine => {
-                if (isWithinRange(landmine.location)) {
-                    console.log(`Near landmine at ${landmine}`);
-                    checkAndNotify('Landmine', landmine);
-                }
-            });
-        };
-
-        checkProximity();
+        checkAndNotify();  // Check proximity and send notifications
     }, [userLocation, lootLocations, missileData, landmineData, lastNotified]);
-    return null;
-}
+
+    return null; // Explicitly return null if there is nothing to render
+};
