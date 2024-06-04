@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Player } from "../types/types"
+import { Player } from "middle-earth";
 import { PlayerComp } from "./player";
 import { useUserName } from "../util/fetchusernameglobal";
 import { getTimeDifference, isInactiveFor24Hours } from "../util/get-time-difference";
@@ -42,8 +42,8 @@ export const AllPlayers = () => {
             const { text } = getTimeDifference(player.updatedAt);
 
             const location = {
-              latitude: player.latitude ?? 0, // Fallback to 0 if undefined
-              longitude: player.longitude ?? 0 // Fallback to 0 if undefined
+              latitude: player.location.latitude ?? 0, // Fallback to 0 if undefined
+              longitude: player.location.longitude ?? 0 // Fallback to 0 if undefined
             };            
 
             return (

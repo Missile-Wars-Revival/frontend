@@ -1,8 +1,9 @@
-import React, { } from 'react';
-import { SafeAreaView, StyleSheet, Text, View, Image, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { SafeAreaView, StyleSheet, Text, View, Image, TouchableOpacity, Switch } from 'react-native';
 import { router } from 'expo-router';
 import { clearCredentials } from '../util/logincache';
 import { useUserName } from '../util/fetchusernameglobal';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ProfilePage: React.FC = () => {
 
@@ -12,6 +13,23 @@ const ProfilePage: React.FC = () => {
     await clearCredentials();
     router.push("/login");
   };
+
+  const [useBackgroundLocation, setUseBackgroundLocation] = useState(false);
+
+    useEffect(() => {
+        loadPreference();
+    }, []);
+
+    const loadPreference = async () => {
+        const preference = await AsyncStorage.getItem('useBackgroundLocation');
+        setUseBackgroundLocation(preference === 'true');
+    };
+
+    const toggleSwitch = async () => {
+        const newValue = !useBackgroundLocation;
+        setUseBackgroundLocation(newValue);
+        await AsyncStorage.setItem('useBackgroundLocation', newValue.toString());
+    };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -29,6 +47,12 @@ const ProfilePage: React.FC = () => {
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Text style={styles.logoutButtonText}>Sign Out</Text>
         </TouchableOpacity>
+        <Text></Text>
+        <Text>{useBackgroundLocation ? 'Background Location Access (doesnt work expo go)' : 'Foreground Location Access'}</Text>
+            <Switch
+                onValueChange={toggleSwitch}
+                value={useBackgroundLocation}
+            />
       </View>
     </SafeAreaView>
   );

@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, View, Button, Dimensions, ActivityIndicator, Text, Alert } from 'react-native';
+import { Modal, View, Button, Dimensions, ActivityIndicator, Alert } from 'react-native';
 import MapView, { Marker, Circle } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { loadLastKnownLocation } from '../../util/mapstore';
 import { useUserName } from "../../util/fetchusernameglobal";
+import { mapstyles } from '../../map-themes/map-stylesheet'; 
+
 //set marker image as landmine type
 import { LandmineImages } from './landmine';
 
 export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) => {
   const [region, setRegion] = useState(null);
+  //import is locaiton enabled from map-comp!!!!
+  const [isLocationEnabled, setIsLocationEnabled] = useState(true);
   const [marker, setMarker] = useState(null);
   const [loading, setLoading] = useState(true);
   const userName = useUserName(); 
@@ -18,6 +22,7 @@ export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) =
     let { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission Denied', 'Location permission is required.');
+      setIsLocationEnabled(false)
       setLoading(false);
       return;
     }
@@ -26,8 +31,8 @@ export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) =
     const initialRegion = {
       latitude: location.coords.latitude,
       longitude: location.coords.longitude,
-      latitudeDelta: 0.01, // Smaller value for increased zoom
-      longitudeDelta: 0.01 // Smaller value for increased zoom
+      latitudeDelta: 0.002, // Smaller value for increased zoom
+      longitudeDelta: 0.002 // Smaller value for increased zoom
     };
     setRegion(initialRegion);
     setMarker(initialRegion); // Set initial marker position to current location
@@ -37,16 +42,7 @@ export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) =
   // Load last known location from cache or request current location on modal open
   useEffect(() => {
     if (visible) {
-      (async () => {
-        const lastKnownLocation = await loadLastKnownLocation();
-        if (lastKnownLocation) {
-          setRegion(lastKnownLocation);
-          setMarker(lastKnownLocation);
-          setLoading(false);
-        } else {
           initializeLocation();
-        }
-      })();
     }
   }, [visible]);
 
@@ -75,8 +71,8 @@ export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) =
             onPress={(e) => setMarker({
               latitude: e.nativeEvent.coordinate.latitude,
               longitude: e.nativeEvent.coordinate.longitude,
-              latitudeDelta: 0.01, 
-              longitudeDelta: 0.01
+              latitudeDelta: 0.001, 
+              longitudeDelta: 0.001
             })}
           >
             <Circle
@@ -90,6 +86,11 @@ export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) =
               onDragEnd={(e) => setMarker(e.nativeEvent.coordinate)}
             />
           </MapView>
+          {/* import this from map comp */}
+          {!isLocationEnabled && (
+                <View 
+                style={mapstyles.overlay} />
+            )}
           <View style={{ flexDirection: 'row', justifyContent: 'space-around', padding: 10 }}>
             <Button title="Cancel" onPress={onClose} />
             <Button title="Fire" onPress={() => {

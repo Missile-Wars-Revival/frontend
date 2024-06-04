@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "missle-wars",
-    "slug": "missle-wars",
+    "slug": "missilewars",
     "scheme": "missle-wars",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -9,25 +9,37 @@
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/logo.png",
-      "resizeMode": "center",
       "backgroundColor": "#ffffff"
     },
     "extra": {
-      "dotenv": ".env"
+      "dotenv": ".env",
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "250fd3fc-22b2-411d-abfc-63f3a6b81328"
+      }
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.longtimenoc.misslewars"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/logo.gif",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.longtimenoc.misslewars"
     },
     "web": {
       "favicon": "./assets/logo.png"
     },
-    "plugins": ["expo-router"]
+    "plugins": [
+      "expo-router"
+    ],
+    "owner": "ogos"
   }
 }

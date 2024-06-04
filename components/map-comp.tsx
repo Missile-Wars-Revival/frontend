@@ -1,18 +1,19 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { View, StyleSheet, Text, Switch } from "react-native";
+import { View, StyleSheet, Text, Switch, Alert } from "react-native";
 import MapView from "react-native-maps";
-import * as Location from 'expo-location';
 import { AllLootDrops } from "./loot-drop";
 import { AllLandMines } from "./Landmine/map-landmines";
 import { AllMissiles } from "./Missile/map-missile";
 import { AllPlayers } from "./map-players";
-import { Landmine, Loot, Missile } from "../types/types";
+import { GeoLocation, Landmine, Loot, Missile } from "middle-earth";
 import { fetchLootFromBackend, fetchMissilesFromBackend, fetchlandmineFromBackend } from "../temp/fetchMethods";
 import { loadLastKnownLocation, saveLocation } from '../util/mapstore';
 import { getLocationPermission } from "../hooks/userlocation";
 import { useUserName } from "../util/fetchusernameglobal";
 import { dispatch } from "../api/dispatch";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ProximityCheckNotif } from "./collision";
+import { getCurrentLocation } from "../util/locationreq";
 
 interface MapCompProps {
     selectedMapStyle: any;
@@ -40,79 +41,112 @@ export const MapComp = (props: MapCompProps) => {
     }, []);
 
     const dispatchLocation = async () => {
-        if (userName && region.latitude && region.longitude) {
+        const location: GeoLocation = await getCurrentLocation();
+        if (userName && location.latitude && location.longitude) {
             console.log('Dispatch Response:', await dispatch(userName, region.latitude, region.longitude));
         }
     };
 
-    const getCurrentLocation = async () => {
+    const getlocation = async () => {
         try {
-            let location = await Location.getCurrentPositionAsync({});
+            const location: GeoLocation = await getCurrentLocation(); // Use the defined type
             const newRegion = {
-                latitude: location.coords.latitude,
-                longitude: location.coords.longitude,
-                latitudeDelta: 0.1922,
-                longitudeDelta: 0.1421
+                latitude: location.latitude,
+                longitude: location.longitude,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01
             };
             setRegion(newRegion);
-            saveLocation(newRegion);
-        } catch (error) {
-            //permission not enabled
+            await saveLocation(newRegion); // Cache the region
+        } catch {
+            Alert.alert(
+                "Location",
+                "Please enable your location to continue using the app",
+                [
+                    { text: "Cancel", style: "cancel" },
+                    { text: "Confirm" }
+                ]
+            );
+
         }
     };
-    useEffect(() => {
 
-        const loadCachedMode = async () => {
+    useEffect(() => {
+        const loadCachedData = async () => {
             try {
-                const visibilitymode = await AsyncStorage.getItem('visibilitymode');
-                if (visibilitymode !== null) {
-                    setMode(visibilitymode as 'friends' | 'global');
-                    friendsorglobal(visibilitymode as 'friends' | 'global');
+                const cachedRegion = await loadLastKnownLocation();
+                if (cachedRegion !== null) {
+                    setRegion(cachedRegion);
+                }
+                const cachedMode = await AsyncStorage.getItem('visibilitymode');
+                if (cachedMode !== null) {
+                    setMode(cachedMode as 'friends' | 'global');
                 }
             } catch (error) {
-                console.error('Error loading cached mode:', error);
+                console.error('Error loading cached data:', error);
             }
         };
 
         const initializeLocation = async () => {
-            const status = await getLocationPermission();
-            if (status === 'granted') {
-
-                const lastKnownLocation = await loadLastKnownLocation();
-                setRegion(lastKnownLocation);
-                setIsLocationEnabled(true);
-
-                getCurrentLocation();
-            } else {
-                const lastKnownLocation = await loadLastKnownLocation();
-                setRegion(lastKnownLocation);
-                setIsLocationEnabled(false);
-                // Optionally handle the situation when permission is not granted
+            try {
+              const status = await getLocationPermission();
+              setIsLocationEnabled(status === 'granted');
+            } catch {
             }
-        };
-        fetchLootAndMissiles();
+          };
+
         initializeLocation();
-        loadCachedMode();
+        loadCachedData();
+        getlocation();
+        fetchLootAndMissiles();
+        dispatchLocation();
+
         const intervalId = setInterval(() => {
             fetchLootAndMissiles();
-            initializeLocation();//checks if user locaiton is disabled
+            initializeLocation();
             dispatchLocation();
-        }, 30000);
+        }, 1000);
 
         return () => clearInterval(intervalId);
     }, [fetchLootAndMissiles]); 
 
-    const toggleMode = async () => {
-        const newMode = visibilitymode === 'friends' ? 'global' : 'friends';
-        setMode(newMode);
-        friendsorglobal(newMode);
-        await AsyncStorage.setItem('visibilitymode', newMode); // Save the new mode
-    };
+const toggleMode = async () => {
+    const newMode = visibilitymode === 'friends' ? 'global' : 'friends';
+    setMode(newMode);
+    friendsorglobal(newMode);
+    if (newMode === 'global') {
+        Alert.alert(
+            "Change to Global Mode",
+            "You are about to change your visibility to global. Everyone will be able to see your location.",
+            [
+                {
+                    text: "Cancel",
+                    onPress: () => {
+                        console.log("Change cancelled");
+                        setMode('friends');  
+                    },
+                    style: "cancel"
+                },
+                {
+                    text: "Confirm",
+                    onPress: async () => {
+                        await AsyncStorage.setItem('visibilitymode', newMode); // Save the new mode only if confirmed
+                        console.log("Mode changed to:", newMode);
+                    }
+                }
+            ]
+        );
+    } else {
+        await AsyncStorage.setItem('visibilitymode', newMode); // Save the new mode directly if not switching to global (e.g. switching from global -> friends)
+    }
 
-    const friendsorglobal = (visibilitymode: 'friends' | 'global') => {
-        // Do something based on the mode, e.g., fetch different data
-        console.log("Mode changed to:", visibilitymode);
-    };
+    console.log("Mode changed to:", newMode);
+};
+
+const friendsorglobal = (visibilitymode: 'friends' | 'global') => {
+    // Do something based on the mode, e.g., fetch different data (friend/global)
+    console.log("Mode changed to:", visibilitymode);
+};
 
     return (
         <View style={styles.container}>
@@ -120,7 +154,7 @@ export const MapComp = (props: MapCompProps) => {
                 style={styles.map}
                 region={region}
                 showsCompass={false}
-                showsTraffic={true}
+                showsTraffic={false}
                 showsUserLocation={true}
                 showsMyLocationButton={true}
                 customMapStyle={props.selectedMapStyle}>
@@ -143,6 +177,7 @@ export const MapComp = (props: MapCompProps) => {
                 />
                 <Text style={styles.switchText}>{visibilitymode === 'global' ? 'Global' : 'Friends'}</Text>
             </View>
+            <ProximityCheckNotif />
         </View>
     );
 };
@@ -162,8 +197,8 @@ const styles = StyleSheet.create({
         bottom: 0,
         backgroundColor: 'white',
         opacity: 0.6,
-        justifyContent: 'center', // Align text vertically
-        alignItems: 'center', // Align text horizontally
+        justifyContent: 'center', 
+        alignItems: 'center', 
     },
     switchContainer: {
         position: 'absolute',
