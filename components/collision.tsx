@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useState } from "react";
-import * as Location from 'expo-location';
 import { GeoLocation, Landmine, Loot, Missile } from "middle-earth";
 import { fetchLootFromBackend, fetchMissilesFromBackend, fetchlandmineFromBackend } from "../temp/fetchMethods";
 import * as Notifications from 'expo-notifications';
@@ -46,7 +45,46 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
             trigger: null, // sends it immediately
         });
     };
+// checks if player is in radius 
+    const checkForHitAndNotify = () => {
+        const today = new Date().toISOString().slice(0, 10);
+        if (!userLocation) return;
 
+        const calculateDistance = (loc1: { latitude: any; longitude: any; }, loc2: { latitude: any; longitude: any; }) => {
+            return Math.sqrt(
+                Math.pow(loc1.latitude - loc2.latitude, 2) + Math.pow(loc1.longitude - loc2.longitude, 2)
+            );
+        };
+
+        lootLocations.forEach(loot => {
+            if (calculateDistance(userLocation, loot.location) <= 0.0002 && lastNotified.loot !== today) {
+                sendNotification("Loot Hit", "You've reached a loot!");
+                setLastNotified(prev => ({ ...prev, loot: today }));
+            }
+        });
+
+        missileData.forEach(missile => {
+            if (calculateDistance(userLocation, missile.currentLocation) <= missile.radius && lastNotified.missile !== today) {
+                let message = missile.status === 'Incoming' ? `Direct hit by incoming missile!` : `You are within the fallout radius of a missile!`;
+                sendNotification("Missile Hit", message);
+                setLastNotified(prev => ({ ...prev, missile: today }));
+            }
+        });
+
+        landmineData.forEach(landmine => {
+            if (calculateDistance(userLocation, landmine.location) <= 0.0001 && lastNotified.landmine !== today) {
+                sendNotification("Landmine Danger", "You've stepped near a landmine!");
+                setLastNotified(prev => ({ ...prev, landmine: today }));
+            }
+        });
+    };
+
+    useEffect(() => {
+        if (userLocation && lootLocations && missileData && landmineData) {
+            checkForHitAndNotify();
+        }
+    }, [userLocation, lootLocations, missileData, landmineData, lastNotified]);
+//checks if nearby and notifies
     const checkAndNotify = () => {
         const today = new Date().toISOString().slice(0, 10); // get YYYY-MM-DD format
         if (!userLocation) return;
