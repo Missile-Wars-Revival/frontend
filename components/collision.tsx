@@ -109,6 +109,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                     stopOnTerminate: false, // Continue running even if the app is closed
                     startOnBoot: true, // Start again automatically if the device is rebooted
                 });
+                console.log("Task occured")
             } catch (error) {
                 console.error('Background Fetch registration failed:', error);
             }

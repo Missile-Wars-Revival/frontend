@@ -25,9 +25,14 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.longtimenoc.misslewars"
+      "bundleIdentifier": "com.longtimenoc.misslewars",
+      "infoPlist": {
+        "NSLocationAlwaysUsageDescription": "This app needs access to your location to alert about nearby items of interest."
+      },
+      "backgroundModes": ["location"]
     },
     "android": {
+      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_BACKGROUND_LOCATION"],
       "adaptiveIcon": {
         "foregroundImage": "./assets/logo.gif",
         "backgroundColor": "#ffffff"
