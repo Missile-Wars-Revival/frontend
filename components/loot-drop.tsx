@@ -2,7 +2,7 @@ import React from "react";
 import { View, Image } from "react-native";
 import { Marker, Circle } from "react-native-maps";
 import { GeoLocation, Loot } from "middle-earth";
-import { convertimestamplandmine } from "../util/get-time-difference";
+import { convertimestampfuture } from "../util/get-time-difference";
 const resizedlootimage = require("../assets/mapassets/Airdropicon.png"); // Your custom image path
 const resizedlooticon = { width: 50, height: 50 }; // Custom size for image
 
@@ -32,7 +32,7 @@ interface LootProps {
 
 
 export const LootDrop = (props: LootProps) => {
-    const { text } = convertimestamplandmine(props.expiretime);
+    const { text } = convertimestampfuture(props.expiretime);
     return (
         <View>
             {/* Render Circle */}

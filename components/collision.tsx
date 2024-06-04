@@ -3,6 +3,7 @@ import * as Location from 'expo-location';
 import { GeoLocation, Landmine, Loot, Missile } from "middle-earth";
 import { fetchLootFromBackend, fetchMissilesFromBackend, fetchlandmineFromBackend } from "../temp/fetchMethods";
 import * as Notifications from 'expo-notifications';
+import { getCurrentLocation } from "../util/locationreq"; 
 
 
 interface LastNotified {
@@ -30,23 +31,14 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
         fetchLootAndMissiles();
     }, [fetchLootAndMissiles]);
 
-    const setUserLocationAsync = async () => {
-        let { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-            console.error('Permission to access location was denied');
-            return;
-        }
-
-        let location = await Location.getCurrentPositionAsync({});
-        setUserLocation({
-            latitude: location.coords.latitude,
-            longitude: location.coords.longitude
-        });
-    };
-
-    useEffect(() => {
-        setUserLocationAsync();
-    }, []);
+    const getCurrentLocationWrapper = async () => {
+        const location: GeoLocation = await getCurrentLocation(); // Use the defined type
+        setUserLocation(location);
+      };
+      
+      useEffect(() => {
+        getCurrentLocationWrapper();
+      }, []);
 
     const sendNotification = async (title: string, message: string) => {
         await Notifications.scheduleNotificationAsync({

@@ -59,6 +59,19 @@ export const MapComp = (props: MapCompProps) => {
             await saveLocation(newRegion); // Cache the region
         } catch (error) {
             console.error('Error getting current location:', error);
+            Alert.alert(
+                "Location",
+                "Please enable your location to continue using the app",
+                [
+                    {
+                        text: "Cancel",
+                        style: "cancel"
+                    },
+                    {
+                        text: "Confirm",
+                    }
+                ]
+            );
         }
     };
 
@@ -79,9 +92,12 @@ export const MapComp = (props: MapCompProps) => {
         };
 
         const initializeLocation = async () => {
-            const status = await getLocationPermission();
-            setIsLocationEnabled(status === 'granted');
-        };
+            try {
+              const status = await getLocationPermission();
+              setIsLocationEnabled(status === 'granted');
+            } catch {
+            }
+          };
 
         initializeLocation();
         loadCachedData();
