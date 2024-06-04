@@ -91,13 +91,8 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
 
     useEffect(() => {
         const defineAndRegisterTask = async () => {
-            await BackgroundFetch.registerTaskAsync(TASK_NAME, {
-                minimumInterval: 60, // Run at least every minute
-                stopOnTerminate: false, // Continue running even if the app is closed
-                startOnBoot: true, // Start again automatically if the device is rebooted
-            });
-
-            await TaskManager.defineTask(TASK_NAME, ({ data, error }) => {
+            // Define the task first
+            TaskManager.defineTask(TASK_NAME, ({ data, error }) => {
                 if (error) {
                     console.error('TaskManager Error:', error);
                     return;
@@ -106,12 +101,25 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                     checkAndNotify(); // Execute background logic
                 }
             });
+    
+            // Then register the task
+            try {
+                await BackgroundFetch.registerTaskAsync(TASK_NAME, {
+                    minimumInterval: 60, // Run at least every minute
+                    stopOnTerminate: false, // Continue running even if the app is closed
+                    startOnBoot: true, // Start again automatically if the device is rebooted
+                });
+            } catch (error) {
+                console.error('Background Fetch registration failed:', error);
+            }
         };
-
+    
         defineAndRegisterTask();
-
+    
         return () => {
-            BackgroundFetch.unregisterTaskAsync(TASK_NAME);
+            BackgroundFetch.unregisterTaskAsync(TASK_NAME).catch(err => {
+                console.error('Failed to unregister task:', err);
+            });
         };
     }, [checkAndNotify]);
 

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "missle-wars",
+    "name": "missile-wars",
     "slug": "missilewars",
     "scheme": "missile-wars",
     "version": "0.0.1",
@@ -28,6 +28,11 @@
       "bundleIdentifier": "com.longtimenoc.misslewars",
       "config": {
         "googleMapsApiKey": "AIzaSyBKb33CQ0Dbt_IeD7fCfaPC5ugigphNcgY" 
+      },
+      "infoPlist": {
+        "UIBackgroundModes": ["location", "fetch"],
+        "NSLocationWhenInUseUsageDescription": "This app uses location services to alert you about nearby events.",
+        "NSLocationAlwaysUsageDescription": "This app uses location services to alert you about nearby events, even when the app is closed."
       }
     },
     "android": {
@@ -35,6 +40,8 @@
         "foregroundImage": "./assets/logo.png",
         "backgroundColor": "#ffffff"
       },
+      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION", "INTERNET", "RECEIVE_BOOT_COMPLETED"],
+      "useNextNotificationsApi": true,
       "package": "com.longtimenoc.misslewars",
       "config": {
         "googleMaps": {
