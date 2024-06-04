@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { View, StyleSheet, Text, Switch, Alert } from "react-native";
 import MapView from "react-native-maps";
-import * as Location from 'expo-location';
 import { AllLootDrops } from "./loot-drop";
 import { AllLandMines } from "./Landmine/map-landmines";
 import { AllMissiles } from "./Missile/map-missile";
