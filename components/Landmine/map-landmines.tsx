@@ -4,7 +4,7 @@ import { useUserName } from "../../util/fetchusernameglobal";
 import { GeoLocation, Landmine } from "middle-earth";
 import { View, Image } from "react-native";
 import { LandmineImages } from "./landminelib"; 
-import { convertimestamplandmine } from "../../util/get-time-difference";
+import { convertimestampfuture } from "../../util/get-time-difference";
 
 interface AllLandmineProps {
     landminedata: Landmine[];
@@ -38,7 +38,7 @@ export const MapLandmine = (landmineProps: LandmineProps) => {
     const resizedlandmineimage = LandmineImages[landmineProps.type];
     const resizedlandmineicon = { width: 50, height: 50 }; // Custom size for image
 
-    const { text } = convertimestamplandmine(landmineProps.etaexpiretime);
+    const { text } = convertimestampfuture(landmineProps.etaexpiretime);
     return(
         <View>
             {/* Render Circle at destination coords */}

@@ -1,18 +1,19 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { View, StyleSheet, Text, Switch } from "react-native";
+import { View, StyleSheet, Text, Switch, Alert } from "react-native";
 import MapView from "react-native-maps";
-import * as Location from 'expo-location';
 import { AllLootDrops } from "./loot-drop";
 import { AllLandMines } from "./Landmine/map-landmines";
 import { AllMissiles } from "./Missile/map-missile";
 import { AllPlayers } from "./map-players";
-import { Landmine, Loot, Missile } from "middle-earth";
+import { GeoLocation, Landmine, Loot, Missile } from "middle-earth";
 import { fetchLootFromBackend, fetchMissilesFromBackend, fetchlandmineFromBackend } from "../temp/fetchMethods";
 import { loadLastKnownLocation, saveLocation } from '../util/mapstore';
 import { getLocationPermission } from "../hooks/userlocation";
 import { useUserName } from "../util/fetchusernameglobal";
 import { dispatch } from "../api/dispatch";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ProximityCheckNotif } from "./collision";
+import { getCurrentLocation } from "../util/locationreq";
 
 interface MapCompProps {
     selectedMapStyle: any;
@@ -40,24 +41,33 @@ export const MapComp = (props: MapCompProps) => {
     }, []);
 
     const dispatchLocation = async () => {
-        if (userName && region.latitude && region.longitude) {
+        const location: GeoLocation = await getCurrentLocation();
+        if (userName && location.latitude && location.longitude) {
             console.log('Dispatch Response:', await dispatch(userName, region.latitude, region.longitude));
         }
     };
 
-    const getCurrentLocation = async () => {
+    const getlocation = async () => {
         try {
-            let location = await Location.getCurrentPositionAsync({});
+            const location: GeoLocation = await getCurrentLocation(); // Use the defined type
             const newRegion = {
-                latitude: location.coords.latitude,
-                longitude: location.coords.longitude,
+                latitude: location.latitude,
+                longitude: location.longitude,
                 latitudeDelta: 0.01,
                 longitudeDelta: 0.01
             };
             setRegion(newRegion);
             await saveLocation(newRegion); // Cache the region
-        } catch (error) {
-            console.error('Error getting current location:', error);
+        } catch {
+            Alert.alert(
+                "Location",
+                "Please enable your location to continue using the app",
+                [
+                    { text: "Cancel", style: "cancel" },
+                    { text: "Confirm" }
+                ]
+            );
+
         }
     };
 
@@ -78,13 +88,16 @@ export const MapComp = (props: MapCompProps) => {
         };
 
         const initializeLocation = async () => {
-            const status = await getLocationPermission();
-            setIsLocationEnabled(status === 'granted');
-        };
+            try {
+              const status = await getLocationPermission();
+              setIsLocationEnabled(status === 'granted');
+            } catch {
+            }
+          };
 
         initializeLocation();
         loadCachedData();
-        getCurrentLocation();
+        getlocation();
         fetchLootAndMissiles();
         dispatchLocation();
 
@@ -97,18 +110,43 @@ export const MapComp = (props: MapCompProps) => {
         return () => clearInterval(intervalId);
     }, [fetchLootAndMissiles]); 
 
-    const toggleMode = async () => {
-        const newMode = visibilitymode === 'friends' ? 'global' : 'friends';
-        setMode(newMode);
-        friendsorglobal(newMode);
-        await AsyncStorage.setItem('visibilitymode', newMode); // Save the new mode
-        console.log("Mode changed to:", newMode);
-    };
+const toggleMode = async () => {
+    const newMode = visibilitymode === 'friends' ? 'global' : 'friends';
+    setMode(newMode);
+    friendsorglobal(newMode);
+    if (newMode === 'global') {
+        Alert.alert(
+            "Change to Global Mode",
+            "You are about to change your visibility to global. Everyone will be able to see your location.",
+            [
+                {
+                    text: "Cancel",
+                    onPress: () => {
+                        console.log("Change cancelled");
+                        setMode('friends');  
+                    },
+                    style: "cancel"
+                },
+                {
+                    text: "Confirm",
+                    onPress: async () => {
+                        await AsyncStorage.setItem('visibilitymode', newMode); // Save the new mode only if confirmed
+                        console.log("Mode changed to:", newMode);
+                    }
+                }
+            ]
+        );
+    } else {
+        await AsyncStorage.setItem('visibilitymode', newMode); // Save the new mode directly if not switching to global (e.g. switching from global -> friends)
+    }
 
-    const friendsorglobal = (visibilitymode: 'friends' | 'global') => {
-        // Do something based on the mode, e.g., fetch different data
-        console.log("Mode changed to:", visibilitymode);
-    };
+    console.log("Mode changed to:", newMode);
+};
+
+const friendsorglobal = (visibilitymode: 'friends' | 'global') => {
+    // Do something based on the mode, e.g., fetch different data (friend/global)
+    console.log("Mode changed to:", visibilitymode);
+};
 
     return (
         <View style={styles.container}>
@@ -139,6 +177,7 @@ export const MapComp = (props: MapCompProps) => {
                 />
                 <Text style={styles.switchText}>{visibilitymode === 'global' ? 'Global' : 'Friends'}</Text>
             </View>
+            <ProximityCheckNotif />
         </View>
     );
 };
