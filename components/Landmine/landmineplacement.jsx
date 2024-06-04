@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, View, Button, Dimensions, ActivityIndicator, Alert } from 'react-native';
-import MapView, { Marker, Circle } from 'react-native-maps';
+import { Modal, View, Button, Dimensions, ActivityIndicator, Alert, Platform } from 'react-native';
+import MapView, { Marker, Circle, PROVIDER_DEFAULT, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useUserName } from "../../util/fetchusernameglobal";
 import { mapstyles } from '../../map-themes/map-stylesheet'; 
