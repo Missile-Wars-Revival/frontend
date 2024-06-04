@@ -40,6 +40,6 @@
     "plugins": [
       "expo-router"
     ],
-    "owner": "missilewars"
+    "owner": "ogos"
   }
 }
