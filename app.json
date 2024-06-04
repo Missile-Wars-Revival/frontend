@@ -5,7 +5,7 @@
     "scheme": "missle-wars",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/logo.gif",
+    "icon": "./assets/logo.png",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/logo.png",
@@ -29,7 +29,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/logo.gif",
+        "foregroundImage": "./assets/logo.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.longtimenoc.misslewars"
