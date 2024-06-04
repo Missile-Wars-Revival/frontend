@@ -40,6 +40,6 @@
     "plugins": [
       "expo-router"
     ],
-    "owner": "ogos"
+    "owner": "osog"
   }
 }
