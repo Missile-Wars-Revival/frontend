@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "missle-wars",
-    "slug": "missle-wars",
+    "slug": "missilewars",
     "scheme": "missle-wars",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -17,7 +17,7 @@
         "origin": false
       },
       "eas": {
-        "projectId": "a596b2af-22b1-49e1-9e3c-714016198194"
+        "projectId": "250fd3fc-22b2-411d-abfc-63f3a6b81328"
       }
     },
     "assetBundlePatterns": [
@@ -39,6 +39,7 @@
     },
     "plugins": [
       "expo-router"
-    ]
+    ],
+    "owner": "missilewars"
   }
 }
