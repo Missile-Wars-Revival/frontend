@@ -6,7 +6,7 @@ import { AllLootDrops } from "./loot-drop";
 import { AllLandMines } from "./Landmine/map-landmines";
 import { AllMissiles } from "./Missile/map-missile";
 import { AllPlayers } from "./map-players";
-import { Landmine, Loot, Missile } from "middle-earth";
+import { GeoLocation, Landmine, Loot, Missile } from "middle-earth";
 import { fetchLootFromBackend, fetchMissilesFromBackend, fetchlandmineFromBackend } from "../temp/fetchMethods";
 import { loadLastKnownLocation, saveLocation } from '../util/mapstore';
 import { getLocationPermission } from "../hooks/userlocation";
@@ -14,6 +14,7 @@ import { useUserName } from "../util/fetchusernameglobal";
 import { dispatch } from "../api/dispatch";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ProximityCheckNotif } from "./collision";
+import { getCurrentLocation } from "../util/locationreq";
 
 interface MapCompProps {
     selectedMapStyle: any;
@@ -41,37 +42,33 @@ export const MapComp = (props: MapCompProps) => {
     }, []);
 
     const dispatchLocation = async () => {
-        if (userName && region.latitude && region.longitude) {
+        const location: GeoLocation = await getCurrentLocation();
+        if (userName && location.latitude && location.longitude) {
             console.log('Dispatch Response:', await dispatch(userName, region.latitude, region.longitude));
         }
     };
 
-    const getCurrentLocation = async () => {
+    const getlocation = async () => {
         try {
-            let location = await Location.getCurrentPositionAsync({});
+            const location: GeoLocation = await getCurrentLocation(); // Use the defined type
             const newRegion = {
-                latitude: location.coords.latitude,
-                longitude: location.coords.longitude,
+                latitude: location.latitude,
+                longitude: location.longitude,
                 latitudeDelta: 0.01,
                 longitudeDelta: 0.01
             };
             setRegion(newRegion);
             await saveLocation(newRegion); // Cache the region
-        } catch (error) {
-            console.error('Error getting current location:', error);
+        } catch {
             Alert.alert(
                 "Location",
                 "Please enable your location to continue using the app",
                 [
-                    {
-                        text: "Cancel",
-                        style: "cancel"
-                    },
-                    {
-                        text: "Confirm",
-                    }
+                    { text: "Cancel", style: "cancel" },
+                    { text: "Confirm" }
                 ]
             );
+
         }
     };
 
@@ -101,7 +98,7 @@ export const MapComp = (props: MapCompProps) => {
 
         initializeLocation();
         loadCachedData();
-        getCurrentLocation();
+        getlocation();
         fetchLootAndMissiles();
         dispatchLocation();
 
