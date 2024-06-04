@@ -18,12 +18,12 @@
     "dotenv": "^16.4.5",
     "expo": "^51.0.9",
     "expo-background-fetch": "^12.0.1",
-    "expo-constants": "^16.0.2",
+    "expo-constants": "~16.0.2",
     "expo-dev-client": "~4.0.15",
     "expo-linking": "~6.3.1",
     "expo-location": "~17.0.1",
     "expo-module-scripts": "^3.5.2",
-    "expo-notifications": "^0.28.6",
+    "expo-notifications": "~0.28.6",
     "expo-router": "^3.5.15",
     "expo-secure-store": "^13.0.1",
     "expo-status-bar": "~1.12.1",
@@ -43,7 +43,8 @@
     "react-native-screens": "3.31.1",
     "react-native-svg": "15.2.0",
     "tailwind-merge": "^2.3.0",
-    "zod": "^3.23.4"
+    "zod": "^3.23.4",
+    "expo-device": "~6.0.2"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
