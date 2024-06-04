@@ -41,7 +41,6 @@
         "backgroundColor": "#ffffff"
       },
       "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION", "INTERNET", "RECEIVE_BOOT_COMPLETED"],
-      "useNextNotificationsApi": true,
       "package": "com.longtimenoc.misslewars",
       "config": {
         "googleMaps": {
