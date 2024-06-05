@@ -1,11 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, View, Button, Dimensions, ScrollView, Text, TouchableOpacity, Image } from 'react-native';
-import { LandminePlacementPopup } from './landmineplacement'; 
+import { LandminePlacementPopup } from './landmineplacement';
 
-const fetchLandmineLib = () => {
+interface LandmineType {
+  type: string;
+  quantity: number;
+  description: string;
+}
+
+interface LandmineLibraryViewProps {
+  LandmineModalVisible: boolean;
+  landminePlaceHandler: () => void;
+}
+
+interface Landmine {
+  type: string;
+}
+//backend needs to fetch users landmine library
+const fetchLandmineLib = (): Promise<LandmineType[]> => {
   return new Promise((resolve) => {
     setTimeout(() => {
-      const LandmineLibraryData = [
+      const LandmineLibraryData: LandmineType[] = [
         { type: 'Amplifier', quantity: 10, description: "Landmine" },
         { type: 'Ballista', quantity: 9, description: "Landmine" },
         { type: 'BigBertha', quantity: 8, description: "Landmine" },
@@ -16,16 +31,22 @@ const fetchLandmineLib = () => {
   });
 };
 
+interface LandmineImages {
+  [key: string]: any;
+}
+//landmine images for both map and library
+export const LandmineImages: LandmineImages = {
+  Amplifier: require('../../assets/missiles/Amplifier.png'),
+  Ballista: require('../../assets/missiles/Ballista.png'),
+  BigBertha: require('../../assets/missiles/BigBertha.png'),
+  // ... other landmine images
+};
 
-//landmine library goes here
-import { LandmineImages } from './landminelib';
-
-
-export const LandmineLibraryView = ({ LandmineModalVisible, landminePlaceHandler }) => {
-  const [landmineLibrary, setLandmineLibrary] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showplacmentPopup, setShowplacementPopup] = useState(false);
-  const [selectedLandmine, setSelectedLandmine] = useState(null);
+export const LandmineLibraryView: React.FC<LandmineLibraryViewProps> = ({ LandmineModalVisible, landminePlaceHandler }) => {
+  const [landmineLibrary, setLandmineLibrary] = useState<LandmineType[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [showplacmentPopup, setShowplacementPopup] = useState<boolean>(false);
+  const [selectedLandmine, setSelectedLandmine] = useState<Landmine | null>(null);
 
   useEffect(() => {
     fetchLandmineLib().then(data => {
@@ -36,8 +57,8 @@ export const LandmineLibraryView = ({ LandmineModalVisible, landminePlaceHandler
     });
   }, []);
 
-  const handleLandmineClick = (landmineType) => {
-    setSelectedLandmine(landmineType);
+  const handleLandmineClick = (landmineType: string) => {
+    setSelectedLandmine({ type: landmineType });
     setShowplacementPopup(true);
   };
 

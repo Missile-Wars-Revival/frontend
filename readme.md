@@ -32,9 +32,9 @@ To login in to an account use either:
 `Test` or `Test2`
 Password: is `Testing123!`
 
-## IP
+## Build 
+### For Preview:
+- `eas build --profile preview --platform all` or `eas build --profile preview --platform ios`
 
-Set your ip in 
-`/temp/fetchmethods`
-
-This is because localhost doesnt work for me...
+### For Development:
+- `eas build --profile development --platform all` or `eas build --profile development --platform ios`
