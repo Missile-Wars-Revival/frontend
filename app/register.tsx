@@ -122,7 +122,7 @@ function SignUpForm() {
       )}
       <TouchableHighlight
         onPress={handleSubmit(onSubmit)}
-        className="bg-[#773765] rounded-[20px] w-[375px] h-[45px] flex items-center justify-center absolute top-[120%]"
+        className="bg-[#773765] rounded-[20px] w-[355px] h-[45px] flex items-center justify-center absolute top-[120%]"
       >
         <View>
           <Text className="text-white font-bold">Sign Up!</Text>
@@ -130,7 +130,7 @@ function SignUpForm() {
       </TouchableHighlight>
       <TouchableHighlight
         onPress={() => router.navigate("/login")}
-        className="rounded-[20px] w-[375px] h-[45px] flex items-center justify-center border-2 mt-[5] absolute top-[350%]"
+        className="rounded-[20px] w-[355px] h-[45px] flex items-center justify-center border-2 mt-[5] absolute top-[350%]"
       >
         <View>
           <Text className=" font-bold">Return To Login</Text>

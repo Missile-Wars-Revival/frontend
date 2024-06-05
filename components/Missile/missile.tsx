@@ -18,7 +18,7 @@ import { MissilePlacementPopup } from './missileplacement';
 //   Yokozuna: 
 //   Zippy: 
 
-//Missile Library:
+//Missile Library needs to be fetched by backend:
 const fetchMissileLib = (): Promise<Missilelib[]> => {
   return new Promise((resolve) => {
     // Simulating asynchronous data fetching

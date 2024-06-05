@@ -4,8 +4,6 @@ import MapView, { Marker, Circle, PROVIDER_DEFAULT, PROVIDER_GOOGLE } from 'reac
 import * as Location from 'expo-location';
 import { useUserName } from "../../util/fetchusernameglobal";
 import { mapstyles } from '../../map-themes/map-stylesheet'; 
-//set marker image as Missile type
-import { MissileImages } from './missile';
 
 export const MissilePlacementPopup = ({ visible, onClose, selectedMissile }) => {
   const [region, setRegion] = useState(null);
