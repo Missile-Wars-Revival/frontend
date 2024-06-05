@@ -22,11 +22,12 @@
     "expo-dev-client": "~4.0.15",
     "expo-linking": "~6.3.1",
     "expo-location": "~17.0.1",
-    "expo-notifications": "^0.28.6",
+    "expo-notifications": "^0.28.7",
     "expo-router": "^3.5.15",
     "expo-secure-store": "^13.0.1",
     "expo-status-bar": "~1.12.1",
     "expo-task-manager": "^11.8.2",
+    "expo-updates": "^0.25.15",
     "isomorphic-ws": "^5.0.0",
     "lucide-react-native": "^0.375.0",
     "middle-earth": "github:Missile-Wars-Revival/middle-earth",
@@ -42,8 +43,7 @@
     "react-native-screens": "3.31.1",
     "react-native-svg": "15.2.0",
     "tailwind-merge": "^2.3.0",
-    "zod": "^3.23.4",
-    "expo-updates": "~0.25.15"
+    "zod": "^3.23.4"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
