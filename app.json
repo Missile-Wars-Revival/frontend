@@ -31,7 +31,10 @@
       }
     },
     "android": {
-      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_BACKGROUND_LOCATION"],
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/logo.gif",
         "backgroundColor": "#ffffff"
@@ -44,6 +47,12 @@
     "plugins": [
       "expo-router"
     ],
-    "owner": "osog"
+    "owner": "osog",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/250fd3fc-22b2-411d-abfc-63f3a6b81328"
+    }
   }
 }
