@@ -24,5 +24,8 @@ To login in to an account use either:
 Password: is `Testing123!`
 
 ## Build 
+### For Preview:
+- `eas build --profile preview --platform all` or `eas build --profile preview --platform ios`
 
-`eas build --profile preview --platform all` or `eas build --profile preview --platform ios`
+### For Development:
+- `eas build --profile development --platform all` or `eas build --profile development --platform ios`
