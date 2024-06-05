@@ -5,9 +5,6 @@ import * as Location from 'expo-location';
 import { useUserName } from "../../util/fetchusernameglobal";
 import { mapstyles } from '../../map-themes/map-stylesheet'; 
 
-//set marker image as landmine type
-import { LandmineImages } from './landmine';
-
 export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) => {
   const [region, setRegion] = useState(null);
   //import is locaiton enabled from map-comp!!!!
