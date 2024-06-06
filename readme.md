@@ -18,8 +18,23 @@ Make sure to run the backend server before running.
 npm start
 ```
 
+## Using Expo Go:
+Ensure it is using Expo go after `npm start`.
+Check:
+```
+Using development build
+› Press s │ switch to Expo Go
+```
+Just type `s` to resolve :)
+
 ## Login 
 To login in to an account use either: 
 `Test` or `Test2`
 Password: is `Testing123!`
 
+## Build 
+### For Preview:
+- `eas build --profile preview --platform all` or `eas build --profile preview --platform ios`
+
+### For Development:
+- `eas build --profile development --platform all` or `eas build --profile development --platform ios`

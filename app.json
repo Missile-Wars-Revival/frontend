@@ -1,33 +1,58 @@
 {
   "expo": {
-    "name": "missle-wars",
-    "slug": "missle-wars",
-    "scheme": "missle-wars",
-    "version": "1.0.0",
+    "name": "missile-wars",
+    "slug": "missilewars",
+    "scheme": "missile-wars",
+    "version": "0.0.1",
     "orientation": "portrait",
-    "icon": "./assets/logo.gif",
+    "icon": "./assets/logo.png",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/logo.png",
-      "resizeMode": "center",
       "backgroundColor": "#ffffff"
     },
     "extra": {
-      "dotenv": ".env"
+      "dotenv": ".env",
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "250fd3fc-22b2-411d-abfc-63f3a6b81328"
+      }
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.longtimenoc.misslewars",
+      "infoPlist": {
+        "NSLocationAlwaysUsageDescription": "This app needs access to your location to alert about nearby items of interest."
+      }
     },
     "android": {
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/logo.gif",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.longtimenoc.misslewars"
     },
     "web": {
       "favicon": "./assets/logo.png"
     },
-    "plugins": ["expo-router"]
+    "plugins": [
+      "expo-router"
+    ],
+    "owner": "osog",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/250fd3fc-22b2-411d-abfc-63f3a6b81328"
+    }
   }
 }

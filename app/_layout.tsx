@@ -6,6 +6,7 @@ import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import { View, Text, TouchableOpacity } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import SplashScreen from './splashscreen'; 
+import { FontAwesome } from '@expo/vector-icons';
 
 export default function RootLayout() {
   const queryClient = new QueryClient();
@@ -38,35 +39,51 @@ function NavBar() {
     }
   };
 
+  const getDisplayName = (route: any) => {
+    switch(route) {
+      case '/': return 'Map';
+      case '/store': return 'Store';
+      case '/friends': return 'Friends';
+      case '/profile': return 'Profile';
+      default: return '';
+    }
+  };
+
   return (
-    <View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-around', backgroundColor: 'white', height: 60 }}>
-      <TouchableOpacity 
-        onPress={() => handlePress('/')} 
-        disabled={selectedTab === '/'}
-      >
-        <Text style={{ paddingVertical: 20, color: selectedTab === '/' ? 'blue' : 'black' }}>Map</Text>
-      </TouchableOpacity>
-      <TouchableOpacity 
-        onPress={() => handlePress('/store')} 
-        disabled={selectedTab === '/store'}
-      >
-        <Text style={{ paddingVertical: 20, color: selectedTab === '/store' ? 'blue' : 'black' }}>Store</Text>
-      </TouchableOpacity>
-      <TouchableOpacity 
-        onPress={() => handlePress('/friends')} 
-        disabled={selectedTab === '/friends'}
-      >
-        <Text style={{ paddingVertical: 20, color: selectedTab === '/friends' ? 'blue' : 'black' }}>Friends</Text>
-      </TouchableOpacity>
-      <TouchableOpacity 
-        onPress={() => handlePress('/profile')} 
-        disabled={selectedTab === '/profile'}
-      >
-        <Text style={{ paddingVertical: 20, color: selectedTab === '/profile' ? 'blue' : 'black' }}>Profile</Text>
-      </TouchableOpacity>
+    <View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-around', backgroundColor: 'rgba(255, 255, 255, 0.0)', height: 90, alignItems: 'center' }}>
+      {['/', '/store', '/friends', '/profile'].map((tab, index) => (
+        <TouchableOpacity 
+          key={index}
+          onPress={() => handlePress(tab)} 
+          disabled={selectedTab === tab}
+          style={{ alignItems: 'center', justifyContent: 'center' }}
+        >
+          <View style={{
+            width: 50,
+            height: 50,
+            borderRadius: 25,
+            backgroundColor: 'rgba(0, 0, 0, 0.1)', // Adjust opacity here
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: 10  // Raises the icon slightly
+          }}>
+            <FontAwesome 
+              name={tab === '/' ? 'map' : 
+                    tab === '/store' ? 'shopping-basket' : 
+                    tab === '/friends' ? 'users' : 'user'}
+              color={selectedTab === tab ? 'blue' : 'black'} 
+              size={24} 
+            />
+          </View>
+          <Text style={{ color: 'grey', fontSize: 10, marginTop: -4}}>
+            {getDisplayName(tab)}
+          </Text>
+        </TouchableOpacity>
+      ))}
     </View>
   );
 }
+
 
 function RootLayoutNav() {
   const pathname = usePathname();

@@ -1,23 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, View, Button, Dimensions, ActivityIndicator, Text, Alert } from 'react-native';
-import MapView, { Marker, Circle } from 'react-native-maps';
+import { Modal, View, Button, Dimensions, ActivityIndicator, Alert, Platform } from 'react-native';
+import MapView, { Marker, Circle, PROVIDER_DEFAULT, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { loadLastKnownLocation } from '../../util/mapstore';
 import { useUserName } from "../../util/fetchusernameglobal";
-//set marker image as landmine type
-import { LandmineImages } from './landmine';
+import { mapstyles } from '../../map-themes/map-stylesheet'; 
 
 export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) => {
   const [region, setRegion] = useState(null);
+  const [isLocationEnabled, setIsLocationEnabled] = useState(true);
   const [marker, setMarker] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [currentLocation, setCurrentLocation] = useState(null);
   const userName = useUserName(); 
 
-  // Function to handle location permission and fetch current location
   async function initializeLocation() {
     let { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission Denied', 'Location permission is required.');
+      setIsLocationEnabled(false);
       setLoading(false);
       return;
     }
@@ -26,27 +26,18 @@ export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) =
     const initialRegion = {
       latitude: location.coords.latitude,
       longitude: location.coords.longitude,
-      latitudeDelta: 0.01, // Smaller value for increased zoom
-      longitudeDelta: 0.01 // Smaller value for increased zoom
+      latitudeDelta: 0.002,
+      longitudeDelta: 0.002
     };
     setRegion(initialRegion);
-    setMarker(initialRegion); // Set initial marker position to current location
+    setMarker(initialRegion);
+    setCurrentLocation(initialRegion); // Store the current location
     setLoading(false);
   }
 
-  // Load last known location from cache or request current location on modal open
   useEffect(() => {
     if (visible) {
-      (async () => {
-        const lastKnownLocation = await loadLastKnownLocation();
-        if (lastKnownLocation) {
-          setRegion(lastKnownLocation);
-          setMarker(lastKnownLocation);
-          setLoading(false);
-        } else {
-          initializeLocation();
-        }
-      })();
+      initializeLocation();
     }
   }, [visible]);
 
@@ -57,6 +48,16 @@ export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) =
       </View>
     );
   }
+
+  // Function to check if the marker is at the player's current location
+  const handleLandminePlacement = () => {
+    if (marker.latitude === currentLocation.latitude && marker.longitude === currentLocation.longitude) {
+      Alert.alert('Warning', 'Placing a landmine at your current location is not recommended!');
+    } else {
+      console.log(`FIRING LANDMINE: Coordinates: ${marker.latitude}, ${marker.longitude}; User: ${userName} Landmine Type: ${selectedLandmine}`);
+      onClose();
+    }
+  };
 
   return (
     <Modal
@@ -70,32 +71,31 @@ export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) =
           <MapView
             style={{ flex: 1 }}
             initialRegion={region}
+            provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
             showsUserLocation={true}
             showsMyLocationButton={true}
             onPress={(e) => setMarker({
               latitude: e.nativeEvent.coordinate.latitude,
               longitude: e.nativeEvent.coordinate.longitude,
-              latitudeDelta: 0.01, 
-              longitudeDelta: 0.01
+              latitudeDelta: 0.001, 
+              longitudeDelta: 0.001
             })}
           >
             <Circle
               center={marker}
-              radius={10} 
+              radius={10}
               fillColor="rgba(128, 128, 128, 0.3)"
-            strokeColor="rgba(128, 128, 128, 0.8)" />
+              strokeColor="rgba(128, 128, 128, 0.8)" />
             <Marker
               coordinate={marker}
               draggable
               onDragEnd={(e) => setMarker(e.nativeEvent.coordinate)}
             />
           </MapView>
+          {!isLocationEnabled && <View style={mapstyles.overlay} />}
           <View style={{ flexDirection: 'row', justifyContent: 'space-around', padding: 10 }}>
             <Button title="Cancel" onPress={onClose} />
-            <Button title="Fire" onPress={() => {
-                console.log(`FIRING LANDMINE: Coordinates: ${marker.latitude}, ${marker.longitude}; User: ${userName} Landmine Type: ${selectedLandmine}`);
-                onClose();
-            }} />
+            <Button title="Fire" onPress={handleLandminePlacement} />
           </View>
         </View>
       </View>
