@@ -54,7 +54,7 @@ export default function Login() {
       <Image
         source={require("../assets/icons/cometDivider.png")}
         resizeMode="stretch"
-        className="w-[410] h-[12%] mt-[240]"
+        className="w-[410] h-[12%] mt-[220]"
       />
       <SignUpButton />
     </SafeAreaView>

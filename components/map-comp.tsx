@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { View, StyleSheet, Text, Switch, Alert } from "react-native";
-import MapView from "react-native-maps";
+import { View, StyleSheet, Text, Switch, Alert, Platform } from "react-native";
+import MapView, { PROVIDER_DEFAULT, PROVIDER_GOOGLE } from "react-native-maps";
 import { AllLootDrops } from "./loot-drop";
 import { AllLandMines } from "./Landmine/map-landmines";
 import { AllMissiles } from "./Missile/map-missile";
@@ -22,6 +22,7 @@ interface MapCompProps {
 export const MapComp = (props: MapCompProps) => {
     const userName = useUserName();
     const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(false);
+    const [hasDbConnection, setDbConnection] = useState(false);
     const [visibilitymode, setMode] = useState<'friends' | 'global'>('friends');
 
     const [region, setRegion] = useState({
@@ -44,7 +45,9 @@ export const MapComp = (props: MapCompProps) => {
         const location: GeoLocation = await getCurrentLocation();
         if (userName && location.latitude && location.longitude) {
             console.log('Dispatch Response:', await dispatch(userName, region.latitude, region.longitude));
+            setDbConnection(true);
         }
+        setDbConnection(false);
     };
 
     const getlocation = async () => {
@@ -152,6 +155,7 @@ const friendsorglobal = (visibilitymode: 'friends' | 'global') => {
         <View style={styles.container}>
             <MapView
                 style={styles.map}
+                provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
                 region={region}
                 showsCompass={false}
                 showsTraffic={false}
@@ -163,9 +167,11 @@ const friendsorglobal = (visibilitymode: 'friends' | 'global') => {
                 <AllMissiles missileData={missileData} />
                 <AllPlayers />
             </MapView>
-            {!isLocationEnabled && (
-                <View 
-                style={styles.overlay} />
+            {!isLocationEnabled && !hasDbConnection && (
+                <View style={styles.overlay}>
+                    <Text style={styles.overlayText}>Map is disabled due to location/database issues.</Text>
+                    <Text style={styles.overlaySubText}>Please check your settings or try again later.</Text>
+                </View>
             )}
             <View style={styles.switchContainer}>
                 <Switch
@@ -199,6 +205,17 @@ const styles = StyleSheet.create({
         opacity: 0.6,
         justifyContent: 'center', 
         alignItems: 'center', 
+    },
+    overlayText: {
+        fontSize: 16,
+        color: 'black',
+        fontWeight: 'bold', 
+        marginBottom: 10, 
+    },
+    overlaySubText: {
+        fontSize: 14,
+        fontWeight: 'bold', 
+        color: 'grey',
     },
     switchContainer: {
         position: 'absolute',

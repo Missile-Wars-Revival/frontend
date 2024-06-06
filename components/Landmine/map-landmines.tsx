@@ -3,7 +3,7 @@ import React from "react";
 import { useUserName } from "../../util/fetchusernameglobal";
 import { GeoLocation, Landmine } from "middle-earth";
 import { View, Image } from "react-native";
-import { LandmineImages } from "./landminelib"; 
+import { LandmineImages } from "./landmine"; 
 import { convertimestampfuture } from "../../util/get-time-difference";
 
 interface AllLandmineProps {

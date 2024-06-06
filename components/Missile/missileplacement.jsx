@@ -1,12 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, View, Button, Dimensions, ActivityIndicator, Text, Alert } from 'react-native';
-import MapView, { Marker, Circle } from 'react-native-maps';
+import { Modal, View, Button, Dimensions, ActivityIndicator, Alert, Platform } from 'react-native';
+import MapView, { Marker, Circle, PROVIDER_DEFAULT, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { loadLastKnownLocation } from '../../util/mapstore';
 import { useUserName } from "../../util/fetchusernameglobal";
 import { mapstyles } from '../../map-themes/map-stylesheet'; 
-//set marker image as Missile type
-import { MissileImages } from './missile';
 
 export const MissilePlacementPopup = ({ visible, onClose, selectedMissile }) => {
   const [region, setRegion] = useState(null);
@@ -67,6 +64,7 @@ export const MissilePlacementPopup = ({ visible, onClose, selectedMissile }) => 
             style={{ flex: 1 }}
             initialRegion={region}
             showsUserLocation={true}
+            provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
             showsMyLocationButton={true}
             onPress={(e) => setMarker({
               latitude: e.nativeEvent.coordinate.latitude,
