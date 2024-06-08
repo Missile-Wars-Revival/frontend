@@ -36,7 +36,7 @@ export const useToken = () => {
             const credentials = await getCredentials();
             if (credentials) {
                 setToken(credentials.token);
-                console.log('logged in with user:', credentials.token, ':fetched from cache');
+                console.log('logged in with user token:', credentials.token, ':fetched from cache');
             } else {
                 console.log('Credentials not found, please log in');
                 // Optionally redirect to login page
