@@ -44,8 +44,9 @@ export const MapComp = (props: MapCompProps) => {
 
     const dispatchLocation = async () => {
         const location: GeoLocation = await getCurrentLocation();
-        if (userName && location.latitude && location.longitude) {
+        if (token && userName && location.latitude && location.longitude) {
             await dispatch(token, userName, region.latitude, region.longitude);
+            //console.log("dipatching", location, userName, token)
             setDbConnection(true);
         }
         setDbConnection(false);
