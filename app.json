@@ -36,7 +36,7 @@
         "ACCESS_BACKGROUND_LOCATION"
       ],
       "adaptiveIcon": {
-        "foregroundImage": "./assets/logo.gif",
+        "foregroundImage": "./assets/logo.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.longtimenoc.misslewars"
@@ -45,12 +45,23 @@
       "favicon": "./assets/logo.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "@rnmapbox/maps",
+        {
+          "RNMapboxMapsDownloadToken": "sk.eyJ1Ijoic2xpbWV5Y2FiYmFnZTEyIiwiYSI6ImNseDZkNnV4OTA2eHkybHNnbmRlZGdnNzYifQ.yHHCgv23d6fMA3dg10d-xA",
+          "RNMapboxMapsVersion": "11.0.0"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Show current location on map."
+        }
+      ]
     ],
     "owner": "osog",
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
+    "runtimeVersion": "exposdk:51.0.11",
     "updates": {
       "url": "https://u.expo.dev/250fd3fc-22b2-411d-abfc-63f3a6b81328"
     }
