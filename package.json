@@ -29,7 +29,7 @@
     "expo-status-bar": "~1.12.1",
     "expo-system-ui": "^3.0.6",
     "expo-task-manager": "^11.8.2",
-    "expo-updates": "^0.25.15",
+    "expo-updates": "^0.25.16",
     "isomorphic-ws": "^5.0.0",
     "lucide-react-native": "^0.375.0",
     "middle-earth": "github:Missile-Wars-Revival/middle-earth",

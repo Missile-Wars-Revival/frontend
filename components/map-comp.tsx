@@ -14,6 +14,10 @@ import { dispatch } from "../api/dispatch";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ProximityCheckNotif } from "./collision";
 import { getCurrentLocation } from "../util/locationreq";
+import Mapbox, { LocationPuck, UserTrackingMode } from '@rnmapbox/maps';
+import { Position } from "@rnmapbox/maps/lib/typescript/src/types/Position";
+
+Mapbox.setAccessToken('pk.eyJ1Ijoic2xpbWV5Y2FiYmFnZTEyIiwiYSI6ImNsd2VxZzZzcDFxYnQyamxkbzJ6MXhicjEifQ.OcY_Ld0KW6yfwZcfnzOWvA');
 
 interface MapCompProps {
     selectedMapStyle: any;
@@ -151,22 +155,34 @@ const friendsorglobal = (visibilitymode: 'friends' | 'global') => {
     console.log("Mode changed to:", visibilitymode);
 };
 
-    return (
-        <View style={styles.container}>
-            <MapView
-                style={styles.map}
-                provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
-                region={region}
-                showsCompass={false}
-                showsTraffic={false}
-                showsUserLocation={true}
-                showsMyLocationButton={true}
-                customMapStyle={props.selectedMapStyle}>
-                <AllLootDrops lootLocations={lootLocations} />
-                <AllLandMines landminedata={landmineData} />
-                <AllMissiles missileData={missileData} />
-                <AllPlayers />
-            </MapView>
+return (
+    <View style={styles.container}>
+        <Mapbox.MapView
+            style={styles.map}
+            styleURL={props.selectedMapStyle}>
+            <Mapbox.Camera
+                zoomLevel={16}
+                centerCoordinate={[region.longitude, region.latitude]}
+                animationMode={"flyTo"}
+                animationDuration={5000}
+                pitch={45}
+                followUserMode={UserTrackingMode.Follow}
+            />
+            <LocationPuck
+                topImage="topImage"
+                visible={true}
+                scale={['interpolate', ['linear'], ['zoom'], 10, 0.25, 20, 1.0]}
+                pulsing={{
+                    isEnabled: true,
+                    color: 'teal',
+                    radius: 20.0,
+                }}
+            />
+            <AllLootDrops lootLocations={lootLocations} />
+            <AllLandMines landminedata={landmineData} />
+            <AllMissiles missileData={missileData} />
+            <AllPlayers />
+        </Mapbox.MapView>
             {!isLocationEnabled && !hasDbConnection && (
                 <View style={styles.overlay}>
                     <Text style={styles.overlayText}>Map is disabled due to location/database issues.</Text>

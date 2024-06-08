@@ -74,3 +74,41 @@ export const MapMissile = (missileProps: MissileProps) => {
         </View>
     )
 }
+
+// export const MapMissile = (missileProps: MissileProps) => {
+//     const resizedmissileimage = missileImages[missileProps.type];
+//     const resizedmissileicon = { width: 50, height: 50 }; // Custom size for image
+
+//     return (
+//         <View>
+//             {/* Render Circle at destination coords */}
+//             <Mapbox.CircleLayer
+//                 id={`missile-destination-${missileProps.type}`}
+//                 style={{
+//                     circleRadius: missileProps.radius,
+//                     circleColor: 'rgba(255, 0, 0, 0.2)',
+//                     circleStrokeWidth: 2,
+//                     circleStrokeColor: 'rgba(255, 0, 0, 0.8)'
+//                 }}
+//                 belowLayerID={`marker-${missileProps.type}`}
+//             />
+//             {/* Render Marker at current coords */}
+//             <Mapbox.PointAnnotation
+//                 id={`missile-marker-${missileProps.type}`}
+//                 coordinate={[missileProps.currentLocation.longitude, missileProps.currentLocation.latitude]}
+//                 title={`Missile: ${missileProps.type}`}
+//                 snippet={missileProps.status}
+//             >
+//                 <Image source={resizedmissileimage} style={resizedmissileicon} />
+//             </Mapbox.PointAnnotation>
+//             {/* Render trajectory line */}
+//             <Mapbox.LineLayer
+//                 id={`missile-trajectory-${missileProps.type}`}
+//                 style={{
+//                     lineColor: 'red',
+//                     lineWidth: 3
+//                 }}
+//             />
+//         </View>
+//     );
+// }
