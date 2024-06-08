@@ -3,6 +3,7 @@ import axiosInstance from "./axios-instance";
 
 export async function dispatch(
   token: string,
+  username: string,
   latitude: number,
   longitude: number
 ) {
@@ -10,6 +11,7 @@ export async function dispatch(
     // Send location data without password
     const response = await axiosInstance.post("/api/dispatch", {
       token,
+      username,
       latitude: latitude.toString(),
       longitude: longitude.toString(),
     });

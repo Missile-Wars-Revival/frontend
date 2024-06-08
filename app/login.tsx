@@ -73,7 +73,7 @@ function LoginButton({
 }) {
   const mutation = useLogin(
     async (token) => {
-      await saveCredentials(username, password);
+      await saveCredentials(username, token);
       console.log("Logged in with token", token);
       router.push('/');
     },

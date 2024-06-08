@@ -9,7 +9,7 @@ import { GeoLocation, Landmine, Loot, Missile } from "middle-earth";
 import { fetchLootFromBackend, fetchMissilesFromBackend, fetchlandmineFromBackend } from "../temp/fetchMethods";
 import { loadLastKnownLocation, saveLocation } from '../util/mapstore';
 import { getLocationPermission } from "../hooks/userlocation";
-import { useUserName } from "../util/fetchusernameglobal";
+import { useToken, useUserName } from "../util/fetchusernameglobal";
 import { dispatch } from "../api/dispatch";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ProximityCheckNotif } from "./collision";
@@ -21,6 +21,7 @@ interface MapCompProps {
 
 export const MapComp = (props: MapCompProps) => {
     const userName = useUserName();
+    const token = useToken();
     const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(false);
     const [hasDbConnection, setDbConnection] = useState(false);
     const [visibilitymode, setMode] = useState<'friends' | 'global'>('friends');
@@ -44,7 +45,7 @@ export const MapComp = (props: MapCompProps) => {
     const dispatchLocation = async () => {
         const location: GeoLocation = await getCurrentLocation();
         if (userName && location.latitude && location.longitude) {
-            console.log('Dispatch Response:', await dispatch(userName, region.latitude, region.longitude));
+            console.log('Dispatch Response:', await dispatch(token, userName, region.latitude, region.longitude));
             setDbConnection(true);
         }
         setDbConnection(false);
