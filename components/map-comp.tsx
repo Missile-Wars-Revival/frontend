@@ -9,7 +9,7 @@ import { GeoLocation, Landmine, Loot, Missile } from "middle-earth";
 import { fetchLootFromBackend, fetchMissilesFromBackend, fetchlandmineFromBackend } from "../temp/fetchMethods";
 import { loadLastKnownLocation, saveLocation } from '../util/mapstore';
 import { getLocationPermission } from "../hooks/userlocation";
-import { useUserName } from "../util/fetchusernameglobal";
+import { useToken, useUserName } from "../util/fetchusernameglobal";
 import { dispatch } from "../api/dispatch";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ProximityCheckNotif } from "./collision";
@@ -21,6 +21,7 @@ interface MapCompProps {
 
 export const MapComp = (props: MapCompProps) => {
     const userName = useUserName();
+    const token = useToken();
     const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(false);
     const [hasDbConnection, setDbConnection] = useState(false);
     const [visibilitymode, setMode] = useState<'friends' | 'global'>('friends');
@@ -44,7 +45,7 @@ export const MapComp = (props: MapCompProps) => {
     const dispatchLocation = async () => {
         const location: GeoLocation = await getCurrentLocation();
         if (userName && location.latitude && location.longitude) {
-            console.log('Dispatch Response:', await dispatch(userName, region.latitude, region.longitude));
+            await dispatch(token, userName, region.latitude, region.longitude);
             setDbConnection(true);
         }
         setDbConnection(false);
@@ -92,11 +93,11 @@ export const MapComp = (props: MapCompProps) => {
 
         const initializeLocation = async () => {
             try {
-              const status = await getLocationPermission();
-              setIsLocationEnabled(status === 'granted');
+                const status = await getLocationPermission();
+                setIsLocationEnabled(status === 'granted');
             } catch {
             }
-          };
+        };
 
         initializeLocation();
         loadCachedData();
@@ -111,45 +112,45 @@ export const MapComp = (props: MapCompProps) => {
         }, 1000);
 
         return () => clearInterval(intervalId);
-    }, [fetchLootAndMissiles]); 
+    }, [fetchLootAndMissiles]);
 
-const toggleMode = async () => {
-    const newMode = visibilitymode === 'friends' ? 'global' : 'friends';
-    setMode(newMode);
-    friendsorglobal(newMode);
-    if (newMode === 'global') {
-        Alert.alert(
-            "Change to Global Mode",
-            "You are about to change your visibility to global. Everyone will be able to see your location.",
-            [
-                {
-                    text: "Cancel",
-                    onPress: () => {
-                        console.log("Change cancelled");
-                        setMode('friends');  
+    const toggleMode = async () => {
+        const newMode = visibilitymode === 'friends' ? 'global' : 'friends';
+        setMode(newMode);
+        friendsorglobal(newMode);
+        if (newMode === 'global') {
+            Alert.alert(
+                "Change to Global Mode",
+                "You are about to change your visibility to global. Everyone will be able to see your location.",
+                [
+                    {
+                        text: "Cancel",
+                        onPress: () => {
+                            console.log("Change cancelled");
+                            setMode('friends');
+                        },
+                        style: "cancel"
                     },
-                    style: "cancel"
-                },
-                {
-                    text: "Confirm",
-                    onPress: async () => {
-                        await AsyncStorage.setItem('visibilitymode', newMode); // Save the new mode only if confirmed
-                        console.log("Mode changed to:", newMode);
+                    {
+                        text: "Confirm",
+                        onPress: async () => {
+                            await AsyncStorage.setItem('visibilitymode', newMode); // Save the new mode only if confirmed
+                            console.log("Mode changed to:", newMode);
+                        }
                     }
-                }
-            ]
-        );
-    } else {
-        await AsyncStorage.setItem('visibilitymode', newMode); // Save the new mode directly if not switching to global (e.g. switching from global -> friends)
-    }
+                ]
+            );
+        } else {
+            await AsyncStorage.setItem('visibilitymode', newMode); // Save the new mode directly if not switching to global (e.g. switching from global -> friends)
+        }
 
-    console.log("Mode changed to:", newMode);
-};
+        console.log("Mode changed to:", newMode);
+    };
 
-const friendsorglobal = (visibilitymode: 'friends' | 'global') => {
-    // Do something based on the mode, e.g., fetch different data (friend/global)
-    console.log("Mode changed to:", visibilitymode);
-};
+    const friendsorglobal = (visibilitymode: 'friends' | 'global') => {
+        // Do something based on the mode, e.g., fetch different data (friend/global)
+        console.log("Mode changed to:", visibilitymode);
+    };
 
     return (
         <View style={styles.container}>
@@ -203,18 +204,18 @@ const styles = StyleSheet.create({
         bottom: 0,
         backgroundColor: 'white',
         opacity: 0.6,
-        justifyContent: 'center', 
-        alignItems: 'center', 
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     overlayText: {
         fontSize: 16,
         color: 'black',
-        fontWeight: 'bold', 
-        marginBottom: 10, 
+        fontWeight: 'bold',
+        marginBottom: 10,
     },
     overlaySubText: {
         fontSize: 14,
-        fontWeight: 'bold', 
+        fontWeight: 'bold',
         color: 'grey',
     },
     switchContainer: {
