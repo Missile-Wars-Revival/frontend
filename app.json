@@ -49,10 +49,10 @@
       [
         "@rnmapbox/maps",
         {
-          "RNMapboxMapsDownloadToken": "sk.eyJ1Ijoic2xpbWV5Y2FiYmFnZTEyIiwiYSI6ImNseDZkNnV4OTA2eHkybHNnbmRlZGdnNzYifQ.yHHCgv23d6fMA3dg10d-xA",
-          "RNMapboxMapsVersion": "11.0.0"
+            "RNMapboxMapsVersion": "= 11.0.0",
+            "RNMapboxMapsDownloadToken": "sk.eyJ1Ijoic2xpbWV5Y2FiYmFnZTEyIiwiYSI6ImNseDdsY2gwbzB3ZmYya3M1a2s5ZDFnNWMifQ.JbwCsr8RyFZK9HYRBLFwkg"
         }
-      ],
+    ],
       [
         "expo-location",
         {

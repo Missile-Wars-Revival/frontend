@@ -15,7 +15,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ProximityCheckNotif } from "./collision";
 import { getCurrentLocation } from "../util/locationreq";
 import Mapbox, { LocationPuck, UserTrackingMode } from '@rnmapbox/maps';
-import { Position } from "@rnmapbox/maps/lib/typescript/src/types/Position";
 
 Mapbox.setAccessToken('pk.eyJ1Ijoic2xpbWV5Y2FiYmFnZTEyIiwiYSI6ImNsd2VxZzZzcDFxYnQyamxkbzJ6MXhicjEifQ.OcY_Ld0KW6yfwZcfnzOWvA');
 
