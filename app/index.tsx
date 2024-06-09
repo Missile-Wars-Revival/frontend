@@ -1,19 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { View,  Platform } from "react-native";
 
-//Android Themes
-import { androidDefaultMapStyle } from "../map-themes/Android-themes/defaultMapStyle";
-import { androidRadarMapStyle } from "../map-themes/Android-themes/radarMapStyle";
-import { androidCherryBlossomMapStyle } from "../map-themes/Android-themes/cherryBlossomMapStyle";
-import { androidCyberpunkMapStyle } from "../map-themes/Android-themes/cyberpunkstyle";
-import { androidColorblindMapStyle } from "../map-themes/Android-themes/colourblindstyle";
-//Ignore errors here for now 
-import { IOSDefaultMapStyle } from "../map-themes/IOS-themes/themestemp";
-import { IOSRadarMapStyle } from "../map-themes/IOS-themes/themestemp";
-import { IOSCherryBlossomMapStyle } from "../map-themes/IOS-themes/themestemp";
-import { IOSCyberpunkMapStyle } from "../map-themes/IOS-themes/themestemp";
-import { IOSColorblindMapStyle } from "../map-themes/IOS-themes/themestemp";
-
 // Components
 import { MapStylePopup } from "../components/map-style-popup";
 import { getStoredMapStyle, storeMapStyle } from "../util/mapstore";
@@ -23,6 +10,7 @@ import { MapComp } from "../components/map-comp";
 import { MapStyle } from "../types/types";
 import { getCredentials } from "../util/logincache";
 import { router } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function Map() {
   const [userNAME, setUsername] = useState("");
@@ -44,8 +32,35 @@ export default function Map() {
   
     fetchCredentials();
   }, []);
+
+  useEffect(() => {
+    const fetchStoredMapStyle = async () => {
+      try {
+        const storedMapStyle = await AsyncStorage.getItem("selectedMapStyle");
+        if (storedMapStyle && mapStyles.hasOwnProperty(storedMapStyle)) {
+          setSelectedMapStyle(mapStyles[storedMapStyle as keyof typeof mapStyles]);
+        } else {
+          setSelectedMapStyle(mapStyles.default);
+        }
+      } catch (error) {
+        console.error("Error fetching stored map style: ", error);
+        // Fallback to default map style
+        setSelectedMapStyle(mapStyles.default);
+      }
+    };
+
+    fetchStoredMapStyle();
+  }, []);
+
+  const mapStyles = {
+    default: 'mapbox://styles/slimeycabbage12/clweqgnnw007001qx32sd4q6b',
+    radar: 'mapbox://styles/slimeycabbage12/clx3lb0pv008i01qs0jume86l',
+    cherry: 'mapbox://styles/yourusername/ios-cherryblossom',
+    cyber: 'mapbox://styles/yourusername/ios-cyberpunk',
+    colourblind: 'mapbox://styles/yourusername/ios-colourblind',
+  };
   
-  const [selectedMapStyle, setSelectedMapStyle] = useState<MapStyle[]>(Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle);
+  const [selectedMapStyle, setSelectedMapStyle] = useState<string>(mapStyles.default);
   const [themePopupVisible, setThemePopupVisible] = useState(false);
 
   const showPopup = () => {
@@ -63,22 +78,22 @@ export default function Map() {
     let selectedStyle;
     switch (style) {
       case "default":
-        selectedStyle = Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle;
+        selectedStyle = mapStyles.default;
         break;
       case "radar":
-        selectedStyle = Platform.OS === 'android' ? androidRadarMapStyle : IOSRadarMapStyle;
+        selectedStyle = mapStyles.radar;
         break;
       case "cherry":
-        selectedStyle = Platform.OS === 'android' ? androidCherryBlossomMapStyle : IOSCherryBlossomMapStyle;
+        selectedStyle = mapStyles.cherry;
         break;
       case "cyber":
-        selectedStyle = Platform.OS === 'android' ? androidCyberpunkMapStyle : IOSCyberpunkMapStyle;
+        selectedStyle = mapStyles.cyber;
         break;
       case "colourblind":
-        selectedStyle = Platform.OS === 'android' ? androidColorblindMapStyle : IOSColorblindMapStyle;
+        selectedStyle = mapStyles.colourblind;
         break;
       default:
-        selectedStyle = Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle;
+        selectedStyle = mapStyles.default;
     }
     setSelectedMapStyle(selectedStyle);
     storeMapStyle(style);
@@ -90,10 +105,10 @@ export default function Map() {
 
        
         {/* To hide the theme button on iOS, uncomment the next line  */}
-        {Platform.OS === 'android' && (
+        {/* {Platform.OS === 'android' && ( */}
      
       <ThemeSelectButton onPress={showPopup}>Theme</ThemeSelectButton>
-       )}
+       {/* )} */}
        {/* and this bracket above */}
 
       <MapStylePopup

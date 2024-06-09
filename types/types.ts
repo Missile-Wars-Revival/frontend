@@ -16,6 +16,5 @@ export interface Friend {
 }
 
 export type MapStyle = {
-  elementType?: string; //element is optional
-  stylers: Array<{ color?: string; visibility?: string }>;
+  elementType: string; //element is optional
 };

@@ -6,7 +6,7 @@ import { MapStyleElement } from "react-native-maps";
 import { LandmineLibraryView } from "./Landmine/landmine";
 
 interface FireSelectorProps {
-    selectedMapStyle: MapStyleElement[];
+    selectedMapStyle: string;
     getStoredMapStyle: () => Promise<string | null>;
     selectMapStyle: (style: string) => void;
 }
