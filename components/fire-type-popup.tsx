@@ -9,7 +9,6 @@ interface FireTypeProps {
 export const FireType = (props: FireTypeProps) => {
   const [FirepopupVisible, setFirePopupVisible] = useState(false);
   const FireshowPopup = () => {
-    //console.log("Popup button clicked");
     setFirePopupVisible(true);
   };
   
@@ -22,14 +21,10 @@ export const FireType = (props: FireTypeProps) => {
     FireclosePopup();
     switch (style) {
       case "firelandmine":
-        //sconsole.log("place landmine")
-        //place landminecode;
         props.landmineFireHandler();
         break;
       case "firemissile":
-        console.log("Fire Missile")
         props.missileFireHandler();
-        //Fire missile code;
         break;
       default:
         break;
