@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { View, StyleSheet, Text, Switch, Alert, Platform } from "react-native";
-import MapView, { PROVIDER_DEFAULT, PROVIDER_GOOGLE } from "react-native-maps";
+import { View, StyleSheet, Text, Switch, Alert } from "react-native";
 import { AllLootDrops } from "./loot-drop";
 import { AllLandMines } from "./Landmine/map-landmines";
 import { AllMissiles } from "./Missile/map-missile";
@@ -15,6 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ProximityCheckNotif } from "./collision";
 import { getCurrentLocation } from "../util/locationreq";
 import Mapbox, { LocationPuck, UserTrackingMode } from '@rnmapbox/maps';
+import { mainmapstyles } from "../map-themes/map-stylesheet";
 
 Mapbox.setAccessToken('pk.eyJ1Ijoic2xpbWV5Y2FiYmFnZTEyIiwiYSI6ImNsd2VxZzZzcDFxYnQyamxkbzJ6MXhicjEifQ.OcY_Ld0KW6yfwZcfnzOWvA');
 
@@ -156,15 +156,15 @@ export const MapComp = (props: MapCompProps) => {
     };
 
 return (
-    <View style={styles.container}>
+    <View style={mainmapstyles.container}>
         <Mapbox.MapView
-            style={styles.map}
+            style={mainmapstyles.map}
             styleURL={props.selectedMapStyle}>
             <Mapbox.Camera
                 zoomLevel={16}
                 centerCoordinate={[region.longitude, region.latitude]}
                 animationMode={"flyTo"}
-                animationDuration={5000}
+                animationDuration={2000}
                 pitch={45}
                 followUserMode={UserTrackingMode.Follow}
             />
@@ -184,12 +184,12 @@ return (
             <AllPlayers />
         </Mapbox.MapView>
             {!isLocationEnabled && !hasDbConnection && (
-                <View style={styles.overlay}>
-                    <Text style={styles.overlayText}>Map is disabled due to location/database issues.</Text>
-                    <Text style={styles.overlaySubText}>Please check your settings or try again later.</Text>
+                <View style={mainmapstyles.overlay}>
+                    <Text style={mainmapstyles.overlayText}>Map is disabled due to location/database issues.</Text>
+                    <Text style={mainmapstyles.overlaySubText}>Please check your settings or try again later.</Text>
                 </View>
             )}
-            <View style={styles.switchContainer}>
+            <View style={mainmapstyles.switchContainer}>
                 <Switch
                     trackColor={{ false: "#767577", true: "#81b0ff" }}
                     thumbColor={visibilitymode === 'global' ? "#f4f3f4" : "#f4f3f4"}
@@ -197,51 +197,9 @@ return (
                     onValueChange={toggleMode}
                     value={visibilitymode === 'global'}
                 />
-                <Text style={styles.switchText}>{visibilitymode === 'global' ? 'Global' : 'Friends'}</Text>
+                <Text style={mainmapstyles.switchText}>{visibilitymode === 'global' ? 'Global' : 'Friends'}</Text>
             </View>
             <ProximityCheckNotif />
         </View>
     );
 };
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    map: {
-        flex: 1,
-    },
-    overlay: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'white',
-        opacity: 0.6,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    overlayText: {
-        fontSize: 16,
-        color: 'black',
-        fontWeight: 'bold',
-        marginBottom: 10,
-    },
-    overlaySubText: {
-        fontSize: 14,
-        fontWeight: 'bold',
-        color: 'grey',
-    },
-    switchContainer: {
-        position: 'absolute',
-        top: 50,
-        left: 330,
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    switchText: {
-        marginLeft: -110,
-        color: 'white',
-    },
-});

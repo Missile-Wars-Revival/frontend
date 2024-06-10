@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View,  Platform } from "react-native";
+import { View } from "react-native";
 
 // Components
 import { MapStylePopup } from "../components/map-style-popup";
@@ -7,7 +7,6 @@ import { getStoredMapStyle, storeMapStyle } from "../util/mapstore";
 import { ThemeSelectButton } from "../components/theme-select-button";
 import { FireSelector } from "../components/fire-selector";
 import { MapComp } from "../components/map-comp";
-import { MapStyle } from "../types/types";
 import { getCredentials } from "../util/logincache";
 import { router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
