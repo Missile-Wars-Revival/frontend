@@ -18,6 +18,7 @@ export async function dispatch(
     return response.data;
   } catch (error) {
     if (isAxiosError(error)) {
+      console.log("sending data failed")
       return (
         error.response?.data || { success: false, message: "Request failed" }
       );

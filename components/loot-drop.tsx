@@ -24,13 +24,11 @@ export const AllLootDrops = (props: AllLootDropsProps) => {
     )
 }
 
-
 interface LootProps {
     location: GeoLocation;
     rarity: string;
     expiretime: string;
   }
-
 
 export const LootDrop = (props: LootProps) => {
     const { text } = convertimestampfuture(props.expiretime);

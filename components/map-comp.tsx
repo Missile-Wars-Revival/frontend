@@ -46,12 +46,12 @@ export const MapComp = (props: MapCompProps) => {
     }, []);
 
     const dispatchLocation = async () => {
+        setDbConnection(true)
         const location: GeoLocation = await getCurrentLocation();
         if (userName && location.latitude && location.longitude) {
             await dispatch(token, userName, region.latitude, region.longitude);
-            setDbConnection(true);
+            setDbConnection(true)
         }
-        setDbConnection(false);
     };
 
     const getlocation = async () => {
@@ -183,7 +183,7 @@ return (
             <AllMissiles missileData={missileData} />
             <AllPlayers />
         </Mapbox.MapView>
-            {!isLocationEnabled && !hasDbConnection && (
+        {(!isLocationEnabled || !hasDbConnection) && (
                 <View style={mainmapstyles.overlay}>
                     <Text style={mainmapstyles.overlayText}>Map is disabled due to location/database issues.</Text>
                     <Text style={mainmapstyles.overlaySubText}>Please check your settings or try again later.</Text>
