@@ -14,13 +14,13 @@ export const AllPlayers = () => {
 
   //When implementing websockets this is what needs to be changed
   const fetchOtherPlayers = async () => {
-    try {
-      const data = await fetchOtherPlayersData();
-      setOtherPlayersData(data);
-      //console.log("Data fetching...", data);
-    } catch (error) {
-      console.error('Error fetching other players data:', error);
-    }
+    // try {
+    //   const data = await fetchOtherPlayersData();
+    //   setOtherPlayersData(data);
+    //   //console.log("Data fetching...", data);
+    // } catch (error) {
+    //   console.error('Error fetching other players data:', error);
+    // }
   };
 
   useEffect(() => {
