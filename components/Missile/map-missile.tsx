@@ -8,6 +8,15 @@ interface AllMissilesProps {
     missileData: Missile[];
 }
 
+interface MissileProps {
+    destination: GeoLocation;
+    currentLocation: GeoLocation;
+    trajectoryCoordinates: GeoLocation[];
+    radius: number;
+    type: string;
+    status: string;
+}
+
 export const AllMissiles = (props: AllMissilesProps) => {
     return (
         <>
@@ -36,14 +45,7 @@ export const AllMissiles = (props: AllMissilesProps) => {
     );
 }
 
-interface MissileProps {
-    destination: GeoLocation;
-    currentLocation: GeoLocation;
-    trajectoryCoordinates: GeoLocation[];
-    radius: number;
-    type: string;
-    status: string;
-}
+
 export const MapMissile = (missileProps: MissileProps) => {
 
     const resizedmissileimage = missileImages[missileProps.type];
