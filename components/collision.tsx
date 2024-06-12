@@ -6,6 +6,9 @@ import * as TaskManager from 'expo-task-manager';
 import * as BackgroundFetch from 'expo-background-fetch';
 import { getCurrentLocation } from "../util/locationreq";
 
+// This page needs revamp under branch notificationwork
+
+
 interface LastNotified {
     loot: string | null;
     missile: string | null;
