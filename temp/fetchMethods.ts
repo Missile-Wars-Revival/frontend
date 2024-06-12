@@ -4,6 +4,7 @@ import { useCallback } from "react";
 
 export const fetchMissilesFromBackend = async (): Promise<Missile[]> => {
     // Simulated fetch function to get missile data:
+    //return new Missile(destination, currentlocation, radius type, status, sentbyusername, missileId, timesent, etatimetoimpact);
     return [
       {
         destination: { latitude: 45.2949318, longitude: -0.852764, itemType: "Missile" },
