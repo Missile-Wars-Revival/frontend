@@ -6,6 +6,7 @@ import { useUserName } from "../../util/fetchusernameglobal";
 import { mapstyles } from '../../map-themes/map-stylesheet'; 
 
 export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) => {
+
   const [region, setRegion] = useState(null);
   const [isLocationEnabled, setIsLocationEnabled] = useState(true);
   const [marker, setMarker] = useState(null);
@@ -54,7 +55,7 @@ export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) =
     if (marker.latitude === currentLocation.latitude && marker.longitude === currentLocation.longitude) {
       Alert.alert('Warning', 'Placing a landmine at your current location is not recommended!');
     } else {
-      console.log(`FIRING LANDMINE: Coordinates: ${marker.latitude}, ${marker.longitude}; User: ${userName} Landmine Type: ${selectedLandmine}`);
+      console.log(`FIRING LANDMINE: Coordinates: ${marker.latitude}, ${marker.longitude}; User: ${userName} Landmine Type: ${selectedLandmine.type}`);
       onClose();
     }
   };
