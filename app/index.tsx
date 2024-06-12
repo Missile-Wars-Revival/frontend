@@ -54,7 +54,7 @@ export default function Map() {
   const mapStyles = {
     default: 'mapbox://styles/slimeycabbage12/clweqgnnw007001qx32sd4q6b',
     radar: 'mapbox://styles/slimeycabbage12/clx3lb0pv008i01qs0jume86l',
-    cherry: 'mapbox://styles/yourusername/ios-cherryblossom',
+    cherry: 'mapbox://styles/slimeycabbage12/clxbncaz0029y01pn15076wdv',
     cyber: 'mapbox://styles/yourusername/ios-cyberpunk',
     colourblind: 'mapbox://styles/yourusername/ios-colourblind',
   };

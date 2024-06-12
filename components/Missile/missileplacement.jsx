@@ -9,6 +9,7 @@ export const MissilePlacementPopup = ({ visible, onClose, selectedMissile }) => 
   const [region, setRegion] = useState(null);
   const [marker, setMarker] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [currentLocation, setCurrentLocation] = useState(null);
   const userName = useUserName(); 
 
   //import is locaiton enabled from map-comp!!!!!
@@ -33,6 +34,7 @@ export const MissilePlacementPopup = ({ visible, onClose, selectedMissile }) => 
     };
     setRegion(initialRegion);
     setMarker(initialRegion); // Set initial marker position to current location
+    setCurrentLocation(initialRegion);
     setLoading(false);
   }
 
@@ -50,6 +52,15 @@ export const MissilePlacementPopup = ({ visible, onClose, selectedMissile }) => 
       </View>
     );
   }
+
+  const handleMissilePlacement = () => {
+    if (marker.latitude === currentLocation.latitude && marker.longitude === currentLocation.longitude) {
+      Alert.alert('Warning', 'Firing a Missile at your current location is not recommended!');
+    } else {
+      console.log(`FIRING Missile: Coordinates: ${marker.latitude}, ${marker.longitude}; User: ${userName} Missile Type: ${selectedMissile}`);
+      onClose();
+    }
+  };
 
   return (
     <Modal
@@ -91,10 +102,7 @@ export const MissilePlacementPopup = ({ visible, onClose, selectedMissile }) => 
             )}
           <View style={{ flexDirection: 'row', justifyContent: 'space-around', padding: 10 }}>
             <Button title="Cancel" onPress={onClose} />
-            <Button title="Fire" onPress={() => {
-                console.log(`FIRING Missile: Coordinates: ${marker.latitude}, ${marker.longitude}; User: ${userName} Missile Type: ${selectedMissile}`);
-                onClose();
-            }} />
+            <Button title="Fire" onPress={handleMissilePlacement} />
           </View>
         </View>
       </View>
