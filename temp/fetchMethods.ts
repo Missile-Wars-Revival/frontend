@@ -1,62 +1,70 @@
-import { Landmine, Loot, Missile } from "middle-earth";
+import { GeoLocation, Landmine, Loot, Missile } from "middle-earth";
 import { useCallback } from "react";
 
-
-export const fetchMissilesFromBackend = async (): Promise<Missile[]> => {
+  export const fetchMissilesFromBackend = async (): Promise<Missile[]> => {
     // Simulated fetch function to get missile data:
-    //return new Missile(destination, currentlocation, radius type, status, sentbyusername, missileId, timesent, etatimetoimpact);
+    return [ 
+              new Missile(
+                         "TheNuke",                              // type
+                         "Hit",                                  // status
+                         new GeoLocation(45.2949318,-0.852674),  // destination
+                         new GeoLocation(45.2949318, -0.852674), // currentLocation
+                         2,                                      // missileId
+                         100,                                    // radius
+                         "",                                     // sentbyusername
+                         "",                                     // timesent
+                         "",                                     // etatimetoimpact
+                        ),
+              new Missile(
+                          "Ballista",                             // type
+                          "Approaching",                          // status
+                          new GeoLocation(51.025316,3.115612),    // destination
+                          new GeoLocation(52.025316, -3.115612),  // currentLocation
+                          1,                                      // missileId
+                          50,                                     // radius
+                          "",                                     // sentbyusername
+                          "",                                     // timesent
+                          "",                                     // etatimetoimpact
+                        )  
+                ];                                   
+  };
+
+
+  export const fetchLootFromBackend = async (): Promise<Loot[]> => {
+    // Simulated fetch function to get loot data:
     return [
-      {
-        destination: { latitude: 45.2949318, longitude: -0.852764, itemType: "Missile" },
-        currentLocation: { latitude: 45.2949318, longitude: -0.852764, itemType: "Missile" },
-        radius: 100,
-        type: "TheNuke",
-        status: "Hit",
-        sentbyusername: "",
-        missileId: 2,
-        timesent: "",
-        etatimetoimpact: "",
-        itemType: "Missile",
-      }, //temp missile location
-      {
-        destination: { latitude: 51.025316, longitude: -3.115612, itemType: "Missile" },
-        currentLocation: { latitude: 52.025316, longitude: -3.115612, itemType: "Missile" },
-        radius: 50,
-        type: "Ballista",
-        status: "Approaching",
-        sentbyusername: "",
-        missileId: 1,
-        timesent: "",
-        etatimetoimpact: "",
-        itemType: "Missile",
-      }, //2nd temp missle location TS
+      new Loot(
+        new GeoLocation(51.026281, -3.113764),    //location
+        "",                                       //Rarity
+        "",                                       //expiretime
+      ),
+      new Loot(
+        new GeoLocation(45.305, -0.86),           //location
+        "",                                       //Rarity
+        "",                                       //expiretime
+      )
+
+
     ];
   };
 
-export const fetchLootFromBackend = async (): Promise<Loot[]> => {
-    // Simulated fetch function to get loot data:
-    return [
-    {
-      location: { latitude: 51.026281, longitude: -3.113764 }, rarity: "Rare",
-      expiretime: ""
-    }, // Loot location 1 TS
-    {
-      location: { latitude: 45.305, longitude: -0.86 }, rarity: "Rare",
-      expiretime: ""
-    }, // Loot location 2
-    ];
-};
-
-export const fetchlandmineFromBackend = async (): Promise<Landmine[]> => {
+  export const fetchlandmineFromBackend = async (): Promise<Landmine[]> => {
     // Simulated fetch function to get landmine data:
     return [
-    {
-      location: {latitude: 45.2949318, longitude: -0.852764}, placedby: "Test2", type: "BigBertha", etaexpiretime: "10mins",
-      placedtime: ""
-    }, //temp landmine location
-    {
-      location: { latitude: 51.025682, longitude: -3.1174578}, placedby: "Test", type: "BigBertha", etaexpiretime: "10mins",
-      placedtime: ""
-    }, //2nd temp landmine location TS
+      new Landmine(
+        "BigBertha",                                 //type
+        new GeoLocation(45.2949318, -0.852764),      //location
+        "Test",                                      //placed by
+        "",                                          //placed time
+        "",                                          //eta expire time
+      ),
+      new Landmine(
+        "BigBertha",                                 //type
+        new GeoLocation(51.025682, -3.1174578),      //location
+        "Test",                                      //placed by
+        "",                                          //placed time
+        "",                                          //eta expire time
+      )
+
     ];
-};
+  };

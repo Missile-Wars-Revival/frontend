@@ -8,10 +8,15 @@ interface AllMissilesProps {
     missileData: Missile[];
 }
 
+interface TrajectCalc{
+    latitude: number, longitude: number
+
+}
+
 interface MissileProps {
     destination: GeoLocation;
     currentLocation: GeoLocation;
-    trajectoryCoordinates: GeoLocation[];
+    trajectoryCoordinates: TrajectCalc[];
     radius: number;
     type: string;
     status: string;
