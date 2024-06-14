@@ -1,18 +1,18 @@
 import React, { useState } from "react";
 import { Button, View, Image, Text, Modal, Dimensions } from "react-native";
 import { Circle, Marker } from "react-native-maps";
-import { GeoLocation, Player } from "middle-earth";
 import { MissileLibrary } from "./Missile/missile";
+import { Players } from "./map-players";
 const resizedplayerimage = require("../assets/mapassets/Female_Avatar_PNG.png"); // Your custom image path
 const resizedplayericon = { width: 30, height: 30 }; // Custom size for image
 
 interface PlayerProps {
-  index: number;
-  player: Player;
   location: { latitude: number; longitude: number };
+  player: Players;
   description: string;
+  index: number;
 }
-export const PlayerComp = (playerProps: PlayerProps) => {
+export const PlayerComp = (props: PlayerProps) => {
   const [selectedMarkerIndex, setSelectedMarkerIndex] = useState<number | null>(null);
 
   const [showMissileLibrary, setShowMissileLibrary] = useState(false);
@@ -27,8 +27,8 @@ export const PlayerComp = (playerProps: PlayerProps) => {
     <View>
       <Circle
         center={{
-          latitude: playerProps.player.location.latitude,
-          longitude: playerProps.player.location.longitude,
+          latitude: props.location.latitude,
+          longitude: props.location.longitude,
         }}
         radius={6}
         fillColor="rgba(0, 255, 0, 0.2)"
@@ -36,32 +36,32 @@ export const PlayerComp = (playerProps: PlayerProps) => {
       />
       <Marker
         coordinate={{
-          latitude: playerProps.player.location.latitude,
-          longitude: playerProps.player.location.longitude,
+          latitude: props.location.latitude,
+          longitude: props.location.longitude,
         }}
-        title={playerProps.player.username}
-        description={playerProps.description}
+        title={props.player.username}
+        description={props.description}
         onPress={() => {
-          if (selectedMarkerIndex === playerProps.index) {
+          if (selectedMarkerIndex === props.index) {
             setSelectedMarkerIndex(10);
           } else {
-            setSelectedMarkerIndex(playerProps.index);
+            setSelectedMarkerIndex(props.index);
           }
         }}
       >
         {/* Wrap image and button inside a View */}
         <View style={{ alignItems: 'center' }}>
           <Image source={resizedplayerimage} style={resizedplayericon} />
-          <Text style={{ color: 'grey' }}>{playerProps.player.username}</Text>
+          <Text style={{ color: 'grey' }}>{props.player.username}</Text>
 
           {/* Missile Lib Button */}
-          {selectedMarkerIndex !== 10 && selectedMarkerIndex === playerProps.index && (
+          {selectedMarkerIndex !== 10 && selectedMarkerIndex === props.index && (
             <View style={{ backgroundColor: 'red', borderRadius: 5, marginTop: 2 }}>
               {/* Ensure onPress event is passed the player's username */}
               <Button
-                title={`Fire Missile At Player: ${playerProps.player.username}`}
+                title={`Fire Missile At Player: ${props.player.username}`}
                 onPress={() => {
-                  fireMissile(playerProps.player.username);
+                  fireMissile(props.player.username);
                 }}
                 color="white"
               />
@@ -78,7 +78,7 @@ export const PlayerComp = (playerProps: PlayerProps) => {
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
               <View style={{ backgroundColor: 'white', borderRadius: 10, width: Dimensions.get('window').width - 40, maxHeight: Dimensions.get('window').height - 200 }}>
                 {/* Include MissileLibrary component */}
-                <MissileLibrary playerName={playerProps.player.username} />
+                <MissileLibrary playerName={props.player.username} />
                 <View style={{ alignSelf: 'flex-end', padding: 10 }}>
                   <Button title="Done" onPress={() => setShowMissileLibrary(false)} />
                 </View>
