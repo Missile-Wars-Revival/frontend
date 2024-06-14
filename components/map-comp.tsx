@@ -12,7 +12,6 @@ import { getLocationPermission } from "../hooks/userlocation";
 import { useToken, useUserName } from "../util/fetchusernameglobal";
 import { dispatch } from "../api/dispatch";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ProximityCheckNotif } from "./collision";
 import { getCurrentLocation } from "../util/locationreq";
 import { mainmapstyles } from "../map-themes/map-stylesheet";
 
