@@ -33,6 +33,16 @@ To login in to an account use either:
 Password: is `Testing123!`
 
 ## Build 
+### Pre-Build:
+This will install the files for local code. 
+```
+npx expo prebuild --platform ios
+
+```
+```
+npx expo prebuild --platform android
+```
+
 ### For Preview:
 - `eas build --profile preview --platform all` or `eas build --profile preview --platform ios`
 
