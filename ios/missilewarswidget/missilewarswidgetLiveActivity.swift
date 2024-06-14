@@ -1,6 +1,6 @@
 //
-//  Live_ActivitiesLiveActivity.swift
-//  Live-Activities
+//  missilewarswidgetLiveActivity.swift
+//  missilewarswidget
 //
 //  Created by Tristan Hill on 14/06/2024.
 //
@@ -9,92 +9,76 @@ import ActivityKit
 import WidgetKit
 import SwiftUI
 
-struct Live_ActivitiesAttributes: ActivityAttributes {
+struct missilewarswidgetAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
-        // Dynamic stateful properties about your activity go here!
-        var emoji: String
-        var timeTillImpact: TimeInterval // New property to hold time till impact
+        var timeLeft: String
+        var playerCount: Int
+        var missileImageName: String  // Changed from Image to String
     }
 
-    // Fixed non-changing properties about your activity go here!
     var name: String
 }
 
-struct Live_ActivitiesLiveActivity: Widget {
+struct missilewarswidgetLiveActivity: Widget {
     var body: some WidgetConfiguration {
-        ActivityConfiguration(for: Live_ActivitiesAttributes.self) { context in
-            // Function to get time till impact (to be implemented)
-            let timeRemaining = getTimeTillImpact() // Placeholder function
-
-            // Lock screen/banner UI goes here
+        ActivityConfiguration(for: missilewarswidgetAttributes.self) { context in
             VStack {
-                Text("Time till impact: \(formattedTime(timeRemaining))")
-                Text("Hello \(context.state.emoji)")
+                Text("Missile Impact")
             }
             .activityBackgroundTint(Color.cyan)
             .activitySystemActionForegroundColor(Color.black)
-
         } dynamicIsland: { context in
             DynamicIsland {
-                // Expanded UI goes here. Compose the expanded UI through
-                // various regions, like leading/trailing/center/bottom
                 DynamicIslandExpandedRegion(.leading) {
-                    Text("Leading")
+                    VStack(alignment: .leading) {
+                        Text("Missile Status")
+                        Image(systemName: context.state.missileImageName) // Use Image initializer
+                            .resizable()
+                            .scaledToFit()
+                    }
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    Text("Trailing")
+                    VStack(alignment: .trailing) {
+                        Text("Target Data")
+                        Text("Players in firing location: \(context.state.playerCount)")
+                    }
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    Text("Bottom \(context.state.emoji)")
-                    // more content
+                    VStack {
+                        Text("Time till impact: \(context.state.timeLeft)")
+                    }
+                    .padding()
+                    .background(Color.gray)
+                    .cornerRadius(10)
                 }
             } compactLeading: {
                 Text("L")
             } compactTrailing: {
-                Text("T \(context.state.emoji)")
+                Text("T \(context.state.playerCount)")
             } minimal: {
-                Text(context.state.emoji)
+                Text("🚀")
             }
             .widgetURL(URL(string: "http://www.apple.com"))
             .keylineTint(Color.red)
         }
     }
+}
 
-    // Helper function to format time interval into a readable string
-    private func formattedTime(_ timeInterval: TimeInterval) -> String {
-        let formatter = DateComponentsFormatter()
-        formatter.unitsStyle = .abbreviated
-        formatter.allowedUnits = [.minute, .second]
-        return formatter.string(from: timeInterval) ?? ""
-    }
-
-    // Placeholder function to get time till impact
-    private func getTimeTillImpact() -> TimeInterval {
-        // Implement your logic to calculate time till impact here
-        // Example:
-        return 120 // 2 minutes till impact (for demonstration)
+extension missilewarswidgetAttributes {
+    fileprivate static var preview: missilewarswidgetAttributes {
+        missilewarswidgetAttributes(name: "World")
     }
 }
 
-extension Live_ActivitiesAttributes {
-    fileprivate static var preview: Live_ActivitiesAttributes {
-        Live_ActivitiesAttributes(name: "World")
+extension missilewarswidgetAttributes.ContentState {
+    fileprivate static var preview: missilewarswidgetAttributes.ContentState {
+        missilewarswidgetAttributes.ContentState(timeLeft: "10s", playerCount: 4, missileImageName: "missile")
     }
 }
 
-extension Live_ActivitiesAttributes.ContentState {
-    fileprivate static var smiley: Live_ActivitiesAttributes.ContentState {
-        Live_ActivitiesAttributes.ContentState(emoji: "😀", timeTillImpact: 120)
-    }
-    
-    fileprivate static var starEyes: Live_ActivitiesAttributes.ContentState {
-        Live_ActivitiesAttributes.ContentState(emoji: "🤩", timeTillImpact: 180)
-    }
-}
-
-#Preview("Notification", as: .content, using: Live_ActivitiesAttributes.preview) {
-   Live_ActivitiesLiveActivity()
+// Preview configuration
+#Preview("Notification", as: .content, using: missilewarswidgetAttributes.preview) {
+    missilewarswidgetLiveActivity()
 } contentStates: {
-    Live_ActivitiesAttributes.ContentState.smiley
-    Live_ActivitiesAttributes.ContentState.starEyes
+    missilewarswidgetAttributes.ContentState.preview
 }
