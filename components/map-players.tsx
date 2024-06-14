@@ -16,7 +16,7 @@ export const AllPlayers = () => {
   const fetchOtherPlayers = async () => {
     // try {
     //   const data = await fetchOtherPlayersData();
-    //   setOtherPlayersData(data); 
+    //   setOtherPlayersData(data);
     //   //console.log("Data fetching...", data);
     // } catch (error) {
     //   console.error('Error fetching other players data:', error);
