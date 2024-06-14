@@ -48,9 +48,7 @@
       "expo-router"
     ],
     "owner": "osog",
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
+    "runtimeVersion": "exposdk:51.0.11",
     "updates": {
       "url": "https://u.expo.dev/250fd3fc-22b2-411d-abfc-63f3a6b81328"
     }
