@@ -13,7 +13,7 @@ struct missilewarswidgetAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
         var timeLeft: String
         var playerCount: Int
-        var missileImageName: String  // Changed from Image to String
+        var missileImageName: String
     }
 
     var name: String
@@ -32,7 +32,7 @@ struct missilewarswidgetLiveActivity: Widget {
                 DynamicIslandExpandedRegion(.leading) {
                     VStack(alignment: .leading) {
                         Text("Missile Status")
-                        Image(systemName: context.state.missileImageName) // Use Image initializer
+                        Image(systemName: context.state.missileImageName)
                             .resizable()
                             .scaledToFit()
                     }
