@@ -9,7 +9,7 @@ export const getTimeDifference = (timestamp: TimeStamp) => {
     differenceInMilliseconds / 1000
   );
 
-  if (differenceInSeconds < 240) {
+  if (differenceInSeconds < 60) {
     return { text: "Last seen: Just now" };
   }
 

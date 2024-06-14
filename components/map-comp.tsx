@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { View, Text, Switch, Alert, Platform } from "react-native";
+import { View, Text, Switch, Alert, Platform, ActivityIndicator } from "react-native";
 import MapView, { PROVIDER_DEFAULT, PROVIDER_GOOGLE } from "react-native-maps";
 import { AllLootDrops } from "./loot-drop";
 import { AllLandMines } from "./Landmine/map-landmines";
@@ -24,6 +24,7 @@ export const MapComp = (props: MapCompProps) => {
     const userName = useUserName();
     const token = useToken();
     const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(false);
+    const [isLoading, setIsLoading] = useState(true);
     const [hasDbConnection, setDbConnection] = useState(false);
     const [visibilitymode, setMode] = useState<'friends' | 'global'>('friends');
 
@@ -49,7 +50,7 @@ export const MapComp = (props: MapCompProps) => {
         const location: GeoLocation = await getCurrentLocation();
         if (token && userName && location.latitude && location.longitude) {
             await dispatch(token, userName, location.latitude, location.longitude);
-            //console.log("dipatching", location, userName, token)
+            //console.log("dispatching", location, userName, token)
         }
     };
 
@@ -63,7 +64,8 @@ export const MapComp = (props: MapCompProps) => {
                 longitudeDelta: 0.01
             };
             setRegion(newRegion);
-            await saveLocation(newRegion); // Cache the region
+            await saveLocation(newRegion); 
+            setIsLoading(false); 
         } catch {
             Alert.alert(
                 "Location",
@@ -89,6 +91,7 @@ export const MapComp = (props: MapCompProps) => {
                     setMode(cachedMode as 'friends' | 'global');
                 }
             } catch (error) {
+                setIsLoading(false); 
                 console.error('Error loading cached data:', error);
             }
         };
@@ -98,6 +101,7 @@ export const MapComp = (props: MapCompProps) => {
                 const status = await getLocationPermission();
                 setIsLocationEnabled(status === 'granted');
             } catch {
+                setIsLoading(false); 
             }
         };
 
@@ -154,6 +158,16 @@ export const MapComp = (props: MapCompProps) => {
         console.log("Mode changed to:", visibilitymode);
     };
 
+    if (isLoading) {
+        return (
+        <View style={mainmapstyles.loaderContainer}>
+            <ActivityIndicator size="large" color="#0000ff" />
+            <Text></Text>
+            <Text style={mainmapstyles.overlayText}>Loading the Map for the first time!</Text>
+        </View>
+        );
+    }
+
     return (
         <View style={mainmapstyles.container}>
             <MapView
@@ -186,7 +200,6 @@ export const MapComp = (props: MapCompProps) => {
                 />
                 <Text style={mainmapstyles.switchText}>{visibilitymode === 'global' ? 'Global' : 'Friends'}</Text>
             </View>
-            <ProximityCheckNotif />
         </View>
     );
 };
