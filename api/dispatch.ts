@@ -18,11 +18,12 @@ export async function dispatch(
     return response.data;
   } catch (error) {
     if (isAxiosError(error)) {
-      console.log("sending data failed")
+      console.log("failed to send location")
       return (
         error.response?.data || { success: false, message: "Request failed" }
       );
     } else {
+      console.log("failed to send location")
       console.error(error);
       return { success: false, message: "Request failed" };
     }

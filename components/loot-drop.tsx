@@ -11,6 +11,18 @@ interface AllLootDropsProps {
     lootLocations: Loot[];
 }
 
+interface LootProps {
+    location: GeoLocation;
+    rarity: string;
+    expiretime: string;
+  }
+
+interface LootProps {
+    location: GeoLocation;
+    rarity: string;
+    expiretime: string;
+  }
+
 export const AllLootDrops = (props: AllLootDropsProps) => {
     return (
     <>
@@ -23,12 +35,6 @@ export const AllLootDrops = (props: AllLootDropsProps) => {
     </>
     )
 }
-
-interface LootProps {
-    location: GeoLocation;
-    rarity: string;
-    expiretime: string;
-  }
 
 export const LootDrop = (props: LootProps) => {
     const { text } = convertimestampfuture(props.expiretime);

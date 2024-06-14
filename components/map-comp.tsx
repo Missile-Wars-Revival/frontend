@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { View, StyleSheet, Text, Switch, Alert } from "react-native";
+import { View, Text, Switch, Alert, ActivityIndicator } from "react-native";
 import { AllLootDrops } from "./loot-drop";
 import { AllLandMines } from "./Landmine/map-landmines";
 import { AllMissiles } from "./Missile/map-missile";
@@ -11,7 +11,6 @@ import { getLocationPermission } from "../hooks/userlocation";
 import { useToken, useUserName } from "../util/fetchusernameglobal";
 import { dispatch } from "../api/dispatch";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ProximityCheckNotif } from "./collision";
 import { getCurrentLocation } from "../util/locationreq";
 import Mapbox, { LocationPuck, UserTrackingMode } from '@rnmapbox/maps';
 import { mainmapstyles } from "../map-themes/map-stylesheet";
@@ -26,6 +25,7 @@ export const MapComp = (props: MapCompProps) => {
     const userName = useUserName();
     const token = useToken();
     const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(false);
+    const [isLoading, setIsLoading] = useState(true);
     const [hasDbConnection, setDbConnection] = useState(false);
     const [visibilitymode, setMode] = useState<'friends' | 'global'>('friends');
 
@@ -46,11 +46,12 @@ export const MapComp = (props: MapCompProps) => {
     }, []);
 
     const dispatchLocation = async () => {
-        setDbConnection(true)
+        //temp location should be in dispatch.ts V
+        setDbConnection(true);
         const location: GeoLocation = await getCurrentLocation();
-        if (userName && location.latitude && location.longitude) {
-            await dispatch(token, userName, region.latitude, region.longitude);
-            setDbConnection(true)
+        if (token && userName && location.latitude && location.longitude) {
+            await dispatch(token, userName, location.latitude, location.longitude);
+            //console.log("dispatching", location, userName, token)
         }
     };
 
@@ -64,7 +65,8 @@ export const MapComp = (props: MapCompProps) => {
                 longitudeDelta: 0.01
             };
             setRegion(newRegion);
-            await saveLocation(newRegion); // Cache the region
+            await saveLocation(newRegion); 
+            setIsLoading(false); 
         } catch {
             Alert.alert(
                 "Location",
@@ -90,6 +92,7 @@ export const MapComp = (props: MapCompProps) => {
                     setMode(cachedMode as 'friends' | 'global');
                 }
             } catch (error) {
+                setIsLoading(false); 
                 console.error('Error loading cached data:', error);
             }
         };
@@ -99,6 +102,7 @@ export const MapComp = (props: MapCompProps) => {
                 const status = await getLocationPermission();
                 setIsLocationEnabled(status === 'granted');
             } catch {
+                setIsLoading(false); 
             }
         };
 
@@ -155,6 +159,16 @@ export const MapComp = (props: MapCompProps) => {
         console.log("Mode changed to:", visibilitymode);
     };
 
+    if (isLoading) {
+        return (
+        <View style={mainmapstyles.loaderContainer}>
+            <ActivityIndicator size="large" color="#0000ff" />
+            <Text></Text>
+            <Text style={mainmapstyles.overlayText}>Loading the Map for the first time!</Text>
+        </View>
+        );
+    }
+
 return (
     <View style={mainmapstyles.container}>
         <Mapbox.MapView
@@ -199,7 +213,6 @@ return (
                 />
                 <Text style={mainmapstyles.switchText}>{visibilitymode === 'global' ? 'Global' : 'Friends'}</Text>
             </View>
-            <ProximityCheckNotif />
         </View>
     );
 };
