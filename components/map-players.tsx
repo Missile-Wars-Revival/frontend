@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { PlayerComp } from "./player";
 import { useUserName } from "../util/fetchusernameglobal";
-import { getTimeDifference, isInactiveFor24Hours } from "../util/get-time-difference";
+import { getTimeDifference, isInactiveFor12Hours } from "../util/get-time-difference";
 import { fetchOtherPlayersData } from "../api/getplayerlocations";
 
 export interface Players {
@@ -21,7 +21,7 @@ export const AllPlayers = () => {
     try {
       const data = await fetchOtherPlayersData();
       setOtherPlayersData(data); 
-      console.log("fetched", data)
+      //console.log("fetched", data)
     } catch (error) {
       console.error('Error fetching other players data:', error);
     }
@@ -41,7 +41,7 @@ export const AllPlayers = () => {
   return (
       <>
           {otherPlayersData
-          .filter(player => player.username !== userName && !isInactiveFor24Hours(player.updatedAt))
+          .filter(player => player.username !== userName && !isInactiveFor12Hours(player.updatedAt))
           .map((player, index) => {
           const { text } = getTimeDifference(player.updatedAt);
 
@@ -52,7 +52,7 @@ export const AllPlayers = () => {
 
           return (
               <React.Fragment key={index}>
-              <PlayerComp index={index} player={player} location={location} description={text}></PlayerComp>
+              <PlayerComp index={index} player={player} location={location} timestamp={text}></PlayerComp>
               </React.Fragment>
           );
           })}

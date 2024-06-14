@@ -9,7 +9,7 @@ const resizedplayericon = { width: 30, height: 30 }; // Custom size for image
 interface PlayerProps {
   location: { latitude: number; longitude: number };
   player: Players;
-  description: string;
+  timestamp: string;
   index: number;
 }
 export const PlayerComp = (props: PlayerProps) => {
@@ -40,7 +40,7 @@ export const PlayerComp = (props: PlayerProps) => {
           longitude: props.location.longitude,
         }}
         title={props.player.username}
-        description={props.description}
+        description={props.timestamp}
         onPress={() => {
           if (selectedMarkerIndex === props.index) {
             setSelectedMarkerIndex(10);
