@@ -18,7 +18,7 @@ import { useCallback } from "react";
               new Missile(
                           "Ballista",                             // type
                           "Approaching",                          // status
-                          new GeoLocation(51.025316,3.115612),    // destination
+                          new GeoLocation(51.025316, -3.115612),    // destination
                           new GeoLocation(52.025316, -3.115612),  // currentLocation
                           1,                                      // missileId
                           50,                                     // radius
@@ -54,7 +54,7 @@ import { useCallback } from "react";
       new Landmine(
         "BigBertha",                                 //type
         new GeoLocation(45.2949318, -0.852764),      //location
-        "Test",                                      //placed by
+        "Test2",                                      //placed by
         "",                                          //placed time
         "",                                          //eta expire time
       ),
