@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { View, StyleSheet, Text, Switch, Alert, Platform } from "react-native";
+import { View, Text, Switch, Alert, Platform, ActivityIndicator } from "react-native";
 import MapView, { PROVIDER_DEFAULT, PROVIDER_GOOGLE } from "react-native-maps";
 import { AllLootDrops } from "./loot-drop";
 import { AllLandMines } from "./Landmine/map-landmines";
@@ -12,8 +12,8 @@ import { getLocationPermission } from "../hooks/userlocation";
 import { useToken, useUserName } from "../util/fetchusernameglobal";
 import { dispatch } from "../api/dispatch";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ProximityCheckNotif } from "./collision";
 import { getCurrentLocation } from "../util/locationreq";
+import { mainmapstyles } from "../map-themes/map-stylesheet";
 
 interface MapCompProps {
     selectedMapStyle: any;
@@ -23,6 +23,7 @@ export const MapComp = (props: MapCompProps) => {
     const userName = useUserName();
     const token = useToken();
     const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(false);
+    const [isLoading, setIsLoading] = useState(true);
     const [hasDbConnection, setDbConnection] = useState(false);
     const [visibilitymode, setMode] = useState<'friends' | 'global'>('friends');
 
@@ -43,12 +44,13 @@ export const MapComp = (props: MapCompProps) => {
     }, []);
 
     const dispatchLocation = async () => {
+        //temp location should be in dispatch.ts V
+        setDbConnection(true);
         const location: GeoLocation = await getCurrentLocation();
-        if (userName && location.latitude && location.longitude) {
-            await dispatch(token, userName, region.latitude, region.longitude);
-            setDbConnection(true);
+        if (token && userName && location.latitude && location.longitude) {
+            await dispatch(token, userName, location.latitude, location.longitude);
+            //console.log("dispatching", location, userName, token)
         }
-        setDbConnection(false);
     };
 
     const getlocation = async () => {
@@ -61,7 +63,8 @@ export const MapComp = (props: MapCompProps) => {
                 longitudeDelta: 0.01
             };
             setRegion(newRegion);
-            await saveLocation(newRegion); // Cache the region
+            await saveLocation(newRegion); 
+            setIsLoading(false); 
         } catch {
             Alert.alert(
                 "Location",
@@ -87,6 +90,7 @@ export const MapComp = (props: MapCompProps) => {
                     setMode(cachedMode as 'friends' | 'global');
                 }
             } catch (error) {
+                setIsLoading(false); 
                 console.error('Error loading cached data:', error);
             }
         };
@@ -96,6 +100,7 @@ export const MapComp = (props: MapCompProps) => {
                 const status = await getLocationPermission();
                 setIsLocationEnabled(status === 'granted');
             } catch {
+                setIsLoading(false); 
             }
         };
 
@@ -152,10 +157,20 @@ export const MapComp = (props: MapCompProps) => {
         console.log("Mode changed to:", visibilitymode);
     };
 
+    if (isLoading) {
+        return (
+        <View style={mainmapstyles.loaderContainer}>
+            <ActivityIndicator size="large" color="#0000ff" />
+            <Text></Text>
+            <Text style={mainmapstyles.overlayText}>Loading the Map for the first time!</Text>
+        </View>
+        );
+    }
+
     return (
-        <View style={styles.container}>
+        <View style={mainmapstyles.container}>
             <MapView
-                style={styles.map}
+                style={mainmapstyles.map}
                 provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
                 region={region}
                 showsCompass={false}
@@ -168,13 +183,13 @@ export const MapComp = (props: MapCompProps) => {
                 <AllMissiles missileData={missileData} />
                 <AllPlayers />
             </MapView>
-            {!isLocationEnabled && !hasDbConnection && (
-                <View style={styles.overlay}>
-                    <Text style={styles.overlayText}>Map is disabled due to location/database issues.</Text>
-                    <Text style={styles.overlaySubText}>Please check your settings or try again later.</Text>
+            {(!isLocationEnabled || !hasDbConnection) && (
+                <View style={mainmapstyles.overlay}>
+                    <Text style={mainmapstyles.overlayText}>Map is disabled due to location/database issues.</Text>
+                    <Text style={mainmapstyles.overlaySubText}>Please check your settings or try again later.</Text>
                 </View>
             )}
-            <View style={styles.switchContainer}>
+            <View style={mainmapstyles.switchContainer}>
                 <Switch
                     trackColor={{ false: "#767577", true: "#81b0ff" }}
                     thumbColor={visibilitymode === 'global' ? "#f4f3f4" : "#f4f3f4"}
@@ -182,51 +197,8 @@ export const MapComp = (props: MapCompProps) => {
                     onValueChange={toggleMode}
                     value={visibilitymode === 'global'}
                 />
-                <Text style={styles.switchText}>{visibilitymode === 'global' ? 'Global' : 'Friends'}</Text>
+                <Text style={mainmapstyles.switchText}>{visibilitymode === 'global' ? 'Global' : 'Friends'}</Text>
             </View>
-            <ProximityCheckNotif />
         </View>
     );
 };
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    map: {
-        flex: 1,
-    },
-    overlay: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'white',
-        opacity: 0.6,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    overlayText: {
-        fontSize: 16,
-        color: 'black',
-        fontWeight: 'bold',
-        marginBottom: 10,
-    },
-    overlaySubText: {
-        fontSize: 14,
-        fontWeight: 'bold',
-        color: 'grey',
-    },
-    switchContainer: {
-        position: 'absolute',
-        top: 50,
-        left: 330,
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    switchText: {
-        marginLeft: -110,
-        color: 'white',
-    },
-});

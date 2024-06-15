@@ -1,3 +1,6 @@
+
+//Needs a revamp
+
 import React, { useCallback, useEffect, useState } from "react";
 import { GeoLocation, Landmine, Loot, Missile } from "middle-earth";
 import { fetchLootFromBackend, fetchMissilesFromBackend, fetchlandmineFromBackend } from "../temp/fetchMethods";

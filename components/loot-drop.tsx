@@ -10,6 +10,12 @@ interface AllLootDropsProps {
     lootLocations: Loot[];
 }
 
+interface LootProps {
+    location: GeoLocation;
+    rarity: string;
+    expiretime: string;
+  }
+
 export const AllLootDrops = (props: AllLootDropsProps) => {
     return (
     <>
@@ -22,13 +28,6 @@ export const AllLootDrops = (props: AllLootDropsProps) => {
     </>
     )
 }
-
-
-interface LootProps {
-    location: GeoLocation;
-    rarity: string;
-    expiretime: string;
-  }
 
 
 export const LootDrop = (props: LootProps) => {
@@ -56,52 +55,3 @@ export const LootDrop = (props: LootProps) => {
         </View>
     )
 }
-
-
-
-
-
-
-
-
-// interface AllLandmineProps {
-//     landminedata: Landmine[];
-// }
-
-// export const AllLandMines = (props: AllLandmineProps) => {
-//     const userNAME = useUserName();
-//     return (
-//         <>
-//         {props.landminedata .filter(landmine => landmine.placedby === userNAME) .map(({ type, location, placedby, placedtime, etaexpiretime }, index) => {
-
-//             return (
-//             <React.Fragment key={index}>
-//                 <MapLandmine location={location} type={type} placedby={placedby} placedtime={placedtime} etaexpiretime={etaexpiretime}  />
-//             </React.Fragment>
-//             );
-//         })}
-//         </>
-//     );
-// }
-
-// interface LandmineProps {
-//     type: string;
-//     location: GeoLocation;
-//     placedby: string;
-//     placedtime: string;
-//     etaexpiretime: string;
-//   }
-
-// export const MapLandmine = (landmineProps: LandmineProps) => {
-//     return(
-//         <View>
-//             {/* Render Circle at destination coords */}
-//             <Circle
-//                 center={landmineProps.location}
-//                 radius={10}
-//                 fillColor="rgba(128, 128, 128, 0.3)"
-//                 strokeColor="rgba(128, 128, 128, 0.8)" 
-//                 />
-//         </View>
-//     )
-// }

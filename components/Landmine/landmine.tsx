@@ -16,6 +16,11 @@ interface LandmineLibraryViewProps {
 interface Landmine {
   type: string;
 }
+
+interface LandmineImages {
+  [key: string]: any;
+}
+
 //backend needs to fetch users landmine library
 const fetchLandmineLib = (): Promise<LandmineType[]> => {
   return new Promise((resolve) => {
@@ -31,9 +36,7 @@ const fetchLandmineLib = (): Promise<LandmineType[]> => {
   });
 };
 
-interface LandmineImages {
-  [key: string]: any;
-}
+
 //landmine images for both map and library
 export const LandmineImages: LandmineImages = {
   Amplifier: require('../../assets/missiles/Amplifier.png'),
