@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, FlatList, Button, StyleSheet, Text } from 'react-native';
 import ProductItem from '../components/Store/productitem';
 import Cart from '../components/Store/cart';
 import { useUserName } from '../util/fetchusernameglobal';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface Product {
   id: number;
@@ -25,25 +26,38 @@ const StorePage: React.FC = () => {
   const [cart, setCart] = useState<{ product: Product; quantity: number }[]>([]);
   const [isCartVisible, setCartVisible] = useState<boolean>(false);
 
+  useEffect(() => {
+    const loadCart = async () => {
+      const storedCart = await AsyncStorage.getItem('cartitems');
+      if (storedCart) setCart(JSON.parse(storedCart));
+    };
+
+    loadCart();
+  }, []);
+
   const addToCart = (product: Product) => {
     setCart((prevCart) => {
       const cartItem = prevCart.find((item) => item.product.id === product.id);
       if (cartItem) {
-        return prevCart.map((item) =>
+        const newCart = prevCart.map((item) =>
           item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
         );
+        AsyncStorage.setItem('cartitems', JSON.stringify(newCart)); // Persist updated cart
+        return newCart;
       } else {
-        return [...prevCart, { product, quantity: 1 }];
+        const newCart = [...prevCart, { product, quantity: 1 }];
+        AsyncStorage.setItem('cartitems', JSON.stringify(newCart)); // Persist updated cart
+        return newCart;
       }
     });
   };
 
   const handleRemove = (productId: number) => {
-    
-    // Implement logic to remove the product from the cart
-    // For example:
-    setCart(cart.filter(item => item.product.id !== productId));
+    const updatedCart = cart.filter(item => item.product.id !== productId);
+    AsyncStorage.setItem('cartitems', JSON.stringify(updatedCart)); // Persist updated cart
+    setCart(updatedCart);
   };
+
 
   return (
     <View style={styles.container}>

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { View, Platform } from "react-native";
-import { initConnection, endConnection } from 'react-native-iap';
 
 // Android Themes
 import { androidDefaultMapStyle } from "../map-themes/Android-themes/defaultMapStyle";
@@ -44,28 +43,6 @@ export default function Map() {
     };
 
     fetchCredentials();
-  }, []);
-
-  // Initialize react-native-iap
-  useEffect(() => {
-    async function setupIAP() {
-      try {
-        await initConnection();
-        console.log('IAP connection initialized');
-      } catch (e) {
-        console.error('Failed to initialize IAP connection:', e);
-      }
-
-      return () => {
-        endConnection().then(() => console.log('IAP disconnected'));
-      };
-    }
-
-    setupIAP();
-
-    return () => {
-      endConnection().catch(e => console.error('Failed to end IAP connection:', e));
-    };
   }, []);
 
   const [selectedMapStyle, setSelectedMapStyle] = useState<MapStyle[]>(Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle);

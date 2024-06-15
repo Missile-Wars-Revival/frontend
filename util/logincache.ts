@@ -43,6 +43,7 @@ export async function clearCredentials(): Promise<void> {
     await AsyncStorage.removeItem("visibilitymode");
     await AsyncStorage.removeItem("selectedMapStyle");
     await AsyncStorage.removeItem("regionlocation");
+    await AsyncStorage.removeItem("cartitems");
 
     console.log("All credentials and settings successfully cleared.");
   } catch (error) {
