@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { View,  Platform } from "react-native";
+import { View, Platform } from "react-native";
+import { initConnection, endConnection } from 'react-native-iap';
 
-//Android Themes
+// Android Themes
 import { androidDefaultMapStyle } from "../map-themes/Android-themes/defaultMapStyle";
 import { androidRadarMapStyle } from "../map-themes/Android-themes/radarMapStyle";
 import { androidCherryBlossomMapStyle } from "../map-themes/Android-themes/cherryBlossomMapStyle";
 import { androidCyberpunkMapStyle } from "../map-themes/Android-themes/cyberpunkstyle";
 import { androidColorblindMapStyle } from "../map-themes/Android-themes/colourblindstyle";
-//Ignore errors here for now 
+
+// IOS Themes
 import { IOSDefaultMapStyle } from "../map-themes/IOS-themes/themestemp";
 import { IOSRadarMapStyle } from "../map-themes/IOS-themes/themestemp";
 import { IOSCherryBlossomMapStyle } from "../map-themes/IOS-themes/themestemp";
@@ -27,8 +29,9 @@ import { router } from "expo-router";
 export default function Map() {
   const [userNAME, setUsername] = useState("");
 
-  //pull from map-comp
+  // State for location enabled
   const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(true);
+
   // Fetch username from secure storage
   useEffect(() => {
     const fetchCredentials = async () => {
@@ -36,15 +39,35 @@ export default function Map() {
       if (credentials) {
         setUsername(credentials.username);
       } else {
-        //console.log('Credentials not found, please log in');
-        // Optionally redirect to login page
         router.navigate("/login");
       }
     };
-  
+
     fetchCredentials();
   }, []);
-  
+
+  // Initialize react-native-iap
+  useEffect(() => {
+    async function setupIAP() {
+      try {
+        await initConnection();
+        console.log('IAP connection initialized');
+      } catch (e) {
+        console.error('Failed to initialize IAP connection:', e);
+      }
+
+      return () => {
+        endConnection().then(() => console.log('IAP disconnected'));
+      };
+    }
+
+    setupIAP();
+
+    return () => {
+      endConnection().catch(e => console.error('Failed to end IAP connection:', e));
+    };
+  }, []);
+
   const [selectedMapStyle, setSelectedMapStyle] = useState<MapStyle[]>(Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle);
   const [themePopupVisible, setThemePopupVisible] = useState(false);
 
@@ -58,8 +81,6 @@ export default function Map() {
 
   const selectMapStyle = (style: string) => {
     closePopup();
-
-    //chooses style based on platform version
     let selectedStyle;
     switch (style) {
       case "default":
@@ -88,13 +109,9 @@ export default function Map() {
     <View style={{ flex: 1, backgroundColor: 'gray' }}>
       <MapComp selectedMapStyle={selectedMapStyle} />
 
-       
-        {/* To hide the theme button on iOS, uncomment the next line  */}
-        {Platform.OS === 'android' && (
-     
-      <ThemeSelectButton onPress={showPopup}>Theme</ThemeSelectButton>
-       )}
-       {/* and this bracket above */}
+      {Platform.OS === 'android' && (
+        <ThemeSelectButton onPress={showPopup}>Theme</ThemeSelectButton>
+      )}
 
       <MapStylePopup
         visible={themePopupVisible}
@@ -103,7 +120,6 @@ export default function Map() {
         onSelect={selectMapStyle}
       />
 
-      {/* this needs to get value from map-comp */}
       {isLocationEnabled && (
         <FireSelector
           selectedMapStyle={selectedMapStyle}

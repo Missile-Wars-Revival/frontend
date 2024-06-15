@@ -7,6 +7,7 @@ interface Product {
   price: number;
   image: any; 
   description: string;
+  sku: string;
 }
 
 interface Props {

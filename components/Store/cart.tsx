@@ -1,11 +1,13 @@
 import React from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import { initConnection, requestPurchase } from 'react-native-iap';
 
 interface Product {
   id: number;
   name: string;
   price: number;
   image: string;
+  sku: string; // Add SKU to Product interface
 }
 
 interface CartItem {
@@ -21,6 +23,33 @@ interface CartProps {
 const Cart: React.FC<CartProps> = ({ cart, onRemove }) => {
   const totalPrice = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
 
+  const handleCheckout = async () => {
+    const skus = cart.map((item) => item.product.sku); // Array of SKUs from cart
+
+    try {
+        // Initialize IAP connection if not already initialized (consider doing this earlier in the app lifecycle)
+        const connected = await initConnection();
+        if (!connected) {
+            console.log('Failed to initialize IAP connection');
+            return;
+        }
+
+        // Perform the purchase for each SKU in the cart
+        await Promise.all(skus.map(async (sku) => {
+            console.log("sku is", sku);
+            await requestPurchase({
+                sku,
+                andDangerouslyFinishTransactionAutomaticallyIOS: false,
+            });
+        }));
+        console.log("All purchases successful!");
+    } catch (err: any) {
+        console.warn("Error occurred during purchase:", err.message);
+        console.log(err); // Log full error for better diagnostics
+    }
+};
+
+
   const renderItem = ({ item }: { item: CartItem }) => (
     <View style={styles.cartItem}>
       <Text style={styles.productName}>{item.product.name}</Text>
@@ -35,12 +64,18 @@ const Cart: React.FC<CartProps> = ({ cart, onRemove }) => {
 
   return (
     <View style={styles.cartContainer}>
+      <Text></Text>
+      <Text></Text>
+      <Text></Text>
       <FlatList
         data={cart}
         keyExtractor={(item) => item.product.id.toString()}
         renderItem={renderItem}
       />
       <Text style={styles.totalPrice}>Total: ${totalPrice.toFixed(2)}</Text>
+      <TouchableOpacity onPress={handleCheckout} style={styles.checkoutButton}>
+        <Text style={styles.checkoutButtonText}>Checkout All Items</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -83,6 +118,18 @@ const styles = StyleSheet.create({
   },
   removeButtonText: {
     color: '#fff',
+  },
+  checkoutButton: {
+    backgroundColor: '#007bff',
+    marginTop: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  checkoutButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });
 

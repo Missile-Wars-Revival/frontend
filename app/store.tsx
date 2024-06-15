@@ -10,12 +10,13 @@ interface Product {
   price: number;
   image: string;
   description: string;
+  sku: string;
 }
 
 const products: Product[] = [
-  { id: 1, name: 'Amplifier', price: 9.99, image: require('../assets/missiles/Amplifier.png'), description: 'Missile' },
-  { id: 2, name: 'Ballista', price: 8.99, image: require('../assets/missiles/Ballista.png'), description: 'Missile' },
-  { id: 3, name: 'Big Bertha', price: 10.00, image: require('../assets/missiles/BigBertha.png'), description: 'Missile' },
+  { id: 1, name: 'Amplifier', price: 9.99, image: require('../assets/missiles/Amplifier.png'), description: 'Missile', sku: "Amplifier" },
+  { id: 2, name: 'Ballista', price: 8.99, image: require('../assets/missiles/Ballista.png'), description: 'Missile', sku: "Ballista" },
+  { id: 3, name: 'Big Bertha', price: 10.00, image: require('../assets/missiles/BigBertha.png'), description: 'Missile', sku: "BigBertha" },
 ];
 
 const StorePage: React.FC = () => {
