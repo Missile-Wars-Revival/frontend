@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Button, Image, StyleSheet, Animated, PanResponder } from 'react-native';
+import { Text, Button, Image, StyleSheet, Animated, PanResponder } from 'react-native';
 
 interface Product {
   id: number;
@@ -8,6 +8,7 @@ interface Product {
   image: any; 
   description: string;
   sku: string;
+  category: string;
 }
 
 interface Props {
@@ -83,7 +84,7 @@ const styles = StyleSheet.create({
   },
   image: {
     width: '100%',
-    height: 300,
+    height: 200,
     marginVertical: 8,
     borderRadius: 4,
   },

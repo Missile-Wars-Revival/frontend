@@ -25,6 +25,7 @@ const Cart: React.FC<CartProps> = ({ cart, onRemove }) => {
 
   const handleCheckout = async () => {
     const skus = cart.map((item) => item.product.sku); // Array of SKUs from cart
+    console.log("sku is", skus);
 
     try {
         // Initialize IAP connection if not already initialized (consider doing this earlier in the app lifecycle)
@@ -36,7 +37,7 @@ const Cart: React.FC<CartProps> = ({ cart, onRemove }) => {
 
         // Perform the purchase for each SKU in the cart
         await Promise.all(skus.map(async (sku) => {
-            console.log("sku is", sku);
+            console.log("attempting to checkout for each item", sku);
             await requestPurchase({
                 sku,
                 andDangerouslyFinishTransactionAutomaticallyIOS: false,
