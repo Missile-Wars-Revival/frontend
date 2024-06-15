@@ -16,12 +16,12 @@ interface Product {
 }
 
 const products: Product[] = [
-  { id: 1, name: 'Amplifier', price: 3.99, image: require('../assets/missiles/Amplifier.png'), description: 'High impact missile', sku: "Amplifier", category: 'Premium' },
-  { id: 2, name: 'Ballista', price: 3.99, image: require('../assets/missiles/Ballista.png'), description: 'Long-range missile', sku: "Ballista", category: 'Premium' },
-  { id: 4, name: 'Big Bertha', price: 3.00, image: require('../assets/missiles/BigBertha.png'), description: 'Large warhead missile', sku: "BigBertha", category: 'Premium' },
-  { id: 5, name: 'Bombabom', price: 3.00, image: require('../assets/missiles/Bombabom.png'), description: 'Cluster bomb missile', sku: "Bombabom", category: 'Coins' },
-  { id: 6, name: 'Buzzard', price: 3.00, image: require('../assets/missiles/Buzzard.png'), description: 'Medium-range missile', sku: "Buzzard", category: 'Coins' },
-  { id: 7, name: 'The Nuke', price: 10.00, image: require('../assets/missiles/TheNuke.png'), description: 'Nuclear missile', sku: "The Nuke", category: 'Coins' },
+  { id: 1, name: 'Amplifier', price: 3.99, image: require('../assets/missiles/Amplifier.png'), description: 'High impact missile', sku: "Amplifier", category: 'Missiles' },
+  { id: 2, name: 'Ballista', price: 3.99, image: require('../assets/missiles/Ballista.png'), description: 'Long-range missile', sku: "Ballista", category: 'Missiles' },
+  { id: 4, name: 'Big Bertha', price: 3.00, image: require('../assets/missiles/BigBertha.png'), description: 'Large warhead missile', sku: "BigBertha", category: 'Landmines' },
+  { id: 5, name: 'Bombabom', price: 3.00, image: require('../assets/missiles/Bombabom.png'), description: 'Cluster bomb missile', sku: "Bombabom", category: 'Landmines' },
+  { id: 6, name: 'Buzzard', price: 3.00, image: require('../assets/missiles/Buzzard.png'), description: 'Medium-range missile', sku: "Buzzard", category: 'Loot Drops' },
+  { id: 7, name: 'The Nuke', price: 10.00, image: require('../assets/missiles/TheNuke.png'), description: 'Nuclear missile', sku: "The Nuke", category: 'Loot Drops' },
 ];
 
 const StorePage: React.FC = () => {
@@ -74,7 +74,7 @@ const StorePage: React.FC = () => {
         <Text></Text>
         <Text></Text>
           <View style={styles.categoryContainer}>
-            {['All', 'Premium', 'Coins'].map((category) => (
+            {['All', 'Missiles', 'Landmines', 'Loot Drops'].map((category) => (
               <TouchableOpacity key={category} onPress={() => setSelectedCategory(category)} style={styles.categoryButton}>
                 <Text>{category}</Text>
               </TouchableOpacity>
