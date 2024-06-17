@@ -1,15 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Text, Button, Image, StyleSheet, Animated, PanResponder } from 'react-native';
+import { Product } from '../../app/store';
+import { storepagestyles } from './storestylesheets';
 
-interface Product {
-  id: number;
-  name: string;
-  price: number;
-  image: any; 
-  description: string;
-  sku: string;
-  category: string;
-}
 
 interface Props {
   product: Product;
@@ -57,42 +50,13 @@ const ProductItem: React.FC<Props> = ({ product, addToCart }) => {
   };
 
   return (
-    <Animated.View style={[styles.itemContainer, frontAnimatedStyle]} {...panResponder.panHandlers}>
-      <Text style={styles.name}>{product.name}</Text>
-      <Image source={product.image} style={styles.image} />
-      <Text style={styles.price}>${product.price.toFixed(2)}</Text>
+    <Animated.View style={[storepagestyles.itemContainer, frontAnimatedStyle]} {...panResponder.panHandlers}>
+      <Text style={storepagestyles.name}>{product.name}</Text>
+      <Image source={product.image} style={storepagestyles.image} />
+      <Text style={storepagestyles.price}>{product.price.toFixed(2)} Coins</Text>
       <Button title="Add to Cart" onPress={() => addToCart(product)} />
     </Animated.View>
   );
 };
-
-const styles = StyleSheet.create({
-  itemContainer: {
-    padding: 16,
-    marginVertical: 8,
-    backgroundColor: '#fff',
-    borderRadius: 4,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-    backfaceVisibility: 'hidden',
-  },
-  name: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  image: {
-    width: '100%',
-    height: 200,
-    marginVertical: 8,
-    borderRadius: 4,
-  },
-  price: {
-    fontSize: 14,
-    color: '#888',
-    marginVertical: 4,
-  },
-});
 
 export default ProductItem;

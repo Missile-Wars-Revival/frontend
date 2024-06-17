@@ -30,6 +30,7 @@ export const mapstyles = StyleSheet.create({
         color: 'white',
     },
 });
+
 export const mainmapstyles = StyleSheet.create({
     container: {
         flex: 1,
@@ -41,7 +42,7 @@ export const mainmapstyles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#FFF' // You can adjust the background color as needed
+        backgroundColor: '#FFF'
     },
     overlay: {
         position: 'absolute',
