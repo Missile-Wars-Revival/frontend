@@ -54,7 +54,14 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
     useEffect(() => {
         // Request permissions when component mounts
         (async () => {
-            const { status } = await Notifications.requestPermissionsAsync();
+            const { status } = await Notifications.requestPermissionsAsync({
+                ios: {
+                  allowAlert: true,
+                  allowBadge: true,
+                  allowSound: true,
+                  allowAnnouncements: true,
+                },
+              });
             if (status !== 'granted') {
                 alert('Permission to receive notifications was denied');
             }
