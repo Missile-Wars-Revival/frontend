@@ -5,7 +5,7 @@ import { AllLootDrops } from "./loot-drop";
 import { AllLandMines } from "./Landmine/map-landmines";
 import { AllMissiles } from "./Missile/map-missile";
 import { AllPlayers } from "./map-players";
-import { GeoLocation, Landmine, Loot, Missile } from "middle-earth";
+import { Landmine, Loot, Missile } from "middle-earth";
 import { fetchLootFromBackend, fetchMissilesFromBackend, fetchlandmineFromBackend } from "../temp/fetchMethods";
 import { loadLastKnownLocation, saveLocation } from '../util/mapstore';
 import { getLocationPermission } from "../hooks/userlocation";
@@ -14,6 +14,7 @@ import { dispatch } from "../api/dispatch";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCurrentLocation } from "../util/locationreq";
 import { mainmapstyles } from "../map-themes/map-stylesheet";
+import {location} from "../util/locationreq"
 
 interface MapCompProps {
     selectedMapStyle: any;
@@ -46,7 +47,7 @@ export const MapComp = (props: MapCompProps) => {
     const dispatchLocation = async () => {
         //temp location should be in dispatch.ts V
         setDbConnection(true);
-        const location: GeoLocation = await getCurrentLocation();
+        const location: location = await getCurrentLocation();
         if (token && userName && location.latitude && location.longitude) {
             await dispatch(token, userName, location.latitude, location.longitude);
             //console.log("dispatching", location, userName, token)
@@ -55,7 +56,7 @@ export const MapComp = (props: MapCompProps) => {
 
     const getlocation = async () => {
         try {
-            const location: GeoLocation = await getCurrentLocation(); // Use the defined type
+            const location: location = await getCurrentLocation(); // Use the defined type
             const newRegion = {
                 latitude: location.latitude,
                 longitude: location.longitude,
