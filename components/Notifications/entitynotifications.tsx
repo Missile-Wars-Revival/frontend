@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { GeoLocation, Landmine, Loot, Missile } from "middle-earth";
-import { fetchLootFromBackend, fetchMissilesFromBackend, fetchlandmineFromBackend } from "../temp/fetchMethods";
+import { fetchLootFromBackend, fetchMissilesFromBackend, fetchlandmineFromBackend } from "../../temp/fetchMethods";
 import * as TaskManager from 'expo-task-manager';
 import * as BackgroundFetch from 'expo-background-fetch';
-import { getCurrentLocation } from "../util/locationreq";
-import {location} from "../util/locationreq"
+import { getCurrentLocation } from "../../util/locationreq";
+import {location} from "../../util/locationreq"
 import * as Notifications from 'expo-notifications';
 
 Notifications.setNotificationHandler({
@@ -103,11 +103,39 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
             // Check if the calculated distance is within the proximityThreshold (which represents the radius in kilometers)
             return distance < proximityThreshold;
         };
-        
-        // Helper function to convert degrees to radians
+
+        // Function to determine if the item is near or within the missile radius
         const degreesToRadians = (degrees: number): number => {
             return degrees * Math.PI / 180;
-        };
+          };
+          
+          const checkMissileProximity = (itemLocation: location, missileRadius: number, userLocation: location) => {
+            const earthRadiusKm = 6371; // Earth's radius in kilometers
+          
+            const dLat = degreesToRadians(userLocation.latitude - itemLocation.latitude);
+            const dLon = degreesToRadians(userLocation.longitude - itemLocation.longitude);
+          
+            const lat1 = degreesToRadians(itemLocation.latitude);
+            const lat2 = degreesToRadians(userLocation.latitude);
+          
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                        Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+          
+            const distance = earthRadiusKm * c;
+          
+            // Check if the distance is within the missile radius
+            if (distance < missileRadius) {
+              return "within";
+            }
+            // Check if the distance is within the proximity threshold outside the missile radius
+            else if (distance < missileRadius + proximityThreshold) {
+              return "near";
+            }
+            // If neither condition is met
+            return "safe";
+          };
+    
 
         //Nearby entity Notifications
 
@@ -119,20 +147,37 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
         });
 
         missileData.forEach(missile => {
-            if (isWithinRangeofMissile(missile.destination, missile.radius, userLocation) && lastNotified.missile !== today) {
-                if (missile.status === 'Incoming') {
-                    // Send notification for incoming missile
-                    sendNotification("Nearby Missile!", `Be wary there is a Missile Nearby. Incoming Missile ETA: ${missile.etatimetoimpact}`); // Adjust ETA format as needed
-                    setLastNotified(prev => ({ ...prev, missile: today }));
-                } 
-                if (missile.status === 'Hit') {
-                    // Send notification for impacted missile
-                    sendNotification("Missile nearby!", "Impacted Missile Nearby. Be wary of the fallout!");
-                    setLastNotified(prev => ({ ...prev, missile: today }));
+            const proximityStatus = checkMissileProximity(missile.destination, missile.radius, userLocation ); // Add the proximity threshold as needed
+            const today = new Date().toISOString().slice(0, 10); // Ensure 'today' is defined and formatted correctly for comparison
+        
+            if (lastNotified.missile !== today) {
+                switch (proximityStatus) {
+                    case 'within':
+                        // Send specific notification if within the missile radius
+                        if (missile.status === 'Incoming') {
+                            sendNotification("RUN!! Missile Incoming!", `You are within the impact zone! Incoming Missile ETA: ${missile.etatimetoimpact}`);
+                            setLastNotified(prev => ({ ...prev, missile: today }));
+                        }
+                        if (missile.status === 'Hit') {
+                            sendNotification("Danger!", "A Missile has impacted within the zone. Be wary of the fallout!");
+                            setLastNotified(prev => ({ ...prev, missile: today }));
+                        }
+                        break;
+                    case 'near':
+                        // Send warning if near but not within the missile radius
+                        if (missile.status === 'Incoming') {
+                            sendNotification("Nearby Missile Alert!", `Be wary, there is a Missile Nearby. Incoming Missile ETA: ${missile.etatimetoimpact}`);
+                            setLastNotified(prev => ({ ...prev, missile: today }));
+                        }
+                        if (missile.status === 'Hit') {
+                            sendNotification("Missile Impact Warning!", "Impacted Missile Nearby. Be wary of the fallout!");
+                            setLastNotified(prev => ({ ...prev, missile: today }));
+                        }
+                        break;
                 }
             }
         });
-
+        
         landmineData.forEach(landmine => {
             if (isWithinRange(landmine.location) && lastNotified.landmine !== today) { 
                 sendNotification("Landmine Proximity Warning", "A landmine is nearby. Be cautious!");
