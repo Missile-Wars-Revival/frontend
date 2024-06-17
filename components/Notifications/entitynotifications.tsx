@@ -22,7 +22,7 @@ interface LastNotified {
 }
 
 const proximityThreshold = 0.002;
-const TASK_NAME = 'proximitynotificationTask';
+const TASK_NAME = 'EntityNotificationTask';
 
 export const ProximityCheckNotif: React.FC<{}> = () => {
     const [lootLocations, setLootLocations] = useState<Loot[]>([]);
@@ -30,6 +30,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
     const [landmineData, setLandmineLocations] = useState<Landmine[]>([]);
     const [userLocation, setUserLocation] = useState<location | null>(null);
     const [lastNotified, setLastNotified] = useState<LastNotified>({ loot: null, missile: null, landmine: null });
+    const [isTaskRegistered, setIsTaskRegistered] = useState(false); 
 
     const fetchLootAndMissiles = useCallback(async () => {
         setLootLocations(await fetchLootFromBackend());
@@ -61,11 +62,12 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
     }, []);
 
     const sendNotification = async (title: string, message: string) => {
+        console.log(`Sending notification: ${title} - ${message}`);
         await Notifications.scheduleNotificationAsync({
             content: { 
                 title: title,
                 body: message,
-                //sound: 'mySoundFile.wav',
+                sound: 'pop.mp3',
             },
             trigger: null,
             // trigger: {
@@ -78,12 +80,6 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
     const checkAndNotify = useCallback(() => {
         const today = new Date().toISOString().slice(0, 10);
         if (!userLocation) return;
-
-        const isWithinRange = (itemLocation: GeoLocation) => {
-            const distanceLat = Math.abs(userLocation.latitude - itemLocation.latitude);
-            const distanceLon = Math.abs(userLocation.longitude - itemLocation.longitude);
-            return distanceLat < proximityThreshold && distanceLon < proximityThreshold;
-        };
 
         // Function to convert degrees to radians
         const degreesToRadians = (degrees: number): number => {
@@ -141,7 +137,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
             // Convert missileRadius from meters to kilometers
             const itemRadiusKm = itemRadius / 1000;
             const nearbythreshold = itemRadiusKm + proximityThreshold;
-            
+
             // Check if the distance is within the missile radius
             if (distance < itemRadiusKm && itemtype == "loot") {
                 //console.log("Within")
@@ -242,37 +238,48 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
 
     useEffect(() => {
         const defineAndRegisterTask = async () => {
-            // Define the task first
-            TaskManager.defineTask(TASK_NAME, ({ data, error }) => {
-                if (error) {
-                    console.error('TaskManager Error:', error);
-                    return;
-                }
-                if (data) {
-                    checkAndNotify(); // Execute background logic
-                }
-            });
-    
-            // Then register the task
-            try {
-                await BackgroundFetch.registerTaskAsync(TASK_NAME, {
-                    minimumInterval: 60, // Run at least every minute
-                    stopOnTerminate: false, // Continue running even if the app is closed
-                    startOnBoot: true, // Start again automatically if the device is rebooted
+            if (!isTaskRegistered) {
+                console.log('Defining and registering background fetch task');
+                TaskManager.defineTask(TASK_NAME, async ({ data, error }) => {
+                    if (error) {
+                        console.error('TaskManager Error:', error);
+                        return;
+                    }
+                    console.log('Background fetch task triggered');
+                    try {
+                        await checkAndNotify(); // Execute background logic
+                    } catch (e) {
+                        console.error('Error executing background fetch:', e);
+                    }
                 });
-            } catch (error) {
-                console.error('Background Fetch registration failed:', error);
+    
+                try {
+                    const options = {
+                        minimumInterval: 900, // 15 minutes in seconds, realistic for iOS
+                        stopOnTerminate: false,
+                        startOnBoot: true,
+                    };
+                    await BackgroundFetch.registerTaskAsync(TASK_NAME, options);
+                    console.log('Background Fetch task registered successfully with options:', options);
+                    setIsTaskRegistered(true);
+                } catch (error) {
+                    console.error('Background Fetch registration failed:', error);
+                }
             }
         };
     
         defineAndRegisterTask();
     
         return () => {
-            BackgroundFetch.unregisterTaskAsync(TASK_NAME).catch(err => {
-                console.error('Failed to unregister task:', err);
-            });
+            if (isTaskRegistered) {
+                BackgroundFetch.unregisterTaskAsync(TASK_NAME)
+                    .then(() => {
+                        console.log('Task unregistered successfully');
+                    })
+                    .catch(err => console.error('Failed to unregister task:', err));
+            }
         };
-    }, [checkAndNotify]);
-
+    }, [isTaskRegistered]);
+    
     return null;
-};
+};    
