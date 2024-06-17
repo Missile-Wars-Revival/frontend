@@ -120,7 +120,7 @@ export const MapComp = (props: MapCompProps) => {
     }, [fetchLootAndMissiles]);
 
     const toggleMode = async () => {
-        const newMode = visibilitymode === 'friends' ? 'global' : 'global';
+        const newMode = visibilitymode === 'friends' ? 'global' : 'friends';
         setMode(newMode);
         friendsorglobal(newMode);
         if (newMode === 'global') {
