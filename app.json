@@ -33,7 +33,9 @@
     "android": {
       "permissions": [
         "ACCESS_FINE_LOCATION",
-        "ACCESS_BACKGROUND_LOCATION"
+        "ACCESS_BACKGROUND_LOCATION",
+        "RECEIVE_BOOT_COMPLETED",
+        "SCHEDULE_EXACT_ALARM"
       ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/logo.gif",
@@ -45,7 +47,18 @@
       "favicon": "./assets/logo.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/logo.png",
+          "color": "#ffffff",
+          "defaultChannel": "default",
+          "sounds": [
+            
+          ]
+        }
+      ]
     ],
     "owner": "osog",
     "runtimeVersion": {

@@ -1,11 +1,19 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { GeoLocation, Landmine, Loot, Missile } from "middle-earth";
 import { fetchLootFromBackend, fetchMissilesFromBackend, fetchlandmineFromBackend } from "../temp/fetchMethods";
-import * as Notifications from 'expo-notifications';
 import * as TaskManager from 'expo-task-manager';
 import * as BackgroundFetch from 'expo-background-fetch';
 import { getCurrentLocation } from "../util/locationreq";
 import {location} from "../util/locationreq"
+import * as Notifications from 'expo-notifications';
+
+Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: false,
+      shouldSetBadge: false,
+    }),
+  });
 
 interface LastNotified {
     loot: string | null;
@@ -44,7 +52,10 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
 
     const sendNotification = async (title: string, message: string) => {
         await Notifications.scheduleNotificationAsync({
-            content: { title, body: message },
+            content: { 
+                title: title,
+                body: message 
+            },
             trigger: null,
         });
     };
@@ -101,6 +112,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                 if (data) {
                     checkAndNotify(); // Execute background logic
                 }
+                console.log("task defined")
             });
     
             // Then register the task
@@ -110,6 +122,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                     stopOnTerminate: false, // Continue running even if the app is closed
                     startOnBoot: true, // Start again automatically if the device is rebooted
                 });
+                console.log("task reigsterd")
             } catch (error) {
                 console.error('Background Fetch registration failed:', error);
             }

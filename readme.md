@@ -33,6 +33,9 @@ To login in to an account use either:
 Password: is `Testing123!`
 
 ## Build 
+## Pre-Build:
+- `npx expo prebuild --platform ios`
+
 ### For Preview:
 - `eas build --profile preview --platform all` or `eas build --profile preview --platform ios`
 
