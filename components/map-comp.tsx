@@ -15,7 +15,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCurrentLocation } from "../util/locationreq";
 import { mainmapstyles } from "../map-themes/map-stylesheet";
 import {location} from "../util/locationreq"
-import { ProximityCheckNotif } from "./collision";
 
 interface MapCompProps {
     selectedMapStyle: any;
@@ -201,7 +200,6 @@ export const MapComp = (props: MapCompProps) => {
                 />
                 <Text style={mainmapstyles.switchText}>{visibilitymode === 'global' ? 'Global' : 'Friends'}</Text>
             </View>
-            <ProximityCheckNotif/>
         </View>
     );
 };

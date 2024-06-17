@@ -16,11 +16,11 @@ import { GeoLocation, Landmine, Loot, Missile } from "middle-earth";
                         ),
               new Missile(
                           "Ballista",                             // type
-                          "Approaching",                          // status
-                          new GeoLocation(51.025316, -3.115612),    // destination
+                          "Incoming",                             // status
+                          new GeoLocation(51.025316, -3.115612),  // destination
                           new GeoLocation(52.025316, -3.115612),  // currentLocation
                           1,                                      // missileId
-                          50,                                     // radius
+                          150,                                    // radius
                           "",                                     // sentbyusername
                           "",                                     // timesent
                           "",                                     // etatimetoimpact
@@ -34,13 +34,13 @@ import { GeoLocation, Landmine, Loot, Missile } from "middle-earth";
     return [
       new Loot(
         new GeoLocation(51.026281, -3.113764),    //location
-        "",                                       //Rarity
+        "Uncommon",                               //Rarity
         "",                                       //expiretime
       ),
       new Loot(
         new GeoLocation(45.305, -0.86),           //location
         "",                                       //Rarity
-        "",                                       //expiretime
+        "Common",                                 //expiretime
       )
 
 

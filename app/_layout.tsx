@@ -7,6 +7,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import SplashScreen from './splashscreen'; 
 import { FontAwesome } from '@expo/vector-icons';
+import { ProximityCheckNotif } from "../components/collision";
 
 export default function RootLayout() {
   const queryClient = new QueryClient();
@@ -80,6 +81,7 @@ function NavBar() {
           </Text>
         </TouchableOpacity>
       ))}
+      <ProximityCheckNotif/>
     </View>
   );
 }

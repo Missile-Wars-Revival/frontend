@@ -10,7 +10,7 @@ import * as Notifications from 'expo-notifications';
 Notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldShowAlert: true,
-      shouldPlaySound: false,
+      shouldPlaySound: true,
       shouldSetBadge: false,
     }),
   });
@@ -22,7 +22,7 @@ interface LastNotified {
 }
 
 const proximityThreshold = 0.002;
-const TASK_NAME = 'proximityTask';
+const TASK_NAME = 'proximitynotificationTask';
 
 export const ProximityCheckNotif: React.FC<{}> = () => {
     const [lootLocations, setLootLocations] = useState<Loot[]>([]);
@@ -50,13 +50,28 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
         getCurrentLocationWrapper();
     }, []);
 
+    useEffect(() => {
+        // Request permissions when component mounts
+        (async () => {
+            const { status } = await Notifications.requestPermissionsAsync();
+            if (status !== 'granted') {
+                alert('Permission to receive notifications was denied');
+            }
+        })();
+    }, []);
+
     const sendNotification = async (title: string, message: string) => {
         await Notifications.scheduleNotificationAsync({
             content: { 
                 title: title,
-                body: message 
+                body: message,
+                //sound: 'mySoundFile.wav',
             },
             trigger: null,
+            // trigger: {
+            //     seconds: 2,
+            //     channelId: 'incoming-entities',
+            //   },
         });
     };
 
@@ -69,28 +84,57 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
             const distanceLon = Math.abs(userLocation.longitude - itemLocation.longitude);
             return distanceLat < proximityThreshold && distanceLon < proximityThreshold;
         };
+        // to take into consideration missile radius
+        const isWithinRangeofMissile = (itemLocation: location, proximityThreshold: number, userLocation: location): boolean => {
+            const earthRadiusKm = 6371; // Earth's radius in kilometers
+        
+            const dLat = degreesToRadians(userLocation.latitude - itemLocation.latitude);
+            const dLon = degreesToRadians(userLocation.longitude - itemLocation.longitude);
+        
+            const lat1 = degreesToRadians(itemLocation.latitude);
+            const lat2 = degreesToRadians(userLocation.latitude);
+        
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                      Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        
+            const distance = earthRadiusKm * c;
+        
+            // Check if the calculated distance is within the proximityThreshold (which represents the radius in kilometers)
+            return distance < proximityThreshold;
+        };
+        
+        // Helper function to convert degrees to radians
+        const degreesToRadians = (degrees: number): number => {
+            return degrees * Math.PI / 180;
+        };
+
+        //Nearby entity Notifications
 
         lootLocations.forEach(loot => {
             if (isWithinRange(loot.location) && lastNotified.loot !== today) {
-                sendNotification("Loot Nearby", "There is loot nearby!");
+                sendNotification("Loot Nearby", `Look around you! Rarity: ${loot.rarity}`);
                 setLastNotified(prev => ({ ...prev, loot: today }));
             }
         });
 
         missileData.forEach(missile => {
-            if (isWithinRange(missile.currentLocation)) {
-                if (missile.status === 'Incoming' && lastNotified.missile !== today) {
-                    sendNotification("Incoming Missile", `Incoming missile ETA: ${missile.etatimetoimpact}`);
+            if (isWithinRangeofMissile(missile.destination, missile.radius, userLocation) && lastNotified.missile !== today) {
+                if (missile.status === 'Incoming') {
+                    // Send notification for incoming missile
+                    sendNotification("Nearby Missile!", `Be wary there is a Missile Nearby. Incoming Missile ETA: ${missile.etatimetoimpact}`); // Adjust ETA format as needed
                     setLastNotified(prev => ({ ...prev, missile: today }));
-                } else if (missile.status === 'Hit' && lastNotified.missile !== today) {
-                    sendNotification("Impacted Missile Nearby", "Impacted missile nearby. Be wary of the fallout!");
+                } 
+                if (missile.status === 'Hit') {
+                    // Send notification for impacted missile
+                    sendNotification("Missile nearby!", "Impacted Missile Nearby. Be wary of the fallout!");
                     setLastNotified(prev => ({ ...prev, missile: today }));
                 }
             }
         });
 
         landmineData.forEach(landmine => {
-            if (isWithinRange(landmine.location) && lastNotified.landmine !== today) {
+            if (isWithinRange(landmine.location) && lastNotified.landmine !== today) { 
                 sendNotification("Landmine Proximity Warning", "A landmine is nearby. Be cautious!");
                 setLastNotified(prev => ({ ...prev, landmine: today }));
             }
@@ -112,7 +156,6 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                 if (data) {
                     checkAndNotify(); // Execute background logic
                 }
-                console.log("task defined")
             });
     
             // Then register the task
@@ -122,7 +165,6 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                     stopOnTerminate: false, // Continue running even if the app is closed
                     startOnBoot: true, // Start again automatically if the device is rebooted
                 });
-                console.log("task reigsterd")
             } catch (error) {
                 console.error('Background Fetch registration failed:', error);
             }
