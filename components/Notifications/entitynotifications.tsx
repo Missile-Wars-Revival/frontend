@@ -84,89 +84,121 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
             const distanceLon = Math.abs(userLocation.longitude - itemLocation.longitude);
             return distanceLat < proximityThreshold && distanceLon < proximityThreshold;
         };
-        // to take into consideration missile radius
-        const isWithinRangeofMissile = (itemLocation: location, proximityThreshold: number, userLocation: location): boolean => {
-            const earthRadiusKm = 6371; // Earth's radius in kilometers
-        
-            const dLat = degreesToRadians(userLocation.latitude - itemLocation.latitude);
-            const dLon = degreesToRadians(userLocation.longitude - itemLocation.longitude);
-        
-            const lat1 = degreesToRadians(itemLocation.latitude);
-            const lat2 = degreesToRadians(userLocation.latitude);
-        
-            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                      Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        
-            const distance = earthRadiusKm * c;
-        
-            // Check if the calculated distance is within the proximityThreshold (which represents the radius in kilometers)
-            return distance < proximityThreshold;
+
+        // Function to convert degrees to radians
+        const degreesToRadians = (degrees: number): number => {
+            return degrees * Math.PI / 180;
         };
 
         // Function to determine if the item is near or within the missile radius
-        const degreesToRadians = (degrees: number): number => {
-            return degrees * Math.PI / 180;
-          };
-          
-          const checkMissileProximity = (itemLocation: location, missileRadius: number, userLocation: location) => {
+        const checkMissileProximity = (itemLocation: location, missileRadius: number, userLocation: location ) => {
             const earthRadiusKm = 6371; // Earth's radius in kilometers
-          
             const dLat = degreesToRadians(userLocation.latitude - itemLocation.latitude);
             const dLon = degreesToRadians(userLocation.longitude - itemLocation.longitude);
-          
             const lat1 = degreesToRadians(itemLocation.latitude);
             const lat2 = degreesToRadians(userLocation.latitude);
-          
             const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
                         Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-          
-            const distance = earthRadiusKm * c;
-          
+            const distance = earthRadiusKm * c; // distance in kilometers
+            const distancem = distance / 1000;
+            // Convert missileRadius from meters to kilometers
+            const missileRadiusKm = missileRadius / 1000;
+            const nearbythreshold = missileRadiusKm + proximityThreshold;
+            //console.log(`Calculated distance: ${distancem} m, Missile radius: ${missileRadiusKm} km, Proximity Threshold: ${proximityThreshold} km, Threshold: ${missileRadiusKm+proximityThreshold} km`);
             // Check if the distance is within the missile radius
-            if (distance < missileRadius) {
-              return "within";
+            if (distance < missileRadiusKm) {
+                //console.log("Within")
+                return "within-missile";
             }
             // Check if the distance is within the proximity threshold outside the missile radius
-            else if (distance < missileRadius + proximityThreshold) {
-              return "near";
+            if (distancem < nearbythreshold) {
+                //console.log("near")
+                return "near-missile";
             }
-            // If neither condition is met
-            return "safe";
-          };
-    
+            else {
+                // If neither condition is met
+                //console.log("safe")
+                return "safe";
+            }
+        }; 
+        const checkLootandLandmineProximity = (itemtype: string, itemLocation: location, userLocation: location, itemRadius: number ) => {
+            const earthRadiusKm = 6371; // Earth's radius in kilometers
+            const dLat = degreesToRadians(userLocation.latitude - itemLocation.latitude);
+            const dLon = degreesToRadians(userLocation.longitude - itemLocation.longitude);
+            const lat1 = degreesToRadians(itemLocation.latitude);
+            const lat2 = degreesToRadians(userLocation.latitude);
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                        Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            const distance = earthRadiusKm * c; // distance in kilometers
+            const distancem = distance / 1000;
+            // Convert missileRadius from meters to kilometers
+            const itemRadiusKm = itemRadius / 1000;
+            const nearbythreshold = itemRadiusKm + proximityThreshold;
+            // Check if the distance is within the missile radius
+            if (distance < itemRadiusKm && itemtype == "loot") {
+                //console.log("Within")
+                return "within-loot";
+            }
+            if (distance < itemRadiusKm && itemtype == "landmine") {
+                //console.log("Within")
+                return "within-landmine";
+            }
+            // Check if the distance is within the proximity threshold outside the missile radius
+            if (distancem < nearbythreshold && itemtype == "loot") {
+                //console.log("near")
+                return "near-loot";
+            }
+            if (distancem < nearbythreshold && itemtype == "landmine") {
+                //console.log("near")
+                return "near-landmine";
+            }
+            else {
+                // If neither condition is met
+                //console.log("safe")
+                return "safe";
+            }
+        };       
 
-        //Nearby entity Notifications
-
+        //Notifications:
         lootLocations.forEach(loot => {
-            if (isWithinRange(loot.location) && lastNotified.loot !== today) {
-                sendNotification("Loot Nearby", `Look around you! Rarity: ${loot.rarity}`);
-                setLastNotified(prev => ({ ...prev, loot: today }));
+            const proximityStatus = checkLootandLandmineProximity("loot", loot.location, userLocation, 10 );
+            if (lastNotified.loot !== today) {
+                switch (proximityStatus) {
+                    case 'within-loot':
+                        //inside landmine radius
+                            sendNotification("Loot Pickup", "Open the App to collect your loot!");
+                            setLastNotified(prev => ({ ...prev, loot: today }));
+                        break;
+                    case 'near-loot':
+                        // Send warning if near but not within the loot radius
+                            sendNotification("Loot Nearby", `Look around you! Rarity: ${loot.rarity}`);
+                            setLastNotified(prev => ({ ...prev, loot: today }));
+                        break;
+                }
             }
         });
 
         missileData.forEach(missile => {
-            const proximityStatus = checkMissileProximity(missile.destination, missile.radius, userLocation ); // Add the proximity threshold as needed
-            const today = new Date().toISOString().slice(0, 10); // Ensure 'today' is defined and formatted correctly for comparison
-        
+            const proximityStatus = checkMissileProximity(missile.destination, missile.radius, userLocation );
             if (lastNotified.missile !== today) {
                 switch (proximityStatus) {
-                    case 'within':
+                    case 'within-missile':
                         // Send specific notification if within the missile radius
                         if (missile.status === 'Incoming') {
                             sendNotification("RUN!! Missile Incoming!", `You are within the impact zone! Incoming Missile ETA: ${missile.etatimetoimpact}`);
                             setLastNotified(prev => ({ ...prev, missile: today }));
                         }
                         if (missile.status === 'Hit') {
-                            sendNotification("Danger!", "A Missile has impacted within the zone. Be wary of the fallout!");
+                            sendNotification("Danger!", "A Missile has impacted within the zone. You may start taking damage!");
                             setLastNotified(prev => ({ ...prev, missile: today }));
                         }
                         break;
-                    case 'near':
+                    case 'near-missile':
                         // Send warning if near but not within the missile radius
                         if (missile.status === 'Incoming') {
-                            sendNotification("Nearby Missile Alert!", `Be wary, there is a Missile Nearby. Incoming Missile ETA: ${missile.etatimetoimpact}`);
+                            sendNotification("Incoming Missile Alert!", `Be wary, there is an incoming missile nearby. Incoming Missile ETA: ${missile.etatimetoimpact}`);
                             setLastNotified(prev => ({ ...prev, missile: today }));
                         }
                         if (missile.status === 'Hit') {
@@ -179,11 +211,23 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
         });
         
         landmineData.forEach(landmine => {
-            if (isWithinRange(landmine.location) && lastNotified.landmine !== today) { 
-                sendNotification("Landmine Proximity Warning", "A landmine is nearby. Be cautious!");
-                setLastNotified(prev => ({ ...prev, landmine: today }));
+            const proximityStatus = checkLootandLandmineProximity("landmine",landmine.location, userLocation, 10 );
+            if (lastNotified.landmine !== today) {
+                switch (proximityStatus) {
+                    case 'within-loot':
+                        //inside landmine radius
+                            sendNotification("Danger!", "You just stepped on a Landmine! Damage has been taken.");
+                            setLastNotified(prev => ({ ...prev, landmine: today }));
+                        break;
+                    case 'near-loot':
+                        // Send warning if near but not within the landmine radius
+                            sendNotification("Landmine Proximity Warning", "A landmine is nearby. Be cautious!");
+                            setLastNotified(prev => ({ ...prev, landmine: today }));
+                        break;
+                }
             }
         });
+
     }, [userLocation, lootLocations, missileData, landmineData, lastNotified]);
 
     useEffect(() => {
