@@ -23,8 +23,9 @@ export const storepagestyles = StyleSheet.create({
     },
     currencyText: {
       alignSelf: 'flex-end',
-      margin: 10,
+      margin: 0.1,
     },
+    //cart:
     cartContainer: {
         flex: 1,
         padding: 16,
@@ -75,6 +76,7 @@ export const storepagestyles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
       },
+      //items 
       itemContainer: {
         padding: 16,
         marginVertical: 8,

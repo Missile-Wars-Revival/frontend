@@ -35,6 +35,9 @@ const Cart: React.FC<CartProps> = ({ cart, onRemove }) => {
 
   return (
     <View style={storepagestyles.cartContainer}>
+      <Text></Text>
+      <Text></Text>
+      <Text></Text>
       <FlatList
         data={cart}
         keyExtractor={(item) => item.product.id.toString()}

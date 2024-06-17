@@ -79,6 +79,9 @@ const StorePage: React.FC = () => {
         <Cart cart={cart} onRemove={handleRemove} />
       ) : (
         <>
+        <Text></Text>
+        <Text></Text>
+        <Text></Text>
           <View style={storepagestyles.categoryContainer}>
             {['All', 'Missiles', 'Landmines', 'Loot Drops'].map((category) => (
               <TouchableOpacity key={category} onPress={() => setSelectedCategory(category)} style={storepagestyles.categoryButton}>
