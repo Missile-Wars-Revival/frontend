@@ -25,7 +25,7 @@ export const MapComp = (props: MapCompProps) => {
     const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(false);
     const [isLoading, setIsLoading] = useState(true);
     const [hasDbConnection, setDbConnection] = useState(false);
-    const [visibilitymode, setMode] = useState<'friends' | 'global'>('friends');
+    const [visibilitymode, setMode] = useState<'friends' | 'global'>('global');
 
     const [region, setRegion] = useState({
         latitude: 0,
