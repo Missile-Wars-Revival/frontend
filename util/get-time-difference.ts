@@ -36,7 +36,7 @@ export const isInactiveFor12Hours = (timestamp: TimeStamp): boolean => {
 };
 
 
-//landmine timestamp
+//loot and landmine timestamp
 export const convertimestampfuture = (timestamp: string | number | Date) => {
   const currentTime = new Date().getTime();
   const eventTime = new Date(timestamp).getTime();

@@ -1,8 +1,3 @@
-//export const userNAME = "Test2";
-
-//export const passWORD = "Testing123!";
-
-
 import { useEffect, useState } from "react";
 import { getCredentials } from "./logincache";
 import { router } from "expo-router";

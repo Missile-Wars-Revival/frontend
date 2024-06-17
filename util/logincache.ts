@@ -40,10 +40,9 @@ export async function clearCredentials(): Promise<void> {
     await SecureStore.deleteItemAsync("token");
 
     // Clearing additional items stored in AsyncStorage
-    await AsyncStorage.removeItem("visibilitymode");
-    await AsyncStorage.removeItem("selectedMapStyle");
-    await AsyncStorage.removeItem("regionlocation");
-    await AsyncStorage.removeItem("cartitems");
+    await AsyncStorage.removeItem("visibilitymode"); //Friends or global map (this may be stored backend eventually)
+    await AsyncStorage.removeItem("selectedMapStyle"); //Map theme
+    await AsyncStorage.removeItem("regionlocation"); //Cache of locaiton
 
     console.log("All credentials and settings successfully cleared.");
   } catch (error) {
