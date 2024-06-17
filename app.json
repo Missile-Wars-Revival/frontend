@@ -51,7 +51,6 @@
           "color": "#ffffff",
           "defaultChannel": "default",
           "sounds": [
-            "../assets/sounds/notifications/pop.mp3"
           ]
         }
       ]

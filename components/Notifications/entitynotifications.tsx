@@ -74,7 +74,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
             content: { 
                 title: title,
                 body: message,
-                sound: 'pop.mp3',
+                //sound: 'pop.mp3',
             },
             trigger: null,
             // trigger: {
