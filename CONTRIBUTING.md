@@ -37,6 +37,6 @@ Some reasons include:
 # Role of Lead Developers
 We want to ensure everyone can smoothly develop by removing blockers and reducing merge conflicts. If you have any questions you can always ping us on discord. 
 Our lead devs are currently:
-- **Lead Backend:** @clxud
-- **Lead Frontend:** @thevin (discord) and @graykevinb (github)
-- **Lead Dev:** @Tristan (discord) and @longtimeno-c (github)
+- **Lead Developer + Lead Frontend:** @Tristan (discord) and @longtimeno-c (github)
+- **Lead Backend:** @clxud, @SwissArmyWrench
+
