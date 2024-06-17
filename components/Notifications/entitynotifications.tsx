@@ -126,16 +126,22 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
             const earthRadiusKm = 6371; // Earth's radius in kilometers
             const dLat = degreesToRadians(userLocation.latitude - itemLocation.latitude);
             const dLon = degreesToRadians(userLocation.longitude - itemLocation.longitude);
+
             const lat1 = degreesToRadians(itemLocation.latitude);
             const lat2 = degreesToRadians(userLocation.latitude);
+
             const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
                         Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
+
             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
             const distance = earthRadiusKm * c; // distance in kilometers
             const distancem = distance / 1000;
+
             // Convert missileRadius from meters to kilometers
             const itemRadiusKm = itemRadius / 1000;
             const nearbythreshold = itemRadiusKm + proximityThreshold;
+            
             // Check if the distance is within the missile radius
             if (distance < itemRadiusKm && itemtype == "loot") {
                 //console.log("Within")
