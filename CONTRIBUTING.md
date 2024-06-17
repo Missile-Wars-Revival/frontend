@@ -1,5 +1,5 @@
 # Development Process
-We can sum everyhing as:
+We can sum everything as:
 1. Find an Issue
 2. Create a feature branch
 3. Make a PR and the lead devs will review it
@@ -8,7 +8,7 @@ Below we'll discuss the process in more detail.
 
 ## 1. Finding A Task
 First check the currently open issues for unassigned ones.
-If its bug/ new feature make sure its documentated correctly in the PR you make
+If its bug/ new feature make sure its documented correctly in the PR you make
 
 ## 2. Development
 **Do not push to main**. You may know what you're doing, but no one will know that a merge just happened which could break other's code and cause substantial delays. Any push to merge by a non lead dev will be immediately be undone without question.
