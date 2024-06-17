@@ -1,6 +1,3 @@
-
-//Needs a revamp
-
 import React, { useCallback, useEffect, useState } from "react";
 import { GeoLocation, Landmine, Loot, Missile } from "middle-earth";
 import { fetchLootFromBackend, fetchMissilesFromBackend, fetchlandmineFromBackend } from "../temp/fetchMethods";
@@ -8,6 +5,7 @@ import * as Notifications from 'expo-notifications';
 import * as TaskManager from 'expo-task-manager';
 import * as BackgroundFetch from 'expo-background-fetch';
 import { getCurrentLocation } from "../util/locationreq";
+import {location} from "../util/locationreq"
 
 interface LastNotified {
     loot: string | null;
@@ -22,7 +20,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
     const [lootLocations, setLootLocations] = useState<Loot[]>([]);
     const [missileData, setMissileData] = useState<Missile[]>([]);
     const [landmineData, setLandmineLocations] = useState<Landmine[]>([]);
-    const [userLocation, setUserLocation] = useState<GeoLocation | null>(null);
+    const [userLocation, setUserLocation] = useState<location | null>(null);
     const [lastNotified, setLastNotified] = useState<LastNotified>({ loot: null, missile: null, landmine: null });
 
     const fetchLootAndMissiles = useCallback(async () => {
@@ -36,7 +34,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
     }, [fetchLootAndMissiles]);
 
     const getCurrentLocationWrapper = async () => {
-        const location: GeoLocation = await getCurrentLocation();
+        const location: location = await getCurrentLocation();
         setUserLocation(location);
     };
 
