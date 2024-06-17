@@ -27,16 +27,15 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.longtimenoc.misslewars",
       "infoPlist": {
-        "NSLocationAlwaysUsageDescription": "This app needs access to your location to alert about nearby items of interest."
+        "NSLocationAlwaysUsageDescription": "This app needs access to your location to alert about nearby items of interest.",
+        "UIBackgroundModes": ["location", "fetch"]
       }
     },
     "android": {
-      "permissions": [
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_BACKGROUND_LOCATION",
-        "RECEIVE_BOOT_COMPLETED",
-        "SCHEDULE_EXACT_ALARM"
-      ],
+      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_BACKGROUND_LOCATION", "RECEIVE_BOOT_COMPLETED", "SCHEDULE_EXACT_ALARM"],
+      "backgroundFetch": {
+        "minimumInterval": 60
+      },
       "adaptiveIcon": {
         "foregroundImage": "./assets/logo.gif",
         "backgroundColor": "#ffffff"

@@ -163,7 +163,7 @@ export const MapComp = (props: MapCompProps) => {
         <View style={mainmapstyles.loaderContainer}>
             <ActivityIndicator size="large" color="#0000ff" />
             <Text></Text>
-            <Text style={mainmapstyles.overlayText}>Loading the Map for the first time!</Text>
+            <Text style={mainmapstyles.overlayText}>Connecting To Servers...</Text>
         </View>
         );
     }
