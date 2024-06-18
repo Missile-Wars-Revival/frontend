@@ -28,16 +28,20 @@
       "bundleIdentifier": "com.longtimenoc.misslewars",
       "infoPlist": {
         "NSLocationAlwaysUsageDescription": "This app needs access to your location to alert about nearby items of interest.",
-        "UIBackgroundModes": ["location", "fetch", "EntityNotificationTask"]
+        "UIBackgroundModes": ["location", "fetch"]
       }
     },
     "android": {
       "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_BACKGROUND_LOCATION", "RECEIVE_BOOT_COMPLETED", "SCHEDULE_EXACT_ALARM"],
       "adaptiveIcon": {
-        "foregroundImage": "./assets/logo.gif",
+        "foregroundImage": "./assets/logo.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.longtimenoc.misslewars"
+    },
+    "backgroundFetch": {
+      "taskName": "BACKGROUND_LOCATION_TASK",
+      "minimumInterval": 900
     },
     "web": {
       "favicon": "./assets/logo.png"

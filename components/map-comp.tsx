@@ -15,6 +15,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCurrentLocation } from "../util/locationreq";
 import { mainmapstyles } from "../map-themes/map-stylesheet";
 import {location} from "../util/locationreq"
+import { DefRegLocationTask } from "../util/backgroundtasks";
 
 interface MapCompProps {
     selectedMapStyle: any;
@@ -115,6 +116,7 @@ export const MapComp = (props: MapCompProps) => {
             fetchLootAndMissiles();
             initializeLocation();
             dispatchLocation();
+            DefRegLocationTask();
         }, 1000);
 
         return () => clearInterval(intervalId);
