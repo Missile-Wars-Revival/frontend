@@ -57,7 +57,7 @@ export const MissilePlacementPopup = ({ visible, onClose, selectedMissile }) => 
     if (marker.latitude === currentLocation.latitude && marker.longitude === currentLocation.longitude) {
       Alert.alert('Warning', 'Firing a Missile at your current location is not recommended!');
     } else {
-      console.log(`FIRING Missile: Coordinates: ${marker.latitude}, ${marker.longitude}; User: ${userName} Missile Type: ${selectedMissile}`);
+      console.log(`FIRING Missile: Dest coords: ${marker.latitude}, ${marker.longitude}; sentbyUser: ${userName} Missile Type: ${selectedMissile}, current coords: ${currentLocation.latitude}, ${currentLocation.longitude}`);
       onClose();
     }
   };

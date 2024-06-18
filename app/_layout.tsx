@@ -1,6 +1,6 @@
 import { Stack } from "expo-router";
 import 'react-native-reanimated';
-import React, { useState } from "react";
+import React, { ReactNode, createContext, useContext, useEffect, useState } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import { View, Text, TouchableOpacity } from 'react-native';
@@ -8,7 +8,39 @@ import { useRouter, usePathname } from 'expo-router';
 import SplashScreen from './splashscreen'; 
 import { FontAwesome } from '@expo/vector-icons';
 import { ProximityCheckNotif } from "../components/Notifications/entitynotifications";
+import useWebSocket, {  } from "../hooks/api/websockets";
+import { WebSocketMessage } from "middle-earth";
 
+interface WebSocketContextProps {
+  data: any;
+  sendWebsocket: (data: WebSocketMessage) => void;
+}
+
+const WebSocketContext = createContext<WebSocketContextProps | undefined>(undefined);
+
+export const useWebSocketContext = () => {
+  const context = useContext(WebSocketContext);
+  if (!context) {
+    throw new Error("useWebSocketContext must be used within a WebSocketProvider");
+  }
+  return context;
+};
+
+interface WebSocketProviderProps {
+  children: ReactNode;
+}
+
+const WebSocketProvider = ({ children }: WebSocketProviderProps) => {
+  const { data, sendWebsocket } = useWebSocket();
+
+  return (
+    <WebSocketContext.Provider value={{ data, sendWebsocket }}>
+      {children}
+    </WebSocketContext.Provider>
+  );
+};
+
+// RootLayout component
 export default function RootLayout() {
   const queryClient = new QueryClient();
   const [isSplashVisible, setIsSplashVisible] = useState(true);
@@ -23,7 +55,9 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <RootLayoutNav />
+      <WebSocketProvider>
+        <RootLayoutNav />
+      </WebSocketProvider>
     </QueryClientProvider>
   );
 }

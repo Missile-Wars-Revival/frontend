@@ -69,7 +69,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
     }, []);
 
     const sendNotification = async (title: string, message: string) => {
-        console.log(`Sending notification: ${title} - ${message}`);
+        //console.log(`Sending notification: ${title} - ${message}`);
         await Notifications.scheduleNotificationAsync({
             content: { 
                 title: title,
@@ -246,17 +246,17 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
     useEffect(() => {
         const defineAndRegisterTask = async () => {
             if (!isTaskRegistered) {
-                console.log('Defining and registering background fetch task');
+                //console.log('Defining and registering background fetch task');
                 TaskManager.defineTask(TASK_NAME, async ({ data, error }) => {
                     if (error) {
                         console.error('TaskManager Error:', error);
                         return;
                     }
-                    console.log('Background fetch task triggered');
+                    //console.log('Background fetch task triggered');
                     try {
                         await checkAndNotify(); // Execute background logic
                     } catch (e) {
-                        console.error('Error executing background fetch:', e);
+                        //console.error('Error executing background fetch:', e);
                     }
                 });
     
@@ -267,7 +267,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                         startOnBoot: true,
                     };
                     await BackgroundFetch.registerTaskAsync(TASK_NAME, options);
-                    console.log('Background Fetch task registered successfully with options:', options);
+                    //console.log('Background Fetch task registered successfully with options:', options);
                     setIsTaskRegistered(true);
                 } catch (error) {
                     console.error('Background Fetch registration failed:', error);
@@ -281,7 +281,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
             if (isTaskRegistered) {
                 BackgroundFetch.unregisterTaskAsync(TASK_NAME)
                     .then(() => {
-                        console.log('Task unregistered successfully');
+                        //console.log('Task unregistered successfully');
                     })
                     .catch(err => console.error('Failed to unregister task:', err));
             }
