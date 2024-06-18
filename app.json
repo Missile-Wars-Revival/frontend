@@ -39,10 +39,6 @@
       },
       "package": "com.longtimenoc.misslewars"
     },
-    "backgroundFetch": {
-      "taskName": "BACKGROUND_LOCATION_TASK",
-      "minimumInterval": 900
-    },
     "web": {
       "favicon": "./assets/logo.png"
     },
