@@ -1,32 +1,25 @@
 import React from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
-
-interface Product {
-  id: number;
-  name: string;
-  price: number;
-  image: any;
-  description: string;
-}
+import { GameItem } from 'middle-earth';
 
 interface CartItem {
-  product: Product;
+  product: GameItem;
   quantity: number;
 }
 
 interface CartProps {
   cart: CartItem[];
-  onRemove: (productId: number) => void;
+  onRemove: (productId: string) => void;
 }
 
 const Cart: React.FC<CartProps> = ({ cart, onRemove }) => {
-  const totalPrice = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+  const totalPrice = cart.reduce((sum, item) => sum + item.product.cost * item.quantity, 0);
 
   const renderItem = ({ item }: { item: CartItem }) => (
     <View style={styles.cartItem}>
       <Text style={styles.productName}>{item.product.name}</Text>
       <Text style={styles.productPrice}>
-        {item.quantity} x ${item.product.price.toFixed(2)}
+        {item.quantity} x ${item.product.cost.toFixed(2)}
       </Text>
       <TouchableOpacity onPress={() => onRemove(item.product.id)} style={styles.removeButton}>
         <Text style={styles.removeButtonText}>Remove</Text>

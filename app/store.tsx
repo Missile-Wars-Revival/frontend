@@ -3,28 +3,21 @@ import { View, FlatList, Button, StyleSheet, Text } from 'react-native';
 import ProductItem from '../components/Store/productitem';
 import Cart from '../components/Store/cart';
 import { useUserName } from '../util/fetchusernameglobal';
+import { GameItem } from 'middle-earth';
 
-interface Product {
-  id: number;
-  name: string;
-  price: number;
-  image: any;
-  description: string;
-}
-
-const products: Product[] = [
-  { id: 1, name: 'Amplifier', price: 9.99, image: require('../assets/missiles/Amplifier.png'), description: 'Missile' },
-  { id: 2, name: 'Ballista', price: 8.99, image: require('../assets/missiles/Ballista.png'), description: 'Missile' },
-  { id: 3, name: 'Big Bertha', price: 10.00, image: require('../assets/missiles/BigBertha.png'), description: 'Missile' },
+const products: GameItem[] = [
+  { id: "1", name: 'Amplifier', cost: 9.99, image: require('../assets/missiles/Amplifier.png'), description: 'Missile' },
+  { id: "2", name: 'Ballista', cost: 8.99, image: require('../assets/missiles/Ballista.png'), description: 'Missile' },
+  { id: "3", name: 'Big Bertha', cost: 10.00, image: require('../assets/missiles/BigBertha.png'), description: 'Missile' },
 ];
 
 const StorePage: React.FC = () => {
   const userNAME = useUserName(); //logged in user
 
-  const [cart, setCart] = useState<{ product: Product; quantity: number }[]>([]);
+  const [cart, setCart] = useState<{ product: GameItem; quantity: number }[]>([]);
   const [isCartVisible, setCartVisible] = useState<boolean>(false);
 
-  const addToCart = (product: Product) => {
+  const addToCart = (product: GameItem) => {
     setCart((prevCart) => {
       const cartItem = prevCart.find((item) => item.product.id === product.id);
       if (cartItem) {
@@ -37,7 +30,7 @@ const StorePage: React.FC = () => {
     });
   };
 
-  const handleRemove = (productId: number) => {
+  const handleRemove = (productId: string) => {
     
     // Implement logic to remove the product from the cart
     // For example:
