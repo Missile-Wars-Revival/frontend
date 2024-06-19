@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Button, Image, StyleSheet, Animated, PanResponder } from 'react-native';
+import { Text, Button, Image, StyleSheet, Animated, PanResponder } from 'react-native';
 
 interface Product {
   id: number;
