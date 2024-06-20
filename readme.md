@@ -1,6 +1,7 @@
 # This is the repository for the Missile Wars App
+[![Dependency review](https://github.com/Missile-Wars-Revival/frontend/actions/workflows/dependency-review.yml/badge.svg)](https://github.com/Missile-Wars-Revival/frontend/actions/workflows/dependency-review.yml)
 
-The offficial frontend for Missile Wars 
+The official frontend for Missile Wars 
 A React Native app with Expo
 
 ## Running the frontend
