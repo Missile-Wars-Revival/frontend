@@ -78,6 +78,7 @@ function NavBar() {
     switch(route) {
       case '/': return 'Map';
       case '/store': return 'Store';
+      case '/league': return 'Ranking';
       case '/friends': return 'Friends';
       case '/profile': return 'Profile';
       default: return '';
@@ -85,8 +86,11 @@ function NavBar() {
   };
 
   return (
+    //switch commenting to hide ranking pages
     <View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-around', backgroundColor: 'rgba(255, 255, 255, 0.0)', height: 90, alignItems: 'center' }}>
-      {['/', '/store', '/friends', '/profile'].map((tab, index) => (
+      {['/', '/store','/league', '/friends', '/profile'].map((tab, index) => (
+      // <View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-around', backgroundColor: 'rgba(255, 255, 255, 0.0)', height: 90, alignItems: 'center' }}>
+      //     {['/', '/store', '/friends', '/profile'].map((tab, index) => (
         <TouchableOpacity 
           key={index}
           onPress={() => handlePress(tab)} 
@@ -105,7 +109,10 @@ function NavBar() {
             <FontAwesome 
               name={tab === '/' ? 'map' : 
                     tab === '/store' ? 'shopping-basket' : 
-                    tab === '/friends' ? 'users' : 'user'}
+                    tab === '/friends' ? 'users' :
+                    tab === '/league' ? 'trophy' : 
+                    tab === '/profile' ? 'user' : 
+                    'user'}
               color={selectedTab === tab ? 'blue' : 'black'} 
               size={24} 
             />
@@ -132,6 +139,7 @@ function RootLayoutNav() {
           <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="login" options={{ headerShown: false, gestureEnabled: false, animation: 'slide_from_bottom' }} />
           <Stack.Screen name="register" options={{ headerShown: false, gestureEnabled: false }} />
+          <Stack.Screen name="league" options={{ headerShown: false, gestureEnabled: false }} />
           <Stack.Screen name="store" options={{ headerShown: false, gestureEnabled: false }} />
           <Stack.Screen name="friends" options={{ headerShown: false }} />
           <Stack.Screen name="add-friends" />
