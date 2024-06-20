@@ -12,7 +12,7 @@
     "@hookform/resolvers": "^3.6.0",
     "@react-native-async-storage/async-storage": "^1.23.1",
     "@tanstack/react-query": "^5.45.1",
-    "axios": "^1.6.8",
+    "axios": "^1.7.2",
     "axois": "^0.0.1-security",
     "clsx": "^2.1.0",
     "dotenv": "^16.4.5",
