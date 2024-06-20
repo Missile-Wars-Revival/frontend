@@ -65,7 +65,12 @@ export default function RootLayout() {
 function NavBar() {
   const router = useRouter();
   const pathname = usePathname();
-  const [selectedTab, setSelectedTab] = useState(pathname);
+  const [selectedTab, setSelectedTab] = useState(pathname); // Initialize with current pathname
+
+  // Update selectedTab when pathname changes
+  useEffect(() => {
+    setSelectedTab(pathname);
+  }, [pathname]);
 
   const handlePress = (tab: string) => {
     if (selectedTab !== tab) {
@@ -87,10 +92,10 @@ function NavBar() {
 
   return (
     //switch commenting to hide ranking pages
-    <View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-around', backgroundColor: 'rgba(255, 255, 255, 0.0)', height: 90, alignItems: 'center' }}>
-      {['/', '/store','/league', '/friends', '/profile'].map((tab, index) => (
-      // <View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-around', backgroundColor: 'rgba(255, 255, 255, 0.0)', height: 90, alignItems: 'center' }}>
-      //     {['/', '/store', '/friends', '/profile'].map((tab, index) => (
+    // <View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-around', backgroundColor: 'rgba(255, 255, 255, 0.0)', height: 100, alignItems: 'center' }}>
+    //   {['/', '/store','/league', '/friends', '/profile'].map((tab, index) => (
+      <View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-around', backgroundColor: 'rgba(255, 255, 255, 0.0)', height: 90, alignItems: 'center' }}>
+          {['/', '/store', '/friends', '/profile'].map((tab, index) => (
         <TouchableOpacity 
           key={index}
           onPress={() => handlePress(tab)} 
