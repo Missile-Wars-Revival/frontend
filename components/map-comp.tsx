@@ -14,7 +14,7 @@ import { dispatch } from "../api/dispatch";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCurrentLocation } from "../util/locationreq";
 import { mainmapstyles } from "../map-themes/map-stylesheet";
-import {location} from "../util/locationreq"
+import { location } from "../util/locationreq";
 import { DefRegLocationTask } from "../util/backgroundtasks";
 
 interface MapCompProps {
@@ -27,6 +27,7 @@ export const MapComp = (props: MapCompProps) => {
     const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(false);
     const [isLoading, setIsLoading] = useState(true);
     const [hasDbConnection, setDbConnection] = useState(false);
+    const [firstLoad, setFirstLoad] = useState<boolean>(true); // State to track first load
     const [visibilitymode, setMode] = useState<'friends' | 'global'>('global');
 
     const [region, setRegion] = useState({
@@ -46,18 +47,16 @@ export const MapComp = (props: MapCompProps) => {
     }, []);
 
     const dispatchLocation = async () => {
-        //temp location should be in dispatch.ts V
         setDbConnection(true);
         const location: location = await getCurrentLocation();
         if (token && userName && location.latitude && location.longitude) {
             await dispatch(token, userName, location.latitude, location.longitude);
-            //console.log("dispatching", location, userName, token)
         }
     };
 
     const getlocation = async () => {
         try {
-            const location: location = await getCurrentLocation(); // Use the defined type
+            const location: location = await getCurrentLocation();
             const newRegion = {
                 latitude: location.latitude,
                 longitude: location.longitude,
@@ -76,56 +75,57 @@ export const MapComp = (props: MapCompProps) => {
                     { text: "Confirm" }
                 ]
             );
-
         }
     };
 
     useEffect(() => {
-        const loadCachedData = async () => {
+        const initializeApp = async () => {
             try {
+                // Check if it's the first load
+                const isFirstLoad = await AsyncStorage.getItem('firstload');
+                if (isFirstLoad !== null) {
+                    setFirstLoad(false); // Set first load to false if AsyncStorage key exists
+                }
+
                 const cachedRegion = await loadLastKnownLocation();
                 if (cachedRegion !== null) {
                     setRegion(cachedRegion);
                 }
+
                 const cachedMode = await AsyncStorage.getItem('visibilitymode');
                 if (cachedMode !== null) {
                     setMode(cachedMode as 'friends' | 'global');
                 }
-            } catch (error) {
-                setIsLoading(false); 
-                console.error('Error loading cached data:', error);
-            }
-        };
 
-        const initializeLocation = async () => {
-            try {
                 const status = await getLocationPermission();
                 setIsLocationEnabled(status === 'granted');
-            } catch {
-                setIsLoading(false); 
+
+                await getlocation();
+                await fetchLootAndMissiles();
+                await dispatchLocation();
+
+                const intervalId = setInterval(() => {
+                    fetchLootAndMissiles();
+                    getLocationPermission();
+                    dispatchLocation();
+                    DefRegLocationTask();
+                }, 1000);
+
+                return () => clearInterval(intervalId);
+            } catch (error) {
+                setIsLoading(false);
+                console.error('Error initializing app:', error);
             }
         };
 
-        initializeLocation();
-        loadCachedData();
-        getlocation();
-        fetchLootAndMissiles();
-        dispatchLocation();
-
-        const intervalId = setInterval(() => {
-            fetchLootAndMissiles();
-            initializeLocation();
-            dispatchLocation();
-            DefRegLocationTask();
-        }, 1000);
-
-        return () => clearInterval(intervalId);
+        initializeApp();
     }, [fetchLootAndMissiles]);
 
     const toggleMode = async () => {
         const newMode = visibilitymode === 'friends' ? 'global' : 'friends';
         setMode(newMode);
         friendsorglobal(newMode);
+        
         if (newMode === 'global') {
             Alert.alert(
                 "Change to Global Mode",
@@ -142,34 +142,45 @@ export const MapComp = (props: MapCompProps) => {
                     {
                         text: "Confirm",
                         onPress: async () => {
-                            await AsyncStorage.setItem('visibilitymode', newMode); // Save the new mode only if confirmed
+                            await AsyncStorage.setItem('visibilitymode', newMode);
                             console.log("Mode changed to:", newMode);
                         }
                     }
                 ]
             );
         } else {
-            await AsyncStorage.setItem('visibilitymode', newMode); // Save the new mode directly if not switching to global (e.g. switching from global -> friends)
+            await AsyncStorage.setItem('visibilitymode', newMode);
         }
 
         console.log("Mode changed to:", newMode);
     };
 
     const friendsorglobal = (visibilitymode: 'friends' | 'global') => {
-        // Do something based on the mode, e.g., fetch different data (friend/global)
         console.log("Mode changed to:", visibilitymode);
     };
 
-    if (isLoading) {
+    useEffect(() => {
+        const saveFirstLoadStatus = async () => {
+            await AsyncStorage.setItem('firstload', 'false');
+        };
+
+        if (!firstLoad) {
+            saveFirstLoadStatus();
+        }
+    }, [firstLoad]);
+
+    // Only show loader if it's the first load and still loading
+    if (isLoading || !firstLoad) {
         return (
-        <View style={mainmapstyles.loaderContainer}>
-            <ActivityIndicator size="large" color="#0000ff" />
-            <Text></Text>
-            <Text style={mainmapstyles.overlayText}>Connecting To Servers...</Text>
-        </View>
+            <View style={mainmapstyles.loaderContainer}>
+                <ActivityIndicator size="large" color="#0000ff" />
+                <Text></Text>
+                <Text style={mainmapstyles.overlayText}>Connecting To Servers...</Text>
+            </View>
         );
     }
 
+    // Render map and other components once initialization is complete
     return (
         <View style={mainmapstyles.container}>
             <MapView
