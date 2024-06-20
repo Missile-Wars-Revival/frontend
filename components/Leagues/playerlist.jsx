@@ -3,10 +3,18 @@ import { View, FlatList, StyleSheet } from 'react-native';
 import { ListItem, Text } from 'react-native-elements';
 
 const playersData = [
-  { id: 1, name: 'Player A', rank: 1, points: 1000 },
-  { id: 2, name: 'Player B', rank: 2, points: 950 },
+  { id: 1, name: 'Test User', points: 2000 },
+  { id: 2, name: 'Other Test User', points: 2689 },
   // Add more player data
 ];
+
+// Sort players by points in descending order
+playersData.sort((a, b) => b.points - a.points);
+
+// Assign ranks based on sorted order
+playersData.forEach((player, index) => {
+  player.rank = index + 1; // Assign rank starting from 1
+});
 
 const PlayerList = () => {
   const renderItem = ({ item }) => (
