@@ -2,7 +2,14 @@ import React from 'react';
 import { View, FlatList, StyleSheet } from 'react-native';
 import { ListItem, Text } from 'react-native-elements';
 
-const playersData = [
+type Player = {
+  id: number;
+  name: string;
+  points: number;
+  rank?: number; // Optional rank
+};
+
+const playersData: Player[] = [
   { id: 1, name: 'Test User', points: 2000 },
   { id: 2, name: 'Other Test User', points: 2689 },
   // Add more player data
@@ -16,8 +23,8 @@ playersData.forEach((player, index) => {
   player.rank = index + 1; // Assign rank starting from 1
 });
 
-const PlayerList = () => {
-  const renderItem = ({ item }) => (
+const PlayerList: React.FC = () => {
+  const renderItem = ({ item }: { item: Player }) => (
     <ListItem containerStyle={styles.listItem}>
       <View style={styles.rankContainer}>
         <Text style={styles.rankText}>{item.rank}</Text>

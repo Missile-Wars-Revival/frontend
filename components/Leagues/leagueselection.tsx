@@ -1,20 +1,26 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Modal, StyleSheet, FlatList } from 'react-native';
 import { Icon, ListItem } from 'react-native-elements';
-import { useNavigation } from 'expo-router';
+import { useNavigation } from '@react-navigation/native'; // Assuming navigation is used from @react-navigation/native
 
-const leaguesData = [
+type League = {
+  id: number;
+  name: string;
+  trophyPoints: string;
+};
+
+const leaguesData: League[] = [
   { id: 1, name: 'Bronze League', trophyPoints: "0-1000" },
   { id: 2, name: 'Silver League', trophyPoints: "1000-2000" },
   { id: 3, name: 'Gold League', trophyPoints: "2000-4000" },
   // Add more league data as needed
 ];
 
-const LeagueSelectionScreen = () => {
+const LeagueSelectionScreen: React.FC = () => {
   const [modalVisible, setModalVisible] = useState(false);
-  const navigation = useNavigation();
+  const navigation = useNavigation(); // Adjust as per your navigation setup
 
-  const renderLeagueItem = ({ item }) => (
+  const renderLeagueItem = ({ item }: { item: League }) => (
     <ListItem containerStyle={styles.listItem} onPress={() => handleLeaguePress(item)}>
       <ListItem.Content>
         <ListItem.Title style={styles.leagueName}>{item.name}</ListItem.Title>
@@ -24,9 +30,8 @@ const LeagueSelectionScreen = () => {
     </ListItem>
   );
 
-  const handleLeaguePress = (league) => {
+  const handleLeaguePress = (league: League) => {
     setModalVisible(false);
-    // Show players in other leagues:
     // navigation.navigate('OtherLeaguePlayers', { league });
   };
 
@@ -62,7 +67,7 @@ const styles = StyleSheet.create({
     right: 0,
     marginRight: 27,
     marginTop: 55,
-    zIndex: 10, // Ensure it's above other content
+    zIndex: 10,
   },
   modalContainer: {
     flex: 1,
@@ -73,7 +78,7 @@ const styles = StyleSheet.create({
   modalContent: {
     backgroundColor: '#fff',
     width: '80%',
-    height: '80%', // Adjust height as needed
+    maxHeight: '80%',
     borderRadius: 10,
     padding: 20,
     shadowColor: '#000',
