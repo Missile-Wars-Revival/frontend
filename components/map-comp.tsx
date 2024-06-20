@@ -85,6 +85,15 @@ export const MapComp = (props: MapCompProps) => {
                 const isFirstLoad = await AsyncStorage.getItem('firstload');
                 if (isFirstLoad !== null) {
                     setFirstLoad(false); // Set first load to false if AsyncStorage key exists
+                } else {
+                    // Show a welcome or information alert on first load
+                    Alert.alert(
+                        "Your location is set to Global",
+                        "This means everyone in your league can see your location.",
+                        [
+                            { text: "OK", onPress: () => setFirstLoad(false) } 
+                        ]
+                    );
                 }
 
                 const cachedRegion = await loadLastKnownLocation();
@@ -170,7 +179,7 @@ export const MapComp = (props: MapCompProps) => {
     }, [firstLoad]);
 
     // Only show loader if it's the first load and still loading
-    if (isLoading || !firstLoad) {
+    if (isLoading && firstLoad) {
         return (
             <View style={mainmapstyles.loaderContainer}>
                 <ActivityIndicator size="large" color="#0000ff" />
