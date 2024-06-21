@@ -18,6 +18,17 @@ export const mapstyles = StyleSheet.create({
         justifyContent: 'center', 
         alignItems: 'center', 
     },
+    overlayText: {
+        fontSize: 16,
+        color: 'black',
+        fontWeight: 'bold',
+        marginBottom: 10,
+    },
+    overlaySubText: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: 'grey',
+    },
     switchContainer: {
         position: 'absolute',
         top: 50,

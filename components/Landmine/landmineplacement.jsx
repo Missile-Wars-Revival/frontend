@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, View, Button, Dimensions, ActivityIndicator, Alert, Platform } from 'react-native';
+import { Modal, Text, View, Button, Dimensions, ActivityIndicator, Alert, Platform } from 'react-native';
 import MapView, { Marker, Circle, PROVIDER_DEFAULT, PROVIDER_GOOGLE } from 'react-native-maps';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { useUserName } from "../../util/fetchusernameglobal";
 import { mapstyles } from '../../map-themes/map-stylesheet'; 
@@ -9,6 +10,7 @@ export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) =
 
   const [region, setRegion] = useState(null);
   const [isLocationEnabled, setIsLocationEnabled] = useState(true);
+  const [hasDbConnection, setDbConnection] = useState(false);
   const [marker, setMarker] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentLocation, setCurrentLocation] = useState(null);
@@ -41,6 +43,27 @@ export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) =
       initializeLocation();
     }
   }, [visible]);
+
+  useEffect(() => {
+    const initializeApp = async () => {
+        try {
+            const isDBConnection = await AsyncStorage.getItem('dbconnection');
+            if (isDBConnection === "false"){
+                setDbConnection(false)
+            } 
+            if (isDBConnection === "true"){
+                setDbConnection(true)
+            } else {
+                setDbConnection(false);
+            }
+        } catch (error) {
+            console.error('Error initializing map:', error);
+        }
+    };
+
+    initializeApp();
+  },
+);
 
   if (loading) {
     return (
@@ -93,7 +116,12 @@ export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) =
               onDragEnd={(e) => setMarker(e.nativeEvent.coordinate)}
             />
           </MapView>
-          {!isLocationEnabled && <View style={mapstyles.overlay} />}
+          {(!isLocationEnabled || !hasDbConnection) && (
+                <View style={mapstyles.overlay}>
+                    <Text style={mapstyles.overlayText}>Map is disabled due to location/database issues.</Text>
+                    <Text style={mapstyles.overlaySubText}>Please check your settings or try again later.</Text>
+                </View>
+            )}
           <View style={{ flexDirection: 'row', justifyContent: 'space-around', padding: 10 }}>
             <Button title="Cancel" onPress={onClose} />
             <Button title="Fire" onPress={handleLandminePlacement} />

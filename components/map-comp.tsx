@@ -26,8 +26,8 @@ export const MapComp = (props: MapCompProps) => {
     const token = useToken();
     const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(false);
     const [isLoading, setIsLoading] = useState(true);
-    const [hasDbConnection, setDbConnection] = useState(false);
-    const [firstLoad, setFirstLoad] = useState<boolean>(true); // State to track first load
+    const [hasDbConnection, setDbConnection] = useState<boolean>();
+    const [firstLoad, setFirstLoad] = useState<boolean>(true);
     const [visibilitymode, setMode] = useState<'friends' | 'global'>('global');
 
     const [region, setRegion] = useState({
@@ -47,7 +47,6 @@ export const MapComp = (props: MapCompProps) => {
     }, []);
 
     const dispatchLocation = async () => {
-        setDbConnection(true);
         const location: location = await getCurrentLocation();
         if (token && userName && location.latitude && location.longitude) {
             await dispatch(token, userName, location.latitude, location.longitude);
@@ -83,10 +82,8 @@ export const MapComp = (props: MapCompProps) => {
             try {
                 // Check if it's the first load
                 const isFirstLoad = await AsyncStorage.getItem('firstload');
-                if (isFirstLoad !== null) {
-                    setFirstLoad(false); // Set first load to false if AsyncStorage key exists
-                } else {
-                    // Show a welcome or information alert on first load
+                const isDBConnection = await AsyncStorage.getItem('dbconnection');
+                if (isFirstLoad == null) {
                     Alert.alert(
                         "Your location is set to Global",
                         "This means everyone in your league can see your location.",
@@ -94,6 +91,15 @@ export const MapComp = (props: MapCompProps) => {
                             { text: "OK", onPress: () => setFirstLoad(false) } 
                         ]
                     );
+                    setFirstLoad(true); 
+                } 
+                if (isDBConnection === "false"){
+                    setDbConnection(false)
+                } 
+                if (isDBConnection === "true"){
+                    setDbConnection(true)
+                } else {
+                    setDbConnection(false);
                 }
 
                 const cachedRegion = await loadLastKnownLocation();

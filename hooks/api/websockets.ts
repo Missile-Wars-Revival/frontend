@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { encode, decode } from "msgpack-lite";
 import { WebSocketMessage } from "middle-earth";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const WEBSOCKET_URL = process.env.EXPO_PUBLIC_WEBSOCKET_URL || "ws://localhost:3000";
 const RECONNECT_INTERVAL_BASE = 1000; // base interval in ms
@@ -13,14 +14,15 @@ const useWebSocket = () => {
     const [reconnectAttempts, setReconnectAttempts] = useState(0);
 
     const connectWebsocket = (): Promise<WebSocket> => {
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {  // Make the outer function async
             const ws = new WebSocket(WEBSOCKET_URL);
-
-            ws.onopen = () => {
+    
+            ws.onopen = async () => {  // Mark the callback function as async
                 console.log("Connected to websocket");
+                await AsyncStorage.setItem('dbconnection', 'true');
                 resolve(ws);
             };
-
+    
             ws.onerror = (error) => {
                 console.error("WebSocket error:", error);
                 reject(error);
@@ -68,6 +70,7 @@ const useWebSocket = () => {
             
         } catch (error) {
             console.error("Failed to connect to websocket:", error);
+            await AsyncStorage.setItem('dbconnection', 'false');
             reconnectWebsocket();
         }
     };
