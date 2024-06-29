@@ -22,8 +22,14 @@ export const storepagestyles = StyleSheet.create({
       borderRadius: 5,
     },
     currencyText: {
-      alignSelf: 'flex-end',
-      margin: 0.1,
+      //fontFamily: 'NotoSansRegular', Need Import!!
+      color: '#753663',
+      borderColor: '#FFF',
+      fontSize: 30,
+      fontWeight: 'bold',
+      textAlign: 'center',
+      justifyContent: 'center',
+      marginRight: 15,
     },
     //cart:
     cartContainer: {

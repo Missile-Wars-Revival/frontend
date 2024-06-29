@@ -21,7 +21,7 @@ const Cart: React.FC<CartProps> = ({ cart, onRemove }) => {
     <View style={storepagestyles.cartItem}>
       <Text style={storepagestyles.productName}>{item.product.name}</Text>
       <Text style={storepagestyles.productPrice}>
-        {item.quantity} x {item.product.price} Coins
+        {item.quantity} x ⭐{item.product.price.toFixed(2)}
       </Text>
       <TouchableOpacity onPress={() => onRemove(item.product.id)} style={storepagestyles.removeButton}>
         <Text style={storepagestyles.removeButtonText}>Remove</Text>

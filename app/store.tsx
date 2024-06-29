@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, FlatList, Button, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { View, FlatList, Button, StyleSheet, Text, TouchableOpacity, Image, ImageBackground } from 'react-native';
 import ProductItem from '../components/Store/productitem';
 import Cart from '../components/Store/cart';
 import { useUserName } from '../util/fetchusernameglobal';
@@ -12,25 +12,26 @@ export interface Product {
   price: number;
   image: any;
   description: string;
-  sku: string;
-  category: string;
+  sku?: string;
+  category?: string;
 }
 
 const products: Product[] = [
   { id: 1, name: 'Amplifier', price: 100, image: require('../assets/missiles/Amplifier.png'), description: 'High impact missile', sku: "Amplifier", category: 'Missiles' },
   { id: 2, name: 'Ballista', price: 250, image: require('../assets/missiles/Ballista.png'), description: 'Long-range missile', sku: "Ballista", category: 'Missiles' },
-  { id: 4, name: 'Big Bertha', price: 500, image: require('../assets/missiles/BigBertha.png'), description: 'Large warhead missile', sku: "BigBertha", category: 'Landmines' },
-  { id: 5, name: 'Bombabom', price: 400, image: require('../assets/missiles/Bombabom.png'), description: 'Cluster bomb missile', sku: "Bombabom", category: 'Landmines' },
-  { id: 6, name: 'Buzzard', price: 3000, image: require('../assets/missiles/Buzzard.png'), description: 'Medium-range missile', sku: "Buzzard", category: 'Loot Drops' },
-  { id: 7, name: 'The Nuke', price: 10000, image: require('../assets/missiles/TheNuke.png'), description: 'Nuclear missile', sku: "The Nuke", category: 'Loot Drops' },
+  { id: 3, name: 'Big Bertha', price: 500, image: require('../assets/missiles/BigBertha.png'), description: 'Large warhead missile', sku: "Big Bertha", category: 'Landmines' },
+  { id: 4, name: 'Bombabom', price: 400, image: require('../assets/missiles/Bombabom.png'), description: 'Cluster bomb missile', sku: "Bombabom", category: 'Landmines' },
+  { id: 5, name: 'Buzzard', price: 3000, image: require('../assets/missiles/Buzzard.png'), description: 'Medium-range missile', sku: "Buzzard", category: 'Loot Drops' },
+  { id: 6, name: 'The Nuke', price: 10000, image: require('../assets/missiles/TheNuke.png'), description: 'Nuclear missile', sku: "The Nuke", category: 'Loot Drops' },
 ];
 
 const StorePage: React.FC = () => {
-  const userNAME = useUserName(); //logged in user
+  const userNAME = useUserName(); // logged in user
   const [cart, setCart] = useState<{ product: Product; quantity: number }[]>([]);
   const [isCartVisible, setCartVisible] = useState<boolean>(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [currencyAmount, setCurrencyAmount] = useState<number>(500); // Initial currency amount of player for testing.
+  const [isPremiumStore, setIsPremiumStore] = useState<boolean>(false);
 
   useEffect(() => {
     const loadCart = async () => {
@@ -73,35 +74,206 @@ const StorePage: React.FC = () => {
 
   const filteredProducts = selectedCategory === 'All' ? products : products.filter(p => p.category === selectedCategory);
 
+  const renderButton = ({ item }: { item: Product }) => (
+    <TouchableOpacity style={styles.button} onPress={() => addToCart(item)}>
+      <Text style={styles.buttonText}>{item.name}</Text>
+      <Image source={item.image} style={styles.buttonImage} />
+      <Text style={styles.buttonText}>⭐{item.price}</Text>
+    </TouchableOpacity>
+  );
+
   return (
-    <View style={storepagestyles.container}>
-      {isCartVisible ? (
-        <Cart cart={cart} onRemove={handleRemove} />
-      ) : (
-        <>
-        <Text></Text>
-        <Text></Text>
-        <Text></Text>
-          <View style={storepagestyles.categoryContainer}>
-            {['All', 'Missiles', 'Landmines', 'Loot Drops'].map((category) => (
-              <TouchableOpacity key={category} onPress={() => setSelectedCategory(category)} style={storepagestyles.categoryButton}>
-                <Text>{category}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          <FlatList
-            data={filteredProducts}
-            numColumns={2}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={({ item }) => <ProductItem product={item} addToCart={addToCart} />}
-            contentContainerStyle={storepagestyles.list}
-          />
-          <Button title="Go to Cart" onPress={() => setCartVisible(true)} />
-        </>
-      )}
-      {isCartVisible && <Button title="Back to Products" onPress={() => setCartVisible(false)} />}
-      <Text style={storepagestyles.currencyText}>Coins left: {currencyAmount}</Text>
-    </View>
+    <ImageBackground source={require('../assets/mapbackdrop.png')} style={styles.backgroundImage}>
+      <Image source={require('../assets/MissleWarsTitle.png')} style={styles.titleImage} />
+      <Image source={require('../assets/SHOP.png')} style={styles.shopImage} />
+      <View style={styles.headerContainer}>
+        <View style={styles.currencyContainer}>
+          <Text style={storepagestyles.currencyText}>⭐{currencyAmount}</Text>
+        </View>
+        <View style={styles.switchContainer}>
+          <TouchableOpacity
+            style={[
+              styles.toggleButton,
+              isPremiumStore ? styles.premiumButton : styles.freeButton,
+            ]}
+            onPress={() => setIsPremiumStore(!isPremiumStore)} // Add logic to switch out the free store items for the premium items when clicked.
+          >
+            <Text style={styles.toggleButtonText}>
+              {isPremiumStore ? 'Premium' : 'Free'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <View style={styles.tabContainerMissiles}>
+        {['All', 'Missiles', 'Landmines', 'Loot Drops'].map((category) => (
+          <TouchableOpacity key={category} onPress={() => setSelectedCategory(category)} style={styles.tabMissiles}>
+            <Text style={styles.missileTabText}>{category}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+      
+      <View style={styles.container}>
+        {isCartVisible ? (
+          <Cart cart={cart} onRemove={handleRemove} />
+        ) : (
+          <>
+            <FlatList
+              data={filteredProducts}
+              keyExtractor={(item) => item.id.toString()}
+              renderItem={renderButton}
+              numColumns={2}
+              columnWrapperStyle={styles.columnWrapper}
+              contentContainerStyle={styles.contentContainer}
+            />
+            <TouchableOpacity onPress={() => setCartVisible(true)} style={styles.cartButton}>
+              <Text style={styles.cartButtonText}>Go to Cart</Text>
+            </TouchableOpacity>
+          </>
+        )}
+        {isCartVisible && (
+          <TouchableOpacity onPress={() => setCartVisible(false)} style={styles.cartButton}>
+            <Text style={styles.cartButtonText}>Back to Products</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </ImageBackground>
   );
 };
+
+const styles = StyleSheet.create({ //Styles made by NightSpark 
+  container: {
+    flex: 1,
+    backgroundColor: '#F3F6EC',
+    padding: 16,
+    justifyContent: 'center',
+  },
+  backgroundImage: {
+    flex: 1,
+    marginTop: -30, // Fills the whole top part of the screen
+    resizeMode: 'cover',
+  },
+  titleImage: {
+    width: 350,
+    height: 100,
+    position: 'absolute',
+    top: 70,
+    left: 37,
+  },
+  shopImage: {
+    width: 110,
+    height: 80,
+    top: 120,
+    left: 160,
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center', // Centers the currency container
+    marginHorizontal: 20,
+    marginVertical: 10,
+    marginTop: 105,
+  },
+  currencyContainer: {
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginLeft: 205,
+  },
+  switchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    color: '#753663',
+  },
+  tabContainerMissiles: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+    marginLeft: 6,
+  },
+  tabMissiles: {
+    width: 100,
+    height: 40,
+    backgroundColor: '#753663',
+    padding: 10,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 7, // Space between
+  },
+  missileTabText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
+    //fontFamily: 'Noto Sans Regular', // Need to import!!
+  },
+  columnWrapper: {
+    justifyContent: 'space-between',
+  },
+  contentContainer: {
+    alignItems: 'center',
+  },
+  button: {
+    width: 110,
+    height: 110,
+    margin: 11,
+    backgroundColor: '#DDD5F3',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderColor: '#7B5370',
+    borderWidth: 1,
+    borderRadius: 26,
+    shadowColor: '#000',
+    shadowOffset: { width: 2, height: 5 },
+    shadowOpacity: 0.8,
+    shadowRadius: 3,
+    elevation: 5, // for Android
+  },
+  buttonImage: {
+    width: '50%',
+    height: '70%',
+    resizeMode: 'cover',
+  },
+  buttonText: {
+    color: '#753663',
+    borderColor: '#FFF',
+    fontSize: 15,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginTop: -5,
+    marginBottom: -5,
+  },
+  cartButton: {
+    backgroundColor: '#753663',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginVertical: 10,
+  },
+  cartButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  toggleButton: {
+    width: 100,
+    height: 40,
+    borderRadius: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 61,
+  },
+  freeButton: {
+    backgroundColor: '#DDD5F3',
+  },
+  premiumButton: {
+    backgroundColor: '#5a2b5f',
+  },
+  toggleButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+});
+
 export default StorePage;
