@@ -1,8 +1,3 @@
-//export const userNAME = "Test2";
-
-//export const passWORD = "Testing123!";
-
-
 import { useEffect, useState } from "react";
 import { getCredentials } from "./logincache";
 import { router } from "expo-router";
@@ -36,7 +31,7 @@ export const useToken = () => {
             const credentials = await getCredentials();
             if (credentials) {
                 setToken(credentials.token);
-                console.log('logged in with user token:', credentials.token, ':fetched from cache');
+                //console.log('logged in with user token:', credentials.token, ':fetched from cache');
             } else {
                 console.log('Credentials not found, please log in');
                 // Optionally redirect to login page

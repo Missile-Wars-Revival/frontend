@@ -9,7 +9,7 @@ export const getTimeDifference = (timestamp: TimeStamp) => {
     differenceInMilliseconds / 1000
   );
 
-  if (differenceInSeconds < 240) {
+  if (differenceInSeconds < 60) {
     return { text: "Last seen: Just now" };
   }
 
@@ -26,7 +26,7 @@ export const getTimeDifference = (timestamp: TimeStamp) => {
 };
 
 //  function to check if a player has been inactive for 24 hours
-export const isInactiveFor24Hours = (timestamp: TimeStamp): boolean => {
+export const isInactiveFor12Hours = (timestamp: TimeStamp): boolean => {
   const currentTime = new Date().getTime();
   const lastSeenTime = new Date(timestamp).getTime();
   const differenceInMilliseconds = currentTime - lastSeenTime;
@@ -36,7 +36,7 @@ export const isInactiveFor24Hours = (timestamp: TimeStamp): boolean => {
 };
 
 
-//landmine timestamp
+//loot and landmine timestamp
 export const convertimestampfuture = (timestamp: string | number | Date) => {
   const currentTime = new Date().getTime();
   const eventTime = new Date(timestamp).getTime();

@@ -1,8 +1,12 @@
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { GeoLocation } from 'middle-earth';
 
-export async function getCurrentLocation(): Promise<GeoLocation> {
+export interface location {
+    latitude: number; 
+    longitude: number;
+  }
+
+export async function getCurrentLocation(): Promise<location> {
     let useBackground = await AsyncStorage.getItem('useBackgroundLocation');
     let permissionStatus;
 
