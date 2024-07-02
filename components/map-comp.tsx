@@ -1,19 +1,21 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { View, StyleSheet, Text, Switch, Alert, Platform } from "react-native";
+import { View, Text, Switch, Alert, Platform, ActivityIndicator } from "react-native";
 import MapView, { PROVIDER_DEFAULT, PROVIDER_GOOGLE } from "react-native-maps";
 import { AllLootDrops } from "./loot-drop";
 import { AllLandMines } from "./Landmine/map-landmines";
 import { AllMissiles } from "./Missile/map-missile";
 import { AllPlayers } from "./map-players";
-import { GeoLocation, Landmine, Loot, Missile } from "middle-earth";
+import { Landmine, Loot, Missile } from "middle-earth";
 import { fetchLootFromBackend, fetchMissilesFromBackend, fetchlandmineFromBackend } from "../temp/fetchMethods";
 import { loadLastKnownLocation, saveLocation } from '../util/mapstore';
 import { getLocationPermission } from "../hooks/userlocation";
 import { useToken, useUserName } from "../util/fetchusernameglobal";
 import { dispatch } from "../api/dispatch";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ProximityCheckNotif } from "./collision";
 import { getCurrentLocation } from "../util/locationreq";
+import { mainmapstyles } from "../map-themes/map-stylesheet";
+import { location } from "../util/locationreq";
+import { DefRegLocationTask } from "../util/backgroundtasks";
 
 interface MapCompProps {
     selectedMapStyle: any;
@@ -23,8 +25,10 @@ export const MapComp = (props: MapCompProps) => {
     const userName = useUserName();
     const token = useToken();
     const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(false);
-    const [hasDbConnection, setDbConnection] = useState(false);
-    const [visibilitymode, setMode] = useState<'friends' | 'global'>('friends');
+    const [isLoading, setIsLoading] = useState(true);
+    const [hasDbConnection, setDbConnection] = useState<boolean>();
+    const [firstLoad, setFirstLoad] = useState<boolean>(true);
+    const [visibilitymode, setMode] = useState<'friends' | 'global'>('global');
 
     const [region, setRegion] = useState({
         latitude: 0,
@@ -43,17 +47,15 @@ export const MapComp = (props: MapCompProps) => {
     }, []);
 
     const dispatchLocation = async () => {
-        const location: GeoLocation = await getCurrentLocation();
-        if (userName && location.latitude && location.longitude) {
-            await dispatch(token, userName, region.latitude, region.longitude);
-            setDbConnection(true);
+        const location: location = await getCurrentLocation();
+        if (token && userName && location.latitude && location.longitude) {
+            await dispatch(token, userName, location.latitude, location.longitude);
         }
-        setDbConnection(false);
     };
 
     const getlocation = async () => {
         try {
-            const location: GeoLocation = await getCurrentLocation(); // Use the defined type
+            const location: location = await getCurrentLocation();
             const newRegion = {
                 latitude: location.latitude,
                 longitude: location.longitude,
@@ -61,7 +63,8 @@ export const MapComp = (props: MapCompProps) => {
                 longitudeDelta: 0.01
             };
             setRegion(newRegion);
-            await saveLocation(newRegion); // Cache the region
+            await saveLocation(newRegion); 
+            setIsLoading(false); 
         } catch {
             Alert.alert(
                 "Location",
@@ -71,53 +74,73 @@ export const MapComp = (props: MapCompProps) => {
                     { text: "Confirm" }
                 ]
             );
-
         }
     };
 
     useEffect(() => {
-        const loadCachedData = async () => {
+        const initializeApp = async () => {
             try {
+                // Check if it's the first load
+                const isFirstLoad = await AsyncStorage.getItem('firstload');
+                const isDBConnection = await AsyncStorage.getItem('dbconnection');
+                if (isFirstLoad == null) {
+                    Alert.alert(
+                        "Your location is set to Global",
+                        "This means everyone in your league can see your location.",
+                        [
+                            { text: "OK", onPress: () => setFirstLoad(false) } 
+                        ]
+                    );
+                    setFirstLoad(true); 
+                } 
+                if (isDBConnection === "false"){
+                    setDbConnection(false)
+                } 
+                if (isDBConnection === "true"){
+                    setDbConnection(true)
+                } else {
+                    setDbConnection(false);
+                }
+
                 const cachedRegion = await loadLastKnownLocation();
                 if (cachedRegion !== null) {
                     setRegion(cachedRegion);
                 }
+
                 const cachedMode = await AsyncStorage.getItem('visibilitymode');
                 if (cachedMode !== null) {
                     setMode(cachedMode as 'friends' | 'global');
                 }
-            } catch (error) {
-                console.error('Error loading cached data:', error);
-            }
-        };
 
-        const initializeLocation = async () => {
-            try {
                 const status = await getLocationPermission();
                 setIsLocationEnabled(status === 'granted');
-            } catch {
+
+                await getlocation();
+                await fetchLootAndMissiles();
+                await dispatchLocation();
+
+                const intervalId = setInterval(() => {
+                    fetchLootAndMissiles();
+                    getLocationPermission();
+                    dispatchLocation();
+                    DefRegLocationTask();
+                }, 1000);
+
+                return () => clearInterval(intervalId);
+            } catch (error) {
+                setIsLoading(false);
+                console.error('Error initializing app:', error);
             }
         };
 
-        initializeLocation();
-        loadCachedData();
-        getlocation();
-        fetchLootAndMissiles();
-        dispatchLocation();
-
-        const intervalId = setInterval(() => {
-            fetchLootAndMissiles();
-            initializeLocation();
-            dispatchLocation();
-        }, 1000);
-
-        return () => clearInterval(intervalId);
+        initializeApp();
     }, [fetchLootAndMissiles]);
 
     const toggleMode = async () => {
         const newMode = visibilitymode === 'friends' ? 'global' : 'friends';
         setMode(newMode);
         friendsorglobal(newMode);
+        
         if (newMode === 'global') {
             Alert.alert(
                 "Change to Global Mode",
@@ -134,28 +157,49 @@ export const MapComp = (props: MapCompProps) => {
                     {
                         text: "Confirm",
                         onPress: async () => {
-                            await AsyncStorage.setItem('visibilitymode', newMode); // Save the new mode only if confirmed
+                            await AsyncStorage.setItem('visibilitymode', newMode);
                             console.log("Mode changed to:", newMode);
                         }
                     }
                 ]
             );
         } else {
-            await AsyncStorage.setItem('visibilitymode', newMode); // Save the new mode directly if not switching to global (e.g. switching from global -> friends)
+            await AsyncStorage.setItem('visibilitymode', newMode);
         }
 
         console.log("Mode changed to:", newMode);
     };
 
     const friendsorglobal = (visibilitymode: 'friends' | 'global') => {
-        // Do something based on the mode, e.g., fetch different data (friend/global)
         console.log("Mode changed to:", visibilitymode);
     };
 
+    useEffect(() => {
+        const saveFirstLoadStatus = async () => {
+            await AsyncStorage.setItem('firstload', 'false');
+        };
+
+        if (!firstLoad) {
+            saveFirstLoadStatus();
+        }
+    }, [firstLoad]);
+
+    // Only show loader if it's the first load and still loading
+    if (isLoading && firstLoad) {
+        return (
+            <View style={mainmapstyles.loaderContainer}>
+                <ActivityIndicator size="large" color="#0000ff" />
+                <Text></Text>
+                <Text style={mainmapstyles.overlayText}>Connecting To Servers...</Text>
+            </View>
+        );
+    }
+
+    // Render map and other components once initialization is complete
     return (
-        <View style={styles.container}>
+        <View style={mainmapstyles.container}>
             <MapView
-                style={styles.map}
+                style={mainmapstyles.map}
                 provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
                 region={region}
                 showsCompass={false}
@@ -168,13 +212,13 @@ export const MapComp = (props: MapCompProps) => {
                 <AllMissiles missileData={missileData} />
                 <AllPlayers />
             </MapView>
-            {!isLocationEnabled && !hasDbConnection && (
-                <View style={styles.overlay}>
-                    <Text style={styles.overlayText}>Map is disabled due to location/database issues.</Text>
-                    <Text style={styles.overlaySubText}>Please check your settings or try again later.</Text>
+            {(!isLocationEnabled || !hasDbConnection) && (
+                <View style={mainmapstyles.overlay}>
+                    <Text style={mainmapstyles.overlayText}>Map is disabled due to location/database issues.</Text>
+                    <Text style={mainmapstyles.overlaySubText}>Please check your settings or try again later.</Text>
                 </View>
             )}
-            <View style={styles.switchContainer}>
+            <View style={mainmapstyles.switchContainer}>
                 <Switch
                     trackColor={{ false: "#767577", true: "#81b0ff" }}
                     thumbColor={visibilitymode === 'global' ? "#f4f3f4" : "#f4f3f4"}
@@ -182,51 +226,8 @@ export const MapComp = (props: MapCompProps) => {
                     onValueChange={toggleMode}
                     value={visibilitymode === 'global'}
                 />
-                <Text style={styles.switchText}>{visibilitymode === 'global' ? 'Global' : 'Friends'}</Text>
+                <Text style={mainmapstyles.switchText}>{visibilitymode === 'global' ? 'Global' : 'Friends'}</Text>
             </View>
-            <ProximityCheckNotif />
         </View>
     );
 };
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    map: {
-        flex: 1,
-    },
-    overlay: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'white',
-        opacity: 0.6,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    overlayText: {
-        fontSize: 16,
-        color: 'black',
-        fontWeight: 'bold',
-        marginBottom: 10,
-    },
-    overlaySubText: {
-        fontSize: 14,
-        fontWeight: 'bold',
-        color: 'grey',
-    },
-    switchContainer: {
-        position: 'absolute',
-        top: 50,
-        left: 330,
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    switchText: {
-        marginLeft: -110,
-        color: 'white',
-    },
-});

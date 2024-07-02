@@ -1,17 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Button, Image, StyleSheet, Animated, PanResponder } from 'react-native';
-
-interface Product {
-  id: number;
-  name: string;
-  price: number;
-  image: any; 
-  description: string;
-}
+import { Text, Button, Image, StyleSheet, Animated, PanResponder } from 'react-native';
+import { GameItem } from 'middle-earth';
 
 interface Props {
-  product: Product;
-  addToCart: (product: Product) => void;
+  product: GameItem;
+  addToCart: (product: GameItem) => void;
 }
 
 const ProductItem: React.FC<Props> = ({ product, addToCart }) => {
@@ -58,7 +51,7 @@ const ProductItem: React.FC<Props> = ({ product, addToCart }) => {
     <Animated.View style={[styles.itemContainer, frontAnimatedStyle]} {...panResponder.panHandlers}>
       <Text style={styles.name}>{product.name}</Text>
       <Image source={product.image} style={styles.image} />
-      <Text style={styles.price}>${product.price.toFixed(2)}</Text>
+      <Text style={styles.price}>${product.cost.toFixed(2)}</Text>
       <Button title="Add to Cart" onPress={() => addToCart(product)} />
     </Animated.View>
   );

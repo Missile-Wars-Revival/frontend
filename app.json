@@ -27,16 +27,14 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.longtimenoc.misslewars",
       "infoPlist": {
-        "NSLocationAlwaysUsageDescription": "This app needs access to your location to alert about nearby items of interest."
+        "NSLocationAlwaysUsageDescription": "This app needs access to your location to alert about nearby items of interest.",
+        "UIBackgroundModes": ["location", "fetch"]
       }
     },
     "android": {
-      "permissions": [
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_BACKGROUND_LOCATION"
-      ],
+      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_BACKGROUND_LOCATION", "RECEIVE_BOOT_COMPLETED", "SCHEDULE_EXACT_ALARM"],
       "adaptiveIcon": {
-        "foregroundImage": "./assets/logo.gif",
+        "foregroundImage": "./assets/logo.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.longtimenoc.misslewars"
@@ -45,7 +43,17 @@
       "favicon": "./assets/logo.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/logo.png",
+          "color": "#ffffff",
+          "defaultChannel": "default",
+          "sounds": [
+          ]
+        }
+      ]
     ],
     "owner": "osog",
     "runtimeVersion": {

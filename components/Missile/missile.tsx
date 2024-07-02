@@ -129,7 +129,6 @@ export const MissileLibrary = ({ playerName }: { playerName: string }) => {
   );
 };
 
-
 //For when fire button is used without player
 //This is what should be used when using fire-selector button
 export const MissilefireposLibrary = () => {
@@ -157,7 +156,6 @@ export const MissilefireposLibrary = () => {
     setSelectedMissile(selectedMissile);
     //shows map page
     setShowplacementPopup(true);
-    console.log("button pressed")
   };
 
   const handleCancel = () => {
