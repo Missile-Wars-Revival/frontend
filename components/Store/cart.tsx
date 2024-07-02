@@ -2,16 +2,17 @@ import React from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, GestureResponderEvent } from 'react-native';
 import { Product } from '../../app/store';
 import { storepagestyles } from './storestylesheets';
+import { GameItem } from 'middle-earth';
 
 
 interface CartItem {
-  product: Product;
+  product: GameItem;
   quantity: number;
 }
 
 interface CartProps {
   cart: CartItem[];
-  onRemove: (productId: number) => void;
+  onRemove: (productId: string) => void;
 }
 
 const Cart: React.FC<CartProps> = ({ cart, onRemove }) => {

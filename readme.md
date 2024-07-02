@@ -1,6 +1,5 @@
 # This is the repository for the Missile Wars App
-
-The offficial frontend for Missile Wars 
+The official frontend for Missile Wars 
 A React Native app with Expo
 
 ## Running the frontend
@@ -33,6 +32,9 @@ To login in to an account use either:
 Password: is `Testing123!`
 
 ## Build 
+## Pre-Build:
+- `npx expo prebuild --platform ios`
+
 ### For Preview:
 - `eas build --profile preview --platform all` or `eas build --profile preview --platform ios`
 

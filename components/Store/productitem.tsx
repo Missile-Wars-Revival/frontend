@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Text, Button, Image, StyleSheet, Animated, PanResponder } from 'react-native';
 import { Product } from '../../app/store';
+import { GameItem } from 'middle-earth'
 import { storepagestyles } from './storestylesheets';
 
 
 interface Props {
-  product: Product;
-  addToCart: (product: Product) => void;
+  product: GameItem;
+  addToCart: (product: GameItem) => void;
 }
 
 const ProductItem: React.FC<Props> = ({ product, addToCart }) => {

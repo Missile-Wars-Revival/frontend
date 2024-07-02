@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, View, Button, Dimensions, ActivityIndicator, Alert, Platform } from 'react-native';
+import { Modal, Text, View, Button, Dimensions, ActivityIndicator, Alert, Platform } from 'react-native';
 import MapView, { Marker, Circle, PROVIDER_DEFAULT, PROVIDER_GOOGLE } from 'react-native-maps';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { useUserName } from "../../util/fetchusernameglobal";
 import { mapstyles } from '../../map-themes/map-stylesheet'; 
@@ -14,6 +15,7 @@ export const MissilePlacementPopup = ({ visible, onClose, selectedMissile }) => 
 
   //import is locaiton enabled from map-comp!!!!!
   const [isLocationEnabled, setIsLocationEnabled] = useState(true);
+  const [hasDbConnection, setDbConnection] = useState(false);
 
   // Function to handle location permission and fetch current location
   async function initializeLocation() {
@@ -45,6 +47,27 @@ export const MissilePlacementPopup = ({ visible, onClose, selectedMissile }) => 
     }
   }, [visible]);
 
+  useEffect(() => {
+    const initializeApp = async () => {
+        try {
+            const isDBConnection = await AsyncStorage.getItem('dbconnection');
+            if (isDBConnection === "false"){
+                setDbConnection(false)
+            } 
+            if (isDBConnection === "true"){
+                setDbConnection(true)
+            } else {
+                setDbConnection(false);
+            }
+        } catch (error) {
+            console.error('Error initializing map:', error);
+        }
+    };
+
+    initializeApp();
+  },
+);
+
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -57,7 +80,7 @@ export const MissilePlacementPopup = ({ visible, onClose, selectedMissile }) => 
     if (marker.latitude === currentLocation.latitude && marker.longitude === currentLocation.longitude) {
       Alert.alert('Warning', 'Firing a Missile at your current location is not recommended!');
     } else {
-      console.log(`FIRING Missile: Coordinates: ${marker.latitude}, ${marker.longitude}; User: ${userName} Missile Type: ${selectedMissile}`);
+      console.log(`FIRING Missile: Dest coords: ${marker.latitude}, ${marker.longitude}; sentbyUser: ${userName} Missile Type: ${selectedMissile}, current coords: ${currentLocation.latitude}, ${currentLocation.longitude}`);
       onClose();
     }
   };
@@ -96,9 +119,11 @@ export const MissilePlacementPopup = ({ visible, onClose, selectedMissile }) => 
               onDragEnd={(e) => setMarker(e.nativeEvent.coordinate)}
             />
           </MapView>
-          {!isLocationEnabled && (
-                <View 
-                style={mapstyles.overlay} />
+          {(!isLocationEnabled || !hasDbConnection) && (
+                <View style={mapstyles.overlay}>
+                    <Text style={mapstyles.overlayText}>Map is disabled due to location/database issues.</Text>
+                    <Text style={mapstyles.overlaySubText}>Please check your settings or try again later.</Text>
+                </View>
             )}
           <View style={{ flexDirection: 'row', justifyContent: 'space-around', padding: 10 }}>
             <Button title="Cancel" onPress={onClose} />

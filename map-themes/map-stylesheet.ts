@@ -18,6 +18,17 @@ export const mapstyles = StyleSheet.create({
         justifyContent: 'center', 
         alignItems: 'center', 
     },
+    overlayText: {
+        fontSize: 16,
+        color: 'black',
+        fontWeight: 'bold',
+        marginBottom: 10,
+    },
+    overlaySubText: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: 'grey',
+    },
     switchContainer: {
         position: 'absolute',
         top: 50,
@@ -30,7 +41,6 @@ export const mapstyles = StyleSheet.create({
         color: 'white',
     },
 });
-
 export const mainmapstyles = StyleSheet.create({
     container: {
         flex: 1,
@@ -42,7 +52,7 @@ export const mainmapstyles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#FFF'
+        backgroundColor: '#FFF' // You can adjust the background color as needed
     },
     overlay: {
         position: 'absolute',

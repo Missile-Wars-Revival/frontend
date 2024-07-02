@@ -7,7 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storepagestyles } from '../components/Store/storestylesheets';
 
 export interface Product {
-  id: number;
+  id: string;
   name: string;
   price: number;
   image: any;
@@ -17,12 +17,12 @@ export interface Product {
 }
 
 const products: Product[] = [
-  { id: 1, name: 'Amplifier', price: 100, image: require('../assets/missiles/Amplifier.png'), description: 'High impact missile', sku: "Amplifier", category: 'Missiles' },
-  { id: 2, name: 'Ballista', price: 250, image: require('../assets/missiles/Ballista.png'), description: 'Long-range missile', sku: "Ballista", category: 'Missiles' },
-  { id: 3, name: 'Big Bertha', price: 500, image: require('../assets/missiles/BigBertha.png'), description: 'Large warhead missile', sku: "Big Bertha", category: 'Landmines' },
-  { id: 4, name: 'Bombabom', price: 400, image: require('../assets/missiles/Bombabom.png'), description: 'Cluster bomb missile', sku: "Bombabom", category: 'Landmines' },
-  { id: 5, name: 'Buzzard', price: 3000, image: require('../assets/missiles/Buzzard.png'), description: 'Medium-range missile', sku: "Buzzard", category: 'Loot Drops' },
-  { id: 6, name: 'The Nuke', price: 10000, image: require('../assets/missiles/TheNuke.png'), description: 'Nuclear missile', sku: "The Nuke", category: 'Loot Drops' },
+  { id: "1", name: 'Amplifier', price: 100, image: require('../assets/missiles/Amplifier.png'), description: 'High impact missile', sku: "Amplifier", category: 'Missiles' },
+  { id: "2", name: 'Ballista', price: 250, image: require('../assets/missiles/Ballista.png'), description: 'Long-range missile', sku: "Ballista", category: 'Missiles' },
+  { id: "3", name: 'Big Bertha', price: 500, image: require('../assets/missiles/BigBertha.png'), description: 'Large warhead missile', sku: "Big Bertha", category: 'Landmines' },
+  { id: "4", name: 'Bombabom', price: 400, image: require('../assets/missiles/Bombabom.png'), description: 'Cluster bomb missile', sku: "Bombabom", category: 'Landmines' },
+  { id: "5", name: 'Buzzard', price: 3000, image: require('../assets/missiles/Buzzard.png'), description: 'Medium-range missile', sku: "Buzzard", category: 'Loot Drops' },
+  { id: "6", name: 'The Nuke', price: 10000, image: require('../assets/missiles/TheNuke.png'), description: 'Nuclear missile', sku: "The Nuke", category: 'Loot Drops' },
 ];
 
 const StorePage: React.FC = () => {
@@ -66,7 +66,7 @@ const StorePage: React.FC = () => {
     }
   };
 
-  const handleRemove = (productId: number) => {
+  const handleRemove = (productId: string) => {
     const updatedCart = cart.filter(item => item.product.id !== productId);
     AsyncStorage.setItem('cartitems', JSON.stringify(updatedCart));
     setCart(updatedCart);

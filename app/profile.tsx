@@ -50,7 +50,7 @@ const ProfilePage: React.FC = () => {
           <Text style={styles.logoutButtonText}>Sign Out</Text>
         </TouchableOpacity>
         <Text></Text>
-        <Text>{useBackgroundLocation ? 'Background Location Access (doesnt work expo go)' : 'Foreground Location Access'}</Text>
+        <Text>{useBackgroundLocation ? 'Background Location Access (doesnt work expo go) is needed for notifications when app is in background' : 'Foreground Location Access'}</Text>
             <Switch
                 onValueChange={toggleSwitch}
                 value={useBackgroundLocation}
