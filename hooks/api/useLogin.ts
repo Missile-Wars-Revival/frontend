@@ -10,10 +10,12 @@ export default function useLogin(
     mutationFn: ({
       username,
       password,
+      notificationToken,
     }: {
       username: string;
       password: string;
-    }) => login(username, password),
+      notificationToken: string;
+    }) => login(username, password, notificationToken),
     onSuccess: (data) => {
       const token = data.token; // Assuming the token is returned in the `data` object
       queryClient.invalidateQueries({

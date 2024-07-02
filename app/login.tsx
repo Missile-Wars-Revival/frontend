@@ -6,8 +6,12 @@ import useLogin from "../hooks/api/useLogin";
 import { User, LockKeyhole } from "lucide-react-native";
 import React from "react";
 import { saveCredentials } from "../util/logincache";
+import { usePushNotifications } from "../components/Notifications/usePushNotifications";
 
 export default function Login() {
+  const {expoPushToken, notification} = usePushNotifications();
+  const notificationToken = expoPushToken?.data ?? "No token";
+  console.log(notificationToken);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isError, setIsError] = useState(false);
@@ -49,6 +53,7 @@ export default function Login() {
       <LoginButton
         username={username}
         password={password}
+        notificationToken={notificationToken}
         setIsError={setIsError}
       />
       <Image
@@ -64,10 +69,12 @@ export default function Login() {
 function LoginButton({
   username,
   password,
+  notificationToken,
   setIsError,
 }: {
   username: string;
   password: string;
+  notificationToken: string;
   setIsError: (error: boolean) => void;
   className?: string;
 }) {
@@ -83,7 +90,7 @@ function LoginButton({
   );
   return (
     <TouchableHighlight
-      onPress={() => mutation.mutate({ username, password })}
+      onPress={() => mutation.mutate({ username, password, notificationToken })}
       className={`bg-[#773765] rounded-[20px] w-[375] h-[45] flex items-center justify-center mt-[40]`}
     >
       <View>
