@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { View, FlatList, Button, StyleSheet, Text, TouchableOpacity, Image, ImageBackground } from 'react-native';
-import ProductItem from '../components/Store/productitem';
 import Cart from '../components/Store/cart';
-import { useUserName } from '../util/fetchusernameglobal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storepagestyles } from '../components/Store/storestylesheets';
+import axiosInstance from '../api/axios-instance';
+import * as SecureStore from "expo-secure-store";
+import axios from 'axios';
 
 export interface Product {
   id: string;
@@ -26,11 +27,10 @@ const products: Product[] = [
 ];
 
 const StorePage: React.FC = () => {
-  const userNAME = useUserName(); // logged in user
   const [cart, setCart] = useState<{ product: Product; quantity: number }[]>([]);
   const [isCartVisible, setCartVisible] = useState<boolean>(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [currencyAmount, setCurrencyAmount] = useState<number>(500); // Initial currency amount of player for testing.
+  const [currencyAmount, setCurrencyAmount] = useState<number>(0);
   const [isPremiumStore, setIsPremiumStore] = useState<boolean>(false);
 
   useEffect(() => {
@@ -40,6 +40,33 @@ const StorePage: React.FC = () => {
     };
 
     loadCart();
+    
+  }, []);
+  useEffect(() => {
+    const fetchCurrencyAmount = async () => {
+      const token = await SecureStore.getItemAsync("token");
+      try {
+        if (!token) {
+          console.log('Token not found');
+          return; 
+        }
+  
+        const response = await axiosInstance.get('/api/getMoney', {
+          params: { token } 
+        });
+        setCurrencyAmount(response.data.money);
+      } catch (error: any) { // Explicitly define error type as 'any' or 'unknown' to handle it
+        if (axios.isAxiosError(error)) {
+          // Axios specific error (network error, timeout, etc.)
+          console.error('Axios error:', error.message);
+        } else {
+          // Handle other errors
+          console.error('Error fetching currency amount:', error);
+        }
+      }
+    };
+  
+    fetchCurrencyAmount();
   }, []);
 
   const addToCart = (product: Product) => {
@@ -78,7 +105,7 @@ const StorePage: React.FC = () => {
     <TouchableOpacity style={styles.button} onPress={() => addToCart(item)}>
       <Text style={styles.buttonText}>{item.name}</Text>
       <Image source={item.image} style={styles.buttonImage} />
-      <Text style={styles.buttonText}>⭐{item.price}</Text>
+      <Text style={styles.buttonText}>🪙{item.price}</Text>
     </TouchableOpacity>
   );
 
@@ -88,18 +115,18 @@ const StorePage: React.FC = () => {
       <Image source={require('../assets/SHOP.png')} style={styles.shopImage} />
       <View style={styles.headerContainer}>
         <View style={styles.currencyContainer}>
-          <Text style={storepagestyles.currencyText}>⭐{currencyAmount}</Text>
+          <Text style={storepagestyles.currencyText}>🪙{currencyAmount}</Text>
         </View>
         <View style={styles.switchContainer}>
           <TouchableOpacity
             style={[
               styles.toggleButton,
-              isPremiumStore ? styles.premiumButton : styles.freeButton,
+              isPremiumStore ? styles.coinsButton : styles.premiumButton,
             ]}
             onPress={() => setIsPremiumStore(!isPremiumStore)} // Add logic to switch out the free store items for the premium items when clicked.
           >
             <Text style={styles.toggleButtonText}>
-              {isPremiumStore ? 'Premium' : 'Free'}
+              {isPremiumStore ? 'Premium' : 'Coins'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -263,7 +290,7 @@ const styles = StyleSheet.create({ //Styles made by NightSpark
     justifyContent: 'center',
     marginHorizontal: 61,
   },
-  freeButton: {
+  coinsButton: {
     backgroundColor: '#DDD5F3',
   },
   premiumButton: {

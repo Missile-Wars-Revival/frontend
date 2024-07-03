@@ -101,40 +101,51 @@ export const MapComp = (props: MapCompProps) => {
                 } else {
                     setDbConnection(false);
                 }
-
+    
                 const cachedRegion = await loadLastKnownLocation();
                 if (cachedRegion !== null) {
                     setRegion(cachedRegion);
                 }
-
+    
                 const cachedMode = await AsyncStorage.getItem('visibilitymode');
                 if (cachedMode !== null) {
                     setMode(cachedMode as 'friends' | 'global');
                 }
-
+    
                 const status = await getLocationPermission();
                 setIsLocationEnabled(status === 'granted');
-
+    
                 await getlocation();
                 await fetchLootAndMissiles();
                 await dispatchLocation();
-
-                const intervalId = setInterval(() => {
+    
+                const intervalId = setInterval(async () => {
+                    // Periodically check DB connection status
+                    const dbConnStatus = await AsyncStorage.getItem('dbconnection');
+                    if (dbConnStatus === "false"){
+                        setDbConnection(false)
+                    } 
+                    if (dbConnStatus === "true"){
+                        setDbConnection(true)
+                    } else {
+                        setDbConnection(false);
+                    }
+    
                     fetchLootAndMissiles();
                     getLocationPermission();
                     dispatchLocation();
                     DefRegLocationTask();
                 }, 1000);
-
+    
                 return () => clearInterval(intervalId);
             } catch (error) {
                 setIsLoading(false);
                 console.error('Error initializing app:', error);
             }
         };
-
+    
         initializeApp();
-    }, [fetchLootAndMissiles]);
+    }, [fetchLootAndMissiles]);    
 
     const toggleMode = async () => {
         const newMode = visibilitymode === 'friends' ? 'global' : 'friends';

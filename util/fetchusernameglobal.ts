@@ -24,7 +24,7 @@ export const useUserName = () => {
 };
 
 export const useToken = () => {
-    const [token, setToken] = useState<string | any>();
+    const [token, setToken] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchCredentials = async () => {
