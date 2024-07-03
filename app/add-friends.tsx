@@ -1,12 +1,8 @@
-
-//Not working
-
-
 import React, { useState, useEffect, useCallback } from "react";
 import { Text, View, FlatList, TouchableOpacity, Alert } from "react-native";
 import * as Location from "expo-location";
 import { Input } from "../components/ui/input";
-import { searchOtherPlayersData } from "../api/getplayerlocations";
+import { NearbyPlayersData, searchOtherPlayersData } from "../api/getplayerlocations";
 import { addFriend } from "../api/add-friend"; // Import the addFriend function
 import { removeFriend } from "../api/remove-friend";
 import { router } from "expo-router";
@@ -64,32 +60,25 @@ const QuickAddPage: React.FC = () => {
 
   useEffect(() => {
     if (userLocation) {
-      searchOtherPlayersData(searchTerm).then((data) => {
-        setPlayersData(data);
-        setLoading(false);
-      });
+      setLoading(true);
+      NearbyPlayersData(userLocation.latitude, userLocation.longitude)
+        .then(data => {
+          setPlayersData(data);
+          setLoading(false);
+        })
+        .catch(error => {
+          console.error("Failed to fetch players:", error);
+          setLoading(false);
+        });
     }
-  }, [userLocation, searchTerm]);
+  }, [userLocation]);
 
   const handleAddFriend = async (friendUsername: string) => {
-    try {
-      // Call the addFriend function from the hook
-      await addFriend(userNAME, "password", friendUsername);
-      // Optionally, update UI or show success message
-      console.log(`Friend ${friendUsername} added successfully`);
-    } catch (error) {
-      // Handle errors, show alerts, etc.
-      console.error("Error adding friend:", error);
-    }
+    //add friend here
   };
 
   const handleRemoveFriend = async (friendUsername: string) => {
-    try {
-      await removeFriend(userNAME, "password", friendUsername);
-      console.log(`Friend ${friendUsername} removed successfully`);
-    } catch (error) {
-      console.error("Error removing friend:", error);
-    }
+    //remove friend here
   };
 
   const renderItem = ({ item }: { item: any }) => (

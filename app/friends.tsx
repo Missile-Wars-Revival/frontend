@@ -2,6 +2,14 @@ import React, { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, FlatList, Modal } from "react-native";
 import { useRouter } from "expo-router";
 import { useUserName } from "../util/fetchusernameglobal";
+import * as SecureStore from 'expo-secure-store';
+import axios from "axios";
+import axiosInstance from "../api/axios-instance";
+
+interface Friend {
+  username: string;
+  // Add other properties as needed
+}
 
 const fireMissile = (username: string) => {
   // Placeholder for firing missile logic
@@ -9,8 +17,8 @@ const fireMissile = (username: string) => {
 };
 
 const FriendsPage: React.FC = () => {
-  const friends: ArrayLike<any> | null | undefined = []; // Placeholder for friends list
-  const loading = false; // Placeholder for loading state
+  const [friends, setFriends] = useState<Friend[]>([]);
+  const [loading, setLoading] = useState(false);
   const error = null; // Placeholder for error state
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedFriend, setSelectedFriend] = useState("");
@@ -23,6 +31,41 @@ const FriendsPage: React.FC = () => {
     setSelectedFriend(friendUsername);
     setModalVisible(true);
   };
+
+  const fetchFriends = async () => {
+    setLoading(true);
+    const token = await SecureStore.getItemAsync("token");
+  
+    if (!token) {
+      console.log('Token not found');
+      setLoading(false);
+      return;
+    }
+  
+    try {
+      const response = await axiosInstance.get('/api/getMoney', {
+        params: { token } 
+      });
+  
+      if (response.data && response.data.friends) {
+        setFriends(response.data.friends);
+      } else {
+        console.log('No friends data found');
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        console.error('Axios error:', error.message);
+      } else {
+        console.error('Error fetching friends:', error);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  useEffect(() => {
+    fetchFriends();
+  }, [userNAME]);
 
   const handleRemoveFriend = async (friendUsername: string) => {
     // Placeholder for remove friend logic
@@ -71,7 +114,9 @@ const FriendsPage: React.FC = () => {
       {loading ? (
         <Text>Loading...</Text>
       ) : error ? (
-        <Text>Error loading friends</Text>
+        <Text>{error}</Text>
+      ) : friends.length === 0 ? (
+        <Text>No friends found</Text>
       ) : (
         <FlatList
           data={friends}
