@@ -33,24 +33,38 @@ const Cart: React.FC<CartProps> = ({ cart, onRemove }) => {
   );
 
   async function checkout(event: GestureResponderEvent): Promise<void> {
-
     if (cart.length === 0) {
       Alert.alert("Checkout Unavailable", "Your cart is empty.");
-      return; // Stop the function if the cart is empty
-    }
-
-    const token = await SecureStore.getItemAsync("token");
-    if (!token) {
-      console.log("Authentication Error", "No authentication token found.");
       return;
     }
-
-    const response = await axiosInstance.get('/api/getMoney', {
-      params: { token, items: cart, money: totalPrice } 
+  
+    const token = await SecureStore.getItemAsync("token");
+    if (!token) {
+      Alert.alert("Authentication Error", "No authentication token found.");
+      return;
+    }
+  
+    // Transform cart items to match backend expectations
+    const items = cart.map(cartItem => ({
+      product: {
+        name: cartItem.product.name,
+        category: cartItem.product.type, // Include the category field
+      },
+      quantity: cartItem.quantity,
+    }));
+  
+    // Calculate total price based on the cart items
+    const totalPrice = cart.reduce((total, cartItem) => total + cartItem.product.price * cartItem.quantity, 0);
+  
+    // Sending data in the request body for a POST request
+    axiosInstance.post('/api/purchaseItem', {
+      token,
+      items, // Sending transformed items
+      money: totalPrice,
     })
     .then(async response => {
-      await AsyncStorage.removeItem('cartitems');//clears cart
-      router.navigate("/");//takes user away
+      await AsyncStorage.removeItem('cartitems'); // Clears the cart
+      router.navigate("/"); // Navigates user away from the current page
       Alert.alert("Success", "Checkout successful!");
     })
     .catch(error => {
@@ -58,6 +72,7 @@ const Cart: React.FC<CartProps> = ({ cart, onRemove }) => {
       console.error('Checkout failed', error);
     });
   }
+  
 
   return (
     <View style={storepagestyles.cartContainer}>

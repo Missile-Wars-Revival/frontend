@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { View, Platform } from "react-native";
+import { Animated, View, Platform, Alert } from "react-native";
+import * as SecureStore from "expo-secure-store";
 
 // Android Themes
 import { androidDefaultMapStyle } from "../map-themes/Android-themes/defaultMapStyle";
@@ -24,6 +25,9 @@ import { MapComp } from "../components/map-comp";
 import { MapStyle } from "../types/types";
 import { getCredentials } from "../util/logincache";
 import { router } from "expo-router";
+import axiosInstance from "../api/axios-instance";
+import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function Map() {
   const [userNAME, setUsername] = useState("");
@@ -43,6 +47,44 @@ export default function Map() {
     };
 
     fetchCredentials();
+  }, []);
+
+  useEffect(() => {
+    const addCurrencyAmount = async () => {
+      const lastRewardedDate = await AsyncStorage.getItem('lastRewardedDate');
+      const today = new Date().toISOString().slice(0, 10); 
+  
+      if (lastRewardedDate === today) {
+        //console.log('Daily reward already claimed');
+        return;
+      }
+  
+      const token = await SecureStore.getItemAsync("token");
+      if (!token) {
+        console.log('Token not found');
+        return;
+      }
+  
+      try {
+        const response = await axiosInstance.post('/api/addMoney', {
+          token, amount: 500
+        });
+  
+        if (response.data) {
+          console.log('Money added successfully:', response.data.message);
+          Alert.alert("Claimed!", "You have clamed your daily reward!");
+          await AsyncStorage.setItem('lastRewardedDate', today); // Update the last rewarded date
+        }
+      } catch (error) {
+        if (axios.isAxiosError(error)) {
+          console.error('Axios error:', error.response?.data.message || error.message);
+        } else {
+          console.error('Error adding currency:', error);
+        }
+      }
+    };
+  
+    addCurrencyAmount();
   }, []);
 
   const [selectedMapStyle, setSelectedMapStyle] = useState<MapStyle[]>(Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle);

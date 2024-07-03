@@ -10,20 +10,21 @@ import axios from 'axios';
 export interface Product {
   id: string;
   name: string;
+  type: string;
   price: number;
   image: any;
   description: string;
   sku?: string;
-  category?: string;
 }
 
 const products: Product[] = [
-  { id: "1", name: 'Amplifier', price: 100, image: require('../assets/missiles/Amplifier.png'), description: 'High impact missile', sku: "Amplifier", category: 'Missiles' },
-  { id: "2", name: 'Ballista', price: 250, image: require('../assets/missiles/Ballista.png'), description: 'Long-range missile', sku: "Ballista", category: 'Missiles' },
-  { id: "3", name: 'Big Bertha', price: 500, image: require('../assets/missiles/BigBertha.png'), description: 'Large warhead missile', sku: "Big Bertha", category: 'Landmines' },
-  { id: "4", name: 'Bombabom', price: 400, image: require('../assets/missiles/Bombabom.png'), description: 'Cluster bomb missile', sku: "Bombabom", category: 'Landmines' },
-  { id: "5", name: 'Buzzard', price: 3000, image: require('../assets/missiles/Buzzard.png'), description: 'Medium-range missile', sku: "Buzzard", category: 'Loot Drops' },
-  { id: "6", name: 'The Nuke', price: 10000, image: require('../assets/missiles/TheNuke.png'), description: 'Nuclear missile', sku: "The Nuke", category: 'Loot Drops' },
+  { id: "1", name: 'Amplifier', price: 100, image: require('../assets/missiles/Amplifier.png'), description: 'High impact missile', sku: "Amplifier", type: 'Missiles' },
+  { id: "2", name: 'Ballista', price: 250, image: require('../assets/missiles/Ballista.png'), description: 'Long-range missile', sku: "Ballista", type: 'Missiles' },
+  { id: "3", name: 'BigBertha', price: 500, image: require('../assets/missiles/BigBertha.png'), description: 'Large warhead missile', sku: "Big Bertha", type: 'Landmines' },
+  { id: "4", name: 'Bombabom', price: 400, image: require('../assets/missiles/Bombabom.png'), description: 'Cluster bomb missile', sku: "Bombabom", type: 'Landmines' },
+  { id: "5", name: 'Buzzard', price: 3000, image: require('../assets/missiles/Buzzard.png'), description: 'Medium-range missile', sku: "Buzzard", type: 'Missiles' },
+  { id: "6", name: 'TheNuke', price: 10000, image: require('../assets/missiles/TheNuke.png'), description: 'Nuclear missile', sku: "The Nuke", type: 'Missiles' },
+  { id: "7", name: 'LootDrop', price: 400, image: require('../assets/mapassets/Airdropicon.png'), description: 'A Loot Drop', sku: "Loot Drop", type: 'Loot Drop' },
 ];
 
 const StorePage: React.FC = () => {
@@ -55,12 +56,10 @@ const StorePage: React.FC = () => {
           params: { token } 
         });
         setCurrencyAmount(response.data.money);
-      } catch (error: any) { // Explicitly define error type as 'any' or 'unknown' to handle it
+      } catch (error: any) {
         if (axios.isAxiosError(error)) {
-          // Axios specific error (network error, timeout, etc.)
           console.error('Axios error:', error.message);
         } else {
-          // Handle other errors
           console.error('Error fetching currency amount:', error);
         }
       }
@@ -99,7 +98,7 @@ const StorePage: React.FC = () => {
     setCart(updatedCart);
   };
 
-  const filteredProducts = selectedCategory === 'All' ? products : products.filter(p => p.category === selectedCategory);
+  const filteredProducts = selectedCategory === 'All' ? products : products.filter(p => p.type === selectedCategory);
 
   const renderButton = ({ item }: { item: Product }) => (
     <TouchableOpacity style={styles.button} onPress={() => addToCart(item)}>
