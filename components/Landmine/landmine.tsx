@@ -58,6 +58,7 @@ export const LandmineImages: LandmineImages = {
   Amplifier: require('../../assets/missiles/Amplifier.png'),
   Ballista: require('../../assets/missiles/Ballista.png'),
   BigBertha: require('../../assets/missiles/BigBertha.png'),
+  Bombabom: require('../../assets/missiles/Bombabom.png'),
   // ... other landmine images
 };
 
