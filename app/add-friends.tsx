@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Text, View, FlatList, TouchableOpacity, Alert, RefreshControl  } from "react-native";
+import { Text, View, FlatList, TouchableOpacity, Alert, RefreshControl, TextInput, Keyboard, TouchableWithoutFeedback  } from "react-native";
 import { Input } from "../components/ui/input";
 import { NearbyPlayersData, searchOtherPlayersData } from "../api/getplayerlocations";
 import { addFriend } from "../api/add-friend"; // Import the addFriend function
@@ -8,6 +8,12 @@ import { router } from "expo-router";
 import { getCredentials } from "../util/logincache";
 import { getCurrentLocation, location } from "../util/locationreq";
 import * as SecureStore from "expo-secure-store";
+
+interface Filterddata {
+  username: string,
+  latitude: string,
+  longitude: string,
+}
 
 const QuickAddPage: React.FC = () => {
   const [userNAME, setUsername] = useState("");
@@ -34,6 +40,8 @@ const QuickAddPage: React.FC = () => {
   const [playersData, setPlayersData] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [filteredData, setFilteredData] = useState<Filterddata[]>([]);;
+  const [hasInteracted, setHasInteracted] = useState(false); 
 
   const fetchLocation = async () => {
     const location: location = await getCurrentLocation();
@@ -127,6 +135,32 @@ const QuickAddPage: React.FC = () => {
     setRefreshing(false);
   };
 
+  const handleSearch = async (text: string) => {
+    setSearchTerm(text);
+    if (!text.trim()) {
+        setHasInteracted(false);
+        setFilteredData([]);
+        return;
+    }
+    try {
+        const currentUserUsername = await SecureStore.getItemAsync("username");
+        const result = await searchOtherPlayersData(text);
+        const filteredResult = result.filter(player => player.username !== currentUserUsername);
+        setFilteredData(filteredResult);
+        setHasInteracted(true);
+    } catch (error) {
+        console.error("Failed to search for players:", error);
+        setFilteredData([]);
+    }
+};
+
+
+
+  const handleDismiss = () => {
+    setHasInteracted(false);
+    Keyboard.dismiss();  // Optionally dismiss the keyboard
+  };
+
   const renderItem = ({ item }: { item: any }) => (
     <View className="flex-row items-center justify-between mb-[10px]">
       <Text className="text-[16px] flex-1">{item.username}</Text>
@@ -148,41 +182,49 @@ const QuickAddPage: React.FC = () => {
   );
 
   return (
-    <View className="flex-1 p-[20px]">
-      <View style={{ flex: 1, padding: 0, paddingTop: 50 }}>
+    <TouchableWithoutFeedback onPress={handleDismiss}>
+    <View style={{ flex: 1, padding: 20, paddingTop: 50 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: -25 }}>
-      <Text style={{ fontSize: 20 }}>Add Friends</Text>
-    </View>
-    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 }}>
-      <TouchableOpacity
-        style={{
-          width: 60,
-          height: 30,
-          borderRadius: 15,
-          justifyContent: 'center',
-          alignItems: 'center',
-          backgroundColor: 'blue',
-        }}
-        onPress={() => router.navigate("/friends")}
-      >
-        <Text style={{ fontSize: 20, color: 'white' }}>Back</Text>
-      </TouchableOpacity>
-    </View>
-      <Input
-        className="h-[40px] border border-gray-500 mb-[20px] px-[10px]"
+        <Text style={{ fontSize: 20 }}>Add Friends</Text>
+      </View>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 }}>
+        <TouchableOpacity
+          style={{
+            width: 60,
+            height: 30,
+            borderRadius: 15,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: 'blue',
+          }}
+          onPress={() => router.navigate("/friends")}
+        >
+          <Text style={{ fontSize: 20, color: 'white' }}>Back</Text>
+        </TouchableOpacity>
+      </View>
+      <TextInput
+        style={{ height: 40, borderColor: 'gray', borderWidth: 1, marginBottom: 20, paddingLeft: 10 }}
         placeholder="Search for friends..."
         value={searchTerm}
-        onChangeText={setSearchTerm}
+        onChangeText={handleSearch}
       />
+      {hasInteracted && (
+      <FlatList
+        data={filteredData}
+        renderItem={renderItem}
+        keyExtractor={item => item.username}
+        style={{ marginBottom: 10 }}
+      />
+    )}
       {loading ? (
         <Text>Loading...</Text>
       ) : playersData.length === 0 ? (
-        <Text className="text-[16px] text-center">
+        <Text style={{ fontSize: 16, textAlign: 'center' }}>
           No players found near you
         </Text>
       ) : (
         <>
-          <Text className="text-[20px] pb-[10px]">Player's Nearby:</Text>
+          <Text style={{ fontSize: 20, paddingBottom: 10 }}>Player's Nearby:</Text>
           <FlatList
             data={playersData}
             renderItem={renderItem}
@@ -191,14 +233,14 @@ const QuickAddPage: React.FC = () => {
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={onRefresh}
-                colors={["#9Bd35A", "#689F38"]} // You can customize the color
+                colors={["#9Bd35A", "#689F38"]} // Customize color
               />
             }
           />
         </>
       )}
     </View>
-    </View>
+    </TouchableWithoutFeedback>
   );
 };
 
