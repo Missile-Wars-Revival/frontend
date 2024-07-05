@@ -76,13 +76,13 @@ const QuickAddPage: React.FC = () => {
       }
       const result = await addFriend(token, friendUsername);
       // Assuming successful addition if no errors thrown and possibly checking a status or message
-      if (result.message === "Friend added successfully") { // Check if the response includes a success message
-        // Update UI state only if adding friend was successful
-        setPlayersData(prevData => 
-          prevData.map(player =>
-            player.username === friendUsername ? { ...player, isFriend: true } : player
-          )
-        );
+      if (result.message === "Friend added successfully") {
+      // Update UI state to reflect the new friend status
+      setPlayersData(prevData => 
+        prevData.map(player =>
+          player.username === friendUsername ? { ...player, isFriend: "You are already friends with this person." } : player
+        )
+      );
         Alert.alert("Success", "Friend added successfully!");
       } else {
         // Handle any other messages or default case
@@ -142,10 +142,21 @@ const QuickAddPage: React.FC = () => {
         setFilteredData([]);
         return;
     }
+    
     try {
         const currentUserUsername = await SecureStore.getItemAsync("username");
-        const result = await searchOtherPlayersData(text);
+        
+        if (currentUserUsername === null) {
+            console.error("No username found in secure storage.");
+            setFilteredData([]);
+            setHasInteracted(false);  
+            return;
+        }
+
+        const result = await searchOtherPlayersData(text, currentUserUsername);
+        
         const filteredResult = result.filter(player => player.username !== currentUserUsername);
+        
         setFilteredData(filteredResult);
         setHasInteracted(true);
     } catch (error) {
@@ -154,14 +165,12 @@ const QuickAddPage: React.FC = () => {
     }
 };
 
-
-
   const handleDismiss = () => {
     setHasInteracted(false);
-    Keyboard.dismiss();  // Optionally dismiss the keyboard
+    Keyboard.dismiss();  
   };
 
-  const renderItem = ({ item }: { item: any }) => (
+  const quickaddItem = ({ item }: { item: any }) => (
     <View className="flex-row items-center justify-between mb-[10px]">
       <Text className="text-[16px] flex-1">{item.username}</Text>
       <View className="flex-row items-center">
@@ -171,12 +180,33 @@ const QuickAddPage: React.FC = () => {
         >
           <Text className="font-[13px] text-white">+</Text>
         </TouchableOpacity>
+        {/* Commented out as rmeoving friend in quick add not needed yet */}
         {/* <TouchableOpacity
           className="bg-red-500 p-[10px] rounded-[5px] w-[35px] h-[35px] justify-center items-center mr-[10px]"
           onPress={() => handleRemoveFriend(item.username)}
         >
           <Text className="font-[13px] text-white">x</Text>
         </TouchableOpacity> */}
+      </View>
+    </View>
+  );
+
+  const searchitem = ({ item }: { item: any }) => (
+    <View className="flex-row items-center justify-between mb-[10px]">
+      <Text className="text-[16px] flex-1">{item.username}</Text>
+      <View className="flex-row items-center">
+        <TouchableOpacity
+          className="bg-green-600 p-[10px] rounded-[5px] w-[35px] h-[35px] justify-center items-center mr-[10px]"
+          onPress={() => handleAddFriend(item.username)}
+        >
+          <Text className="font-[13px] text-white">+</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          className="bg-red-500 p-[10px] rounded-[5px] w-[35px] h-[35px] justify-center items-center mr-[10px]"
+          onPress={() => handleRemoveFriend(item.username)}
+        >
+          <Text className="font-[13px] text-white">x</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -211,7 +241,7 @@ const QuickAddPage: React.FC = () => {
       {hasInteracted && (
       <FlatList
         data={filteredData}
-        renderItem={renderItem}
+        renderItem={searchitem}
         keyExtractor={item => item.username}
         style={{ marginBottom: 10 }}
       />
@@ -227,7 +257,7 @@ const QuickAddPage: React.FC = () => {
           <Text style={{ fontSize: 20, paddingBottom: 10 }}>Player's Nearby:</Text>
           <FlatList
             data={playersData}
-            renderItem={renderItem}
+            renderItem={quickaddItem}
             keyExtractor={(item) => item.username}
             refreshControl={
               <RefreshControl

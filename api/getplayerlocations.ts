@@ -23,11 +23,12 @@ export async function fetchOtherPlayersData(): Promise<any[]> {
     }
 }
 
-export async function searchOtherPlayersData(searchTerm: string): Promise<any[]> {
+export async function searchOtherPlayersData(searchTerm: string, username: string): Promise<any[]> {
     try {
         const response = await axiosInstance.get('/api/searchplayers', {
             params: {
-                searchTerm: searchTerm
+                searchTerm: searchTerm,
+                username: username
             }
         });
 

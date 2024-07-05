@@ -32,8 +32,7 @@ const FriendsPage: React.FC = () => {
   };
 
   const fireMissile = (username: string) => {
-    // Placeholder for firing missile logic
-    setSelectedPlayer(username); // Set the selected player for the MissileLibrary component
+    setSelectedPlayer(username);
     setShowMissileLibrary(true); // Open the missile library modal
     console.log(`Firing missile for friend with username: ${username}`);
   };
