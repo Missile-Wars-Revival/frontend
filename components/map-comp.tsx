@@ -99,7 +99,8 @@ export const MapComp = (props: MapCompProps) => {
                             { text: "OK", onPress: () => setFirstLoad(false) } 
                         ]
                     );
-                    setFirstLoad(true); 
+                    setFirstLoad(false); 
+                    await AsyncStorage.setItem('firstload', 'false');
                 } 
                 if (isDBConnection === "false"){
                     setDbConnection(false)
@@ -193,18 +194,8 @@ export const MapComp = (props: MapCompProps) => {
         console.log("Mode changed to:", visibilitymode);
     };
 
-    useEffect(() => {
-        const saveFirstLoadStatus = async () => {
-            await AsyncStorage.setItem('firstload', 'false');
-        };
-
-        if (!firstLoad) {
-            saveFirstLoadStatus();
-        }
-    }, [firstLoad]);
-
     // Only show loader if it's the first load and still loading
-    if (isLoading && firstLoad) {
+    if (isLoading || !firstLoad) {
         return (
             <View style={mainmapstyles.loaderContainer}>
                 <ActivityIndicator size="large" color="#0000ff" />
