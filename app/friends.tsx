@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, FlatList, Modal } from "react-native";
+import { View, Text, TouchableOpacity, FlatList, Modal, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { useUserName } from "../util/fetchusernameglobal";
 import * as SecureStore from 'expo-secure-store';
 import axios from "axios";
 import axiosInstance from "../api/axios-instance";
+import { removeFriend } from "../api/remove-friend";
 
 interface Friend {
   username: string;
@@ -68,17 +69,29 @@ const FriendsPage: React.FC = () => {
   }, [userNAME]);
 
   const handleRemoveFriend = async (friendUsername: string) => {
-    // Placeholder for remove friend logic
-    console.log(`Friend ${friendUsername} removed successfully`);
-    setModalVisible(false);
-    // try {
-    //   await removeFriend(userNAME, "password", friendUsername);
-    //   console.log(`Friend ${friendUsername} removed successfully`);
-    //   setModalVisible(false);
-    // } catch (error) {
-    //   console.error("Error removing friend:", error);
-    // }
-  };
+    const token = await SecureStore.getItemAsync("token");
+    try {
+        if (!token) {
+            console.log('Token not found');
+            Alert.alert("Error", "Authentication token not found. Please login again.");
+            return; 
+        }
+        const response = await removeFriend(token, friendUsername);
+        if (response.message === "Friend removed successfully") {
+            // Assuming the server sends a response status OK on successful friend removal
+            Alert.alert("Success", "Friend successfully removed.");
+            setModalVisible(false)
+        } else {
+            // If the response is not OK, parse the response for error messages
+            const result = await response.json();
+            Alert.alert("Error", result.message || "Failed to remove friend.");
+        }
+    } catch (error) {
+        // Catch any other errors here
+        console.error('Error removing friend:', error);
+        Alert.alert("Error", "An unexpected error occurred while removing the friend.");
+    }
+};
 
   return (
     <View style={{ padding: 20, paddingTop: 60 }}>

@@ -61,20 +61,54 @@ const QuickAddPage: React.FC = () => {
 
   const handleAddFriend = async (friendUsername: string) => {
     const token = await SecureStore.getItemAsync("token");
-      try {
-        if (!token) {
-          console.log('Token not found');
-          return; 
-        }
-        addFriend(token, friendUsername)
-      } catch (error: any) {
+    try {
+      if (!token) {
+        console.log('Token not found')
+        return; 
       }
-
-    //add friend here
+      const result = await addFriend(token, friendUsername);
+      // Assuming successful addition if no errors thrown and possibly checking a status or message
+      if (result.message === "Friend added successfully") { // Check if the response includes a success message
+        // Update UI state only if adding friend was successful
+        setPlayersData(prevData => 
+          prevData.map(player =>
+            player.username === friendUsername ? { ...player, isFriend: true } : player
+          )
+        );
+        Alert.alert("Success", "Friend added successfully!");
+      } else {
+        // Handle any other messages or default case
+        Alert.alert("Error", result.message || "Failed to add friend.");
+      }
+    } catch (error) {
+      // Handle any errors thrown from the addFriend function
+      console.error('Error adding friend:', error);
+      Alert.alert("An unexpected error occurred while adding friend.");
+    }
   };
 
   const handleRemoveFriend = async (friendUsername: string) => {
-    //remove friend here
+    const token = await SecureStore.getItemAsync("token");
+    try {
+        if (!token) {
+            console.log('Token not found');
+            Alert.alert("Error", "Authentication token not found. Please login again.");
+            return; 
+        }
+        const response = await removeFriend(token, friendUsername);
+        if (response.message === "Friend removed successfully") {
+            // Assuming the server sends a response status OK on successful friend removal
+            Alert.alert("Success", "Friend successfully removed.");
+        } else {
+            // If the response is not OK, parse the response for error messages
+            const result = await response.json();
+            Alert.alert("Error", result.message || "Failed to remove friend.");
+        }
+    } catch (error) {
+        // Catch any other errors here
+        console.error('Error removing friend:', error);
+        Alert.alert("Error", "An unexpected error occurred while removing the friend.");
+    }
   };
 
   const renderItem = ({ item }: { item: any }) => (
@@ -87,12 +121,12 @@ const QuickAddPage: React.FC = () => {
         >
           <Text className="font-[13px] text-white">+</Text>
         </TouchableOpacity>
-        <TouchableOpacity
+        {/* <TouchableOpacity
           className="bg-red-500 p-[10px] rounded-[5px] w-[35px] h-[35px] justify-center items-center mr-[10px]"
           onPress={() => handleRemoveFriend(item.username)}
         >
           <Text className="font-[13px] text-white">x</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
     </View>
   );
