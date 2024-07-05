@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, FlatList, Modal, Alert, RefreshControl, Dimensions, Button  } from "react-native";
+import { View, Text, TouchableOpacity, FlatList, Modal, Alert, RefreshControl, Dimensions, Button, Image  } from "react-native";
 import { useRouter } from "expo-router";
 import { useUserName } from "../util/fetchusernameglobal";
 import * as SecureStore from 'expo-secure-store';
@@ -12,6 +12,8 @@ interface Friend {
   username: string;
   // Add other properties as needed
 }
+
+const resizedplayerimage = require("../assets/mapassets/Female_Avatar_PNG.png"); // Your custom image path
 
 const FriendsPage: React.FC = () => {
   const [friends, setFriends] = useState<Friend[]>([]);
@@ -117,7 +119,7 @@ return (
         }}
         onPress={() => router.navigate("/add-friends")}
       >
-        <Text style={{ fontSize: 20, color: 'white' }}>+</Text>
+        <Text style={{ fontSize: 15, color: 'white' }}>+</Text>
       </TouchableOpacity>
       <Text style={{ fontSize: 20 }}>Friends</Text>
       <TouchableOpacity
@@ -147,8 +149,17 @@ return (
         data={friends}
         keyExtractor={(item) => item.username}
         renderItem={({ item }) => (
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-            <Text>{item.username}</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, marginRight: 10 }}>
+            <Image
+                source={resizedplayerimage}
+                style={{ width: 40, height: 40, borderRadius: 25 }}
+            />
+            <Text style={{
+              fontSize: 15, 
+              marginLeft: 10 
+              }}>
+            {item.username}
+          </Text>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <TouchableOpacity
                 style={{
