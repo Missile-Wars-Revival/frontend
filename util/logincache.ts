@@ -44,7 +44,7 @@ export async function clearCredentials(): Promise<void> {
     await AsyncStorage.removeItem("selectedMapStyle"); //Map theme
     await AsyncStorage.removeItem("regionlocation"); //Cache of locaiton
     await AsyncStorage.removeItem("firstload"); //To cache if its first time opening app
-    await AsyncStorage.removeItem("dbconnection"); //To cache db connection status across the app
+    await AsyncStorage.setItem('dbconnection', 'true'); //To cache db connection status across the app
 
     console.log("All credentials and settings successfully cleared.");
   } catch (error) {

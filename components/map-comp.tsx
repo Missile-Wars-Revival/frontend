@@ -12,9 +12,8 @@ import { getLocationPermission } from "../hooks/userlocation";
 import { useToken, useUserName } from "../util/fetchusernameglobal";
 import { dispatch } from "../api/dispatch";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getCurrentLocation } from "../util/locationreq";
+import { getCurrentLocation, location } from "../util/locationreq";
 import { mainmapstyles } from "../map-themes/map-stylesheet";
-import { location } from "../util/locationreq";
 import { DefRegLocationTask } from "../util/backgroundtasks";
 
 interface MapCompProps {
@@ -47,6 +46,7 @@ export const MapComp = (props: MapCompProps) => {
     }, []);
 
     const dispatchLocation = async () => {
+        //console.log("dispatched")
         const location: location = await getCurrentLocation();
         if (token && userName && location.latitude && location.longitude) {
             await dispatch(token, userName, location.latitude, location.longitude);

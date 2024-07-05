@@ -7,8 +7,8 @@ import { addFriend } from "../api/add-friend"; // Import the addFriend function
 import { removeFriend } from "../api/remove-friend";
 import { router } from "expo-router";
 import { getCredentials } from "../util/logincache";
-
-
+import { getCurrentLocation, location } from "../util/locationreq";
+import * as SecureStore from "expo-secure-store";
 
 const QuickAddPage: React.FC = () => {
   const [userNAME, setUsername] = useState("");
@@ -35,24 +35,10 @@ const QuickAddPage: React.FC = () => {
   const [playersData, setPlayersData] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
-  const fetchLocation = useCallback(async () => {
-    try {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        console.log("Permission to access location was denied");
-        return;
-      }
-
-      let location = await Location.getCurrentPositionAsync({});
-      const userLoc = {
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-      };
-      setUserLocation(userLoc);
-    } catch (error) {
-      console.log("Error fetching location:", error);
+  const fetchLocation = async () => {
+    const location: location = await getCurrentLocation();
+    setUserLocation(location)
     }
-  }, []);
 
   useEffect(() => {
     fetchLocation();
@@ -74,6 +60,16 @@ const QuickAddPage: React.FC = () => {
   }, [userLocation]);
 
   const handleAddFriend = async (friendUsername: string) => {
+    const token = await SecureStore.getItemAsync("token");
+      try {
+        if (!token) {
+          console.log('Token not found');
+          return; 
+        }
+        addFriend(token, friendUsername)
+      } catch (error: any) {
+      }
+
     //add friend here
   };
 
