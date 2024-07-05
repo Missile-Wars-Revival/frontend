@@ -43,7 +43,7 @@ const FriendsPage: React.FC = () => {
     }
   
     try {
-      const response = await axiosInstance.get('/api/getMoney', {
+      const response = await axiosInstance.get('/api/friends', {
         params: { token } 
       });
   

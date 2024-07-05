@@ -48,8 +48,8 @@ export const MapComp = (props: MapCompProps) => {
     const dispatchLocation = async () => {
         //console.log("dispatched")
         const location: location = await getCurrentLocation();
-        if (token && userName && location.latitude && location.longitude) {
-            await dispatch(token, userName, location.latitude, location.longitude);
+        if (token && location.latitude && location.longitude) {
+            await dispatch(token, location.latitude, location.longitude);
         }
     };
 
