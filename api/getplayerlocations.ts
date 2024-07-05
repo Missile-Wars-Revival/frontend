@@ -25,7 +25,7 @@ export async function fetchOtherPlayersData(): Promise<any[]> {
 
 export async function searchOtherPlayersData(searchTerm: string): Promise<any[]> {
     try {
-        const response = await axiosInstance.get('/api/playerlocations', {
+        const response = await axiosInstance.get('/api/searchplayers', {
             params: {
                 searchTerm: searchTerm
             }
@@ -37,8 +37,6 @@ export async function searchOtherPlayersData(searchTerm: string): Promise<any[]>
 
         return response.data.map((player: any) => ({
             username: player.username,
-            latitude: player.latitude,
-            longitude: player.longitude,
             updatedAt: player.updatedAt
         }));
     } catch (error) {
