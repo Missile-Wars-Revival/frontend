@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { Text, View, FlatList, TouchableOpacity, Alert } from "react-native";
-import * as Location from "expo-location";
+import React, { useState, useEffect } from "react";
+import { Text, View, FlatList, TouchableOpacity, Alert, RefreshControl  } from "react-native";
 import { Input } from "../components/ui/input";
 import { NearbyPlayersData, searchOtherPlayersData } from "../api/getplayerlocations";
 import { addFriend } from "../api/add-friend"; // Import the addFriend function
@@ -34,6 +33,7 @@ const QuickAddPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [playersData, setPlayersData] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const fetchLocation = async () => {
     const location: location = await getCurrentLocation();
@@ -110,6 +110,22 @@ const QuickAddPage: React.FC = () => {
         Alert.alert("Error", "An unexpected error occurred while removing the friend.");
     }
   };
+  const onRefresh = async () => {
+    setRefreshing(true);
+    if (userLocation) {
+      setLoading(true);
+      NearbyPlayersData(userLocation.latitude, userLocation.longitude)
+        .then(data => {
+          setPlayersData(data);
+          setLoading(false);
+        })
+        .catch(error => {
+          console.error("Failed to fetch players:", error);
+          setLoading(false);
+        });
+    }
+    setRefreshing(false);
+  };
 
   const renderItem = ({ item }: { item: any }) => (
     <View className="flex-row items-center justify-between mb-[10px]">
@@ -133,6 +149,25 @@ const QuickAddPage: React.FC = () => {
 
   return (
     <View className="flex-1 p-[20px]">
+      <View style={{ flex: 1, padding: 0, paddingTop: 50 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: -25 }}>
+      <Text style={{ fontSize: 20 }}>Add Friends</Text>
+    </View>
+    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 }}>
+      <TouchableOpacity
+        style={{
+          width: 60,
+          height: 30,
+          borderRadius: 15,
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: 'blue',
+        }}
+        onPress={() => router.navigate("/friends")}
+      >
+        <Text style={{ fontSize: 20, color: 'white' }}>Back</Text>
+      </TouchableOpacity>
+    </View>
       <Input
         className="h-[40px] border border-gray-500 mb-[20px] px-[10px]"
         placeholder="Search for friends..."
@@ -152,9 +187,17 @@ const QuickAddPage: React.FC = () => {
             data={playersData}
             renderItem={renderItem}
             keyExtractor={(item) => item.username}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={["#9Bd35A", "#689F38"]} // You can customize the color
+              />
+            }
           />
         </>
       )}
+    </View>
     </View>
   );
 };
