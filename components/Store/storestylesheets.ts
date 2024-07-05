@@ -111,3 +111,137 @@ export const storepagestyles = StyleSheet.create({
       },
   });
   
+  export const mainstorestyles = StyleSheet.create({ //Styles made by NightSpark 
+    container: {
+      flex: 1,
+      backgroundColor: '#F3F6EC',
+      padding: 16,
+      justifyContent: 'center',
+    },
+    backgroundImage: {
+      flex: 1,
+      marginTop: -30, // Fills the whole top part of the screen
+      resizeMode: 'cover',
+    },
+    titleImage: {
+      width: 350,
+      height: 100,
+      position: 'absolute',
+      top: 70,
+      left: 37,
+    },
+    shopImage: {
+      width: 110,
+      height: 80,
+      top: 120,
+      left: 160,
+    },
+    headerContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center', // Centers the currency container
+      marginHorizontal: 20,
+      marginVertical: 10,
+      marginTop: 105,
+    },
+    currencyContainer: {
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginLeft: 205,
+    },
+    switchContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      color: '#753663',
+    },
+    tabContainerMissiles: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 20,
+      marginLeft: 6,
+    },
+    tabMissiles: {
+      width: 100,
+      height: 40,
+      backgroundColor: '#753663',
+      padding: 10,
+      borderRadius: 15,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 7, // Space between
+    },
+    missileTabText: {
+      color: '#fff',
+      fontSize: 14,
+      fontWeight: 'bold',
+      //fontFamily: 'Noto Sans Regular', // Need to import!!
+    },
+    columnWrapper: {
+      justifyContent: 'space-between',
+    },
+    contentContainer: {
+      alignItems: 'center',
+    },
+    button: {
+      width: 110,
+      height: 110,
+      margin: 11,
+      backgroundColor: '#DDD5F3',
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderColor: '#7B5370',
+      borderWidth: 1,
+      borderRadius: 26,
+      shadowColor: '#000',
+      shadowOffset: { width: 2, height: 5 },
+      shadowOpacity: 0.8,
+      shadowRadius: 3,
+      elevation: 5, // for Android
+    },
+    buttonImage: {
+      width: '50%',
+      height: '70%',
+      resizeMode: 'cover',
+    },
+    buttonText: {
+      color: '#753663',
+      borderColor: '#FFF',
+      fontSize: 15,
+      fontWeight: 'bold',
+      textAlign: 'center',
+      marginTop: -5,
+      marginBottom: -5,
+    },
+    cartButton: {
+      backgroundColor: '#753663',
+      padding: 10,
+      borderRadius: 5,
+      alignItems: 'center',
+      marginVertical: 10,
+    },
+    cartButtonText: {
+      color: '#fff',
+      fontSize: 16,
+      fontWeight: 'bold',
+    },
+    toggleButton: {
+      width: 100,
+      height: 40,
+      borderRadius: 5,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginHorizontal: 61,
+    },
+    coinsButton: {
+      backgroundColor: '#DDD5F3',
+    },
+    premiumButton: {
+      backgroundColor: '#5a2b5f',
+    },
+    toggleButtonText: {
+      color: '#FFF',
+      fontSize: 16,
+      fontWeight: 'bold',
+    },
+  });

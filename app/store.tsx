@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, FlatList, Button, StyleSheet, Text, TouchableOpacity, Image, ImageBackground } from 'react-native';
 import Cart from '../components/Store/cart';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { storepagestyles } from '../components/Store/storestylesheets';
+import { mainstorestyles, storepagestyles } from '../components/Store/storestylesheets';
 import axiosInstance from '../api/axios-instance';
 import * as SecureStore from "expo-secure-store";
 import axios from 'axios';
@@ -101,45 +101,45 @@ const StorePage: React.FC = () => {
   const filteredProducts = selectedCategory === 'All' ? products : products.filter(p => p.type === selectedCategory);
 
   const renderButton = ({ item }: { item: Product }) => (
-    <TouchableOpacity style={styles.button} onPress={() => addToCart(item)}>
-      <Text style={styles.buttonText}>{item.name}</Text>
-      <Image source={item.image} style={styles.buttonImage} />
-      <Text style={styles.buttonText}>🪙{item.price}</Text>
+    <TouchableOpacity style={mainstorestyles.button} onPress={() => addToCart(item)}>
+      <Text style={mainstorestyles.buttonText}>{item.name}</Text>
+      <Image source={item.image} style={mainstorestyles.buttonImage} />
+      <Text style={mainstorestyles.buttonText}>🪙{item.price}</Text>
     </TouchableOpacity>
   );
 
   return (
-    <ImageBackground source={require('../assets/mapbackdrop.png')} style={styles.backgroundImage}>
-      <Image source={require('../assets/MissleWarsTitle.png')} style={styles.titleImage} />
-      <Image source={require('../assets/SHOP.png')} style={styles.shopImage} />
-      <View style={styles.headerContainer}>
-        <View style={styles.currencyContainer}>
+    <ImageBackground source={require('../assets/mapbackdrop.png')} style={mainstorestyles.backgroundImage}>
+      <Image source={require('../assets/MissleWarsTitle.png')} style={mainstorestyles.titleImage} />
+      <Image source={require('../assets/SHOP.png')} style={mainstorestyles.shopImage} />
+      <View style={mainstorestyles.headerContainer}>
+        <View style={mainstorestyles.currencyContainer}>
           <Text style={storepagestyles.currencyText}>🪙{currencyAmount}</Text>
         </View>
-        <View style={styles.switchContainer}>
+        <View style={mainstorestyles.switchContainer}>
           <TouchableOpacity
             style={[
-              styles.toggleButton,
-              isPremiumStore ? styles.coinsButton : styles.premiumButton,
+              mainstorestyles.toggleButton,
+              isPremiumStore ? mainstorestyles.coinsButton : mainstorestyles.premiumButton,
             ]}
             onPress={() => setIsPremiumStore(!isPremiumStore)} // Add logic to switch out the free store items for the premium items when clicked.
           >
-            <Text style={styles.toggleButtonText}>
+            <Text style={mainstorestyles.toggleButtonText}>
               {isPremiumStore ? 'Premium' : 'Coins'}
             </Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      <View style={styles.tabContainerMissiles}>
+      <View style={mainstorestyles.tabContainerMissiles}>
         {['All', 'Missiles', 'Landmines', 'Loot Drops'].map((category) => (
-          <TouchableOpacity key={category} onPress={() => setSelectedCategory(category)} style={styles.tabMissiles}>
-            <Text style={styles.missileTabText}>{category}</Text>
+          <TouchableOpacity key={category} onPress={() => setSelectedCategory(category)} style={mainstorestyles.tabMissiles}>
+            <Text style={mainstorestyles.missileTabText}>{category}</Text>
           </TouchableOpacity>
         ))}
       </View>
       
-      <View style={styles.container}>
+      <View style={mainstorestyles.container}>
         {isCartVisible ? (
           <Cart cart={cart} onRemove={handleRemove} />
         ) : (
@@ -149,157 +149,22 @@ const StorePage: React.FC = () => {
               keyExtractor={(item) => item.id.toString()}
               renderItem={renderButton}
               numColumns={2}
-              columnWrapperStyle={styles.columnWrapper}
-              contentContainerStyle={styles.contentContainer}
+              columnWrapperStyle={mainstorestyles.columnWrapper}
+              contentContainerStyle={mainstorestyles.contentContainer}
             />
-            <TouchableOpacity onPress={() => setCartVisible(true)} style={styles.cartButton}>
-              <Text style={styles.cartButtonText}>Go to Cart</Text>
+            <TouchableOpacity onPress={() => setCartVisible(true)} style={mainstorestyles.cartButton}>
+              <Text style={mainstorestyles.cartButtonText}>Go to Cart</Text>
             </TouchableOpacity>
           </>
         )}
         {isCartVisible && (
-          <TouchableOpacity onPress={() => setCartVisible(false)} style={styles.cartButton}>
-            <Text style={styles.cartButtonText}>Back to Products</Text>
+          <TouchableOpacity onPress={() => setCartVisible(false)} style={mainstorestyles.cartButton}>
+            <Text style={mainstorestyles.cartButtonText}>Back to Products</Text>
           </TouchableOpacity>
         )}
       </View>
     </ImageBackground>
   );
 };
-
-const styles = StyleSheet.create({ //Styles made by NightSpark 
-  container: {
-    flex: 1,
-    backgroundColor: '#F3F6EC',
-    padding: 16,
-    justifyContent: 'center',
-  },
-  backgroundImage: {
-    flex: 1,
-    marginTop: -30, // Fills the whole top part of the screen
-    resizeMode: 'cover',
-  },
-  titleImage: {
-    width: 350,
-    height: 100,
-    position: 'absolute',
-    top: 70,
-    left: 37,
-  },
-  shopImage: {
-    width: 110,
-    height: 80,
-    top: 120,
-    left: 160,
-  },
-  headerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center', // Centers the currency container
-    marginHorizontal: 20,
-    marginVertical: 10,
-    marginTop: 105,
-  },
-  currencyContainer: {
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginLeft: 205,
-  },
-  switchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    color: '#753663',
-  },
-  tabContainerMissiles: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-    marginLeft: 6,
-  },
-  tabMissiles: {
-    width: 100,
-    height: 40,
-    backgroundColor: '#753663',
-    padding: 10,
-    borderRadius: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 7, // Space between
-  },
-  missileTabText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: 'bold',
-    //fontFamily: 'Noto Sans Regular', // Need to import!!
-  },
-  columnWrapper: {
-    justifyContent: 'space-between',
-  },
-  contentContainer: {
-    alignItems: 'center',
-  },
-  button: {
-    width: 110,
-    height: 110,
-    margin: 11,
-    backgroundColor: '#DDD5F3',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderColor: '#7B5370',
-    borderWidth: 1,
-    borderRadius: 26,
-    shadowColor: '#000',
-    shadowOffset: { width: 2, height: 5 },
-    shadowOpacity: 0.8,
-    shadowRadius: 3,
-    elevation: 5, // for Android
-  },
-  buttonImage: {
-    width: '50%',
-    height: '70%',
-    resizeMode: 'cover',
-  },
-  buttonText: {
-    color: '#753663',
-    borderColor: '#FFF',
-    fontSize: 15,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginTop: -5,
-    marginBottom: -5,
-  },
-  cartButton: {
-    backgroundColor: '#753663',
-    padding: 10,
-    borderRadius: 5,
-    alignItems: 'center',
-    marginVertical: 10,
-  },
-  cartButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  toggleButton: {
-    width: 100,
-    height: 40,
-    borderRadius: 5,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginHorizontal: 61,
-  },
-  coinsButton: {
-    backgroundColor: '#DDD5F3',
-  },
-  premiumButton: {
-    backgroundColor: '#5a2b5f',
-  },
-  toggleButtonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-});
 
 export default StorePage;
