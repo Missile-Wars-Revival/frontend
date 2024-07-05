@@ -15,6 +15,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCurrentLocation, location } from "../util/locationreq";
 import { mainmapstyles } from "../map-themes/map-stylesheet";
 import { DefRegLocationTask } from "../util/backgroundtasks";
+import * as SecureStore from "expo-secure-store";
 
 interface MapCompProps {
     selectedMapStyle: any;
@@ -22,7 +23,6 @@ interface MapCompProps {
 
 export const MapComp = (props: MapCompProps) => {
     const userName = useUserName();
-    const token = useToken();
     const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(false);
     const [isLoading, setIsLoading] = useState(true);
     const [hasDbConnection, setDbConnection] = useState<boolean>();
@@ -46,12 +46,20 @@ export const MapComp = (props: MapCompProps) => {
     }, []);
 
     const dispatchLocation = async () => {
-        //console.log("dispatched")
-        const location: location = await getCurrentLocation();
-        if (token && location.latitude && location.longitude) {
-            await dispatch(token, location.latitude, location.longitude);
+        try {
+            const location = await getCurrentLocation();
+            const token = await SecureStore.getItemAsync("token");
+            if (token && location.latitude && location.longitude) {
+                await dispatch(token, location.latitude, location.longitude);
+                //console.log("Location dispatched successfully");
+            } else {
+                //console.log("Invalid token or location data", token, location);
+            }
+        } catch (error) {
+            //console.log("Failed to dispatch location", error);
         }
     };
+    
 
     const getlocation = async () => {
         try {
