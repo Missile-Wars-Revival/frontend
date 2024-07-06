@@ -203,7 +203,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                             sendNotification("Danger!", "A Missile has impacted within the zone. You may start taking damage!");
                             setLastNotified(prev => ({ ...prev, missile: today }));
                         }
-                        break;
+                    break;
                     case 'near-missile':
                         // Send warning if near but not within the missile radius
                         if (missile.status === 'Incoming') {
@@ -214,7 +214,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                             sendNotification("Missile Impact Warning!", "Impacted Missile Nearby. Be wary of the fallout!");
                             setLastNotified(prev => ({ ...prev, missile: today }));
                         }
-                        break;
+                    break;
                 }
             }
         });

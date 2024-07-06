@@ -9,21 +9,18 @@ import { Landmine, Loot, Missile } from "middle-earth";
 import { fetchLootFromBackend, fetchMissilesFromBackend, fetchlandmineFromBackend } from "../temp/fetchMethods";
 import { loadLastKnownLocation, saveLocation } from '../util/mapstore';
 import { getLocationPermission } from "../hooks/userlocation";
-import { useToken, useUserName } from "../util/fetchusernameglobal";
 import { dispatch } from "../api/dispatch";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getCurrentLocation } from "../util/locationreq";
+import { getCurrentLocation, location } from "../util/locationreq";
 import { mainmapstyles } from "../map-themes/map-stylesheet";
-import { location } from "../util/locationreq";
 import { DefRegLocationTask } from "../util/backgroundtasks";
+import * as SecureStore from "expo-secure-store";
 
 interface MapCompProps {
     selectedMapStyle: any;
 }
 
 export const MapComp = (props: MapCompProps) => {
-    const userName = useUserName();
-    const token = useToken();
     const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(false);
     const [isLoading, setIsLoading] = useState(true);
     const [hasDbConnection, setDbConnection] = useState<boolean>();
@@ -47,11 +44,20 @@ export const MapComp = (props: MapCompProps) => {
     }, []);
 
     const dispatchLocation = async () => {
-        const location: location = await getCurrentLocation();
-        if (token && userName && location.latitude && location.longitude) {
-            await dispatch(token, userName, location.latitude, location.longitude);
+        try {
+            const location = await getCurrentLocation();
+            const token = await SecureStore.getItemAsync("token");
+            if (token && location.latitude && location.longitude) {
+                await dispatch(token, location.latitude, location.longitude);
+                //console.log("Location dispatched successfully");
+            } else {
+                //console.log("Invalid token or location data", token, location);
+            }
+        } catch (error) {
+            //console.log("Failed to dispatch location", error);
         }
     };
+    
 
     const getlocation = async () => {
         try {
@@ -91,7 +97,8 @@ export const MapComp = (props: MapCompProps) => {
                             { text: "OK", onPress: () => setFirstLoad(false) } 
                         ]
                     );
-                    setFirstLoad(true); 
+                    setFirstLoad(false); 
+                    await AsyncStorage.setItem('firstload', 'false');
                 } 
                 if (isDBConnection === "false"){
                     setDbConnection(false)
@@ -101,40 +108,51 @@ export const MapComp = (props: MapCompProps) => {
                 } else {
                     setDbConnection(false);
                 }
-
+    
                 const cachedRegion = await loadLastKnownLocation();
                 if (cachedRegion !== null) {
                     setRegion(cachedRegion);
                 }
-
+    
                 const cachedMode = await AsyncStorage.getItem('visibilitymode');
                 if (cachedMode !== null) {
                     setMode(cachedMode as 'friends' | 'global');
                 }
-
+    
                 const status = await getLocationPermission();
                 setIsLocationEnabled(status === 'granted');
-
+    
                 await getlocation();
                 await fetchLootAndMissiles();
                 await dispatchLocation();
-
-                const intervalId = setInterval(() => {
+                await DefRegLocationTask();
+    
+                const intervalId = setInterval(async () => {
+                    // Periodically check DB connection status
+                    const dbConnStatus = await AsyncStorage.getItem('dbconnection');
+                    if (dbConnStatus === "false"){
+                        setDbConnection(false)
+                    } 
+                    if (dbConnStatus === "true"){
+                        setDbConnection(true)
+                    } else {
+                        setDbConnection(false);
+                    }
+    
                     fetchLootAndMissiles();
                     getLocationPermission();
                     dispatchLocation();
-                    DefRegLocationTask();
                 }, 1000);
-
+    
                 return () => clearInterval(intervalId);
             } catch (error) {
                 setIsLoading(false);
                 console.error('Error initializing app:', error);
             }
         };
-
+    
         initializeApp();
-    }, [fetchLootAndMissiles]);
+    }, [fetchLootAndMissiles]);    
 
     const toggleMode = async () => {
         const newMode = visibilitymode === 'friends' ? 'global' : 'friends';
@@ -174,18 +192,8 @@ export const MapComp = (props: MapCompProps) => {
         console.log("Mode changed to:", visibilitymode);
     };
 
-    useEffect(() => {
-        const saveFirstLoadStatus = async () => {
-            await AsyncStorage.setItem('firstload', 'false');
-        };
-
-        if (!firstLoad) {
-            saveFirstLoadStatus();
-        }
-    }, [firstLoad]);
-
     // Only show loader if it's the first load and still loading
-    if (isLoading && firstLoad) {
+    if (isLoading || !firstLoad) {
         return (
             <View style={mainmapstyles.loaderContainer}>
                 <ActivityIndicator size="large" color="#0000ff" />

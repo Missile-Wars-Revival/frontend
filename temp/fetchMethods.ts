@@ -12,7 +12,7 @@ import { GeoLocation, Landmine, Loot, Missile } from "middle-earth";
                          100,                                    // radius
                          "",                                     // sentbyusername
                          "",                                     // timesent
-                         "",                                     // etatimetoimpact
+                         "2024-10-05T06:43:52.577Z",                                     // etatimetoimpact
                         ),
               new Missile(
                           "Ballista",                             // type
@@ -23,7 +23,7 @@ import { GeoLocation, Landmine, Loot, Missile } from "middle-earth";
                           100,                                    // radius
                           "",                                     // sentbyusername
                           "",                                     // timesent
-                          "",                                     // etatimetoimpact
+                          "2024-10-05T06:43:52.577Z",                                     // etatimetoimpact
                         )  
                 ];                                   
   };
@@ -35,12 +35,12 @@ import { GeoLocation, Landmine, Loot, Missile } from "middle-earth";
       new Loot(
         new GeoLocation(51.026281, -3.113764),    //location
         "Uncommon",                               //Rarity
-        "",                                       //expiretime
+        "2024-10-05T06:43:52.577Z",                                       //expiretime
       ),
       new Loot(
         new GeoLocation(45.305, -0.86),           //location
-        "",                                       //Rarity
-        "Common",                                 //expiretime
+        "Common",                                       //Rarity
+        "2024-10-05T06:43:52.577Z",                                 //expiretime
       )
 
 
@@ -55,14 +55,14 @@ import { GeoLocation, Landmine, Loot, Missile } from "middle-earth";
         new GeoLocation(45.2949318, -0.852764),      //location
         "Test2",                                      //placed by
         "",                                          //placed time
-        "",                                          //eta expire time
+        "2024-10-05T06:43:52.577Z",                                          //eta expire time
       ),
       new Landmine(
         "BigBertha",                                 //type
         new GeoLocation(51.025682, -3.1174578),      //location
         "Test",                                      //placed by
         "",                                          //placed time
-        "",                                          //eta expire time
+        "2024-10-05T06:43:52.577Z",                                          //eta expire time
       )
 
     ];
