@@ -6,6 +6,7 @@ import * as BackgroundFetch from 'expo-background-fetch';
 import { getCurrentLocation } from "../../util/locationreq";
 import {location} from "../../util/locationreq"
 import * as Notifications from 'expo-notifications';
+import { convertimestampfuturemissile } from "../../util/get-time-difference";
 
 Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -191,12 +192,13 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
 
         missileData.forEach(missile => {
             const proximityStatus = checkMissileProximity(missile.destination, missile.radius, userLocation );
+            const { text } = convertimestampfuturemissile(missile.etatimetoimpact);
             if (lastNotified.missile !== today) {
                 switch (proximityStatus) {
                     case 'within-missile':
                         // Send specific notification if within the missile radius
                         if (missile.status === 'Incoming') {
-                            sendNotification("RUN!! Missile Incoming!", `You are within the impact zone! Incoming Missile ETA: ${missile.etatimetoimpact}`);
+                            sendNotification("RUN!! Missile Incoming!", `You are within the impact zone! Incoming Missile ETA: ${text}`);
                             setLastNotified(prev => ({ ...prev, missile: today }));
                         }
                         if (missile.status === 'Hit') {
@@ -207,7 +209,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                     case 'near-missile':
                         // Send warning if near but not within the missile radius
                         if (missile.status === 'Incoming') {
-                            sendNotification("Incoming Missile Alert!", `Be wary, there is an incoming missile nearby. Incoming Missile ETA: ${missile.etatimetoimpact}`);
+                            sendNotification("Incoming Missile Alert!", `Be wary, there is an incoming missile nearby. Incoming Missile ETA: ${text}`);
                             setLastNotified(prev => ({ ...prev, missile: today }));
                         }
                         if (missile.status === 'Hit') {
