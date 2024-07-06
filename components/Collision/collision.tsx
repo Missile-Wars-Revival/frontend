@@ -26,7 +26,6 @@ interface LastNotified {
 }
 
 const proximityThreshold = 0.002;
-const TASK_NAME = 'EntityNotificationTask';
 
 export const ProximityCheckNotif: React.FC<{}> = () => {
     const [lootLocations, setLootLocations] = useState<Loot[]>([]);
@@ -34,7 +33,6 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
     const [landmineData, setLandmineLocations] = useState<Landmine[]>([]);
     const [userLocation, setUserLocation] = useState<location | null>(null);
     const [lastNotified, setLastNotified] = useState<LastNotified>({ loot: null, missile: null, landmine: null });
-    const [isTaskRegistered, setIsTaskRegistered] = useState(false); 
 
     const fetchLootAndMissiles = useCallback(async () => {
         setLootLocations(await fetchLootFromBackend());
