@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { GeoLocation, Landmine, Loot, Missile } from "middle-earth";
 import { fetchLootFromBackend, fetchMissilesFromBackend, fetchlandmineFromBackend } from "../../temp/fetchMethods";
 import { getCurrentLocation } from "../../util/locationreq";
-import {location} from "../../util/locationreq"
+import { location } from "../../util/locationreq"
 import * as Notifications from 'expo-notifications';
 import { convertimestampfuturemissile } from "../../util/get-time-difference";
 import { Alert } from "react-native";
@@ -10,14 +10,16 @@ import { addrankpoints } from "../../api/rank";
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 import { getRandomLoot } from "./Probability";
+import { addmoney } from "../../api/money";
+import { additem } from "../../api/add-item";
 
 Notifications.setNotificationHandler({
     handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: true,
-      shouldSetBadge: false,
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
     }),
-  });
+});
 
 interface LastNotified {
     loot: string | null;
@@ -58,12 +60,12 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
         (async () => {
             const { status } = await Notifications.requestPermissionsAsync({
                 ios: {
-                  allowAlert: true,
-                  allowBadge: true,
-                  allowSound: true,
-                  allowAnnouncements: true,
+                    allowAlert: true,
+                    allowBadge: true,
+                    allowSound: true,
+                    allowAnnouncements: true,
                 },
-              });
+            });
             if (status !== 'granted') {
                 alert('Permission to receive notifications was denied');
             }
@@ -73,7 +75,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
     const sendNotification = async (title: string, message: string) => {
         //console.log(`Sending notification: ${title} - ${message}`);
         await Notifications.scheduleNotificationAsync({
-            content: { 
+            content: {
                 title: title,
                 body: message,
                 //sound: 'pop.mp3',
@@ -96,14 +98,14 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
         };
 
         // Function to determine if the item is near or within the missile radius
-        const checkMissileProximity = (itemLocation: location, missileRadius: number, userLocation: location ) => {
+        const checkMissileProximity = (itemLocation: location, missileRadius: number, userLocation: location) => {
             const earthRadiusKm = 6371; // Earth's radius in kilometers
             const dLat = degreesToRadians(userLocation.latitude - itemLocation.latitude);
             const dLon = degreesToRadians(userLocation.longitude - itemLocation.longitude);
             const lat1 = degreesToRadians(itemLocation.latitude);
             const lat2 = degreesToRadians(userLocation.latitude);
             const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                        Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
+                Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
             const distance = earthRadiusKm * c; // distance in kilometers
             const distancem = distance / 1000;
@@ -126,8 +128,8 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                 //console.log("safe")
                 return "safe";
             }
-        }; 
-        const checkLootandLandmineProximity = (itemtype: string, itemLocation: location, userLocation: location, itemRadius: number ) => {
+        };
+        const checkLootandLandmineProximity = (itemtype: string, itemLocation: location, userLocation: location, itemRadius: number) => {
             const earthRadiusKm = 6371; // Earth's radius in kilometers
             const dLat = degreesToRadians(userLocation.latitude - itemLocation.latitude);
             const dLon = degreesToRadians(userLocation.longitude - itemLocation.longitude);
@@ -136,7 +138,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
             const lat2 = degreesToRadians(userLocation.latitude);
 
             const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                        Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
+                Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
 
             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
@@ -170,58 +172,58 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                 //console.log("safe")
                 return "safe";
             }
-        };       
+        };
 
         //Notifications:
         lootLocations.forEach(async loot => {
-            const proximityStatus = checkLootandLandmineProximity("loot", loot.location, userLocation, 10 );
+            const proximityStatus = checkLootandLandmineProximity("loot", loot.location, userLocation, 10);
             if (lastNotified.loot !== today) {
                 switch (proximityStatus) {
                     case 'within-loot':
-                        //inside loot radius
-                            // sendNotification("Loot Pickup", "Open the App to collect your loot!");
-                            // setLastNotified(prev => ({ ...prev, loot: today }));
-                            
-                            const token = await SecureStore.getItemAsync("token");
-                            try {
-                                if (!token) {
-                                    console.log('Token not found');
-                                    return; 
-                                }
-                            //addrankpoints(token, 200) // adds 200 rank points for collecting
+                        const token = await SecureStore.getItemAsync("token");
+                        if (!token) {
+                            console.log('Token not found');
+                            return;
+                        }
 
-                            const reward = getRandomLoot(loot.rarity);
-                            if (reward) {
-                                console.log(`You've obtained a ${reward}!`);
-                                sendNotification("Loot Pickup", `Special Loot!! You got a: ${reward} and +100 rank pts`);
-                                setLastNotified(prev => ({ ...prev, loot: today }))
-                            // Add additional logic to handle the reward, such as updating the inventory
+                        const reward = getRandomLoot(loot.rarity);
+                        if (reward) {
+                            console.log(`You've obtained a ${reward.name}!`);
+                            sendNotification("Loot Pickup", `Special Loot!! You got a: ${reward.name} as well as +100🎖️, +250 🪙`);
+                            setLastNotified(prev => ({ ...prev, loot: today }));
+
+                            let amount = 250;
+                            if (reward.category === "Currency") {
+                                amount += 500;  // Corrected operator for addition assignment
                             } else {
-                                console.log('No special loot this time.');
-                                sendNotification("Loot Pickup", "No special loot this time! +100 rank pts");
-                                setLastNotified(prev => ({ ...prev, loot: today }))
+                                additem(token, reward.name, reward.category); // This call is safe since 'reward' is confirmed to be defined
                             }
 
+                            addmoney(token, amount);  // Adds the computed amount once
+                            addrankpoints(token, 200); // adds 200 rank points for collecting
+                        } else {
+                            console.log('No special loot this time.');
+                            sendNotification("Loot Pickup", "No special loot this time! +100🎖️, +250 🪙");
+                            setLastNotified(prev => ({ ...prev, loot: today }));
+                        }
 
-                            } catch (error: any) {
-                            if (axios.isAxiosError(error)) {
-                              console.error('Axios error:', error.message);
+                        try {
+                            // Ensure other calls here if needed
+                        } catch (error) {
+                            if (axios && axios.isAxiosError && axios.isAxiosError(error)) {
+                                console.error('Axios error:', error.message);
                             } else {
-                              console.error('Error fetching currency amount:', error);
+                                console.error('Error:', error);
                             }
                         }
                         break;
-                    case 'near-loot':
-                        // Send warning if near but not within the loot radius
-                            // sendNotification("Loot Nearby", `Look around you! Rarity: ${loot.rarity}`);
-                            // setLastNotified(prev => ({ ...prev, loot: today }));
-                        break;
+
                 }
             }
         });
 
         missileData.forEach(missile => {
-            const proximityStatus = checkMissileProximity(missile.destination, missile.radius, userLocation );
+            const proximityStatus = checkMissileProximity(missile.destination, missile.radius, userLocation);
             const { text } = convertimestampfuturemissile(missile.etatimetoimpact);
             if (lastNotified.missile !== today) {
                 switch (proximityStatus) {
@@ -235,7 +237,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                             // sendNotification("Danger!", "A Missile has impacted within the zone. You may start taking damage!");
                             // setLastNotified(prev => ({ ...prev, missile: today }));
                         }
-                    break;
+                        break;
                     case 'near-missile':
                         // Send warning if near but not within the missile radius
                         if (missile.status === 'Incoming') {
@@ -246,24 +248,24 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                             sendNotification("Missile Impact Warning!", "Impacted Missile Nearby. Be wary of the fallout!");
                             setLastNotified(prev => ({ ...prev, missile: today }));
                         }
-                    break;
+                        break;
                 }
             }
         });
-        
+
         landmineData.forEach(landmine => {
-            const proximityStatus = checkLootandLandmineProximity("landmine",landmine.location, userLocation, 10 );
+            const proximityStatus = checkLootandLandmineProximity("landmine", landmine.location, userLocation, 10);
             if (lastNotified.landmine !== today) {
                 switch (proximityStatus) {
                     case 'within-landmine':
                         //inside landmine radius
-                            sendNotification("Danger!", "You just stepped on a Landmine! Damage has been taken.");
-                            setLastNotified(prev => ({ ...prev, landmine: today }));
+                        sendNotification("Danger!", "You just stepped on a Landmine! Damage has been taken.");
+                        setLastNotified(prev => ({ ...prev, landmine: today }));
                         break;
                     case 'near-landmine':
                         // Send warning if near but not within the landmine radius
-                            // sendNotification("Landmine Proximity Warning", "A landmine is nearby. Be cautious!");
-                            // setLastNotified(prev => ({ ...prev, landmine: today }));
+                        // sendNotification("Landmine Proximity Warning", "A landmine is nearby. Be cautious!");
+                        // setLastNotified(prev => ({ ...prev, landmine: today }));
                         break;
                 }
             }
@@ -274,6 +276,6 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
     useEffect(() => {
         checkAndNotify();
     }, [userLocation, lootLocations, missileData, landmineData, lastNotified]);
-    
+
     return null;
 };    

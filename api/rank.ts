@@ -14,12 +14,10 @@ export async function addrankpoints(
       return response.data;
     } catch (error) {
       if (isAxiosError(error)) {
-        console.log("failed to add rank pts")
         return (
           error.response?.data || { success: false, message: "Request failed" }
         );
       } else {
-        console.log("failed to add rank pts")
         console.error(error);
         return { success: false, message: "Request failed" };
       }
