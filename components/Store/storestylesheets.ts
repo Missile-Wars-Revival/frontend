@@ -1,4 +1,8 @@
-import { StyleSheet } from "react-native";
+import { Dimensions, StyleSheet } from "react-native";
+
+import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
+
+const { width, height } = Dimensions.get('window');
 
 
 export const storepagestyles = StyleSheet.create({
@@ -20,16 +24,6 @@ export const storepagestyles = StyleSheet.create({
       padding: 10,
       backgroundColor: '#ddd',
       borderRadius: 5,
-    },
-    currencyText: {
-      //fontFamily: 'NotoSansRegular', Need Import!!
-      color: '#753663',
-      borderColor: '#FFF',
-      fontSize: 30,
-      fontWeight: 'bold',
-      textAlign: 'center',
-      justifyContent: 'center',
-      marginRight: 15,
     },
     //cart:
     cartContainer: {
@@ -128,13 +122,14 @@ export const storepagestyles = StyleSheet.create({
       height: 100,
       position: 'absolute',
       top: 70,
-      left: 37,
+      left: (width - 350) / 2, // Center horizontally
     },
     shopImage: {
       width: 110,
       height: 80,
+      //position: 'absolute', // Added position absolute to ensure centering
       top: 120,
-      left: 160,
+      left: (width - 110) / 2, // Center horizontally
     },
     headerContainer: {
       flexDirection: 'row',
@@ -142,34 +137,50 @@ export const storepagestyles = StyleSheet.create({
       justifyContent: 'center', // Centers the currency container
       marginHorizontal: 20,
       marginVertical: 10,
-      marginTop: 105,
+      marginTop: 120,
+      marginBottom: hp('2.5%'),
     },
     currencyContainer: {
-      justifyContent: 'space-between',
+      flexDirection: 'row',
       alignItems: 'center',
-      marginLeft: 205,
+      maxWidth: '50%', // Adjust max-width to ensure enough space
+      flexGrow: 1,
+      flexShrink: 1,
+      flexBasis: 'auto',
     },
+    currencyText: {
+      color: '#753663',
+      borderColor: '#FFF',
+      fontSize: 24, // Slightly smaller but more scalable
+      fontWeight: 'bold',
+      textAlign: 'center',
+      marginRight: 15,
+      flexShrink: 1,
+      minWidth: 0,
+    },
+    
     switchContainer: {
       flexDirection: 'row',
+      marginRight: -80,
       alignItems: 'center',
       color: '#753663',
     },
     tabContainerMissiles: {
       flexDirection: 'row',
-      justifyContent: 'center',
+      justifyContent: 'space-evenly',
       alignItems: 'center',
-      marginBottom: 20,
-      marginLeft: 6,
+      marginBottom: hp('2%'), // 2% of the screen height
+      marginLeft: wp('1%'), // 1% of the screen width
     },
     tabMissiles: {
-      width: 100,
-      height: 40,
+      width: wp('25%'), // 25% of the screen width
+      height: hp('6%'), // 6% of the screen height
       backgroundColor: '#753663',
-      padding: 10,
-      borderRadius: 15,
+      padding: wp('2.5%'), // Padding adjusted to 2.5% of screen width
+      borderRadius: wp('4%'), // Border radius adjusted to 3% of screen width
       alignItems: 'center',
       justifyContent: 'center',
-      marginRight: 7, // Space between
+      marginRight: wp('2%'), // Space between adjusted to 2% of screen width
     },
     missileTabText: {
       color: '#fff',

@@ -114,7 +114,9 @@ const StorePage: React.FC = () => {
       <Image source={require('../assets/SHOP.png')} style={mainstorestyles.shopImage} />
       <View style={mainstorestyles.headerContainer}>
         <View style={mainstorestyles.currencyContainer}>
-          <Text style={storepagestyles.currencyText}>🪙{currencyAmount}</Text>
+          <Text style={mainstorestyles.currencyText} numberOfLines={1} ellipsizeMode="tail">
+            🪙{currencyAmount}
+          </Text>
         </View>
         <View style={mainstorestyles.switchContainer}>
           <TouchableOpacity
@@ -130,7 +132,7 @@ const StorePage: React.FC = () => {
           </TouchableOpacity>
         </View>
       </View>
-
+  
       <View style={mainstorestyles.tabContainerMissiles}>
         {['All', 'Missiles', 'Landmines', 'Loot Drops'].map((category) => (
           <TouchableOpacity key={category} onPress={() => setSelectedCategory(category)} style={mainstorestyles.tabMissiles}>
@@ -164,7 +166,7 @@ const StorePage: React.FC = () => {
         )}
       </View>
     </ImageBackground>
-  );
-};
+  );  
+}  
 
 export default StorePage;

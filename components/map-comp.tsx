@@ -9,7 +9,6 @@ import { Landmine, Loot, Missile } from "middle-earth";
 import { fetchLootFromBackend, fetchMissilesFromBackend, fetchlandmineFromBackend } from "../temp/fetchMethods";
 import { loadLastKnownLocation, saveLocation } from '../util/mapstore';
 import { getLocationPermission } from "../hooks/userlocation";
-import { useToken, useUserName } from "../util/fetchusernameglobal";
 import { dispatch } from "../api/dispatch";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCurrentLocation, location } from "../util/locationreq";
@@ -22,7 +21,6 @@ interface MapCompProps {
 }
 
 export const MapComp = (props: MapCompProps) => {
-    const userName = useUserName();
     const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(false);
     const [isLoading, setIsLoading] = useState(true);
     const [hasDbConnection, setDbConnection] = useState<boolean>();
@@ -127,6 +125,7 @@ export const MapComp = (props: MapCompProps) => {
                 await getlocation();
                 await fetchLootAndMissiles();
                 await dispatchLocation();
+                await DefRegLocationTask();
     
                 const intervalId = setInterval(async () => {
                     // Periodically check DB connection status
@@ -143,7 +142,6 @@ export const MapComp = (props: MapCompProps) => {
                     fetchLootAndMissiles();
                     getLocationPermission();
                     dispatchLocation();
-                    DefRegLocationTask();
                 }, 1000);
     
                 return () => clearInterval(intervalId);
