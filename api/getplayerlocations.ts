@@ -4,7 +4,16 @@ import * as SecureStore from "expo-secure-store";
 
 export async function fetchOtherPlayersData(): Promise<any[]> {
     try {
-        const response = await axiosInstance.get('/api/playerlocations');
+        const token = await SecureStore.getItemAsync("token");
+        if (!token) {
+            throw new Error("Token not found");
+        }
+        const response = await axiosInstance.get('/api/playerlocations', {
+            params: {
+                token,
+            }
+        });
+
 
         if (response.status !== 200) {
             throw new Error('Failed to fetch player locations');
