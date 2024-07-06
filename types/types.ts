@@ -2,7 +2,6 @@
 export interface Missilelib {
   type: string;
   quantity: number;
-  description: string;
 }
 //for landmine lib
 export interface LandmineLib {

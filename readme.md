@@ -11,6 +11,12 @@ npm i
 ```
 Make sure to run the backend server before running.
 
+## Update the .env
+Update this with your ip address:
+```
+EXPO_PUBLIC_WEBSOCKET_URL
+```
+
 ## To build and run:
 
 ```

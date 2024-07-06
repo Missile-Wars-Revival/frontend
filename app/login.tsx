@@ -11,7 +11,7 @@ import { usePushNotifications } from "../components/Notifications/usePushNotific
 export default function Login() {
   const {expoPushToken, notification} = usePushNotifications();
   const notificationToken = expoPushToken?.data ?? "No token";
-  console.log(notificationToken);
+  // console.log(notificationToken);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isError, setIsError] = useState(false);

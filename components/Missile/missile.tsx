@@ -3,6 +3,8 @@ import { Missilelib } from "../../types/types";
 import { Text, View, TouchableOpacity, Image, Button, Modal, ScrollView } from "react-native";
 import React from "react";
 import { MissilePlacementPopup } from './missileplacement'; 
+import * as SecureStore from "expo-secure-store";
+import axiosInstance from "../../api/axios-instance";
 
 //Missile types
 //   Amplifier:
@@ -19,28 +21,36 @@ import { MissilePlacementPopup } from './missileplacement';
 //   Zippy: 
 
 //Missile Library needs to be fetched by backend:
-const fetchMissileLib = (): Promise<Missilelib[]> => {
-  return new Promise((resolve) => {
-    // Simulating asynchronous data fetching
-    setTimeout(() => {
-      const missileLibraryData: Missilelib[] = [
-        { type: 'Amplifier', quantity: 10, description: " Missile" },
-        { type: 'Ballista', quantity: 9 , description: " Missile "},
-        { type: 'BigBertha', quantity: 8 , description: " Missile "},
-        { type: 'Bombabom', quantity: 7 , description: " Missile "},
-        { type: 'BunkerBlocker', quantity: 6 , description: " Missile "},
-        { type: 'Buzzard', quantity: 5 , description: " Missile "},
-        { type: 'ClusterBomb', quantity: 4 , description: " Missile "},
-        { type: 'CorporateRaider', quantity: 3 , description: " Missile "},
-        { type: 'GutShot', quantity: 2 , description: " Missile "},
-        { type: 'TheNuke', quantity: 1 , description: " Missile "},
-        { type: 'Yokozuna', quantity: 5 , description: " Missile "},
-        { type: 'Zippy', quantity: 3 , description: " Missile "},
-      ];
-      resolve(missileLibraryData);
-    }, 0); // Simulating a delay of 1 second
-  });
+
+
+const fetchMissileLib = async (): Promise<Missilelib[]> => {
+  try {
+    const token = await SecureStore.getItemAsync("token");
+    if (!token) {
+      throw new Error("No authentication token found.");
+    }
+
+    const response = await axiosInstance.get('/api/getInventory', {
+      params: { token }
+    });
+
+    const inventory = response.data;
+
+    // Filter the inventory to include only items with the category "Missiles"
+    const missileLibraryData = inventory
+      .filter((item: { category: string; }) => item.category === "Missiles")
+      .map((item: { name: any; quantity: any; }) => ({
+        type: item.name,
+        quantity: item.quantity
+      }));
+
+    return missileLibraryData;
+  } catch (error) {
+    console.error('Failed to fetch missile library', error);
+    throw error;
+  }
 };
+
 interface MissileImages {
   [key: string]: any;
 }

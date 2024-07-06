@@ -1,6 +1,11 @@
 import React from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, GestureResponderEvent, Alert } from 'react-native'; // make sure to install axios or use fetch
+import { storepagestyles } from './storestylesheets';
 import { GameItem } from 'middle-earth';
+import axiosInstance from '../../api/axios-instance';
+import * as SecureStore from "expo-secure-store";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router } from "expo-router";
 
 interface CartItem {
   product: GameItem;
@@ -13,71 +18,75 @@ interface CartProps {
 }
 
 const Cart: React.FC<CartProps> = ({ cart, onRemove }) => {
-  const totalPrice = cart.reduce((sum, item) => sum + item.product.cost * item.quantity, 0);
+  const totalPrice = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
 
   const renderItem = ({ item }: { item: CartItem }) => (
-    <View style={styles.cartItem}>
-      <Text style={styles.productName}>{item.product.name}</Text>
-      <Text style={styles.productPrice}>
-        {item.quantity} x ${item.product.cost.toFixed(2)}
+    <View style={storepagestyles.cartItem}>
+      <Text style={storepagestyles.productName}>{item.product.name}</Text>
+      <Text style={storepagestyles.productPrice}>
+        {item.quantity} x 🪙{item.product.price.toFixed(2)}
       </Text>
-      <TouchableOpacity onPress={() => onRemove(item.product.id)} style={styles.removeButton}>
-        <Text style={styles.removeButtonText}>Remove</Text>
+      <TouchableOpacity onPress={() => onRemove(item.product.id)} style={storepagestyles.removeButton}>
+        <Text style={storepagestyles.removeButtonText}>Remove</Text>
       </TouchableOpacity>
     </View>
   );
 
+  async function checkout(event: GestureResponderEvent): Promise<void> {
+    if (cart.length === 0) {
+      Alert.alert("Checkout Unavailable", "Your cart is empty.");
+      return;
+    }
+  
+    const token = await SecureStore.getItemAsync("token");
+    if (!token) {
+      Alert.alert("Authentication Error", "No authentication token found.");
+      return;
+    }
+  
+    // Transform cart items to match backend expectations
+    const items = cart.map(cartItem => ({
+      product: {
+        name: cartItem.product.name,
+        category: cartItem.product.type, // Include the category field
+      },
+      quantity: cartItem.quantity,
+    }));
+  
+    // Calculate total price based on the cart items
+    const totalPrice = cart.reduce((total, cartItem) => total + cartItem.product.price * cartItem.quantity, 0);
+  
+    // Sending data in the request body for a POST request
+    axiosInstance.post('/api/purchaseItem', {
+      token,
+      items, // Sending transformed items
+      money: totalPrice,
+    })
+    .then(async response => {
+      await AsyncStorage.removeItem('cartitems'); // Clears the cart
+      router.navigate("/"); // Navigates user away from the current page
+      Alert.alert("Success", "Checkout successful!");
+    })
+    .catch(error => {
+      Alert.alert("Checkout Failed", error.response?.data.message || "An error occurred during checkout.");
+      console.error('Checkout failed', error);
+    });
+  }
+  
+
   return (
-    <View style={styles.cartContainer}>
+    <View style={storepagestyles.cartContainer}>
       <FlatList
         data={cart}
         keyExtractor={(item) => item.product.id.toString()}
         renderItem={renderItem}
       />
-      <Text style={styles.totalPrice}>Total: ${totalPrice.toFixed(2)}</Text>
+      <Text style={storepagestyles.totalPrice}>Total: {totalPrice} Coins</Text>
+      <TouchableOpacity onPress={checkout} style={storepagestyles.checkoutButton}>
+        <Text style={storepagestyles.checkoutButtonText}>Checkout All Items</Text>
+      </TouchableOpacity>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  cartContainer: {
-    flex: 1,
-    padding: 16,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  cartItem: {
-    marginBottom: 16,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  productName: {
-    fontSize: 18,
-  },
-  productPrice: {
-    fontSize: 16,
-    color: '#888',
-  },
-  totalPrice: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginTop: 16,
-  },
-  removeButton: {
-    backgroundColor: '#ff6347',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 5,
-  },
-  removeButtonText: {
-    color: '#fff',
-  },
-});
 
 export default Cart;

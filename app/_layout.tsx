@@ -127,7 +127,6 @@ function NavBar() {
           </Text>
         </TouchableOpacity>
       ))}
-      <ProximityCheckNotif/>
     </View>
   );
 }
@@ -147,7 +146,7 @@ function RootLayoutNav() {
           <Stack.Screen name="league" options={{ headerShown: false, gestureEnabled: false }} />
           <Stack.Screen name="store" options={{ headerShown: false, gestureEnabled: false }} />
           <Stack.Screen name="friends" options={{ headerShown: false }} />
-          <Stack.Screen name="add-friends" />
+          <Stack.Screen name="add-friends" options={{ headerShown: false }}/>
           <Stack.Screen name="profile" options={{ headerShown: false }} />
         </Stack>
         {!hideNavBarRoutes.includes(pathname) && <NavBar />}

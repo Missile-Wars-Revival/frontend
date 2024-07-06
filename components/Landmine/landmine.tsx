@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, View, Button, Dimensions, ScrollView, Text, TouchableOpacity, Image } from 'react-native';
 import { LandminePlacementPopup } from './landmineplacement';
+import * as SecureStore from "expo-secure-store";
+import axiosInstance from '../../api/axios-instance';
 
 interface LandmineType {
   type: string;
   quantity: number;
-  description: string;
 }
 
 interface LandmineLibraryViewProps {
@@ -22,19 +23,34 @@ interface LandmineImages {
 }
 
 //backend needs to fetch users landmine library
-const fetchLandmineLib = (): Promise<LandmineType[]> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const LandmineLibraryData: LandmineType[] = [
-        { type: 'Amplifier', quantity: 10, description: "Landmine" },
-        { type: 'Ballista', quantity: 9, description: "Landmine" },
-        { type: 'BigBertha', quantity: 8, description: "Landmine" },
-        // Add other landmines as needed
-      ];
-      resolve(LandmineLibraryData);
-    }, 1000); 
-  });
+const fetchLandmineLib = async (): Promise<LandmineType[]> => {
+  try {
+    const token = await SecureStore.getItemAsync("token");
+    if (!token) {
+      throw new Error("No authentication token found.");
+    }
+
+    const response = await axiosInstance.get('/api/getInventory', {
+      params: { token }
+    });
+
+    const inventory = response.data;
+
+    // Filter the inventory to include only items with the category "Landmines"
+    const landmineLibraryData = inventory
+      .filter((item: { category: string; }) => item.category === "Landmines")
+      .map((item: { name: any; quantity: any; }) => ({
+        type: item.name,
+        quantity: item.quantity
+      }));
+
+    return landmineLibraryData;
+  } catch (error) {
+    console.error('Failed to fetch landmine library', error);
+    throw error;
+  }
 };
+
 
 
 //landmine images for both map and library
@@ -42,6 +58,7 @@ export const LandmineImages: LandmineImages = {
   Amplifier: require('../../assets/missiles/Amplifier.png'),
   Ballista: require('../../assets/missiles/Ballista.png'),
   BigBertha: require('../../assets/missiles/BigBertha.png'),
+  Bombabom: require('../../assets/missiles/Bombabom.png'),
   // ... other landmine images
 };
 

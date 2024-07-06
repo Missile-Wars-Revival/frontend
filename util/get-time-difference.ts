@@ -58,3 +58,25 @@ export const convertimestampfuture = (timestamp: string | number | Date) => {
     return { text: `Expires in: ${differenceInHours} hours` };
   }
 };
+//missile
+export const convertimestampfuturemissile = (timestamp: string | number | Date) => {
+  const currentTime = new Date().getTime();
+  const eventTime = new Date(timestamp).getTime();
+  const differenceInMilliseconds = eventTime - currentTime;
+  const differenceInSeconds = Math.floor(
+    differenceInMilliseconds / 1000
+  );
+
+  const differenceInMinutes = Math.floor(differenceInSeconds / 60);
+  const differenceInHours = Math.floor(differenceInMinutes / 60);
+
+  if (differenceInMilliseconds < 0) {
+    return { text: `Impacted` }; // Handle past timestamps if needed
+  } else if (differenceInHours < 1) {
+    return { text: `${differenceInMinutes} min` };
+  } else if (differenceInHours === 1) {
+    return { text: `1 hour` };
+  } else {
+    return { text: `${differenceInHours} hours` };
+  }
+};

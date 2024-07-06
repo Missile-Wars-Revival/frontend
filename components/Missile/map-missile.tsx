@@ -3,6 +3,7 @@ import { View, Image } from "react-native";
 import { Circle, Marker, Polyline } from "react-native-maps";
 import { missileImages } from "./missile";
 import { GeoLocation, Missile } from "middle-earth";
+import { convertimestampfuturemissile } from "../../util/get-time-difference";
 
 interface AllMissilesProps {
     missileData: Missile[];
@@ -20,12 +21,13 @@ interface MissileProps {
     radius: number;
     type: string;
     status: string;
+    etatimetoimpact: string
 }
 
 export const AllMissiles = (props: AllMissilesProps) => {
     return (
         <>
-        {props.missileData.map(({ destination, currentLocation, radius, type, status }, index) => {
+        {props.missileData.map(({ destination, currentLocation, radius, type, status, etatimetoimpact }, index) => {
 
             // Define a mapping of image paths with an index signature (paths found in components)
     
@@ -42,7 +44,8 @@ export const AllMissiles = (props: AllMissilesProps) => {
                 trajectoryCoordinates={trajectoryCoordinates} 
                 radius={radius} 
                 type={type} 
-                status={status} />
+                status={status}
+                etatimetoimpact= {etatimetoimpact} />
             </React.Fragment>
             );
         })}
@@ -55,6 +58,16 @@ export const MapMissile = (missileProps: MissileProps) => {
 
     const resizedmissileimage = missileImages[missileProps.type];
     const resizedmissileicon = { width: 50, height: 50 }; // Custom size for image
+
+    // Convert timestamp to a future time in a readable format
+    const { text } = convertimestampfuturemissile(missileProps.etatimetoimpact);
+
+    // Determine the description based on the missile status
+    let description = `${missileProps.status}`;
+    if (missileProps.status === "Incoming") {
+        description += ` ETA: ${text}`;
+    }
+
     return(
         <View>
             {/* Render Circle at destination coords */}
@@ -68,7 +81,7 @@ export const MapMissile = (missileProps: MissileProps) => {
             <Marker
                 coordinate={missileProps.currentLocation}
                 title={`Missile: ${missileProps.type}`}
-                description={`${missileProps.status}`}
+                description={description}
             >
                 <Image source={resizedmissileimage} style={resizedmissileicon} />
             </Marker>
