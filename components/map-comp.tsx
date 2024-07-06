@@ -15,6 +15,7 @@ import { getCurrentLocation, location } from "../util/locationreq";
 import { mainmapstyles } from "../map-themes/map-stylesheet";
 import { DefRegLocationTask } from "../util/backgroundtasks";
 import * as SecureStore from "expo-secure-store";
+import { updateFriendsOnlyStatus } from "../api/visibility";
 
 interface MapCompProps {
     selectedMapStyle: any;
@@ -158,6 +159,15 @@ export const MapComp = (props: MapCompProps) => {
         const newMode = visibilitymode === 'friends' ? 'global' : 'friends';
         setMode(newMode);
         friendsorglobal(newMode);
+        const token = await SecureStore.getItemAsync("token");
+    
+        if (!token) {
+            console.error("Authentication token is missing");
+            Alert.alert("Error", "Authentication error. Please log in again.");
+            return; // Exit function if no token is found
+        }
+    
+        const friendsOnly = newMode === 'friends';
         
         if (newMode === 'global') {
             Alert.alert(
@@ -176,6 +186,8 @@ export const MapComp = (props: MapCompProps) => {
                         text: "Confirm",
                         onPress: async () => {
                             await AsyncStorage.setItem('visibilitymode', newMode);
+                            await updateFriendsOnlyStatus(token, friendsOnly);
+                            console.log("FriendsOnly status updated successfully to:", friendsOnly);
                             console.log("Mode changed to:", newMode);
                         }
                     }
@@ -183,8 +195,10 @@ export const MapComp = (props: MapCompProps) => {
             );
         } else {
             await AsyncStorage.setItem('visibilitymode', newMode);
+            await updateFriendsOnlyStatus(token, friendsOnly);
+            console.log("FriendsOnly status updated successfully to:", friendsOnly);
         }
-
+    
         console.log("Mode changed to:", newMode);
     };
 
