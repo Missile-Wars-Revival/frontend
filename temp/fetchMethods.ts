@@ -38,7 +38,7 @@ import { GeoLocation, Landmine, Loot, Missile } from "middle-earth";
         "2024-10-05T06:43:52.577Z",                                       //expiretime
       ),
       new Loot(
-        new GeoLocation(45.305, -0.86),           //location
+        new GeoLocation(51.1326906221589, -3.3299448073139626),           //location
         "Common",                                       //Rarity
         "2024-10-05T06:43:52.577Z",                                 //expiretime
       )

@@ -90,6 +90,12 @@ export const MapComp = (props: MapCompProps) => {
                 // Check if it's the first load
                 const isFirstLoad = await AsyncStorage.getItem('firstload');
                 const isDBConnection = await AsyncStorage.getItem('dbconnection');
+                const token = await SecureStore.getItemAsync("token");
+                if (!token) {
+                    console.error("Authentication token is missing");
+                    Alert.alert("Error", "Authentication error. Please log in again.");
+                    return; // Exit function if no token is found
+                }
                 if (isFirstLoad == null) {
                     Alert.alert(
                         "Your location is set to Global",
@@ -98,6 +104,7 @@ export const MapComp = (props: MapCompProps) => {
                             { text: "OK", onPress: () => setFirstLoad(false) } 
                         ]
                     );
+                    await updateFriendsOnlyStatus(token, false);
                     setFirstLoad(false); 
                     await AsyncStorage.setItem('firstload', 'false');
                 } 

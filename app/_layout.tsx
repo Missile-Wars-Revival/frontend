@@ -7,7 +7,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import SplashScreen from './splashscreen'; 
 import { FontAwesome } from '@expo/vector-icons';
-import { ProximityCheckNotif } from "../components/Notifications/entitynotifications";
+import { ProximityCheckNotif } from "../components/Collision/entitynotifications";
 import useWebSocket, {  } from "../hooks/api/websockets";
 import { WebSocketMessage } from "middle-earth";
 
@@ -127,6 +127,7 @@ function NavBar() {
           </Text>
         </TouchableOpacity>
       ))}
+      <ProximityCheckNotif/>
     </View>
   );
 }

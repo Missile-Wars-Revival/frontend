@@ -1,12 +1,15 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { GeoLocation, Landmine, Loot, Missile } from "middle-earth";
 import { fetchLootFromBackend, fetchMissilesFromBackend, fetchlandmineFromBackend } from "../../temp/fetchMethods";
-import * as TaskManager from 'expo-task-manager';
-import * as BackgroundFetch from 'expo-background-fetch';
 import { getCurrentLocation } from "../../util/locationreq";
 import {location} from "../../util/locationreq"
 import * as Notifications from 'expo-notifications';
 import { convertimestampfuturemissile } from "../../util/get-time-difference";
+import { Alert } from "react-native";
+import { addrankpoints } from "../../api/rank";
+import axios from "axios";
+import * as SecureStore from "expo-secure-store";
+import { getRandomLoot } from "./Probability";
 
 Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -172,19 +175,48 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
         };       
 
         //Notifications:
-        lootLocations.forEach(loot => {
+        lootLocations.forEach(async loot => {
             const proximityStatus = checkLootandLandmineProximity("loot", loot.location, userLocation, 10 );
             if (lastNotified.loot !== today) {
                 switch (proximityStatus) {
                     case 'within-loot':
-                        //inside landmine radius
-                            sendNotification("Loot Pickup", "Open the App to collect your loot!");
-                            setLastNotified(prev => ({ ...prev, loot: today }));
+                        //inside loot radius
+                            // sendNotification("Loot Pickup", "Open the App to collect your loot!");
+                            // setLastNotified(prev => ({ ...prev, loot: today }));
+                            
+                            const token = await SecureStore.getItemAsync("token");
+                            try {
+                                if (!token) {
+                                    console.log('Token not found');
+                                    return; 
+                                }
+                            //addrankpoints(token, 200) // adds 200 rank points for collecting
+
+                            const reward = getRandomLoot(loot.rarity);
+                            if (reward) {
+                                console.log(`You've obtained a ${reward}!`);
+                                sendNotification("Loot Pickup", `Special Loot!! You got a: ${reward} and +100 rank pts`);
+                                setLastNotified(prev => ({ ...prev, loot: today }))
+                            // Add additional logic to handle the reward, such as updating the inventory
+                            } else {
+                                console.log('No special loot this time.');
+                                sendNotification("Loot Pickup", "No special loot this time! +100 rank pts");
+                                setLastNotified(prev => ({ ...prev, loot: today }))
+                            }
+
+
+                            } catch (error: any) {
+                            if (axios.isAxiosError(error)) {
+                              console.error('Axios error:', error.message);
+                            } else {
+                              console.error('Error fetching currency amount:', error);
+                            }
+                        }
                         break;
                     case 'near-loot':
                         // Send warning if near but not within the loot radius
-                            sendNotification("Loot Nearby", `Look around you! Rarity: ${loot.rarity}`);
-                            setLastNotified(prev => ({ ...prev, loot: today }));
+                            // sendNotification("Loot Nearby", `Look around you! Rarity: ${loot.rarity}`);
+                            // setLastNotified(prev => ({ ...prev, loot: today }));
                         break;
                 }
             }
@@ -198,19 +230,19 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                     case 'within-missile':
                         // Send specific notification if within the missile radius
                         if (missile.status === 'Incoming') {
-                            sendNotification("RUN!! Missile Incoming!", `You are within the impact zone! Incoming Missile ETA: ${text}`);
-                            setLastNotified(prev => ({ ...prev, missile: today }));
+                            // sendNotification("RUN!! Missile Incoming!", `You are within the impact zone! Incoming Missile ETA: ${text}`);
+                            // setLastNotified(prev => ({ ...prev, missile: today }));
                         }
                         if (missile.status === 'Hit') {
-                            sendNotification("Danger!", "A Missile has impacted within the zone. You may start taking damage!");
-                            setLastNotified(prev => ({ ...prev, missile: today }));
+                            // sendNotification("Danger!", "A Missile has impacted within the zone. You may start taking damage!");
+                            // setLastNotified(prev => ({ ...prev, missile: today }));
                         }
                     break;
                     case 'near-missile':
                         // Send warning if near but not within the missile radius
                         if (missile.status === 'Incoming') {
-                            sendNotification("Incoming Missile Alert!", `Be wary, there is an incoming missile nearby. Incoming Missile ETA: ${text}`);
-                            setLastNotified(prev => ({ ...prev, missile: today }));
+                            // sendNotification("Incoming Missile Alert!", `Be wary, there is an incoming missile nearby. Incoming Missile ETA: ${text}`);
+                            // setLastNotified(prev => ({ ...prev, missile: today }));
                         }
                         if (missile.status === 'Hit') {
                             sendNotification("Missile Impact Warning!", "Impacted Missile Nearby. Be wary of the fallout!");
@@ -225,15 +257,15 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
             const proximityStatus = checkLootandLandmineProximity("landmine",landmine.location, userLocation, 10 );
             if (lastNotified.landmine !== today) {
                 switch (proximityStatus) {
-                    case 'within-loot':
+                    case 'within-landmine':
                         //inside landmine radius
                             sendNotification("Danger!", "You just stepped on a Landmine! Damage has been taken.");
                             setLastNotified(prev => ({ ...prev, landmine: today }));
                         break;
-                    case 'near-loot':
+                    case 'near-landmine':
                         // Send warning if near but not within the landmine radius
-                            sendNotification("Landmine Proximity Warning", "A landmine is nearby. Be cautious!");
-                            setLastNotified(prev => ({ ...prev, landmine: today }));
+                            // sendNotification("Landmine Proximity Warning", "A landmine is nearby. Be cautious!");
+                            // setLastNotified(prev => ({ ...prev, landmine: today }));
                         break;
                 }
             }
@@ -244,51 +276,6 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
     useEffect(() => {
         checkAndNotify();
     }, [userLocation, lootLocations, missileData, landmineData, lastNotified]);
-
-    useEffect(() => {
-        const defineAndRegisterTask = async () => {
-            if (!isTaskRegistered) {
-                //console.log('Defining and registering background fetch task');
-                TaskManager.defineTask(TASK_NAME, async ({ data, error }) => {
-                    if (error) {
-                        console.error('TaskManager Error:', error);
-                        return;
-                    }
-                    //console.log('Background fetch task triggered');
-                    try {
-                        await checkAndNotify(); // Execute background logic
-                    } catch (e) {
-                        //console.error('Error executing background fetch:', e);
-                    }
-                });
-    
-                try {
-                    const options = {
-                        minimumInterval: 900, // 15 minutes in seconds, realistic for iOS
-                        stopOnTerminate: false,
-                        startOnBoot: true,
-                    };
-                    await BackgroundFetch.registerTaskAsync(TASK_NAME, options);
-                    //console.log('Background Fetch task registered successfully with options:', options);
-                    setIsTaskRegistered(true);
-                } catch (error) {
-                    console.error('Background Fetch registration failed:', error);
-                }
-            }
-        };
-    
-        defineAndRegisterTask();
-    
-        return () => {
-            if (isTaskRegistered) {
-                BackgroundFetch.unregisterTaskAsync(TASK_NAME)
-                    .then(() => {
-                        //console.log('Task unregistered successfully');
-                    })
-                    .catch(err => console.error('Failed to unregister task:', err));
-            }
-        };
-    }, [isTaskRegistered]);
     
     return null;
 };    
