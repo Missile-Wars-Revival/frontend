@@ -12,7 +12,7 @@ import { GeoLocation, Landmine, Loot, Missile } from "middle-earth";
                          100,                                    // radius
                          "",                                     // sentbyusername
                          "",                                     // timesent
-                         "2024-10-05T06:43:52.577Z",                                     // etatimetoimpact
+                         "2024-10-05T06:43:52.577Z",             // timeofimpact
                         ),
               new Missile(
                           "Ballista",                             // type
@@ -23,7 +23,7 @@ import { GeoLocation, Landmine, Loot, Missile } from "middle-earth";
                           100,                                    // radius
                           "",                                     // sentbyusername
                           "",                                     // timesent
-                          "2024-10-05T06:43:52.577Z",                                     // etatimetoimpact
+                          "2024-10-05T06:43:52.577Z",             // timeofimpact
                         )  
                 ];                                   
   };

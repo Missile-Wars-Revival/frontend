@@ -174,7 +174,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
             }
         };
 
-        //Notifications:
+        //Loot reward:
         lootLocations.forEach(async loot => {
             const proximityStatus = checkLootandLandmineProximity("loot", loot.location, userLocation, 10);
             if (lastNotified.loot !== today) {
@@ -187,25 +187,28 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                         }
 
                         const reward = getRandomLoot(loot.rarity);
+                        let amount = 250;
                         if (reward) {
                             console.log(`You've obtained a ${reward.name}!`);
-                            sendNotification("Loot Pickup", `Special Loot!! You got a: ${reward.name} as well as +100🎖️, +250 🪙`);
+                            sendNotification("Loot Pickup", `Special Loot!! You got a: ${reward.name} as well as +200🎖️, +250 🪙`);
                             setLastNotified(prev => ({ ...prev, loot: today }));
 
-                            let amount = 250;
                             if (reward.category === "Currency") {
                                 amount += 500;  // Corrected operator for addition assignment
                             } else {
                                 additem(token, reward.name, reward.category); // This call is safe since 'reward' is confirmed to be defined
                             }
 
-                            addmoney(token, amount);  // Adds the computed amount once
-                            addrankpoints(token, 200); // adds 200 rank points for collecting
                         } else {
                             console.log('No special loot this time.');
-                            sendNotification("Loot Pickup", "No special loot this time! +100🎖️, +250 🪙");
+                            sendNotification("Loot Pickup", "No special loot this time! +200🎖️, +250 🪙");
                             setLastNotified(prev => ({ ...prev, loot: today }));
                         }
+
+                        addmoney(token, amount);  // Adds the computed amount once
+                        addrankpoints(token, 200); // adds 100 rank points for collecting
+
+                        //add functionality to remove the loot drop from DB
 
                         try {
                             // Ensure other calls here if needed
