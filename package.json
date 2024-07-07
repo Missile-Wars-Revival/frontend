@@ -32,7 +32,7 @@
     "expo-updates": "~0.25.17",
     "isomorphic-ws": "^5.0.0",
     "lucide-react-native": "^0.375.0",
-    "middle-earth": "github:Missile-Wars-Revival/middle-earth#dev/missiledefinitions",
+    "middle-earth": "github:Missile-Wars-Revival/middle-earth",
     "msgpack-lite": "^0.1.26",
     "nativewind": "^2.0.11",
     "prop-types": "^15.8.1",
