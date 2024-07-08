@@ -44,7 +44,8 @@ Password: `Testing123!` <br />
 To send the build to EAS build run the following commands: <br />
 *Note: You will need the companies Apple login for iOS builds - Contact Tristan in Discord for this*
 ## Pre-Build
-- `npx expo prebuild --platform ios`
+`npx expo prebuild --platform ios`
+*Note: Unless developing native code this is unnecessary*
 
 ### For Preview:
 `eas build --profile preview --platform all` <br />
