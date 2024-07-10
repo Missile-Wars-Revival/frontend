@@ -31,7 +31,7 @@ export const nothingProbability = {
 
 export function getRandomLoot(rarity) {
   const chance = Math.random() * 100;
-  
+
   // Check if the player gets nothing
   if (chance < nothingProbability[rarity]) {
     return null; // or return a specific value representing nothing
@@ -50,17 +50,17 @@ export function getRandomLoot(rarity) {
 
 //Missile types
 //   Amplifier:
-//   Ballista: 
+//   Ballista:
 //   BigBertha:
-//   Bombabom: 
+//   Bombabom:
 //   BunkerBlocker:
-//   Buzzard: 
-//   ClusterBomb: 
-//   CorporateRaider: 
-//   GutShot: 
-//   TheNuke: 
-//   Yokozuna: 
-//   Zippy: 
+//   Buzzard:
+//   ClusterBomb:
+//   CorporateRaider:
+//   GutShot:
+//   TheNuke:
+//   Yokozuna:
+//   Zippy:
 
 //death penalty:
 // const lossProbabilities = [

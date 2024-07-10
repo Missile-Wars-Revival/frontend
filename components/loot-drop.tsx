@@ -14,18 +14,18 @@ interface LootProps {
     location: GeoLocation;
     rarity: string;
     expiretime: string;
-  }
+}
 
 export const AllLootDrops = (props: AllLootDropsProps) => {
     return (
-    <>
-            {props.lootLocations .map(({location, rarity, expiretime}, index) => (
-            <React.Fragment key={index}>
-                <LootDrop location={location} rarity={rarity} expiretime={expiretime} />
-            </React.Fragment>
+        <>
+            {props.lootLocations.map(({ location, rarity, expiretime }, index) => (
+                <React.Fragment key={index}>
+                    <LootDrop location={location} rarity={rarity} expiretime={expiretime} />
+                </React.Fragment>
             ))}
-    
-    </>
+
+        </>
     )
 }
 
@@ -36,21 +36,21 @@ export const LootDrop = (props: LootProps) => {
         <View>
             {/* Render Circle */}
             <Circle
-            center={props.location}
-            radius={20} //actual radius size
-            fillColor="rgba(0, 0, 255, 0.2)"
-            strokeColor="rgba(0, 0, 255, 0.8)"
+                center={props.location}
+                radius={20} //actual radius size
+                fillColor="rgba(0, 0, 255, 0.2)"
+                strokeColor="rgba(0, 0, 255, 0.8)"
             />
             {/* Render Marker */}
             <Marker
-            coordinate={{
-                latitude: props.location.latitude,
-                longitude: props.location.longitude,
-            }}
-            title={`Loot Rarity: ${props.rarity}`}
-            description={`${text}`}
+                coordinate={{
+                    latitude: props.location.latitude,
+                    longitude: props.location.longitude,
+                }}
+                title={`Loot Rarity: ${props.rarity}`}
+                description={`${text}`}
             >
-            <Image source={resizedlootimage} style={resizedlooticon} />
+                <Image source={resizedlootimage} style={resizedlooticon} />
             </Marker>
         </View>
     )

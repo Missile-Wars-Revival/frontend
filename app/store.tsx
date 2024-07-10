@@ -47,7 +47,7 @@ const StorePage: React.FC = () => {
     };
 
     loadCart();
-    
+
   }, []);
   useEffect(() => {
     const fetchCurrencyAmount = async () => {
@@ -55,11 +55,11 @@ const StorePage: React.FC = () => {
       try {
         if (!token) {
           console.log('Token not found');
-          return; 
+          return;
         }
-  
+
         const response = await axiosInstance.get('/api/getMoney', {
-          params: { token } 
+          params: { token }
         });
         setCurrencyAmount(response.data.money);
       } catch (error: any) {
@@ -70,7 +70,7 @@ const StorePage: React.FC = () => {
         }
       }
     };
-  
+
     fetchCurrencyAmount();
   }, []);
 
@@ -138,7 +138,7 @@ const StorePage: React.FC = () => {
           </TouchableOpacity>
         </View>
       </View>
-  
+
       <View style={mainstorestyles.tabContainerMissiles}>
         {['All', 'Missiles', 'Landmines', 'Loot Drops'].map((category) => (
           <TouchableOpacity key={category} onPress={() => setSelectedCategory(category)} style={mainstorestyles.tabMissiles}>
@@ -146,7 +146,7 @@ const StorePage: React.FC = () => {
           </TouchableOpacity>
         ))}
       </View>
-      
+
       <View style={mainstorestyles.container}>
         {isCartVisible ? (
           <Cart cart={cart} onRemove={handleRemove} />
@@ -172,7 +172,7 @@ const StorePage: React.FC = () => {
         )}
       </View>
     </ImageBackground>
-  );  
-}  
+  );
+}
 
 export default StorePage;

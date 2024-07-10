@@ -31,10 +31,10 @@ const HealthBar: React.FC<HealthBarProps> = ({ health }) => {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    top: height * 0.06, 
-    left: width * 0.01, 
-    width: width * 0.1, 
-    height: height * 0.30, 
+    top: height * 0.06,
+    left: width * 0.01,
+    width: width * 0.1,
+    height: height * 0.30,
     backgroundColor: '#ddd',
     borderRadius: 10,
     overflow: 'hidden',
@@ -68,8 +68,8 @@ const styles = StyleSheet.create({
     width: '100%',
     backgroundColor: 'red',
     borderRadius: 10,
-    justifyContent: 'center', 
-    alignItems: 'center', 
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   healthText: {
     color: 'white',

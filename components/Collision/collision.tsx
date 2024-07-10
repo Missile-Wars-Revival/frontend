@@ -196,9 +196,9 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                             setLastNotified(prev => ({ ...prev, loot: today }));
 
                             if (reward.category === "Currency") {
-                                amount += 500; 
+                                amount += 500;
                             } else {
-                                //additem(token, reward.name, reward.category); 
+                                additem(token, reward.name, reward.category); //adds item to player inventory
                             }
 
                         } else {
@@ -207,8 +207,8 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                             setLastNotified(prev => ({ ...prev, loot: today }));
                         }
 
-                        //addmoney(token, amount);  // Adds the computed amount once
-                        //addrankpoints(token, 200); // adds 100 rank points for collecting
+                        addmoney(token, amount);  // Adds the computed amount once done
+                        addrankpoints(token, 200); // adds 100 rank points for collecting
 
                         //add functionality to remove the loot drop from DB
 
@@ -234,14 +234,14 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                     case 'within-missile':
                         // Send specific notification if within the missile radius
                         if (missile.status === 'Incoming') {
-                            // sendNotification("RUN!! Missile Incoming!", `You are within the impact zone! Incoming Missile ETA: ${text}`);
-                            // setLastNotified(prev => ({ ...prev, missile: today }));
+                            sendNotification("RUN!! Missile Incoming!", `You are within the impact zone! Incoming Missile ETA: ${text}`);
+                            setLastNotified(prev => ({ ...prev, missile: today }));
                         }
                         if (missile.status === 'Hit') {
-                             sendNotification("Danger!", "A Missile has impacted in your proximity! You may start taking damage!");
-                             setLastNotified(prev => ({ ...prev, missile: today }));
-                             Alert.alert("Danger!", "A Missile has impacted in your proximity! You may start taking damage!");
-                            
+                            sendNotification("Danger!", "A Missile has impacted in your proximity! You may start taking damage!");
+                            setLastNotified(prev => ({ ...prev, missile: today }));
+                            Alert.alert("Danger!", "A Missile has impacted in your proximity! You may start taking damage!");
+
                             applyMissileDamage(10); //10 = damage for missile per 30 secs
                         }
                         break;
@@ -277,13 +277,14 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                 if (healthNumber <= 0) {
                     console.log('User health has reached zero or below.');
                 }
-                else{ 
-                removeHealth(token, missileDamage) //remove db health
-                await AsyncStorage.setItem('health', healthNumber.toString()); //updated cached health
-                console.log(`User Health: ${healthNumber}`);
-                if (healthNumber <= 0) {
-                    console.log('User health has reached zero or below.');
-                }}
+                else {
+                    removeHealth(token, missileDamage) //remove db health
+                    await AsyncStorage.setItem('health', healthNumber.toString()); //updated cached health
+                    console.log(`User Health: ${healthNumber}`);
+                    if (healthNumber <= 0) {
+                        console.log('User health has reached zero or below.');
+                    }
+                }
             }, 30000); // 30000 milliseconds = 30 secs
         }
 

@@ -12,9 +12,9 @@ interface FireSelectorProps {
 }
 
 export const FireSelector = (props: FireSelectorProps) => {
-    const [MissileModalVisible, setMissileModalVisible] = useState(false); 
-    const [MissilefireposModalVisible, setMissilefireposModalVisible] = useState(false);   
-    const [LandmineModalVisible, setLandmineModalVisible] = useState(false); 
+    const [MissileModalVisible, setMissileModalVisible] = useState(false);
+    const [MissilefireposModalVisible, setMissilefireposModalVisible] = useState(false);
+    const [LandmineModalVisible, setLandmineModalVisible] = useState(false);
 
     return (
         <View>
@@ -28,7 +28,7 @@ export const FireSelector = (props: FireSelectorProps) => {
 
             {/* Fire Select button */}
             <FireType landmineFireHandler={() => setLandmineModalVisible(true)} missileFireHandler={() => setMissileModalVisible(true)} />
-            
+
         </View>
     )
 }
