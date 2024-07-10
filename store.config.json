@@ -1,0 +1,17 @@
+{
+    "configVersion": 0,
+    "apple": {
+      "info": {
+        "en-US": {
+          "title": "Missile Wars",
+          "subtitle": "Attack Your Enemy!",
+          "description": "Missile Wars is a app that uses your location to fight other players.",
+          "keywords": ["awesome", "app", "pvp", "location"],
+          "marketingUrl": "https://example.com/en/promo",
+          "supportUrl": "https://example.com/en/support",
+          "privacyPolicyUrl": "https://example.com/en/privacy"
+        }
+      }
+    }
+  }
+  

@@ -25,19 +25,28 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.longtimenoc.misslewars",
+      "bundleIdentifier": "com.longtimenoc.missilewars",
       "infoPlist": {
         "NSLocationAlwaysUsageDescription": "This app needs access to your location to alert about nearby items of interest.",
-        "UIBackgroundModes": ["location", "fetch"]
+        "UIBackgroundModes": [
+          "location",
+          "fetch"
+        ]
       }
     },
     "android": {
-      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_BACKGROUND_LOCATION", "RECEIVE_BOOT_COMPLETED", "SCHEDULE_EXACT_ALARM", "com.android.vending.BILLING"],
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "RECEIVE_BOOT_COMPLETED",
+        "SCHEDULE_EXACT_ALARM",
+        "com.android.vending.BILLING"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/logo.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.longtimenoc.misslewars"
+      "package": "com.longtimenoc.missilewars"
     },
     "web": {
       "favicon": "./assets/logo.png"
@@ -50,10 +59,10 @@
           "icon": "./assets/logo.png",
           "color": "#ffffff",
           "defaultChannel": "default",
-          "sounds": [
-          ]
+          "sounds": []
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "owner": "osog",
     "runtimeVersion": {
