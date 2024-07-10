@@ -46,7 +46,7 @@ import { GeoLocation, Landmine, Loot, Missile } from "middle-earth";
 
     ];
   };
-
+  
   export const fetchlandmineFromBackend = async (): Promise<Landmine[]> => {
     // Simulated fetch function to get landmine data:
     return [

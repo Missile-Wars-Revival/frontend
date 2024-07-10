@@ -29,7 +29,7 @@ export async function getHealth(
     amount: number,
   ) {
     try {
-      const response = await axiosInstance.post("/api/getHealth", {
+      const response = await axiosInstance.post("/api/removeHealth", {
         token: token,
         amount: amount
       });

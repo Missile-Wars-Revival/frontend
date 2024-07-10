@@ -12,6 +12,8 @@ import * as SecureStore from "expo-secure-store";
 import { getRandomLoot } from "./Probability";
 import { addmoney } from "../../api/money";
 import { additem } from "../../api/add-item";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { removeHealth } from "../../api/health";
 
 Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -194,9 +196,9 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                             setLastNotified(prev => ({ ...prev, loot: today }));
 
                             if (reward.category === "Currency") {
-                                amount += 500;  // Corrected operator for addition assignment
+                                amount += 500; 
                             } else {
-                                additem(token, reward.name, reward.category); // This call is safe since 'reward' is confirmed to be defined
+                                //additem(token, reward.name, reward.category); 
                             }
 
                         } else {
@@ -211,7 +213,6 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                         //add functionality to remove the loot drop from DB
 
                         try {
-                            // Ensure other calls here if needed
                         } catch (error) {
                             if (axios && axios.isAxiosError && axios.isAxiosError(error)) {
                                 console.error('Axios error:', error.message);
@@ -237,8 +238,11 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                             // setLastNotified(prev => ({ ...prev, missile: today }));
                         }
                         if (missile.status === 'Hit') {
-                            // sendNotification("Danger!", "A Missile has impacted within the zone. You may start taking damage!");
-                            // setLastNotified(prev => ({ ...prev, missile: today }));
+                             sendNotification("Danger!", "A Missile has impacted in your proximity! You may start taking damage!");
+                             setLastNotified(prev => ({ ...prev, missile: today }));
+                             Alert.alert("Danger!", "A Missile has impacted in your proximity! You may start taking damage!");
+                            
+                            applyMissileDamage(10); //10 = damage for missile per 30 secs
                         }
                         break;
                     case 'near-missile':
@@ -255,6 +259,33 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                 }
             }
         });
+        //apply missile damage
+        async function applyMissileDamage(missileDamage: number) {
+            let health = await AsyncStorage.getItem('health');
+            const token = await SecureStore.getItemAsync("token");
+            if (!health || !token) {
+                console.error('Health value not found in AsyncStorage');
+                return;
+            }
+            let healthNumber = parseInt(health, 10);
+            if (isNaN(healthNumber)) {
+                console.error('The stored health value is not a valid number:', health);
+                return;
+            }
+            setInterval(async () => {
+                healthNumber -= missileDamage;
+                if (healthNumber <= 0) {
+                    console.log('User health has reached zero or below.');
+                }
+                else{ 
+                removeHealth(token, missileDamage) //remove db health
+                await AsyncStorage.setItem('health', healthNumber.toString()); //updated cached health
+                console.log(`User Health: ${healthNumber}`);
+                if (healthNumber <= 0) {
+                    console.log('User health has reached zero or below.');
+                }}
+            }, 30000); // 30000 milliseconds = 30 secs
+        }
 
         landmineData.forEach(landmine => {
             const proximityStatus = checkLootandLandmineProximity("landmine", landmine.location, userLocation, 10);
@@ -279,6 +310,16 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
     useEffect(() => {
         checkAndNotify();
     }, [userLocation, lootLocations, missileData, landmineData, lastNotified]);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            fetchLootAndMissiles();
+            getCurrentLocationWrapper();
+            checkAndNotify();
+        }, 30000);
+
+        return () => clearInterval(interval);
+    }, [fetchLootAndMissiles, getCurrentLocationWrapper, checkAndNotify]);
 
     return null;
 };    

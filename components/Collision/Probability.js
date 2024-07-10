@@ -19,13 +19,26 @@ export const notSoGoodLootItems = [
 
 export const rarityProbability = {
   Common: 20,      // 20% chance for good loot
-  Uncommon: 30,    // 30% chance
-  Rare: 50         // 50% chance
+  Uncommon: 30,    // 30% chance for good loot
+  Rare: 50         // 50% chance for good loot
+};
+
+export const nothingProbability = {
+  Common: 10,      // 10% chance to get nothing
+  Uncommon: 5,     // 5% chance to get nothing
+  Rare: 2          // 2% chance to get nothing
 };
 
 export function getRandomLoot(rarity) {
   const chance = Math.random() * 100;
-  if (chance < rarityProbability[rarity]) {
+  
+  // Check if the player gets nothing
+  if (chance < nothingProbability[rarity]) {
+    return null; // or return a specific value representing nothing
+  }
+
+  // Check if the player gets good loot
+  if (chance < rarityProbability[rarity] + nothingProbability[rarity]) {
     const lootIndex = Math.floor(Math.random() * goodLootItems.length);
     return goodLootItems[lootIndex];
   } else {

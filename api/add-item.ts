@@ -7,7 +7,6 @@ export async function additem(
     category: string,
   ) {
     try {
-      // Send location data without password
       const response = await axiosInstance.post("/api/addItem", {
         token,
         itemName,

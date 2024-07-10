@@ -57,17 +57,16 @@ export default function Map() {
       try {
         if (!token) {
           console.log('Token not found');
-          return; 
+          return;
         }
-        const response = await getHealth(token); 
+        const response = await getHealth(token);
         if (response && response.health !== undefined) {
-          setHealth(response.health); 
-          await AsyncStorage.setItem('health', health.toString()); // to try reduce api calls, health that is needed asap will be called from here
+          setHealth(response.health);
+          await AsyncStorage.setItem('health', response.health.toString()); // Note the change here
         } else {
           console.error('Health data is invalid:', response);
         }
-
-      } catch (error: any) {
+      } catch (error) {
         if (axios.isAxiosError(error)) {
           console.error('Axios error:', error.message);
         } else {
@@ -75,31 +74,33 @@ export default function Map() {
         }
       }
     };
-
     getHealthOnStart();
+
+    const intervalId = setInterval(getHealthOnStart, 30000); //30 secss
+    return () => clearInterval(intervalId);
   }, []);
 
   useEffect(() => {
     const addCurrencyAmount = async () => {
       const lastRewardedDate = await AsyncStorage.getItem('lastRewardedDate');
-      const today = new Date().toISOString().slice(0, 10); 
-  
+      const today = new Date().toISOString().slice(0, 10);
+
       if (lastRewardedDate === today) {
         //console.log('Daily reward already claimed');
         return;
       }
-  
+
       const token = await SecureStore.getItemAsync("token");
       if (!token) {
         console.log('Token not found');
         return;
       }
-  
+
       try {
         const response = await axiosInstance.post('/api/addMoney', {
           token, amount: 500
         });
-  
+
         if (response.data) {
           console.log('Money added successfully:', response.data.message);
           Alert.alert("Claimed!", "You have clamed your daily reward!");
@@ -113,7 +114,7 @@ export default function Map() {
         }
       }
     };
-  
+
     addCurrencyAmount();
   }, []);
 
