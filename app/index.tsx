@@ -103,7 +103,7 @@ export default function Map() {
 
         if (response.data) {
           console.log('Money added successfully:', response.data.message);
-          Alert.alert("Claimed!", "You have clamed your daily reward!");
+          Alert.alert("Claimed!", `You have clamed your daily reward! 500 Coins`);
           await AsyncStorage.setItem('lastRewardedDate', today); // Update the last rewarded date
         }
       } catch (error) {
