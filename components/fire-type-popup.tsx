@@ -12,7 +12,7 @@ export const FireType = (props: FireTypeProps) => {
     //console.log("Popup button clicked");
     setFirePopupVisible(true);
   };
-  
+
 
   const FireclosePopup = () => {
     setFirePopupVisible(false);
@@ -38,17 +38,17 @@ export const FireType = (props: FireTypeProps) => {
   return (
     <View>
       <TouchableOpacity
-      className="absolute bottom-[70px] left-[20px] rounded-[5px] p-[10px] bg-white shadow-md"
-      onPress={FireshowPopup}
-    >
-      <Text className="text-[16px]">+</Text>
-    </TouchableOpacity>
+        className="absolute bottom-[70px] left-[20px] rounded-[5px] p-[10px] bg-white shadow-md"
+        onPress={FireshowPopup}
+      >
+        <Text className="text-[16px]">+</Text>
+      </TouchableOpacity>
 
-    <FireTypeStyle
-      visible={FirepopupVisible}
-      transparent={true}
-      onClose={FireclosePopup}
-      onSelect={selectFiretype} />
+      <FireTypeStyle
+        visible={FirepopupVisible}
+        transparent={true}
+        onClose={FireclosePopup}
+        onSelect={selectFiretype} />
     </View>
   )
 };
@@ -127,7 +127,7 @@ export const FireTypeStyle = ({
             <Text style={{ fontSize: 16 }}>Fire Missile</Text>
           </TouchableOpacity>
 
-{/* Room to expand: */}
+          {/* Room to expand: */}
 
           {/* <TouchableOpacity
             onPress={() => onSelect("cherry")}

@@ -62,7 +62,7 @@ export const NearbyPlayersData = async (latitude: number, longitude: number) => 
         if (!token) {
             throw new Error("Token not found");
         }
-        
+
         // Use GET request and send data as query parameters
         const response = await axiosInstance.get('/api/nearby', {
             params: {

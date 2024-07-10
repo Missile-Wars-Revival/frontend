@@ -37,13 +37,13 @@ const Cart: React.FC<CartProps> = ({ cart, onRemove }) => {
       Alert.alert("Checkout Unavailable", "Your cart is empty.");
       return;
     }
-  
+
     const token = await SecureStore.getItemAsync("token");
     if (!token) {
       Alert.alert("Authentication Error", "No authentication token found.");
       return;
     }
-  
+
     // Transform cart items to match backend expectations
     const items = cart.map(cartItem => ({
       product: {
@@ -52,27 +52,27 @@ const Cart: React.FC<CartProps> = ({ cart, onRemove }) => {
       },
       quantity: cartItem.quantity,
     }));
-  
+
     // Calculate total price based on the cart items
     const totalPrice = cart.reduce((total, cartItem) => total + cartItem.product.price * cartItem.quantity, 0);
-  
+
     // Sending data in the request body for a POST request
     axiosInstance.post('/api/purchaseItem', {
       token,
       items, // Sending transformed items
       money: totalPrice,
     })
-    .then(async response => {
-      await AsyncStorage.removeItem('cartitems'); // Clears the cart
-      router.navigate("/"); // Navigates user away from the current page
-      Alert.alert("Success", "Checkout successful!");
-    })
-    .catch(error => {
-      Alert.alert("Checkout Failed", error.response?.data.message || "An error occurred during checkout.");
-      console.error('Checkout failed', error);
-    });
+      .then(async response => {
+        await AsyncStorage.removeItem('cartitems'); // Clears the cart
+        router.navigate("/"); // Navigates user away from the current page
+        Alert.alert("Success", "Checkout successful!");
+      })
+      .catch(error => {
+        Alert.alert("Checkout Failed", error.response?.data.message || "An error occurred during checkout.");
+        console.error('Checkout failed', error);
+      });
   }
-  
+
 
   return (
     <View style={storepagestyles.cartContainer}>

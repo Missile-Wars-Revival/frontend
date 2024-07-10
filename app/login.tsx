@@ -9,7 +9,7 @@ import { saveCredentials } from "../util/logincache";
 import { usePushNotifications } from "../components/Notifications/usePushNotifications";
 
 export default function Login() {
-  const {expoPushToken, notification} = usePushNotifications();
+  const { expoPushToken, notification } = usePushNotifications();
   const notificationToken = expoPushToken?.data ?? "No token";
   // console.log(notificationToken);
   const [username, setUsername] = useState("");

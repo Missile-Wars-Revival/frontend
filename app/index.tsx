@@ -28,12 +28,15 @@ import { router } from "expo-router";
 import axiosInstance from "../api/axios-instance";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import HealthBar from "../components/healthbar";
+import { getHealth } from "../api/health";
 
 export default function Map() {
   const [userNAME, setUsername] = useState("");
 
   // State for location enabled
   const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(true);
+  const [health, setHealth] = useState(100); // Initial health value
 
   // Fetch username from secure storage
   useEffect(() => {
@@ -48,28 +51,56 @@ export default function Map() {
 
     fetchCredentials();
   }, []);
+  useEffect(() => {
+    const getHealthOnStart = async () => {
+      const token = await SecureStore.getItemAsync("token");
+      try {
+        if (!token) {
+          console.log('Token not found');
+          return;
+        }
+        const response = await getHealth(token);
+        if (response && response.health !== undefined) {
+          setHealth(response.health);
+          await AsyncStorage.setItem('health', response.health.toString()); // Note the change here
+        } else {
+          console.error('Health data is invalid:', response);
+        }
+      } catch (error) {
+        if (axios.isAxiosError(error)) {
+          console.error('Axios error:', error.message);
+        } else {
+          console.error('Error fetching health:', error);
+        }
+      }
+    };
+    getHealthOnStart();
+
+    const intervalId = setInterval(getHealthOnStart, 30000); //30 secss
+    return () => clearInterval(intervalId);
+  }, []);
 
   useEffect(() => {
     const addCurrencyAmount = async () => {
       const lastRewardedDate = await AsyncStorage.getItem('lastRewardedDate');
-      const today = new Date().toISOString().slice(0, 10); 
-  
+      const today = new Date().toISOString().slice(0, 10);
+
       if (lastRewardedDate === today) {
         //console.log('Daily reward already claimed');
         return;
       }
-  
+
       const token = await SecureStore.getItemAsync("token");
       if (!token) {
         console.log('Token not found');
         return;
       }
-  
+
       try {
         const response = await axiosInstance.post('/api/addMoney', {
           token, amount: 500
         });
-  
+
         if (response.data) {
           console.log('Money added successfully:', response.data.message);
           Alert.alert("Claimed!", "You have clamed your daily reward!");
@@ -83,7 +114,7 @@ export default function Map() {
         }
       }
     };
-  
+
     addCurrencyAmount();
   }, []);
 
@@ -126,6 +157,9 @@ export default function Map() {
 
   return (
     <View style={{ flex: 1, backgroundColor: 'gray' }}>
+      <View style={{ position: 'absolute', top: 10, left: 10, zIndex: 1 }}>
+        <HealthBar health={health} />
+      </View>
       <MapComp selectedMapStyle={selectedMapStyle} />
 
       {Platform.OS === 'android' && (

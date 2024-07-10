@@ -58,7 +58,7 @@ export const MapComp = (props: MapCompProps) => {
             //console.log("Failed to dispatch location", error);
         }
     };
-    
+
 
     const getlocation = async () => {
         try {
@@ -70,8 +70,8 @@ export const MapComp = (props: MapCompProps) => {
                 longitudeDelta: 0.01
             };
             setRegion(newRegion);
-            await saveLocation(newRegion); 
-            setIsLoading(false); 
+            await saveLocation(newRegion);
+            setIsLoading(false);
         } catch {
             Alert.alert(
                 "Location",
@@ -101,81 +101,81 @@ export const MapComp = (props: MapCompProps) => {
                         "Your location is set to Global",
                         "This means everyone in your league can see your location.",
                         [
-                            { text: "OK", onPress: () => setFirstLoad(false) } 
+                            { text: "OK", onPress: () => setFirstLoad(false) }
                         ]
                     );
                     await updateFriendsOnlyStatus(token, false);
-                    setFirstLoad(false); 
+                    setFirstLoad(false);
                     await AsyncStorage.setItem('firstload', 'false');
-                } 
-                if (isDBConnection === "false"){
+                }
+                if (isDBConnection === "false") {
                     setDbConnection(false)
-                } 
-                if (isDBConnection === "true"){
+                }
+                if (isDBConnection === "true") {
                     setDbConnection(true)
                 } else {
                     setDbConnection(false);
                 }
-    
+
                 const cachedRegion = await loadLastKnownLocation();
                 if (cachedRegion !== null) {
                     setRegion(cachedRegion);
                 }
-    
+
                 const cachedMode = await AsyncStorage.getItem('visibilitymode');
                 if (cachedMode !== null) {
                     setMode(cachedMode as 'friends' | 'global');
                 }
-    
+
                 const status = await getLocationPermission();
                 setIsLocationEnabled(status === 'granted');
-    
+
                 await getlocation();
                 await fetchLootAndMissiles();
                 await dispatchLocation();
                 await DefRegLocationTask();
-    
+
                 const intervalId = setInterval(async () => {
                     // Periodically check DB connection status
                     const dbConnStatus = await AsyncStorage.getItem('dbconnection');
-                    if (dbConnStatus === "false"){
+                    if (dbConnStatus === "false") {
                         setDbConnection(false)
-                    } 
-                    if (dbConnStatus === "true"){
+                    }
+                    if (dbConnStatus === "true") {
                         setDbConnection(true)
                     } else {
                         setDbConnection(false);
                     }
-    
+
                     fetchLootAndMissiles();
                     getLocationPermission();
                     dispatchLocation();
                 }, 1000);
-    
+
                 return () => clearInterval(intervalId);
             } catch (error) {
                 setIsLoading(false);
                 console.error('Error initializing app:', error);
             }
         };
-    
+
         initializeApp();
-    }, [fetchLootAndMissiles]);    
+    }, [fetchLootAndMissiles]);
 
     const toggleMode = async () => {
         const newMode = visibilitymode === 'friends' ? 'global' : 'friends';
         setMode(newMode);
         friendsorglobal(newMode);
         const token = await SecureStore.getItemAsync("token");
-    
+
         if (!token) {
             console.error("Authentication token is missing");
             Alert.alert("Error", "Authentication error. Please log in again.");
             return; // Exit function if no token is found
         }
-    
+
         const friendsOnly = newMode === 'friends';
-        
+
         if (newMode === 'global') {
             Alert.alert(
                 "Change to Global Mode",
@@ -205,7 +205,7 @@ export const MapComp = (props: MapCompProps) => {
             await updateFriendsOnlyStatus(token, friendsOnly);
             console.log("FriendsOnly status updated successfully to:", friendsOnly);
         }
-    
+
         console.log("Mode changed to:", newMode);
     };
 
