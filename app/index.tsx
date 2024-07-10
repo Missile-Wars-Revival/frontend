@@ -28,12 +28,15 @@ import { router } from "expo-router";
 import axiosInstance from "../api/axios-instance";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import HealthBar from "../components/healthbar";
+import { getHealth } from "../api/health";
 
 export default function Map() {
   const [userNAME, setUsername] = useState("");
 
   // State for location enabled
   const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(true);
+  const [health, setHealth] = useState(100); // Initial health value
 
   // Fetch username from secure storage
   useEffect(() => {
@@ -47,6 +50,33 @@ export default function Map() {
     };
 
     fetchCredentials();
+  }, []);
+  useEffect(() => {
+    const getHealthOnStart = async () => {
+      const token = await SecureStore.getItemAsync("token");
+      try {
+        if (!token) {
+          console.log('Token not found');
+          return; 
+        }
+        const response = await getHealth(token); 
+        if (response && response.health !== undefined) {
+          setHealth(response.health); 
+          await AsyncStorage.setItem('health', health.toString()); // to try reduce api calls, health that is needed asap will be called from here
+        } else {
+          console.error('Health data is invalid:', response);
+        }
+
+      } catch (error: any) {
+        if (axios.isAxiosError(error)) {
+          console.error('Axios error:', error.message);
+        } else {
+          console.error('Error fetching health:', error);
+        }
+      }
+    };
+
+    getHealthOnStart();
   }, []);
 
   useEffect(() => {
@@ -126,6 +156,9 @@ export default function Map() {
 
   return (
     <View style={{ flex: 1, backgroundColor: 'gray' }}>
+      <View style={{ position: 'absolute', top: 10, left: 10, zIndex: 1 }}>
+        <HealthBar health={health} />
+      </View>
       <MapComp selectedMapStyle={selectedMapStyle} />
 
       {Platform.OS === 'android' && (

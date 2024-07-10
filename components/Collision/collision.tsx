@@ -205,8 +205,8 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                             setLastNotified(prev => ({ ...prev, loot: today }));
                         }
 
-                        addmoney(token, amount);  // Adds the computed amount once
-                        addrankpoints(token, 200); // adds 100 rank points for collecting
+                        //addmoney(token, amount);  // Adds the computed amount once
+                        //addrankpoints(token, 200); // adds 100 rank points for collecting
 
                         //add functionality to remove the loot drop from DB
 
