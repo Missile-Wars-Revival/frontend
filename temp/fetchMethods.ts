@@ -6,13 +6,13 @@ import { GeoLocation, Landmine, Loot, Missile } from "middle-earth";
               new Missile(
                          "TheNuke",                              // type
                          "Hit",                                  // status
-                         new GeoLocation(51.1326906221589,-3.3299448073139626),  // destination
-                         new GeoLocation(51.1326906221589, -3.3299448073139626), // currentLocation
+                         new GeoLocation(45.2949318,-0.852674),  // destination
+                         new GeoLocation(45.2949318, -0.852674), // currentLocation
                          2,                                      // missileId
                          100,                                    // radius
                          "",                                     // sentbyusername
                          "",                                     // timesent
-                         "2024-10-05T06:43:52.577Z",             // timeofimpact
+                         "2024-10-05T06:43:52.577Z",                                     // etatimetoimpact
                         ),
               new Missile(
                           "Ballista",                             // type
@@ -23,7 +23,7 @@ import { GeoLocation, Landmine, Loot, Missile } from "middle-earth";
                           100,                                    // radius
                           "",                                     // sentbyusername
                           "",                                     // timesent
-                          "2024-10-05T06:43:52.577Z",             // timeofimpact
+                          "2024-10-05T06:43:52.577Z",                                     // etatimetoimpact
                         )  
                 ];                                   
   };
@@ -38,7 +38,7 @@ import { GeoLocation, Landmine, Loot, Missile } from "middle-earth";
         "2024-10-05T06:43:52.577Z",                                       //expiretime
       ),
       new Loot(
-        new GeoLocation(51.1326906221589, -3.3299448073139626),           //location
+        new GeoLocation(45.305, -0.86),           //location
         "Common",                                       //Rarity
         "2024-10-05T06:43:52.577Z",                                 //expiretime
       )
@@ -46,7 +46,7 @@ import { GeoLocation, Landmine, Loot, Missile } from "middle-earth";
 
     ];
   };
-  
+
   export const fetchlandmineFromBackend = async (): Promise<Landmine[]> => {
     // Simulated fetch function to get landmine data:
     return [
