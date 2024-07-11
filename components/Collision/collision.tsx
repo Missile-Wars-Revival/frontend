@@ -37,6 +37,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
     const [landmineData, setLandmineLocations] = useState<Landmine[]>([]);
     const [userLocation, setUserLocation] = useState<location | null>(null);
     const [lastNotified, setLastNotified] = useState<LastNotified>({ loot: null, missile: null, landmine: null });
+    const [isAlive, setisAlive] = useState(false);
 
     const fetchLootAndMissiles = useCallback(async () => {
         setLootLocations(await fetchLootFromBackend());
@@ -259,7 +260,6 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                 }
             }
         });
-        let deathalertShown = false;
         //apply missile damage
         async function applyMissileDamage(missileDamage: number, sentby: string) {
             let health = await AsyncStorage.getItem('health');
@@ -275,15 +275,13 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
             }
 
             setInterval(async () => {
-                if (healthNumber <= 0 && !deathalertShown) {
+                if (healthNumber <= 0 && isAlive) {
                     Alert.alert("Dead", `You have been killed by a Missile sent by user: ${sentby}`);
                     console.log('User health has reached zero or below.');
                     updateisAlive(token, false)
-                    deathalertShown = true
                     return
                 }
                 if (healthNumber <= 0) {
-                    deathalertShown = true
                     console.log('User health has reached zero or below.');
                     return
                 }
@@ -324,8 +322,27 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
     }, [userLocation, lootLocations, missileData, landmineData, lastNotified]);
 
     useEffect(() => {
+        const checkisAlive = async () => {
+            try {
+              const isAliveStatus = await AsyncStorage.getItem('isAlive');
+              if (isAliveStatus === "false") {
+                const isAlive = JSON.parse(isAliveStatus);
+                setisAlive(isAlive)
+              }
+              if (isAliveStatus === "true") {
+                const isAlive = JSON.parse(isAliveStatus);
+                setisAlive(isAlive)
+              } else {
+                setisAlive(false);
+              }
+      
+            } catch (error) {
+              console.error('Error initializing map:', error);
+            }
+          };
         const interval = setInterval(() => {
             fetchLootAndMissiles();
+            checkisAlive()
             getCurrentLocationWrapper();
             checkAndNotify();
         }, 30000);

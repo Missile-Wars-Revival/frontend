@@ -11,7 +11,7 @@ export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) =
   const [region, setRegion] = useState(null);
   const [isLocationEnabled, setIsLocationEnabled] = useState(true);
   const [hasDbConnection, setDbConnection] = useState(false);
-  const [isAlive, setisAlive] = useState<boolean>(true);
+  const [isAlive, setisAlive] = useState(true);
   const [marker, setMarker] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentLocation, setCurrentLocation] = useState(null);

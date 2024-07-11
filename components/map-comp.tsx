@@ -8,7 +8,7 @@ import { AllPlayers } from "./map-players";
 import { Landmine, Loot, Missile } from "middle-earth";
 import { fetchLootFromBackend, fetchMissilesFromBackend, fetchlandmineFromBackend } from "../temp/fetchMethods";
 import { loadLastKnownLocation, saveLocation } from '../util/mapstore';
-import { getLocationPermission } from "../hooks/userlocation";
+import { getLocationPermission } from "../util/locationreq";
 import { dispatch } from "../api/dispatch";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCurrentLocation, location } from "../util/locationreq";
@@ -63,7 +63,7 @@ export const MapComp = (props: MapCompProps) => {
 
     const getlocation = async () => {
         try {
-            const location: location = await getCurrentLocation();
+            const location = await getCurrentLocation();
             const newRegion = {
                 latitude: location.latitude,
                 longitude: location.longitude,
@@ -73,15 +73,7 @@ export const MapComp = (props: MapCompProps) => {
             setRegion(newRegion);
             await saveLocation(newRegion);
             setIsLoading(false);
-        } catch {
-            Alert.alert(
-                "Location",
-                "Please enable your location to continue using the app",
-                [
-                    { text: "Cancel", style: "cancel" },
-                    { text: "Confirm" }
-                ]
-            );
+        } catch (error) {
         }
     };
 
@@ -232,8 +224,8 @@ export const MapComp = (props: MapCompProps) => {
         console.log("Mode changed to:", visibilitymode);
     };
 
-    // Only show loader if it's the first load and still loading
-    if (isLoading || !firstLoad) {
+    // Only show loader if it's the first load or still loading
+    if (isLoading && !firstLoad) {
         return (
             <View style={mainmapstyles.loaderContainer}>
                 <ActivityIndicator size="large" color="#0000ff" />
@@ -260,16 +252,16 @@ export const MapComp = (props: MapCompProps) => {
                 <AllMissiles missileData={missileData} />
                 <AllPlayers />
             </MapView>
-            {(!isLocationEnabled || !hasDbConnection) && (
-                <View style={mainmapstyles.overlay}>
-                    <Text style={mainmapstyles.overlayText}>Map is disabled due to location/database issues.</Text>
-                    <Text style={mainmapstyles.overlaySubText}>Please check your settings or try again later.</Text>
-                </View>
-            )}
             {(!isAlive) && (
                 <View style={mainmapstyles.overlay}>
                     <Text style={mainmapstyles.overlayText}>Map is disabled due to your death</Text>
                     <Text style={mainmapstyles.overlaySubText}>Please check wait the designated time or watch an advert!</Text>
+                </View>
+            )}
+            {(!isLocationEnabled || !hasDbConnection) && (
+                <View style={mainmapstyles.overlay}>
+                    <Text style={mainmapstyles.overlayText}>Map is disabled due to location/database issues.</Text>
+                    <Text style={mainmapstyles.overlaySubText}>Please check your settings or try again later.</Text>
                 </View>
             )}
             <View style={mainmapstyles.switchContainer}>
