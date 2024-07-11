@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Platform, Alert } from "react-native";
+import { View, Platform, Alert, Image, StyleSheet } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
 import axiosInstance from "../api/axios-instance";
@@ -120,29 +120,38 @@ export default function Map() {
 
     addCurrencyAmount();
   }, []);
+
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        const isAliveStatus = await AsyncStorage.getItem('isAlive');
-        if (isAliveStatus === "false") {
-          const isAlive = JSON.parse(isAliveStatus);
-          setisAlive(isAlive)
-        }
-        if (isAliveStatus === "true") {
-          const isAlive = JSON.parse(isAliveStatus);
-          setisAlive(isAlive)
+        const isAliveStatusString = await AsyncStorage.getItem('isAlive');
+
+        if (isAliveStatusString) {
+          const isAliveStatus = JSON.parse(isAliveStatusString); // Parse the JSON string into an object
+
+          if (isAliveStatus.isAlive) {
+            setisAlive(true);
+          } else {
+            setisAlive(false);
+          }
         } else {
           setisAlive(false);
         }
-
       } catch (error) {
-        console.error('Error initializing map:', error);
+        console.error('Error initializing app:', error);
       }
     };
 
-    initializeApp();
+    initializeApp()
+
+    const intervalId = setInterval(initializeApp, 1000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
   },
-  );
+    []);
+
 
   const [selectedMapStyle, setSelectedMapStyle] = useState<MapStyle[]>(Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle);
   const [themePopupVisible, setThemePopupVisible] = useState(false);
@@ -184,7 +193,6 @@ export default function Map() {
   return (
     <View style={{ flex: 1, backgroundColor: 'gray' }}>
       <View style={{ position: 'absolute', top: 10, left: 10, zIndex: 1 }}>
-        <HealthBar health={health} />
         {/* Add in advert button here */}
         {/* {(!isAlive) && (
             <View style={mapstyles.overlay}>
@@ -193,26 +201,43 @@ export default function Map() {
             </View>
           )} */}
       </View>
-      <MapComp selectedMapStyle={selectedMapStyle} />
-
-      {Platform.OS === 'android' && (
-        <ThemeSelectButton onPress={showPopup}>Theme</ThemeSelectButton>
+      {(isAlive) && (
+        <><MapComp selectedMapStyle={selectedMapStyle} /><HealthBar health={health} />
+          {Platform.OS === 'android' && (
+            <ThemeSelectButton onPress={showPopup}>Theme</ThemeSelectButton>
+          )}
+          <MapStylePopup
+            visible={themePopupVisible}
+            transparent={true}
+            onClose={closePopup}
+            onSelect={selectMapStyle}
+          />
+          {isLocationEnabled && (
+            <FireSelector
+              selectedMapStyle={selectedMapStyle}
+              getStoredMapStyle={getStoredMapStyle}
+              selectMapStyle={selectMapStyle}
+            />
+          )}
+        </>
       )}
-
-      <MapStylePopup
-        visible={themePopupVisible}
-        transparent={true}
-        onClose={closePopup}
-        onSelect={selectMapStyle}
-      />
-
-      {isLocationEnabled && (
-        <FireSelector
-          selectedMapStyle={selectedMapStyle}
-          getStoredMapStyle={getStoredMapStyle}
-          selectMapStyle={selectMapStyle}
-        />
+      {(!isAlive) && (
+        <View style={styles.containerdeath}>
+          <Image source={require('../assets/deathscreen.jpg')} style={styles.bannerdeath} />
+        </View>
       )}
     </View>
   );
 }
+const styles = StyleSheet.create({
+  containerdeath: {
+    flex: 3,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  bannerdeath: {
+    width: 500,
+    height: 500,
+    resizeMode: 'contain',
+  },
+});
