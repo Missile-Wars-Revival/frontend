@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Platform, Alert, Image, StyleSheet } from "react-native";
+import { View, Platform, Alert, Image, StyleSheet, TouchableOpacity, Text, Linking } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
 import axiosInstance from "../api/axios-instance";
@@ -29,16 +29,16 @@ import { MapStyle } from "../types/types";
 import { getCredentials } from "../util/logincache";
 import { router } from "expo-router";
 import HealthBar from "../components/healthbar";
-import { getHealth, getisAlive } from "../api/health";
+import { getHealth, getisAlive, setHealth, updateisAlive } from "../api/health";
 
 export default function Map() {
   const [userNAME, setUsername] = useState("");
-  const [isAlive, setisAlive] = useState(false);
+  const [isAlive, setisAlive] = useState(true);
 
 
   // State for location enabled
   const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(true);
-  const [health, setHealth] = useState(100); // Initial health value
+  const [health, setHealthUI] = useState(100); // Initial health value
 
   // Fetch username from secure storage
   useEffect(() => {
@@ -64,7 +64,7 @@ export default function Map() {
         getisAlive(token)
         const response = await getHealth(token);
         if (response && response.health !== undefined) {
-          setHealth(response.health);
+          setHealthUI(response.health);
           await AsyncStorage.setItem('health', response.health.toString()); // Note the change here
         } else {
           console.error('Health data is invalid:', response);
@@ -79,7 +79,7 @@ export default function Map() {
     };
     getHealthOnStart();
 
-    const intervalId = setInterval(getHealthOnStart, 30000); //30 secss
+    const intervalId = setInterval(getHealthOnStart, 5000); //5 secss -- NEED CHANGE TO WEBSOCKET
     return () => clearInterval(intervalId);
   }, []);
 
@@ -189,9 +189,22 @@ export default function Map() {
     setSelectedMapStyle(selectedStyle);
     storeMapStyle(style);
   };
+  const respawn = async () => {
+    const token = SecureStore.getItem("token");
+  
+    if (token === null) {
+      console.error("Token is null, cannot proceed with setting items");
+      return; // Stop execution if token is null
+    }
+  
+    await AsyncStorage.setItem(`isAlive`, `true`);
+    updateisAlive(token, true);
+    await AsyncStorage.setItem('health', '100');
+    setHealth(token, 100);
+  };
 
   return (
-    <View style={{ flex: 1, backgroundColor: 'gray' }}>
+    <View style={{ flex: 1, backgroundColor: 'white' }}>
       <View style={{ position: 'absolute', top: 10, left: 10, zIndex: 1 }}>
         {/* Add in advert button here */}
         {/* {(!isAlive) && (
@@ -223,7 +236,24 @@ export default function Map() {
       )}
       {(!isAlive) && (
         <View style={styles.containerdeath}>
-          <Image source={require('../assets/deathscreen.jpg')} style={styles.bannerdeath} />
+          <TouchableOpacity
+            onPress={() => respawn()}
+            style={styles.bannerdeath}
+            activeOpacity={0.7}
+          >
+            <Image source={require('../assets/deathscreen.jpg')} style={styles.bannerdeath} />
+          </TouchableOpacity>
+          {/* Button added below the image */}
+          <TouchableOpacity
+            onPress={() => console.log('Retry button pressed')}
+            style={styles.retryButton}
+            activeOpacity={0.7} // Optional: adjust the opacity feedback on touch
+          >
+            <TouchableOpacity onPress={() => Linking.openURL('https://discord.gg/Gk8jqUnVd3')}>
+              <Text style={styles.retryButtonText}>Contact Support</Text>
+            </TouchableOpacity>
+
+          </TouchableOpacity>
         </View>
       )}
     </View>
@@ -239,5 +269,16 @@ const styles = StyleSheet.create({
     width: 500,
     height: 500,
     resizeMode: 'contain',
+  },
+  retryButton: {
+    backgroundColor: 'red', // Choose any color
+    padding: 10,
+    marginTop: 20, // Adds space between the image and the button
+    borderRadius: 5, // Rounded corners
+  },
+  retryButtonText: {
+    color: 'white', // Text color
+    fontSize: 16, // Adjust text size as needed
+    textAlign: 'center', // Center the text inside the button
   },
 });

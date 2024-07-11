@@ -10,7 +10,7 @@ import { GeoLocation, Landmine, Loot, Missile } from "middle-earth";
                          new GeoLocation(45.2949318, -0.852674), // currentLocation
                          2,                                      // missileId
                          100,                                    // radius
-                         "",                                     // sentbyusername
+                         "Test",                                     // sentbyusername
                          "",                                     // timesent
                          "2024-10-05T06:43:52.577Z",                                     // etatimetoimpact
                         ),

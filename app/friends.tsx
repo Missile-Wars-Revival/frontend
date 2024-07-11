@@ -79,7 +79,6 @@ const FriendsPage: React.FC = () => {
     try {
         if (!token) {
             console.log('Token not found');
-            Alert.alert("Error", "Authentication token not found. Please login again.");
             return; 
         }
         const response = await removeFriend(token, friendUsername);

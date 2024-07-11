@@ -63,24 +63,24 @@ export function getRandomLoot(rarity) {
 //   Zippy:
 
 //death penalty:
-// const lossProbabilities = [
-//   { chance: 60, loss: 0.10 },  // 60% chance to lose 10% of the money
-//   { chance: 30, loss: 0.30 },  // 30% chance to lose 30% of the money
-//   { chance: 10, loss: 0.50 }   // 10% chance to lose 50% of the money
-// ];
+const lossProbabilities = [
+  { chance: 60, loss: 0.10 },  // 60% chance to lose 10% of the money
+  { chance: 30, loss: 0.30 },  // 30% chance to lose 30% of the money
+  { chance: 10, loss: 0.50 }   // 10% chance to lose 50% of the money
+];
 
-// // Calculate the random loss
-// let random = Math.random() * 100;
-// let cumulativeProbability = 0;
-// let lossPercentage = 0;
+// Calculate the random loss
+let random = Math.random() * 100;
+let cumulativeProbability = 0;
+let lossPercentage = 0;
 
-// for (let option of lossProbabilities) {
-//   cumulativeProbability += option.chance;
-//   if (random <= cumulativeProbability) {
-//       lossPercentage = option.loss;
-//       break;
-//   }
-// }
+for (let option of lossProbabilities) {
+  cumulativeProbability += option.chance;
+  if (random <= cumulativeProbability) {
+      lossPercentage = option.loss;
+      break;
+  }
+}
 
 // const currentMoney = 100; // This should be the actual amount of money you have
 // const moneyLost = currentMoney * lossPercentage;

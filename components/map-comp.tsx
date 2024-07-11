@@ -86,7 +86,6 @@ export const MapComp = (props: MapCompProps) => {
                 const token = await SecureStore.getItemAsync("token");
                 if (!token) {
                     console.error("Authentication token is missing");
-                    Alert.alert("Error", "Authentication error. Please log in again.");
                     return; // Exit function if no token is found
                 }
                 if (isFirstLoad == null) {
@@ -181,7 +180,6 @@ export const MapComp = (props: MapCompProps) => {
 
         if (!token) {
             console.error("Authentication token is missing");
-            Alert.alert("Error", "Authentication error. Please log in again.");
             return; // Exit function if no token is found
         }
 

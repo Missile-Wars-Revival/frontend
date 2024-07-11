@@ -62,6 +62,8 @@ const StorePage: React.FC = () => {
           params: { token }
         });
         setCurrencyAmount(response.data.money);
+        const moneyAsString = String(response.data.money);
+        await AsyncStorage.setItem("Money", moneyAsString);
       } catch (error: any) {
         if (axios.isAxiosError(error)) {
           console.error('Axios error:', error.message);

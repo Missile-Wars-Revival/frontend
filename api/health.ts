@@ -24,6 +24,29 @@ export async function getHealth(
     }
   }
 
+  export async function setHealth(
+    token: string,
+    newHealth: number,
+  ) {
+    try {
+      const response = await axiosInstance.post("/api/setHealth", {
+        token: token,
+        newHealth: newHealth
+      });
+      return response.data;
+    } catch (error) {
+      if (isAxiosError(error)) {
+        console.log("failed to add health")
+        return (
+          error.response?.data || { success: false, message: "Request failed" }
+        );
+      } else {
+        console.log("failed to add health")
+        console.error(error);
+        return { success: false, message: "Request failed" };
+      }
+    }
+  }
 
   export async function removeHealth(
     token: string,
@@ -72,6 +95,7 @@ export async function getHealth(
       }
     }
   }
+
 //is Alive
   export const updateisAlive = async (token: string, isAlive: boolean) => {
     try {

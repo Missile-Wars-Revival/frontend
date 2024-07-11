@@ -13,7 +13,7 @@ import { getRandomLoot } from "./Probability";
 import { addmoney } from "../../api/money";
 import { additem } from "../../api/add-item";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { removeHealth, updateisAlive } from "../../api/health";
+import { removeHealth, setHealth, updateisAlive } from "../../api/health";
 
 Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -37,7 +37,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
     const [landmineData, setLandmineLocations] = useState<Landmine[]>([]);
     const [userLocation, setUserLocation] = useState<location | null>(null);
     const [lastNotified, setLastNotified] = useState<LastNotified>({ loot: null, missile: null, landmine: null });
-    const [isAlive, setisAlive] = useState(false);
+    const [isAlive, setisAlive] = useState(true);
 
     const fetchLootAndMissiles = useCallback(async () => {
         setLootLocations(await fetchLootFromBackend());
@@ -243,7 +243,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                             setLastNotified(prev => ({ ...prev, missile: today }));
                             Alert.alert("Danger!", "A Missile has impacted in your proximity! You may start taking damage!");
 
-                            applyMissileDamage(20, missile.sentbyusername); //10 = damage for missile per 30 secs
+                            applyMissileDamage(30, missile.sentbyusername); //10 = damage for missile per 30 secs
                         }
                         break;
                     case 'near-missile':
@@ -261,42 +261,41 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
             }
         });
         //apply missile damage
-        async function applyMissileDamage(missileDamage: number, sentby: string) {
-            let health = await AsyncStorage.getItem('health');
-            const token = await SecureStore.getItemAsync("token");
+        async function applyMissileDamage(missileDamage: number, sentBy: string) {
+            const health = await AsyncStorage.getItem('health');
+            const token = SecureStore.getItem("token");
+        
             if (!health || !token) {
-                console.error('Health value not found in AsyncStorage');
+                console.error('Required data not found.');
                 return;
             }
+        
             let healthNumber = parseInt(health, 10);
             if (isNaN(healthNumber)) {
-                console.error('The stored health value is not a valid number:', health);
+                console.error('Invalid health value:', health);
                 return;
             }
-
-            setInterval(async () => {
-                if (healthNumber <= 0 && isAlive) {
-                    Alert.alert("Dead", `You have been killed by a Missile sent by user: ${sentby}`);
-                    console.log('User health has reached zero or below.');
-                    updateisAlive(token, false)
-                    return
-                }
+        
+            const damageInterval = setInterval(async () => {
+                healthNumber -= missileDamage;
+                await AsyncStorage.setItem('health', healthNumber.toString());
+                removeHealth(token, missileDamage) //remove db health
+        
                 if (healthNumber <= 0) {
+                    clearInterval(damageInterval); // Stop the interval
+                    Alert.alert("Dead", `You have been killed by a missile sent by user: ${sentBy}`);
                     console.log('User health has reached zero or below.');
-                    return
+                    await AsyncStorage.setItem(`isAlive`, `false`)
+                    updateisAlive(token, false);
+                    await AsyncStorage.setItem('health', '0'); // Set health to zero in storage
+                    setHealth(token, 0)//set health 0 in DB
+                } else {
+                    console.log(`User Health: ${healthNumber}`); // Only log if user is still alive
                 }
-                else {
-                    healthNumber -= missileDamage;
-                    removeHealth(token, missileDamage) //remove db health
-                    await AsyncStorage.setItem('health', healthNumber.toString()); //updated cached health
-                    console.log(`User Health: ${healthNumber}`);
-                    if (healthNumber <= 0) {
-                        console.log('User health has reached zero or below.');
-                    }
-                }
-            }, 30000); // 30000 milliseconds = 30 secs
+            }, 30000); // runs every 30 seconds
         }
-
+        
+        
         landmineData.forEach(landmine => {
             const proximityStatus = checkLootandLandmineProximity("landmine", landmine.location, userLocation, 10);
             if (lastNotified.landmine !== today) {
