@@ -4,17 +4,18 @@ import MapView, { Marker, Circle, PROVIDER_DEFAULT, PROVIDER_GOOGLE } from 'reac
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { useUserName } from "../../util/fetchusernameglobal";
-import { mapstyles } from '../../map-themes/map-stylesheet'; 
+import { mapstyles } from '../../map-themes/map-stylesheet';
 
 export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) => {
 
   const [region, setRegion] = useState(null);
   const [isLocationEnabled, setIsLocationEnabled] = useState(true);
   const [hasDbConnection, setDbConnection] = useState(false);
+  const [isAlive, setisAlive] = useState(false);
   const [marker, setMarker] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentLocation, setCurrentLocation] = useState(null);
-  const userName = useUserName(); 
+  const userName = useUserName();
 
   async function initializeLocation() {
     let { status } = await Location.requestForegroundPermissionsAsync();
@@ -46,24 +47,34 @@ export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) =
 
   useEffect(() => {
     const initializeApp = async () => {
-        try {
-            const isDBConnection = await AsyncStorage.getItem('dbconnection');
-            if (isDBConnection === "false"){
-                setDbConnection(false)
-            } 
-            if (isDBConnection === "true"){
-                setDbConnection(true)
-            } else {
-                setDbConnection(false);
-            }
-        } catch (error) {
-            console.error('Error initializing map:', error);
+      try {
+        const isDBConnection = await AsyncStorage.getItem('dbconnection');
+        if (isDBConnection === "false") {
+          setDbConnection(false)
         }
+        if (isDBConnection === "true") {
+          setDbConnection(true)
+        } else {
+          setDbConnection(false);
+        }
+        const isalivestatus = await AsyncStorage.getItem('isAlive');
+        if (isalivestatus === "false") {
+          setisAlive(false)
+        }
+        if (isalivestatus === "true") {
+          setisAlive(true)
+        } else {
+          setisAlive(false);
+        }
+
+      } catch (error) {
+        console.error('Error initializing map:', error);
+      }
     };
 
     initializeApp();
   },
-);
+  );
 
   if (loading) {
     return (
@@ -101,7 +112,7 @@ export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) =
             onPress={(e) => setMarker({
               latitude: e.nativeEvent.coordinate.latitude,
               longitude: e.nativeEvent.coordinate.longitude,
-              latitudeDelta: 0.001, 
+              latitudeDelta: 0.001,
               longitudeDelta: 0.001
             })}
           >
@@ -117,11 +128,17 @@ export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) =
             />
           </MapView>
           {(!isLocationEnabled || !hasDbConnection) && (
-                <View style={mapstyles.overlay}>
-                    <Text style={mapstyles.overlayText}>Map is disabled due to location/database issues.</Text>
-                    <Text style={mapstyles.overlaySubText}>Please check your settings or try again later.</Text>
-                </View>
-            )}
+            <View style={mapstyles.overlay}>
+              <Text style={mapstyles.overlayText}>Map is disabled due to location/database issues.</Text>
+              <Text style={mapstyles.overlaySubText}>Please check your settings or try again later.</Text>
+            </View>
+          )}
+          {(!isAlive) && (
+            <View style={mapstyles.overlay}>
+              <Text style={mapstyles.overlayText}>Map is disabled due to your death</Text>
+              <Text style={mapstyles.overlaySubText}>Please check wait the designated time or watch an advert!</Text>
+            </View>
+          )}
           <View style={{ flexDirection: 'row', justifyContent: 'space-around', padding: 10 }}>
             <Button title="Cancel" onPress={onClose} />
             <Button title="Fire" onPress={handleLandminePlacement} />

@@ -16,6 +16,7 @@ export const MissilePlacementPopup = ({ visible, onClose, selectedMissile }) => 
   //import is locaiton enabled from map-comp!!!!!
   const [isLocationEnabled, setIsLocationEnabled] = useState(true);
   const [hasDbConnection, setDbConnection] = useState(false);
+  const [isAlive, setisAlive] = useState(true);
 
   // Function to handle location permission and fetch current location
   async function initializeLocation() {
@@ -61,6 +62,15 @@ export const MissilePlacementPopup = ({ visible, onClose, selectedMissile }) => 
         }
       } catch (error) {
         console.error('Error initializing map:', error);
+      }
+      const isalivestatus = await AsyncStorage.getItem('isAlive');
+      if (isalivestatus === "false") {
+        setisAlive(false)
+      }
+      if (isalivestatus === "true") {
+        setisAlive(true)
+      } else {
+        setisAlive(false);
       }
     };
 
@@ -123,6 +133,12 @@ export const MissilePlacementPopup = ({ visible, onClose, selectedMissile }) => 
             <View style={mapstyles.overlay}>
               <Text style={mapstyles.overlayText}>Map is disabled due to location/database issues.</Text>
               <Text style={mapstyles.overlaySubText}>Please check your settings or try again later.</Text>
+            </View>
+          )}
+          {(!isAlive) && (
+            <View style={mapstyles.overlay}>
+              <Text style={mapstyles.overlayText}>Map is disabled due to your death</Text>
+              <Text style={mapstyles.overlaySubText}>Please check wait the designated time or watch an advert!</Text>
             </View>
           )}
           <View style={{ flexDirection: 'row', justifyContent: 'space-around', padding: 10 }}>

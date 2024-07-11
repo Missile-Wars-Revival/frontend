@@ -13,7 +13,7 @@ import { getRandomLoot } from "./Probability";
 import { addmoney } from "../../api/money";
 import { additem } from "../../api/add-item";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { removeHealth } from "../../api/health";
+import { removeHealth, updateisAlive } from "../../api/health";
 
 Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -242,7 +242,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                             setLastNotified(prev => ({ ...prev, missile: today }));
                             Alert.alert("Danger!", "A Missile has impacted in your proximity! You may start taking damage!");
 
-                            applyMissileDamage(10); //10 = damage for missile per 30 secs
+                            applyMissileDamage(20, missile.sentbyusername); //10 = damage for missile per 30 secs
                         }
                         break;
                     case 'near-missile':
@@ -259,8 +259,9 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                 }
             }
         });
+        let deathalertShown = false;
         //apply missile damage
-        async function applyMissileDamage(missileDamage: number) {
+        async function applyMissileDamage(missileDamage: number, sentby: string) {
             let health = await AsyncStorage.getItem('health');
             const token = await SecureStore.getItemAsync("token");
             if (!health || !token) {
@@ -272,12 +273,22 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                 console.error('The stored health value is not a valid number:', health);
                 return;
             }
+
             setInterval(async () => {
-                healthNumber -= missileDamage;
-                if (healthNumber <= 0) {
+                if (healthNumber <= 0 && !deathalertShown) {
+                    Alert.alert("Dead", `You have been killed by a Missile sent by user: ${sentby}`);
                     console.log('User health has reached zero or below.');
+                    updateisAlive(token, false)
+                    deathalertShown = true
+                    return
+                }
+                if (healthNumber <= 0) {
+                    deathalertShown = true
+                    console.log('User health has reached zero or below.');
+                    return
                 }
                 else {
+                    healthNumber -= missileDamage;
                     removeHealth(token, missileDamage) //remove db health
                     await AsyncStorage.setItem('health', healthNumber.toString()); //updated cached health
                     console.log(`User Health: ${healthNumber}`);

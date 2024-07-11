@@ -25,6 +25,7 @@ export const MapComp = (props: MapCompProps) => {
     const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(false);
     const [isLoading, setIsLoading] = useState(true);
     const [hasDbConnection, setDbConnection] = useState<boolean>();
+    const [isAlive, setisAlive] = useState<boolean>();
     const [firstLoad, setFirstLoad] = useState<boolean>(true);
     const [visibilitymode, setMode] = useState<'friends' | 'global'>('global');
 
@@ -146,6 +147,15 @@ export const MapComp = (props: MapCompProps) => {
                     } else {
                         setDbConnection(false);
                     }
+                    const isalivestatus = await AsyncStorage.getItem('isAlive');
+                    if (isalivestatus === "false") {
+                        setisAlive(false)
+                    }
+                    if (isalivestatus === "true") {
+                        setisAlive(true)
+                    } else {
+                        setisAlive(false);
+                    }
 
                     fetchLootAndMissiles();
                     getLocationPermission();
@@ -245,6 +255,12 @@ export const MapComp = (props: MapCompProps) => {
                 <View style={mainmapstyles.overlay}>
                     <Text style={mainmapstyles.overlayText}>Map is disabled due to location/database issues.</Text>
                     <Text style={mainmapstyles.overlaySubText}>Please check your settings or try again later.</Text>
+                </View>
+            )}
+            {(!isAlive) && (
+                <View style={mainmapstyles.overlay}>
+                    <Text style={mainmapstyles.overlayText}>Map is disabled due to your death</Text>
+                    <Text style={mainmapstyles.overlaySubText}>Please check wait the designated time or watch an advert!</Text>
                 </View>
             )}
             <View style={mainmapstyles.switchContainer}>

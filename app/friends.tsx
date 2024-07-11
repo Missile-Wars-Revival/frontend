@@ -5,7 +5,7 @@ import { useUserName } from "../util/fetchusernameglobal";
 import * as SecureStore from 'expo-secure-store';
 import axios from "axios";
 import axiosInstance from "../api/axios-instance";
-import { removeFriend } from "../api/remove-friend";
+import { removeFriend } from "../api/friends";
 import { MissileLibrary } from "../components/Missile/missile";
 
 interface Friend {

@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, Dimensions, ViewStyle } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Dimensions, Animated } from 'react-native';
 
 // Get screen dimensions
 const { width, height } = Dimensions.get('window');
@@ -9,7 +9,20 @@ interface HealthBarProps {
 }
 
 const HealthBar: React.FC<HealthBarProps> = ({ health }) => {
-  const healthBarHeight = `${health}%`;
+  const animatedHealth = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(animatedHealth, {
+      toValue: health,
+      duration: 500,
+      useNativeDriver: false
+    }).start();
+  }, [health]);
+
+  const healthBarHeight = animatedHealth.interpolate({
+    inputRange: [0, 100],
+    outputRange: ['0%', '100%']
+  });
 
   return (
     <View style={styles.container}>
@@ -21,9 +34,9 @@ const HealthBar: React.FC<HealthBarProps> = ({ health }) => {
           </View>
         ))}
       </View>
-      <View style={[styles.healthBar, { height: healthBarHeight, bottom: 0 } as ViewStyle]}>
+      <Animated.View style={[styles.healthBar, { height: healthBarHeight, bottom: 0 }]}>
         <Text style={styles.healthText}>Health</Text>
-      </View>
+      </Animated.View>
     </View>
   );
 };

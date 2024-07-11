@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { Animated, View, Platform, Alert } from "react-native";
+import { View, Platform, Alert } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
+import axiosInstance from "../api/axios-instance";
+import axios from "axios";
 
 // Android Themes
 import { androidDefaultMapStyle } from "../map-themes/Android-themes/defaultMapStyle";
@@ -25,14 +28,13 @@ import { MapComp } from "../components/map-comp";
 import { MapStyle } from "../types/types";
 import { getCredentials } from "../util/logincache";
 import { router } from "expo-router";
-import axiosInstance from "../api/axios-instance";
-import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import HealthBar from "../components/healthbar";
-import { getHealth } from "../api/health";
+import { getHealth, getisAlive } from "../api/health";
 
 export default function Map() {
   const [userNAME, setUsername] = useState("");
+  const [isAlive, setisAlive] = useState(false);
+  
 
   // State for location enabled
   const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(true);
@@ -59,6 +61,7 @@ export default function Map() {
           console.log('Token not found');
           return;
         }
+        getisAlive(token)
         const response = await getHealth(token);
         if (response && response.health !== undefined) {
           setHealth(response.health);
@@ -117,6 +120,27 @@ export default function Map() {
 
     addCurrencyAmount();
   }, []);
+  useEffect(() => {
+    const initializeApp = async () => {
+      try {
+        const isalivestatus = await AsyncStorage.getItem('isAlive');
+        if (isalivestatus === "false") {
+          setisAlive(false)
+        }
+        if (isalivestatus === "true") {
+          setisAlive(true)
+        } else {
+          setisAlive(false);
+        }
+
+      } catch (error) {
+        console.error('Error initializing map:', error);
+      }
+    };
+
+    initializeApp();
+  },
+);
 
   const [selectedMapStyle, setSelectedMapStyle] = useState<MapStyle[]>(Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle);
   const [themePopupVisible, setThemePopupVisible] = useState(false);
@@ -159,6 +183,13 @@ export default function Map() {
     <View style={{ flex: 1, backgroundColor: 'gray' }}>
       <View style={{ position: 'absolute', top: 10, left: 10, zIndex: 1 }}>
         <HealthBar health={health} />
+        {/* Add in advert button here */}
+        {/* {(!isAlive) && (
+            <View style={mapstyles.overlay}>
+              <Text style={mapstyles.overlayText}>Map is disabled due to your death</Text>
+              <Text style={mapstyles.overlaySubText}>Please check wait the designated time or watch an advert!</Text>
+            </View>
+          )} */}
       </View>
       <MapComp selectedMapStyle={selectedMapStyle} />
 

@@ -1,13 +1,4 @@
-import axios from 'axios';
 import axiosInstance from './axios-instance';
-
-interface FriendsOnlyResponse {
-  message: string;
-  user: {
-    username: string;
-    friendsOnly: boolean;
-  };
-}
 
 export const updateFriendsOnlyStatus = async (token: string, friendsOnly: boolean) => {
   try {

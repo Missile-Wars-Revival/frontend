@@ -1,5 +1,6 @@
 import axiosInstance from "./axios-instance";
 import { isAxiosError } from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export async function getHealth(
     token: string,
@@ -66,6 +67,45 @@ export async function getHealth(
         );
       } else {
         console.log("failed to add health")
+        console.error(error);
+        return { success: false, message: "Request failed" };
+      }
+    }
+  }
+//is Alive
+  export const updateisAlive = async (token: string, isAlive: boolean) => {
+    try {
+      await AsyncStorage.setItem('isAlive', String(isAlive));
+      // Including the token as part of the URL query parameters
+      const url = `/api/isAlive?token=${encodeURIComponent(token)}`;
+      await axiosInstance.patch(url, {
+        isAlive  // Send isAlive status in the request body as the backend expects
+      });
+      console.log("isAlive status updated successfully to:", isAlive);
+    } catch (error) {
+      console.error("Failed to update FriendsOnly status:", error);
+      throw new Error('Failed to update visibility mode.');
+    }
+  };
+
+  //get alive status
+  export async function getisAlive(
+    token: string,
+  ) {
+    try {
+      const response = await axiosInstance.post("/api/getisAlive", {
+        token,
+      });
+      await AsyncStorage.setItem(`isAlive`, response.data.toString())
+      return response.data;
+    } catch (error) {
+      if (isAxiosError(error)) {
+        console.log("failed to remove money")
+        return (
+          error.response?.data || { success: false, message: "Request failed" }
+        );
+      } else {
+        console.log("failed to remove money")
         console.error(error);
         return { success: false, message: "Request failed" };
       }

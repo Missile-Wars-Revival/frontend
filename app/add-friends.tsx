@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Text, View, FlatList, TouchableOpacity, Alert, RefreshControl, TextInput, Keyboard, TouchableWithoutFeedback  } from "react-native";
-import { Input } from "../components/ui/input";
 import { NearbyPlayersData, searchOtherPlayersData } from "../api/getplayerlocations";
-import { addFriend } from "../api/add-friend"; // Import the addFriend function
-import { removeFriend } from "../api/remove-friend";
+import { addFriend } from "../api/friends"; // Import the addFriend function
+import { removeFriend } from "../api/friends";
 import { router } from "expo-router";
 import { getCredentials } from "../util/logincache";
 import { getCurrentLocation, location } from "../util/locationreq";
