@@ -264,23 +264,23 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
         async function applyMissileDamage(missileDamage: number, sentBy: string) {
             const health = await AsyncStorage.getItem('health');
             const token = SecureStore.getItem("token");
-        
+
             if (!health || !token) {
                 console.error('Required data not found.');
                 return;
             }
-        
+
             let healthNumber = parseInt(health, 10);
             if (isNaN(healthNumber)) {
                 console.error('Invalid health value:', health);
                 return;
             }
-        
+
             const damageInterval = setInterval(async () => {
                 healthNumber -= missileDamage;
                 await AsyncStorage.setItem('health', healthNumber.toString());
                 removeHealth(token, missileDamage) //remove db health
-        
+
                 if (healthNumber <= 0) {
                     clearInterval(damageInterval); // Stop the interval
                     Alert.alert("Dead", `You have been killed by a missile sent by user: ${sentBy}`);
@@ -294,8 +294,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                 }
             }, 30000); // runs every 30 seconds
         }
-        
-        
+
         landmineData.forEach(landmine => {
             const proximityStatus = checkLootandLandmineProximity("landmine", landmine.location, userLocation, 10);
             if (lastNotified.landmine !== today) {
@@ -304,6 +303,9 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                         //inside landmine radius
                         sendNotification("Danger!", "You just stepped on a Landmine! Damage has been taken.");
                         setLastNotified(prev => ({ ...prev, landmine: today }));
+
+                        Alert.alert("Danger!", "You have stepped on a Landmine!!");
+                        applyLandmineDamage(50, landmine.placedby)
                         break;
                     case 'near-landmine':
                         // Send warning if near but not within the landmine radius
@@ -314,6 +316,48 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
             }
         });
 
+        //apply Landmine damage
+        async function applyLandmineDamage(LandmineDamage: number, sentBy: string) {
+            const health = await AsyncStorage.getItem('health');
+            const token = SecureStore.getItem("token");
+
+            if (!health || !token) {
+                console.error('Required data not found.');
+                return;
+            }
+
+            let healthNumber = parseInt(health, 10);
+            if (isNaN(healthNumber)) {
+                console.error('Invalid health value:', health);
+                return;
+            }
+
+            async function applyDamage() {
+                if (token === null) {
+                    console.error('Token is null. Cannot proceed with applyDamage.');
+                    return; // Exit the function if token is null
+                }
+
+                healthNumber -= LandmineDamage;
+                await AsyncStorage.setItem('health', healthNumber.toString());
+                removeHealth(token, LandmineDamage); // remove db health
+
+                if (healthNumber <= 0) {
+                    Alert.alert("Dead", `You have been killed by a Landmine placed by user: ${sentBy}`);
+                    console.log('User health has reached zero or below.');
+                    await AsyncStorage.setItem(`isAlive`, `false`);
+                    updateisAlive(token, false);
+                    await AsyncStorage.setItem('health', '0'); // Set health to zero in storage
+                    setHealth(token, 0); // set health 0 in DB
+                } else {
+                    console.log(`User Health: ${healthNumber}`); // Only log if user is still alive
+                }
+            }
+
+            applyDamage();  // Execute the function once
+
+        }
+
     }, [userLocation, lootLocations, missileData, landmineData, lastNotified]);
 
     useEffect(() => {
@@ -323,22 +367,22 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
     useEffect(() => {
         const checkisAlive = async () => {
             try {
-              const isAliveStatus = await AsyncStorage.getItem('isAlive');
-              if (isAliveStatus === "false") {
-                const isAlive = JSON.parse(isAliveStatus);
-                setisAlive(isAlive)
-              }
-              if (isAliveStatus === "true") {
-                const isAlive = JSON.parse(isAliveStatus);
-                setisAlive(isAlive)
-              } else {
-                setisAlive(false);
-              }
-      
+                const isAliveStatus = await AsyncStorage.getItem('isAlive');
+                if (isAliveStatus === "false") {
+                    const isAlive = JSON.parse(isAliveStatus);
+                    setisAlive(isAlive)
+                }
+                if (isAliveStatus === "true") {
+                    const isAlive = JSON.parse(isAliveStatus);
+                    setisAlive(isAlive)
+                } else {
+                    setisAlive(false);
+                }
+
             } catch (error) {
-              console.error('Error initializing map:', error);
+                console.error('Error initializing map:', error);
             }
-          };
+        };
         const interval = setInterval(() => {
             fetchLootAndMissiles();
             checkisAlive()
