@@ -11,7 +11,7 @@ export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) =
   const [region, setRegion] = useState(null);
   const [isLocationEnabled, setIsLocationEnabled] = useState(true);
   const [hasDbConnection, setDbConnection] = useState(false);
-  const [isAlive, setisAlive] = useState(false);
+  const [isAlive, setisAlive] = useState<boolean>(true);
   const [marker, setMarker] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentLocation, setCurrentLocation] = useState(null);
@@ -57,14 +57,23 @@ export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) =
         } else {
           setDbConnection(false);
         }
-        const isalivestatus = await AsyncStorage.getItem('isAlive');
-        if (isalivestatus === "false") {
-          setisAlive(false)
-        }
-        if (isalivestatus === "true") {
-          setisAlive(true)
-        } else {
-          setisAlive(false);
+        try {
+          const isAliveStatus = await AsyncStorage.getItem('isAlive');
+          if (isAliveStatus !== null) {
+            const isAliveData = JSON.parse(isAliveStatus); // Converts the string to an object
+            if (typeof isAliveData === 'object' && isAliveData.hasOwnProperty('isAlive')) {
+              const isAlive = isAliveData.isAlive; // Extract the boolean value from the object
+              setisAlive(isAlive);
+            } else {
+              // Handle unexpected format
+              setisAlive(false);
+            }
+          } else {
+            // Handle null (e.g., key does not exist)
+            setisAlive(false); // Assume false if nothing is stored
+          }
+        } catch (error) {
+          setisAlive(false); // Set to a default value in case of error
         }
 
       } catch (error) {

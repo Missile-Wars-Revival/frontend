@@ -16,7 +16,7 @@ export const MissilePlacementPopup = ({ visible, onClose, selectedMissile }) => 
   //import is locaiton enabled from map-comp!!!!!
   const [isLocationEnabled, setIsLocationEnabled] = useState(true);
   const [hasDbConnection, setDbConnection] = useState(false);
-  const [isAlive, setisAlive] = useState(true);
+  const [isAlive, setisAlive] = useState<boolean>(true);
 
   // Function to handle location permission and fetch current location
   async function initializeLocation() {
@@ -63,13 +63,20 @@ export const MissilePlacementPopup = ({ visible, onClose, selectedMissile }) => 
       } catch (error) {
         console.error('Error initializing map:', error);
       }
-      const isalivestatus = await AsyncStorage.getItem('isAlive');
-      if (isalivestatus === "false") {
-        setisAlive(false)
-      }
-      if (isalivestatus === "true") {
-        setisAlive(true)
-      } else {
+      try {
+        const isAliveStatus = await AsyncStorage.getItem('isAlive');
+        if (isAliveStatus !== null) {
+          const isAliveData = JSON.parse(isAliveStatus); // Converts the string to an object
+          if (typeof isAliveData === 'object' && isAliveData.hasOwnProperty('isAlive')) {
+            const isAlive = isAliveData.isAlive; // Extract the boolean value from the object
+            setisAlive(isAlive);
+          } else {
+            setisAlive(false);
+          }
+        } else {
+          setisAlive(false);
+        }
+      } catch (error) {
         setisAlive(false);
       }
     };

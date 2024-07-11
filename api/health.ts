@@ -75,7 +75,7 @@ export async function getHealth(
 //is Alive
   export const updateisAlive = async (token: string, isAlive: boolean) => {
     try {
-      await AsyncStorage.setItem('isAlive', String(isAlive));
+      await AsyncStorage.setItem('isAlive', JSON.stringify(isAlive));
       // Including the token as part of the URL query parameters
       const url = `/api/isAlive?token=${encodeURIComponent(token)}`;
       await axiosInstance.patch(url, {
@@ -96,7 +96,7 @@ export async function getHealth(
       const response = await axiosInstance.post("/api/getisAlive", {
         token,
       });
-      await AsyncStorage.setItem(`isAlive`, response.data.toString())
+      await AsyncStorage.setItem('isAlive', JSON.stringify(response.data));
       return response.data;
     } catch (error) {
       if (isAxiosError(error)) {

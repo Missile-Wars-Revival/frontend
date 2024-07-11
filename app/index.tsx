@@ -34,7 +34,7 @@ import { getHealth, getisAlive } from "../api/health";
 export default function Map() {
   const [userNAME, setUsername] = useState("");
   const [isAlive, setisAlive] = useState(false);
-  
+
 
   // State for location enabled
   const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(true);
@@ -123,12 +123,14 @@ export default function Map() {
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        const isalivestatus = await AsyncStorage.getItem('isAlive');
-        if (isalivestatus === "false") {
-          setisAlive(false)
+        const isAliveStatus = await AsyncStorage.getItem('isAlive');
+        if (isAliveStatus === "false") {
+          const isAlive = JSON.parse(isAliveStatus);
+          setisAlive(isAlive)
         }
-        if (isalivestatus === "true") {
-          setisAlive(true)
+        if (isAliveStatus === "true") {
+          const isAlive = JSON.parse(isAliveStatus);
+          setisAlive(isAlive)
         } else {
           setisAlive(false);
         }
@@ -140,7 +142,7 @@ export default function Map() {
 
     initializeApp();
   },
-);
+  );
 
   const [selectedMapStyle, setSelectedMapStyle] = useState<MapStyle[]>(Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle);
   const [themePopupVisible, setThemePopupVisible] = useState(false);
