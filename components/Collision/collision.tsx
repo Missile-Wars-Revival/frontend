@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { GeoLocation, Landmine, Loot, Missile } from "middle-earth";
+import { GeoLocation, Landmine, Loot, Missile, MissileType } from "middle-earth";
 import { fetchLootFromBackend, fetchMissilesFromBackend, fetchlandmineFromBackend } from "../../temp/fetchMethods";
 import { getCurrentLocation } from "../../util/locationreq";
 import { location } from "../../util/locationreq"
@@ -14,6 +14,7 @@ import { addmoney } from "../../api/money";
 import { additem } from "../../api/add-item";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { removeHealth, setHealth, updateisAlive } from "../../api/health";
+import { useCountdown } from "../../util/Context/countdown";
 
 Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -38,6 +39,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
     const [userLocation, setUserLocation] = useState<location | null>(null);
     const [lastNotified, setLastNotified] = useState<LastNotified>({ loot: null, missile: null, landmine: null });
     const [isAlive, setisAlive] = useState(true);
+    const { startCountdown, stopCountdown } = useCountdown();
 
     const fetchLootAndMissiles = useCallback(async () => {
         setLootLocations(await fetchLootFromBackend());
@@ -243,7 +245,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                             setLastNotified(prev => ({ ...prev, missile: today }));
                             Alert.alert("Danger!", "A Missile has impacted in your proximity! You may start taking damage!");
 
-                            applyMissileDamage(30, missile.sentbyusername); //10 = damage for missile per 30 secs
+                            applyMissileDamage(missile.type, 30, missile.sentbyusername); //10 = damage for missile per 30 secs
                         }
                         break;
                     case 'near-missile':
@@ -261,39 +263,46 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
             }
         });
         //apply missile damage
-        async function applyMissileDamage(missileDamage: number, sentBy: string) {
+        async function applyMissileDamage(missiletype: string, missileDamage: number, sentBy: string) {
             const health = await AsyncStorage.getItem('health');
-            const token = SecureStore.getItem("token");
-
+            const token = await SecureStore.getItem("token");
+        
             if (!health || !token) {
                 console.error('Required data not found.');
                 return;
             }
-
+        
             let healthNumber = parseInt(health, 10);
             if (isNaN(healthNumber)) {
                 console.error('Invalid health value:', health);
                 return;
             }
-
-            const damageInterval = setInterval(async () => {
-                healthNumber -= missileDamage;
-                await AsyncStorage.setItem('health', healthNumber.toString());
-                removeHealth(token, missileDamage) //remove db health
-
-                if (healthNumber <= 0) {
-                    clearInterval(damageInterval); // Stop the interval
-                    Alert.alert("Dead", `You have been killed by a missile sent by user: ${sentBy}`);
-                    console.log('User health has reached zero or below.');
-                    await AsyncStorage.setItem(`isAlive`, `false`)
-                    updateisAlive(token, false);
-                    await AsyncStorage.setItem('health', '0'); // Set health to zero in storage
-                    setHealth(token, 0)//set health 0 in DB
-                } else {
-                    console.log(`User Health: ${healthNumber}`); // Only log if user is still alive
-                }
-            }, 30000); // runs every 30 seconds
-        }
+        
+            const applyDamage = async () => {
+                startCountdown();  // Start countdown right before applying damage
+                setTimeout(async () => {  // Wait 30 seconds before applying damage
+                    healthNumber -= missileDamage;
+                    await AsyncStorage.setItem('health', healthNumber.toString());
+                    removeHealth(token, missileDamage) //remove db health
+        
+                    if (healthNumber <= 0) {
+                        stopCountdown();
+                        Alert.alert("Dead", `You have been killed by a ${missiletype}missile sent by user: ${sentBy}`);
+                        console.log('User health has reached zero or below.');
+                        await AsyncStorage.setItem(`isAlive`, `false`)
+                        updateisAlive(token, false);
+                        await AsyncStorage.setItem('health', '0'); // Set health to zero in storage
+                        setHealth(token, 0) //set health 0 in DB
+                    } else {
+                        console.log(`User Health: ${healthNumber}`); // Only log if user is still alive
+                        Alert.alert("Damaged", `You have taken ${missileDamage} damage`)
+                        setTimeout(applyDamage, 30000); // Schedule next damage application 30 seconds later
+                    }
+                }, 30000);
+            };
+            startCountdown();
+            applyDamage();  // Start the cycle immediately
+        }        
 
         landmineData.forEach(landmine => {
             const proximityStatus = checkLootandLandmineProximity("landmine", landmine.location, userLocation, 10);
@@ -388,7 +397,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
             checkisAlive()
             getCurrentLocationWrapper();
             checkAndNotify();
-        }, 30000);
+        }, 10000);
 
         return () => clearInterval(interval);
     }, [fetchLootAndMissiles, getCurrentLocationWrapper, checkAndNotify]);

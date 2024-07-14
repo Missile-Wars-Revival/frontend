@@ -235,15 +235,6 @@ export default function Map() {
 
   return (
     <View style={{ flex: 1, backgroundColor: 'white' }}>
-      <View style={{ position: 'absolute', top: 10, left: 10, zIndex: 1 }}>
-        {/* Add in advert button here */}
-        {/* {(!isAlive) && (
-            <View style={mapstyles.overlay}>
-              <Text style={mapstyles.overlayText}>Map is disabled due to your death</Text>
-              <Text style={mapstyles.overlaySubText}>Please check wait the designated time or watch an advert!</Text>
-            </View>
-          )} */}
-      </View>
       {(isAlive) && (
         <>
         <MapComp selectedMapStyle={selectedMapStyle} />
