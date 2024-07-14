@@ -30,6 +30,8 @@ import { getCredentials } from "../util/logincache";
 import { router } from "expo-router";
 import HealthBar from "../components/healthbar";
 import { getHealth, getisAlive, setHealth, updateisAlive } from "../api/health";
+import CountdownTimer from "../components/countdown";
+import { useCountdown } from "../util/Context/countdown";
 
 export default function Map() {
   const [userNAME, setUsername] = useState("");
@@ -202,6 +204,7 @@ export default function Map() {
     await AsyncStorage.setItem('health', '100');
     setHealth(token, 100);
   };
+  const { countdownIsActive, stopCountdown } = useCountdown();
 
   return (
     <View style={{ flex: 1, backgroundColor: 'white' }}>
@@ -215,7 +218,10 @@ export default function Map() {
           )} */}
       </View>
       {(isAlive) && (
-        <><MapComp selectedMapStyle={selectedMapStyle} /><HealthBar health={health} />
+        <>
+        <MapComp selectedMapStyle={selectedMapStyle} />
+        <HealthBar health={health} />
+        {countdownIsActive && <CountdownTimer duration={30} onExpire={stopCountdown} />}
           {Platform.OS === 'android' && (
             <ThemeSelectButton onPress={showPopup}>Theme</ThemeSelectButton>
           )}
