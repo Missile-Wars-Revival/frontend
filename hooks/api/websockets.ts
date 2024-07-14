@@ -16,13 +16,13 @@ const useWebSocket = () => {
     const connectWebsocket = (): Promise<WebSocket> => {
         return new Promise(async (resolve, reject) => {  // Make the outer function async
             const ws = new WebSocket(WEBSOCKET_URL);
-    
+
             ws.onopen = async () => {  // Mark the callback function as async
                 console.log("Connected to websocket");
                 await AsyncStorage.setItem('dbconnection', 'true');
                 resolve(ws);
             };
-    
+
             ws.onerror = (error) => {
                 console.error("WebSocket error:", error);
                 reject(error);
@@ -67,7 +67,7 @@ const useWebSocket = () => {
                     console.error("Error processing websocket message:", error);
                 }
             };
-            
+
         } catch (error) {
             console.error("Failed to connect to websocket:", error);
             await AsyncStorage.setItem('dbconnection', 'false');
@@ -112,7 +112,7 @@ const useWebSocket = () => {
             console.error("WebSocket is not open. Unable to send message.");
         }
     };
-    
+
 
     return { data, sendWebsocket };
 };

@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { Animated, View, Platform, Alert } from "react-native";
+import { View, Platform, Alert, Image, StyleSheet, TouchableOpacity, Text, Linking } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
+import axiosInstance from "../api/axios-instance";
+import axios from "axios";
 
 // Android Themes
 import { androidDefaultMapStyle } from "../map-themes/Android-themes/defaultMapStyle";
@@ -25,15 +28,19 @@ import { MapComp } from "../components/map-comp";
 import { MapStyle } from "../types/types";
 import { getCredentials } from "../util/logincache";
 import { router } from "expo-router";
-import axiosInstance from "../api/axios-instance";
-import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import HealthBar from "../components/healthbar";
+import { getHealth, getisAlive, setHealth, updateisAlive } from "../api/health";
+import CountdownTimer from "../components/countdown";
+import { useCountdown } from "../util/Context/countdown";
 
 export default function Map() {
   const [userNAME, setUsername] = useState("");
+  const [isAlive, setisAlive] = useState(true);
+
 
   // State for location enabled
   const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(true);
+  const [health, setHealthUI] = useState(100); // Initial health value
 
   // Fetch username from secure storage
   useEffect(() => {
@@ -48,31 +55,60 @@ export default function Map() {
 
     fetchCredentials();
   }, []);
+  useEffect(() => {
+    const getHealthOnStart = async () => {
+      const token = await SecureStore.getItemAsync("token");
+      try {
+        if (!token) {
+          console.log('Token not found');
+          return;
+        }
+        getisAlive(token)
+        const response = await getHealth(token);
+        if (response && response.health !== undefined) {
+          setHealthUI(response.health);
+          await AsyncStorage.setItem('health', response.health.toString()); // Note the change here
+        } else {
+          console.error('Health data is invalid:', response);
+        }
+      } catch (error) {
+        if (axios.isAxiosError(error)) {
+          console.error('Axios error:', error.message);
+        } else {
+          console.error('Error fetching health:', error);
+        }
+      }
+    };
+    getHealthOnStart();
+
+    const intervalId = setInterval(getHealthOnStart, 5000); //5 secss -- NEED CHANGE TO WEBSOCKET
+    return () => clearInterval(intervalId);
+  }, []);
 
   useEffect(() => {
     const addCurrencyAmount = async () => {
       const lastRewardedDate = await AsyncStorage.getItem('lastRewardedDate');
-      const today = new Date().toISOString().slice(0, 10); 
-  
+      const today = new Date().toISOString().slice(0, 10);
+
       if (lastRewardedDate === today) {
         //console.log('Daily reward already claimed');
         return;
       }
-  
+
       const token = await SecureStore.getItemAsync("token");
       if (!token) {
         console.log('Token not found');
         return;
       }
-  
+
       try {
         const response = await axiosInstance.post('/api/addMoney', {
           token, amount: 500
         });
-  
+
         if (response.data) {
           console.log('Money added successfully:', response.data.message);
-          Alert.alert("Claimed!", "You have clamed your daily reward!");
+          Alert.alert("Claimed!", `You have clamed your daily reward! 500 Coins`);
           await AsyncStorage.setItem('lastRewardedDate', today); // Update the last rewarded date
         }
       } catch (error) {
@@ -83,9 +119,41 @@ export default function Map() {
         }
       }
     };
-  
+
     addCurrencyAmount();
   }, []);
+
+  useEffect(() => {
+    const initializeApp = async () => {
+      try {
+        const isAliveStatusString = await AsyncStorage.getItem('isAlive');
+
+        if (isAliveStatusString) {
+          const isAliveStatus = JSON.parse(isAliveStatusString); // Parse the JSON string into an object
+
+          if (isAliveStatus.isAlive) {
+            setisAlive(true);
+          } else {
+            setisAlive(false);
+          }
+        } else {
+          setisAlive(false);
+        }
+      } catch (error) {
+        console.error('Error initializing app:', error);
+      }
+    };
+
+    initializeApp()
+
+    const intervalId = setInterval(initializeApp, 1000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  },
+    []);
+
 
   const [selectedMapStyle, setSelectedMapStyle] = useState<MapStyle[]>(Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle);
   const [themePopupVisible, setThemePopupVisible] = useState(false);
@@ -123,29 +191,100 @@ export default function Map() {
     setSelectedMapStyle(selectedStyle);
     storeMapStyle(style);
   };
+  const respawn = async () => {
+    const token = SecureStore.getItem("token");
+  
+    if (token === null) {
+      console.error("Token is null, cannot proceed with setting items");
+      return; // Stop execution if token is null
+    }
+  
+    await AsyncStorage.setItem(`isAlive`, `true`);
+    updateisAlive(token, true);
+    await AsyncStorage.setItem('health', '100');
+    setHealth(token, 100);
+  };
+  const { countdownIsActive, stopCountdown } = useCountdown();
 
   return (
-    <View style={{ flex: 1, backgroundColor: 'gray' }}>
-      <MapComp selectedMapStyle={selectedMapStyle} />
-
-      {Platform.OS === 'android' && (
-        <ThemeSelectButton onPress={showPopup}>Theme</ThemeSelectButton>
+    <View style={{ flex: 1, backgroundColor: 'white' }}>
+      <View style={{ position: 'absolute', top: 10, left: 10, zIndex: 1 }}>
+        {/* Add in advert button here */}
+        {/* {(!isAlive) && (
+            <View style={mapstyles.overlay}>
+              <Text style={mapstyles.overlayText}>Map is disabled due to your death</Text>
+              <Text style={mapstyles.overlaySubText}>Please check wait the designated time or watch an advert!</Text>
+            </View>
+          )} */}
+      </View>
+      {(isAlive) && (
+        <>
+        <MapComp selectedMapStyle={selectedMapStyle} />
+        <HealthBar health={health} />
+        {countdownIsActive && <CountdownTimer duration={30} onExpire={stopCountdown} />}
+          {Platform.OS === 'android' && (
+            <ThemeSelectButton onPress={showPopup}>Theme</ThemeSelectButton>
+          )}
+          <MapStylePopup
+            visible={themePopupVisible}
+            transparent={true}
+            onClose={closePopup}
+            onSelect={selectMapStyle}
+          />
+          {isLocationEnabled && (
+            <FireSelector
+              selectedMapStyle={selectedMapStyle}
+              getStoredMapStyle={getStoredMapStyle}
+              selectMapStyle={selectMapStyle}
+            />
+          )}
+        </>
       )}
+      {(!isAlive) && (
+        <View style={styles.containerdeath}>
+          <TouchableOpacity
+            onPress={() => respawn()}
+            style={styles.bannerdeath}
+            activeOpacity={0.7}
+          >
+            <Image source={require('../assets/deathscreen.jpg')} style={styles.bannerdeath} />
+          </TouchableOpacity>
+          {/* Button added below the image */}
+          <TouchableOpacity
+            onPress={() => console.log('Retry button pressed')}
+            style={styles.retryButton}
+            activeOpacity={0.7} // Optional: adjust the opacity feedback on touch
+          >
+            <TouchableOpacity onPress={() => Linking.openURL('https://discord.gg/Gk8jqUnVd3')}>
+              <Text style={styles.retryButtonText}>Contact Support</Text>
+            </TouchableOpacity>
 
-      <MapStylePopup
-        visible={themePopupVisible}
-        transparent={true}
-        onClose={closePopup}
-        onSelect={selectMapStyle}
-      />
-
-      {isLocationEnabled && (
-        <FireSelector
-          selectedMapStyle={selectedMapStyle}
-          getStoredMapStyle={getStoredMapStyle}
-          selectMapStyle={selectMapStyle}
-        />
+          </TouchableOpacity>
+        </View>
       )}
     </View>
   );
 }
+const styles = StyleSheet.create({
+  containerdeath: {
+    flex: 3,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  bannerdeath: {
+    width: 500,
+    height: 500,
+    resizeMode: 'contain',
+  },
+  retryButton: {
+    backgroundColor: 'red', // Choose any color
+    padding: 10,
+    marginTop: 20, // Adds space between the image and the button
+    borderRadius: 5, // Rounded corners
+  },
+  retryButtonText: {
+    color: 'white', // Text color
+    fontSize: 16, // Adjust text size as needed
+    textAlign: 'center', // Center the text inside the button
+  },
+});

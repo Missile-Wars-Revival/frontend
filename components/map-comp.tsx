@@ -8,7 +8,7 @@ import { AllPlayers } from "./map-players";
 import { Landmine, Loot, Missile } from "middle-earth";
 import { fetchLootFromBackend, fetchMissilesFromBackend, fetchlandmineFromBackend } from "../temp/fetchMethods";
 import { loadLastKnownLocation, saveLocation } from '../util/mapstore';
-import { getLocationPermission } from "../hooks/userlocation";
+import { getLocationPermission } from "../util/locationreq";
 import { dispatch } from "../api/dispatch";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCurrentLocation, location } from "../util/locationreq";
@@ -25,6 +25,7 @@ export const MapComp = (props: MapCompProps) => {
     const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(false);
     const [isLoading, setIsLoading] = useState(true);
     const [hasDbConnection, setDbConnection] = useState<boolean>();
+    const [isAlive, setisAlive] = useState<boolean>(true);
     const [firstLoad, setFirstLoad] = useState<boolean>(true);
     const [visibilitymode, setMode] = useState<'friends' | 'global'>('global');
 
@@ -58,11 +59,11 @@ export const MapComp = (props: MapCompProps) => {
             //console.log("Failed to dispatch location", error);
         }
     };
-    
+
 
     const getlocation = async () => {
         try {
-            const location: location = await getCurrentLocation();
+            const location = await getCurrentLocation();
             const newRegion = {
                 latitude: location.latitude,
                 longitude: location.longitude,
@@ -70,17 +71,9 @@ export const MapComp = (props: MapCompProps) => {
                 longitudeDelta: 0.01
             };
             setRegion(newRegion);
-            await saveLocation(newRegion); 
-            setIsLoading(false); 
-        } catch {
-            Alert.alert(
-                "Location",
-                "Please enable your location to continue using the app",
-                [
-                    { text: "Cancel", style: "cancel" },
-                    { text: "Confirm" }
-                ]
-            );
+            await saveLocation(newRegion);
+            setIsLoading(false);
+        } catch (error) {
         }
     };
 
@@ -90,85 +83,108 @@ export const MapComp = (props: MapCompProps) => {
                 // Check if it's the first load
                 const isFirstLoad = await AsyncStorage.getItem('firstload');
                 const isDBConnection = await AsyncStorage.getItem('dbconnection');
+                const token = await SecureStore.getItemAsync("token");
+                if (!token) {
+                    console.error("Authentication token is missing");
+                    return; // Exit function if no token is found
+                }
                 if (isFirstLoad == null) {
                     Alert.alert(
                         "Your location is set to Global",
                         "This means everyone in your league can see your location.",
                         [
-                            { text: "OK", onPress: () => setFirstLoad(false) } 
+                            { text: "OK", onPress: () => setFirstLoad(false) }
                         ]
                     );
-                    setFirstLoad(false); 
+                    await updateFriendsOnlyStatus(token, false);
+                    setFirstLoad(false);
                     await AsyncStorage.setItem('firstload', 'false');
-                } 
-                if (isDBConnection === "false"){
+                }
+                if (isDBConnection === "false") {
                     setDbConnection(false)
-                } 
-                if (isDBConnection === "true"){
+                }
+                if (isDBConnection === "true") {
                     setDbConnection(true)
                 } else {
                     setDbConnection(false);
                 }
-    
+
                 const cachedRegion = await loadLastKnownLocation();
                 if (cachedRegion !== null) {
                     setRegion(cachedRegion);
                 }
-    
+
                 const cachedMode = await AsyncStorage.getItem('visibilitymode');
                 if (cachedMode !== null) {
                     setMode(cachedMode as 'friends' | 'global');
                 }
-    
+
                 const status = await getLocationPermission();
                 setIsLocationEnabled(status === 'granted');
-    
+
                 await getlocation();
                 await fetchLootAndMissiles();
                 await dispatchLocation();
                 await DefRegLocationTask();
-    
+
                 const intervalId = setInterval(async () => {
                     // Periodically check DB connection status
                     const dbConnStatus = await AsyncStorage.getItem('dbconnection');
-                    if (dbConnStatus === "false"){
+                    if (dbConnStatus === "false") {
                         setDbConnection(false)
-                    } 
-                    if (dbConnStatus === "true"){
+                    }
+                    if (dbConnStatus === "true") {
                         setDbConnection(true)
                     } else {
                         setDbConnection(false);
                     }
-    
+                    try {
+                        const isAliveStatus = await AsyncStorage.getItem('isAlive');
+                        if (isAliveStatus !== null) {
+                            const isAliveData = JSON.parse(isAliveStatus); // Converts the string to an object
+                            if (typeof isAliveData === 'object' && isAliveData.hasOwnProperty('isAlive')) {
+                                const isAlive = isAliveData.isAlive; // Extract the boolean value from the object
+                                setisAlive(isAlive);
+                            } else {
+                                // Handle unexpected format
+                                setisAlive(false);
+                            }
+                        } else {
+                            // Handle null (e.g., key does not exist)
+                            setisAlive(false); // Assume false if nothing is stored
+                        }
+                    } catch (error) {
+                        setisAlive(false); // Set to a default value in case of error
+                    }
+
                     fetchLootAndMissiles();
                     getLocationPermission();
                     dispatchLocation();
                 }, 1000);
-    
+
                 return () => clearInterval(intervalId);
             } catch (error) {
                 setIsLoading(false);
                 console.error('Error initializing app:', error);
             }
         };
-    
+
         initializeApp();
-    }, [fetchLootAndMissiles]);    
+    }, [fetchLootAndMissiles]);
 
     const toggleMode = async () => {
         const newMode = visibilitymode === 'friends' ? 'global' : 'friends';
         setMode(newMode);
         friendsorglobal(newMode);
         const token = await SecureStore.getItemAsync("token");
-    
+
         if (!token) {
             console.error("Authentication token is missing");
-            Alert.alert("Error", "Authentication error. Please log in again.");
             return; // Exit function if no token is found
         }
-    
+
         const friendsOnly = newMode === 'friends';
-        
+
         if (newMode === 'global') {
             Alert.alert(
                 "Change to Global Mode",
@@ -198,7 +214,7 @@ export const MapComp = (props: MapCompProps) => {
             await updateFriendsOnlyStatus(token, friendsOnly);
             console.log("FriendsOnly status updated successfully to:", friendsOnly);
         }
-    
+
         console.log("Mode changed to:", newMode);
     };
 
@@ -206,8 +222,8 @@ export const MapComp = (props: MapCompProps) => {
         console.log("Mode changed to:", visibilitymode);
     };
 
-    // Only show loader if it's the first load and still loading
-    if (isLoading || !firstLoad) {
+    // Only show loader if it's the first load or still loading
+    if (isLoading && !firstLoad) {
         return (
             <View style={mainmapstyles.loaderContainer}>
                 <ActivityIndicator size="large" color="#0000ff" />
@@ -234,6 +250,12 @@ export const MapComp = (props: MapCompProps) => {
                 <AllMissiles missileData={missileData} />
                 <AllPlayers />
             </MapView>
+            {(!isAlive) && (
+                <View style={mainmapstyles.overlay}>
+                    <Text style={mainmapstyles.overlayText}>Map is disabled due to your death</Text>
+                    <Text style={mainmapstyles.overlaySubText}>Please check wait the designated time or watch an advert!</Text>
+                </View>
+            )}
             {(!isLocationEnabled || !hasDbConnection) && (
                 <View style={mainmapstyles.overlay}>
                     <Text style={mainmapstyles.overlayText}>Map is disabled due to location/database issues.</Text>

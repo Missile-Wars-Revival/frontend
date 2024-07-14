@@ -11,7 +11,8 @@
       },
       "ios": {
         "image": "latest"
-      }
+      },
+      "channel": "development"
     },
     "preview": {
       "distribution": "internal",
@@ -20,7 +21,8 @@
       },
       "ios": {
         "image": "latest"
-      }
+      },
+      "channel": "preview"
     },
     "production": {
       "android": {
@@ -28,10 +30,21 @@
       },
       "ios": {
         "image": "latest"
-      }
+      },
+      "channel": "missilewars-beta"
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "android": {
+        "serviceAccountKeyPath": "../path/to/api-xxx-yyy-zzz.json",
+        "track": "internal"
+      },
+      "ios": {
+        "appleId": "tphwoodlands@gmail.com",
+        "ascAppId": "1234567890",
+        "appleTeamId": "23FQ4A4Q35"
+      }
+    }
   }
 }

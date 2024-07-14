@@ -2,12 +2,12 @@ import { Text, TouchableOpacity, View } from 'react-native';
 import React from 'react';
 
 interface ThemeSelectProps {
-    onPress: () => void;
-    children: string;
+  onPress: () => void;
+  children: string;
 }
 export const ThemeSelectButton = (props: ThemeSelectProps) => {
   return (
-      <TouchableOpacity
+    <TouchableOpacity
       style={{
         position: 'absolute',
         bottom: 20,
@@ -28,5 +28,5 @@ export const ThemeSelectButton = (props: ThemeSelectProps) => {
       <Text style={{ fontSize: 16 }}>{props.children}</Text>
     </TouchableOpacity>
   );
-  
+
 };

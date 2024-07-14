@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Missilelib } from "../../types/types";
 import { Text, View, TouchableOpacity, Image, Button, Modal, ScrollView } from "react-native";
 import React from "react";
-import { MissilePlacementPopup } from './missileplacement'; 
+import { MissilePlacementPopup } from './missileplacement';
 import * as SecureStore from "expo-secure-store";
 import axiosInstance from "../../api/axios-instance";
 
@@ -127,7 +127,7 @@ export const MissileLibrary = ({ playerName }: { playerName: string }) => {
       ))}
       <Modal visible={showPopup} animationType="slide">
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <Text>Target: {playerName}</Text>
+          <Text>Target: {playerName}</Text>
           <Text>Missile Type: {selectedMissile}</Text>
           {/* Add player name input */}
           <Image source={missileImages[selectedMissile || ""]} style={{ width: 100, height: 100, marginVertical: 10 }} />
@@ -190,12 +190,12 @@ export const MissilefireposLibrary = () => {
           <Text>{missile.type} - Quantity: {missile.quantity}</Text>
         </TouchableOpacity>
       ))}
-      <Modal 
-      animationType="slide"
-      transparent={true}
-      visible={showplacmentPopup}>
-  {showplacmentPopup && <MissilePlacementPopup visible={showplacmentPopup} onClose={handleCancel} selectedMissile={selectedMissile} />}
-</Modal>
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showplacmentPopup}>
+        {showplacmentPopup && <MissilePlacementPopup visible={showplacmentPopup} onClose={handleCancel} selectedMissile={selectedMissile} />}
+      </Modal>
 
     </ScrollView>
   );

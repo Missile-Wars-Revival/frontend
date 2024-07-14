@@ -1,44 +1,17 @@
 import { Stack } from "expo-router";
 import 'react-native-reanimated';
-import React, { ReactNode, createContext, useContext, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import { View, Text, TouchableOpacity } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
-import SplashScreen from './splashscreen'; 
+import SplashScreen from './splashscreen';
 import { FontAwesome } from '@expo/vector-icons';
-import { ProximityCheckNotif } from "../components/Notifications/entitynotifications";
-import useWebSocket, {  } from "../hooks/api/websockets";
-import { WebSocketMessage } from "middle-earth";
-
-interface WebSocketContextProps {
-  data: any;
-  sendWebsocket: (data: WebSocketMessage) => void;
-}
-
-const WebSocketContext = createContext<WebSocketContextProps | undefined>(undefined);
-
-export const useWebSocketContext = () => {
-  const context = useContext(WebSocketContext);
-  if (!context) {
-    throw new Error("useWebSocketContext must be used within a WebSocketProvider");
-  }
-  return context;
-};
-
-interface WebSocketProviderProps {
-  children: ReactNode;
-}
-
-const WebSocketProvider = ({ children }: WebSocketProviderProps) => {
-  const { data, sendWebsocket } = useWebSocket();
-
-  return (
-    <WebSocketContext.Provider value={{ data, sendWebsocket }}>
-      {children}
-    </WebSocketContext.Provider>
-  );
-};
+import { ProximityCheckNotif } from "../components/Collision/collision";
+import useWebSocket, { } from "../hooks/api/websockets"; 
+import { WebSocketContext, WebSocketProviderProps } from "../util/Context/websocket";
+import { CountdownContext, CountdownProviderProps, useCountdown } from "../util/Context/countdown";
+import CountdownTimer from "../components/countdown";
 
 // RootLayout component
 export default function RootLayout() {
@@ -53,11 +26,37 @@ export default function RootLayout() {
     return <SplashScreen onFinish={handleSplashFinish} />;
   }
 
+  const WebSocketProvider = ({ children }: WebSocketProviderProps) => {
+    const { data, sendWebsocket } = useWebSocket();
+
+    return (
+      <WebSocketContext.Provider value={{ data, sendWebsocket }}>
+        {children}
+      </WebSocketContext.Provider>
+    );
+  };
+
+  const CountdownProvider: React.FC<CountdownProviderProps> = ({ children }) => {
+    const [countdownIsActive, setCountdownIsActive] = useState(false);
+
+    const startCountdown = () => setCountdownIsActive(true);
+    const stopCountdown = () => setCountdownIsActive(false);
+
+    return (
+      <CountdownContext.Provider value={{ countdownIsActive, startCountdown, stopCountdown }}>
+        {children}
+      </CountdownContext.Provider>
+    );
+  };
+
+
   return (
     <QueryClientProvider client={queryClient}>
-      <WebSocketProvider>
-        <RootLayoutNav />
-      </WebSocketProvider>
+      <CountdownProvider>
+        <WebSocketProvider>
+          <RootLayoutNav />
+        </WebSocketProvider>
+      </CountdownProvider>
     </QueryClientProvider>
   );
 }
@@ -80,7 +79,7 @@ function NavBar() {
   };
 
   const getDisplayName = (route: any) => {
-    switch(route) {
+    switch (route) {
       case '/': return 'Map';
       case '/store': return 'Store';
       case '/league': return 'Ranking';
@@ -94,11 +93,11 @@ function NavBar() {
     //switch commenting to hide ranking pages
     // <View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-around', backgroundColor: 'rgba(255, 255, 255, 0.0)', height: 100, alignItems: 'center' }}>
     //   {['/', '/store','/league', '/friends', '/profile'].map((tab, index) => (
-      <View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-around', backgroundColor: 'rgba(255, 255, 255, 0.0)', height: 90, alignItems: 'center' }}>
-          {['/', '/store', '/friends', '/profile'].map((tab, index) => (
-        <TouchableOpacity 
+    <View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-around', backgroundColor: 'rgba(255, 255, 255, 0.0)', height: 90, alignItems: 'center' }}>
+      {['/', '/store', '/friends', '/profile'].map((tab, index) => (
+        <TouchableOpacity
           key={index}
-          onPress={() => handlePress(tab)} 
+          onPress={() => handlePress(tab)}
           disabled={selectedTab === tab}
           style={{ alignItems: 'center', justifyContent: 'center' }}
         >
@@ -111,22 +110,23 @@ function NavBar() {
             justifyContent: 'center',
             marginBottom: 10  // Raises the icon slightly
           }}>
-            <FontAwesome 
-              name={tab === '/' ? 'map' : 
-                    tab === '/store' ? 'shopping-basket' : 
-                    tab === '/friends' ? 'users' :
-                    tab === '/league' ? 'trophy' : 
-                    tab === '/profile' ? 'user' : 
-                    'user'}
-              color={selectedTab === tab ? 'blue' : 'black'} 
-              size={24} 
+            <FontAwesome
+              name={tab === '/' ? 'map' :
+                tab === '/store' ? 'shopping-basket' :
+                  tab === '/friends' ? 'users' :
+                    tab === '/league' ? 'trophy' :
+                      tab === '/profile' ? 'user' :
+                        'user'}
+              color={selectedTab === tab ? 'blue' : 'black'}
+              size={24}
             />
           </View>
-          <Text style={{ color: 'grey', fontSize: 10, marginTop: -4}}>
+          <Text style={{ color: 'grey', fontSize: 10, marginTop: -4 }}>
             {getDisplayName(tab)}
           </Text>
         </TouchableOpacity>
       ))}
+      <ProximityCheckNotif />
     </View>
   );
 }
@@ -146,7 +146,7 @@ function RootLayoutNav() {
           <Stack.Screen name="league" options={{ headerShown: false, gestureEnabled: false }} />
           <Stack.Screen name="store" options={{ headerShown: false, gestureEnabled: false }} />
           <Stack.Screen name="friends" options={{ headerShown: false }} />
-          <Stack.Screen name="add-friends" options={{ headerShown: false }}/>
+          <Stack.Screen name="add-friends" options={{ headerShown: false }} />
           <Stack.Screen name="profile" options={{ headerShown: false }} />
         </Stack>
         {!hideNavBarRoutes.includes(pathname) && <NavBar />}
