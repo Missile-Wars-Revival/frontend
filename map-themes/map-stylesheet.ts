@@ -25,7 +25,7 @@ export const mapstyles = StyleSheet.create({
         marginBottom: 10,
     },
     overlaySubText: {
-        fontSize: 14,
+        fontSize: 12,
         fontWeight: 'bold',
         color: 'grey',
     },
@@ -72,7 +72,7 @@ export const mainmapstyles = StyleSheet.create({
         marginBottom: 10,
     },
     overlaySubText: {
-        fontSize: 14,
+        fontSize: 12,
         fontWeight: 'bold',
         color: 'grey',
     },

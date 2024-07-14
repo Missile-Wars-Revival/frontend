@@ -8,19 +8,19 @@ export interface Players {
   username: string;
   latitude: number;
   longitude: number;
-  updatedAt: string; 
+  updatedAt: string;
 }
 
 export const AllPlayers = () => {
 
   const userName = useUserName();
 
-  const [otherPlayersData, setOtherPlayersData] = useState([] as Players[]); 
+  const [otherPlayersData, setOtherPlayersData] = useState([] as Players[]);
 
   const fetchOtherPlayers = async () => {
     try {
       const data = await fetchOtherPlayersData();
-      setOtherPlayersData(data); 
+      setOtherPlayersData(data);
       //console.log("fetched", data)
     } catch (error) {
       console.error('Error fetching other players data:', error);
@@ -39,10 +39,10 @@ export const AllPlayers = () => {
     };
   }, []);
   return (
-      <>
-          {otherPlayersData
-          .filter(player => player.username !== userName && !isInactiveFor12Hours(player.updatedAt))
-          .map((player, index) => {
+    <>
+      {otherPlayersData
+        .filter(player => player.username !== userName && !isInactiveFor12Hours(player.updatedAt))
+        .map((player, index) => {
           const { text } = getTimeDifference(player.updatedAt);
 
           const location = {
@@ -51,11 +51,11 @@ export const AllPlayers = () => {
           };
 
           return (
-              <React.Fragment key={index}>
+            <React.Fragment key={index}>
               <PlayerComp index={index} player={player} location={location} timestamp={text}></PlayerComp>
-              </React.Fragment>
+            </React.Fragment>
           );
-          })}
-      </>
+        })}
+    </>
   )
 }

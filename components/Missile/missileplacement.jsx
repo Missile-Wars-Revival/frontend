@@ -4,18 +4,19 @@ import MapView, { Marker, Circle, PROVIDER_DEFAULT, PROVIDER_GOOGLE } from 'reac
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { useUserName } from "../../util/fetchusernameglobal";
-import { mapstyles } from '../../map-themes/map-stylesheet'; 
+import { mapstyles } from '../../map-themes/map-stylesheet';
 
 export const MissilePlacementPopup = ({ visible, onClose, selectedMissile }) => {
   const [region, setRegion] = useState(null);
   const [marker, setMarker] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentLocation, setCurrentLocation] = useState(null);
-  const userName = useUserName(); 
+  const userName = useUserName();
 
   //import is locaiton enabled from map-comp!!!!!
   const [isLocationEnabled, setIsLocationEnabled] = useState(true);
   const [hasDbConnection, setDbConnection] = useState(false);
+  const [isAlive, setisAlive] = useState(true);
 
   // Function to handle location permission and fetch current location
   async function initializeLocation() {
@@ -43,30 +44,46 @@ export const MissilePlacementPopup = ({ visible, onClose, selectedMissile }) => 
   // Load last known location from cache or request current location on modal open
   useEffect(() => {
     if (visible) {
-          initializeLocation();
+      initializeLocation();
     }
   }, [visible]);
 
   useEffect(() => {
     const initializeApp = async () => {
-        try {
-            const isDBConnection = await AsyncStorage.getItem('dbconnection');
-            if (isDBConnection === "false"){
-                setDbConnection(false)
-            } 
-            if (isDBConnection === "true"){
-                setDbConnection(true)
-            } else {
-                setDbConnection(false);
-            }
-        } catch (error) {
-            console.error('Error initializing map:', error);
+      try {
+        const isDBConnection = await AsyncStorage.getItem('dbconnection');
+        if (isDBConnection === "false") {
+          setDbConnection(false)
         }
+        if (isDBConnection === "true") {
+          setDbConnection(true)
+        } else {
+          setDbConnection(false);
+        }
+      } catch (error) {
+        console.error('Error initializing map:', error);
+      }
+      try {
+        const isAliveStatus = await AsyncStorage.getItem('isAlive');
+        if (isAliveStatus !== null) {
+          const isAliveData = JSON.parse(isAliveStatus); // Converts the string to an object
+          if (typeof isAliveData === 'object' && isAliveData.hasOwnProperty('isAlive')) {
+            const isAlive = isAliveData.isAlive; // Extract the boolean value from the object
+            setisAlive(isAlive);
+          } else {
+            setisAlive(false);
+          }
+        } else {
+          setisAlive(false);
+        }
+      } catch (error) {
+        setisAlive(false);
+      }
     };
 
     initializeApp();
   },
-);
+  );
 
   if (loading) {
     return (
@@ -103,14 +120,14 @@ export const MissilePlacementPopup = ({ visible, onClose, selectedMissile }) => 
             onPress={(e) => setMarker({
               latitude: e.nativeEvent.coordinate.latitude,
               longitude: e.nativeEvent.coordinate.longitude,
-              latitudeDelta: 0.01, 
+              latitudeDelta: 0.01,
               longitudeDelta: 0.01
             })}
           >
             <Circle
               center={marker}
               //needs to be fetched depending on missile type!!!
-              radius={40} 
+              radius={40}
               fillColor="rgba(255, 0, 0, 0.2)"
               strokeColor="rgba(255, 0, 0, 0.8)" />
             <Marker
@@ -120,11 +137,17 @@ export const MissilePlacementPopup = ({ visible, onClose, selectedMissile }) => 
             />
           </MapView>
           {(!isLocationEnabled || !hasDbConnection) && (
-                <View style={mapstyles.overlay}>
-                    <Text style={mapstyles.overlayText}>Map is disabled due to location/database issues.</Text>
-                    <Text style={mapstyles.overlaySubText}>Please check your settings or try again later.</Text>
-                </View>
-            )}
+            <View style={mapstyles.overlay}>
+              <Text style={mapstyles.overlayText}>Map is disabled due to location/database issues.</Text>
+              <Text style={mapstyles.overlaySubText}>Please check your settings or try again later.</Text>
+            </View>
+          )}
+          {(!isAlive) && (
+            <View style={mapstyles.overlay}>
+              <Text style={mapstyles.overlayText}>Map is disabled due to your death</Text>
+              <Text style={mapstyles.overlaySubText}>Please check wait the designated time or watch an advert!</Text>
+            </View>
+          )}
           <View style={{ flexDirection: 'row', justifyContent: 'space-around', padding: 10 }}>
             <Button title="Cancel" onPress={onClose} />
             <Button title="Fire" onPress={handleMissilePlacement} />

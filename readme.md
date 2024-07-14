@@ -4,12 +4,15 @@ A React Native app with Expo
 
 ## Running the frontend
 
-Make sure to install all dependencies before proceeding:
+Ensure npm is installed: <br />
+https://nodejs.org/en/download/prebuilt-installer
 
+Make sure to install all dependencies before proceeding: <br />
 ```
 npm i
 ```
-Make sure to run the backend server before running.
+
+Make sure to run the backend server before running!
 
 ## Update the .env
 Update this with your ip address:
@@ -24,8 +27,8 @@ npm start
 ```
 
 ## Using Expo Go:
-Ensure it is using Expo go after `npm start`.
-Check:
+Ensure it is using Expo go after `npm start`. <br />
+Check: <br />
 ```
 Using development build
 › Press s │ switch to Expo Go
@@ -33,16 +36,28 @@ Using development build
 Just type `s` to resolve :)
 
 ## Login 
-To login in to an account use either: 
-`Test` or `Test2`
-Password: is `Testing123!`
+To login in to an account use either: <br />
+Username: `Test` or `Test2` <br />
+Password: `Testing123!` <br />
 
-## Build 
-## Pre-Build:
-- `npx expo prebuild --platform ios`
+# Building:
+To send the build to EAS build run the following commands: <br />
+*Note: You will need the companies Apple login for iOS builds - Contact Tristan in Discord for this*
+## Pre-Build
+`npx expo prebuild --platform ios`  <br />
+*Note: Unless developing native code this is unnecessary*  <br />
 
 ### For Preview:
-- `eas build --profile preview --platform all` or `eas build --profile preview --platform ios`
+`eas build --profile preview --platform all` <br />
+or <br />
+`eas build --profile preview --platform ios` <br />
 
 ### For Development:
-- `eas build --profile development --platform all` or `eas build --profile development --platform ios`
+`eas build --profile development --platform all` <br />
+or <br />
+`eas build --profile development --platform ios` <br />
+
+### For Production:
+`eas build --profile production --platform all` <br />
+or <br />
+`eas build --profile production --platform ios` <br />

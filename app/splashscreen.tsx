@@ -6,7 +6,7 @@ interface SplashScreenProps {
 }
 
 const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
-  const [fadeAnim] = useState(new Animated.Value(0)); 
+  const [fadeAnim] = useState(new Animated.Value(0));
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -44,8 +44,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   banner: {
-    width: 300, 
-    height: 100, 
+    width: 300,
+    height: 100,
     resizeMode: 'contain',
   },
   text: {

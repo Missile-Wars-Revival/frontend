@@ -25,14 +25,14 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: '#f0f0f0',
     padding: 10,
-    marginBottom: 10, 
+    marginBottom: 10,
     alignItems: 'center',
   },
   headerText: {
     fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginTop: 35, 
+    marginTop: 35,
   },
 });
 
