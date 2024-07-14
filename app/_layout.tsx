@@ -147,6 +147,7 @@ function RootLayoutNav() {
           <Stack.Screen name="friends" options={{ headerShown: false }} />
           <Stack.Screen name="add-friends" options={{ headerShown: false }} />
           <Stack.Screen name="profile" options={{ headerShown: false }} />
+          <Stack.Screen name="settings" options={{ headerShown: false }} />
         </Stack>
         {!hideNavBarRoutes.includes(pathname) && <NavBar />}
       </View>
