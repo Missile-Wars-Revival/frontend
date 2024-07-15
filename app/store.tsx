@@ -6,7 +6,11 @@ import { mainstorestyles } from '../components/Store/storestylesheets';
 import axiosInstance from '../api/axios-instance';
 import * as SecureStore from "expo-secure-store";
 import axios from 'axios';
-import { useStripe, ApplePay } from '@stripe/stripe-react-native';
+import { useStripe, ApplePay, initStripe  } from '@stripe/stripe-react-native';
+
+initStripe({
+  publishableKey: 'pk_test_51PEAnYP3sGtoIgVSWiVuOWaYHjNuvcJoYjQCGUY446QRTKmxrximRAcbFypAqrexWuJFQ0TWXRYxba0LLeykVU7300ZyHJaWb1', 
+});
 
 export interface Product {
   id: string;
@@ -56,7 +60,7 @@ const StorePage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [currencyAmount, setCurrencyAmount] = useState<number>(0);
   const [isPremiumStore, setIsPremiumStore] = useState<boolean>(false);
-  const { confirmPayment } = useStripe();
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
 
   useEffect(() => {
     const loadCart = async () => {
@@ -127,51 +131,64 @@ const StorePage: React.FC = () => {
   const fetchPaymentIntentClientSecret = async (product: Product) => {
     const token = await SecureStore.getItemAsync("token");
     if (!token) {
-        throw new Error('Token not found');
+      throw new Error('Token not found');
     }
   
     try {
-        const response = await axiosInstance.post('/api/payment-intent', {
-            productId: product.id,
-            token: token,
-            price: product.price,
-        });
+      const response = await axiosInstance.post('/api/payment-intent', {
+        productId: product.id,
+        token: token,
+        price: product.price,
+      });
   
-        if (response.data.status === 'pending') {
-            console.log('Client secret:', response.data.clientSecret);
-            return response.data.clientSecret;
-        } else {
-            throw new Error('Failed to create payment intent');
-        }
+      if (response.data.status === 'pending') {
+        console.log('Client secret:', response.data.clientSecret);
+        return response.data;
+      } else {
+        throw new Error('Failed to create payment intent');
+      }
     } catch (error) {
-        console.error('Error during payment initiation:', error);
-        throw new Error('Error during payment initiation');
+      console.error('Error during payment initiation:', error);
+      throw new Error('Error during payment initiation');
     }
   };
 
   const handlePayPress = async (product: Product) => {
     try {
-        const clientSecret = await fetchPaymentIntentClientSecret(product);
-        if (!clientSecret) {
-            throw new Error('Client secret not available');
-        }
-
-        const { error } = await confirmPayment(clientSecret, {
-            paymentMethodType: 'Card',
-            paymentMethodData: {
-                billingDetails: { /* optional billing details */ },
-            },
-        });
-
-        if (error) {
-            console.log('Payment confirmation error', error);
-        } else {
-            console.log('Payment confirmed successfully');
-        }
+      // Fetch the client secret and other required data from your backend
+      const { clientSecret, customer, ephemeralKey } = await fetchPaymentIntentClientSecret(product);
+  
+      if (!clientSecret) {
+        throw new Error('Client secret not available');
+      }
+  
+      // Initialize the payment sheet with the fetched data
+      const { error: initError } = await initPaymentSheet({
+        paymentIntentClientSecret: clientSecret,
+        customerEphemeralKeySecret: ephemeralKey,
+        customerId: customer,
+        merchantDisplayName: 'Missile Wars',
+        returnURL: 'yourapp://stripe-redirect',
+      });
+  
+      if (initError) {
+        console.error('Error initializing payment sheet', initError);
+        return;
+      }
+  
+      // Present the payment sheet to the user
+      const { error: paymentError } = await presentPaymentSheet();
+  
+      if (paymentError) {
+        console.log('Payment confirmation error', paymentError);
+      } else {
+        console.log('Payment confirmed successfully');
+      }
     } catch (error) {
-        console.error('Payment initiation or confirmation failed:', error);
+      console.error('Payment initiation or confirmation failed:', error);
     }
-  }
+  };
+  
 
   const filteredProducts = selectedCategory === 'All' ? products : products.filter(p => p.type === selectedCategory);
 
