@@ -6,6 +6,7 @@ import { mainstorestyles } from '../components/Store/storestylesheets';
 import axiosInstance from '../api/axios-instance';
 import * as SecureStore from "expo-secure-store";
 import axios from 'axios';
+import { useStripe, ApplePay } from '@stripe/stripe-react-native';
 
 export interface Product {
   id: string;
@@ -55,6 +56,7 @@ const StorePage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [currencyAmount, setCurrencyAmount] = useState<number>(0);
   const [isPremiumStore, setIsPremiumStore] = useState<boolean>(false);
+  const { confirmPayment } = useStripe();
 
   useEffect(() => {
     const loadCart = async () => {
@@ -121,36 +123,55 @@ const StorePage: React.FC = () => {
     AsyncStorage.setItem('cartitems', JSON.stringify(updatedCart));
     setCart(updatedCart);
   };
-//retrives stripe client secret
-  const buyItem = async (product: Product) => {
-    const token = await SecureStore.getItemAsync("token");
-    try {
-      if (!token) {
-        console.log('Token not found');
-        return;
-      }
-      const response = await axiosInstance.post('/api/payment-intent', {
-        productId: product.id,
-        token: token,
-        price: product.price,
-      });
 
-      if (response.data.status === 'pending') {
-        console.log('Client secret:', response.data.clientSecret);
-        return {
-          status: 'pending',
-          clientSecret: response.data.clientSecret,
-        };
-      } else {
-        throw new Error('Failed to create payment intent');
-      }
+  const fetchPaymentIntentClientSecret = async (product: Product) => {
+    const token = await SecureStore.getItemAsync("token");
+    if (!token) {
+        throw new Error('Token not found');
+    }
+  
+    try {
+        const response = await axiosInstance.post('/api/payment-intent', {
+            productId: product.id,
+            token: token,
+            price: product.price,
+        });
+  
+        if (response.data.status === 'pending') {
+            console.log('Client secret:', response.data.clientSecret);
+            return response.data.clientSecret;
+        } else {
+            throw new Error('Failed to create payment intent');
+        }
     } catch (error) {
-      console.error('Error during payment initiation:', error);
-      return {
-        status: 'failed',
-      };
+        console.error('Error during payment initiation:', error);
+        throw new Error('Error during payment initiation');
     }
   };
+
+  const handlePayPress = async (product: Product) => {
+    try {
+        const clientSecret = await fetchPaymentIntentClientSecret(product);
+        if (!clientSecret) {
+            throw new Error('Client secret not available');
+        }
+
+        const { error } = await confirmPayment(clientSecret, {
+            paymentMethodType: 'Card',
+            paymentMethodData: {
+                billingDetails: { /* optional billing details */ },
+            },
+        });
+
+        if (error) {
+            console.log('Payment confirmation error', error);
+        } else {
+            console.log('Payment confirmed successfully');
+        }
+    } catch (error) {
+        console.error('Payment initiation or confirmation failed:', error);
+    }
+  }
 
   const filteredProducts = selectedCategory === 'All' ? products : products.filter(p => p.type === selectedCategory);
 
@@ -163,7 +184,7 @@ const StorePage: React.FC = () => {
   );
 
   const premrenderButton = ({ item }: { item: Product }) => (
-    <TouchableOpacity style={mainstorestyles.button} onPress={() => buyItem(item).then(result => console.log(result))}>
+    <TouchableOpacity style={mainstorestyles.button} onPress={() => handlePayPress(item)}>
       <Text style={mainstorestyles.buttonText}>{item.name}</Text>
       <Image source={item.image} style={mainstorestyles.buttonImage} />
       <Text style={mainstorestyles.buttonText}>£{item.price}</Text>

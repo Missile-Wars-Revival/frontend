@@ -10,7 +10,8 @@ import { FontAwesome } from '@expo/vector-icons';
 import { ProximityCheckNotif } from "../components/Collision/collision";
 import useWebSocket, { } from "../hooks/api/websockets"; 
 import { WebSocketContext, WebSocketProviderProps } from "../util/Context/websocket";
-import { CountdownContext, CountdownProviderProps, useCountdown } from "../util/Context/countdown";
+import { CountdownContext, CountdownProviderProps } from "../util/Context/countdown";
+import { StripeProvider } from '@stripe/stripe-react-native';
 
 // RootLayout component
 export default function RootLayout() {
@@ -51,11 +52,17 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <StripeProvider
+      publishableKey="pk_test_51PEAnYP3sGtoIgVSWiVuOWaYHjNuvcJoYjQCGUY446QRTKmxrximRAcbFypAqrexWuJFQ0TWXRYxba0LLeykVU7300ZyHJaWb1"
+      urlScheme="your-url-scheme" // required for 3D Secure and bank redirects
+      merchantIdentifier="merchant.com.missilewars" // required for Apple Pay
+    >
       <CountdownProvider>
         <WebSocketProvider>
           <RootLayoutNav />
         </WebSocketProvider>
       </CountdownProvider>
+      </StripeProvider>
     </QueryClientProvider>
   );
 }
