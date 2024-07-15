@@ -4,7 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
 import axiosInstance from "../api/axios-instance";
 import axios from "axios";
-import { RewardedAd, RewardedAdEventType, TestIds } from 'react-native-google-mobile-ads';
+//import { RewardedAd, RewardedAdEventType, TestIds } from 'react-native-google-mobile-ads';
 
 // Android Themes
 import { androidDefaultMapStyle } from "../map-themes/Android-themes/defaultMapStyle";
@@ -34,11 +34,11 @@ import { getHealth, getisAlive, setHealth, updateisAlive } from "../api/health";
 import CountdownTimer from "../components/countdown";
 import { useCountdown } from "../util/Context/countdown";
 
-const adUnitId =  __DEV__ ? TestIds.REWARDED : 'ca-app-pub-9160450369509545/6677957247';
+// const adUnitId =  __DEV__ ? TestIds.REWARDED : 'ca-app-pub-9160450369509545/6677957247';
 
-const rewarded = RewardedAd.createForAdRequest(adUnitId, {
-  keywords: ['fashion', 'clothing'], //ads category
-});
+// const rewarded = RewardedAd.createForAdRequest(adUnitId, {
+//   keywords: ['fashion', 'clothing'], //ads category
+// });
 
 export default function Map() {
   const [selectedMapStyle, setSelectedMapStyle] = useState<MapStyle[]>(Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle);
@@ -163,26 +163,26 @@ export default function Map() {
     };
   },
     []);
-    useEffect(() => {
-      const unsubscribeLoaded = rewarded.addAdEventListener(RewardedAdEventType.LOADED, () => {
-        setLoaded(true);
-      });
-      const unsubscribeEarned = rewarded.addAdEventListener(
-        RewardedAdEventType.EARNED_REWARD,
-        reward => {
-          console.log('User earned reward of ', reward);
-        },
-      );
+    // useEffect(() => {
+    //   const unsubscribeLoaded = rewarded.addAdEventListener(RewardedAdEventType.LOADED, () => {
+    //     setLoaded(true);
+    //   });
+    //   const unsubscribeEarned = rewarded.addAdEventListener(
+    //     RewardedAdEventType.EARNED_REWARD,
+    //     reward => {
+    //       console.log('User earned reward of ', reward);
+    //     },
+    //   );
   
-      // Start loading the rewarded ad straight away
-      rewarded.load();
+    //   // Start loading the rewarded ad straight away
+    //   rewarded.load();
   
-      // Unsubscribe from events on unmount
-      return () => {
-        unsubscribeLoaded();
-        unsubscribeEarned();
-      };
-    }, []);
+    //   // Unsubscribe from events on unmount
+    //   return () => {
+    //     unsubscribeLoaded();
+    //     unsubscribeEarned();
+    //   };
+    // }, []);
 
   const showPopup = () => {
     setThemePopupVisible(true);
@@ -218,7 +218,7 @@ export default function Map() {
     storeMapStyle(style);
   };
   const respawn = async () => {
-    rewarded.show();
+    //rewarded.show();
     const token = SecureStore.getItem("token");
   
     if (token === null) {
