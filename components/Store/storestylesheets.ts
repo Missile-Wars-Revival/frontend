@@ -218,7 +218,7 @@ export const mainstorestyles = StyleSheet.create({ //Styles made by NightSpark
   buttonText: {
     color: '#753663',
     borderColor: '#FFF',
-    fontSize: 15,
+    fontSize: 12,
     fontWeight: 'bold',
     textAlign: 'center',
     marginTop: -5,

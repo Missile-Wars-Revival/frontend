@@ -11,7 +11,6 @@ import { ProximityCheckNotif } from "../components/Collision/collision";
 import useWebSocket, { } from "../hooks/api/websockets"; 
 import { WebSocketContext, WebSocketProviderProps } from "../util/Context/websocket";
 import { CountdownContext, CountdownProviderProps, useCountdown } from "../util/Context/countdown";
-import CountdownTimer from "../components/countdown";
 
 // RootLayout component
 export default function RootLayout() {
@@ -148,6 +147,7 @@ function RootLayoutNav() {
           <Stack.Screen name="friends" options={{ headerShown: false }} />
           <Stack.Screen name="add-friends" options={{ headerShown: false }} />
           <Stack.Screen name="profile" options={{ headerShown: false }} />
+          <Stack.Screen name="settings" options={{ headerShown: false }} />
         </Stack>
         {!hideNavBarRoutes.includes(pathname) && <NavBar />}
       </View>

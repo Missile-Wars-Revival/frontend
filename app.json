@@ -32,6 +32,7 @@
           "location",
           "fetch"
         ]
+
       }
     },
     "android": {
@@ -62,7 +63,24 @@
           "sounds": []
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ],
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-9160450369509545~8843325279",
+          "iosAppId": "ca-app-pub-9160450369509545~4744298160",
+          "userTrackingUsageDescription": "This identifier will be used to deliver personalized ads to you."
+        }
+      ]
+
     ],
     "owner": "osog",
     "runtimeVersion": {
