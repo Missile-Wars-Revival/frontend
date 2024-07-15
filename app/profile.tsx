@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import * as SecureStore from "expo-secure-store";
 import axiosInstance from '../api/axios-instance';
+import { Ionicons } from '@expo/vector-icons';
 
 interface ItemImages {
   [key: string]: any;
@@ -90,10 +91,17 @@ const ProfilePage: React.FC = () => {
     await AsyncStorage.setItem('useBackgroundLocation', newValue.toString());
   };
 
+  const openSettings = () => {
+    router.push("/settings");
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerText}>Profile Page</Text>
+        <TouchableOpacity style={styles.settingsButton} onPress={openSettings}>
+          <Ionicons name="settings" size={24} color="white" />
+        </TouchableOpacity>
       </View>
       <View style={styles.profileContainer}>
         <Image style={styles.profileImage} source={{ uri: 'https://via.placeholder.com/150' }} />
@@ -152,6 +160,13 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: '#ffffff',
     fontWeight: 'bold',
+  },
+  settingsButton: {
+    position: 'absolute',
+    top: 25,
+    left: 330,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   profileContainer: {
     flex: 1,
