@@ -121,9 +121,36 @@ const StorePage: React.FC = () => {
     AsyncStorage.setItem('cartitems', JSON.stringify(updatedCart));
     setCart(updatedCart);
   };
+//retrives strip client secret
+  const buyItem = async (product: Product) => {
+    const token = await SecureStore.getItemAsync("token");
+    try {
+      if (!token) {
+        console.log('Token not found');
+        return;
+      }
+      // Make an API call to your server-side endpoint
+      const response = await axiosInstance.post('/api/payment-intent', {
+        productId: product.id,
+        token: token,
+        price: product.price,
+      });
 
-  const buyitem = (product: Product) => {
-    //stripe info here
+      if (response.data.status === 'pending') {
+        console.log('Client secret:', response.data.clientSecret);
+        return {
+          status: 'pending',
+          clientSecret: response.data.clientSecret,
+        };
+      } else {
+        throw new Error('Failed to create payment intent');
+      }
+    } catch (error) {
+      console.error('Error during payment initiation:', error);
+      return {
+        status: 'failed',
+      };
+    }
   };
 
   const filteredProducts = selectedCategory === 'All' ? products : products.filter(p => p.type === selectedCategory);
@@ -137,7 +164,7 @@ const StorePage: React.FC = () => {
   );
 
   const premrenderButton = ({ item }: { item: Product }) => (
-    <TouchableOpacity style={mainstorestyles.button} onPress={() => buyitem(item)}>
+    <TouchableOpacity style={mainstorestyles.button} onPress={() => buyItem(item).then(result => console.log(result))}>
       <Text style={mainstorestyles.buttonText}>{item.name}</Text>
       <Image source={item.image} style={mainstorestyles.buttonImage} />
       <Text style={mainstorestyles.buttonText}>£{item.price}</Text>
@@ -203,16 +230,16 @@ const StorePage: React.FC = () => {
 
       {(isPremiumStore) && (
         <View style={mainstorestyles.container}>
-            <>
-              <FlatList
-                data={premproducts}
-                keyExtractor={(item) => item.id.toString()}
-                renderItem={premrenderButton}
-                numColumns={3}
-                columnWrapperStyle={mainstorestyles.columnWrapper}
-                contentContainerStyle={mainstorestyles.contentContainer}
-              />
-            </>
+          <>
+            <FlatList
+              data={premproducts}
+              keyExtractor={(item) => item.id.toString()}
+              renderItem={premrenderButton}
+              numColumns={3}
+              columnWrapperStyle={mainstorestyles.columnWrapper}
+              contentContainerStyle={mainstorestyles.contentContainer}
+            />
+          </>
         </View>
       )}
     </ImageBackground>
