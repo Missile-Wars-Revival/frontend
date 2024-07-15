@@ -45,7 +45,7 @@ export const premproducts: Product[] = [
   //{ id: "9", name: 'GutShot', price: 5.99, image: require('../assets/missiles/GutShot.png'), description: 'GutShot missile', sku: "GutShot", type: 'Missiles' },
   { id: "11", name: 'Yokozuna', price: 4.99, image: require('../assets/missiles/Yokozuna.png'), description: 'Yokozuna missile', sku: "Yokozuna", type: 'Missiles' },
   { id: "13", name: 'Zippy', price: 5.99, image: require('../assets/missiles/Zippy.png'), description: 'Zippy', sku: "Zippy", type: 'Missiles' },
-  { id: "14", name: '1000 x Coins', price: 4.99, image: ('🪙'), description: '1000 Coinds', sku: "1000Coins", type: 'Coins' },
+  { id: "14", name: '1000 x Coins', price: 4.99, image: '🪙', description: '1000 Coinds', sku: "1000Coins", type: 'Coins' },
   //{ id: "20", name: 'LootDrop', price: 4.99, image: require('../assets/mapassets/Airdropicon.png'), description: 'A Loot Drop', sku: "Loot Drop", type: 'Loot Drops' },
 ];
 
@@ -121,7 +121,7 @@ const StorePage: React.FC = () => {
     AsyncStorage.setItem('cartitems', JSON.stringify(updatedCart));
     setCart(updatedCart);
   };
-//retrives strip client secret
+//retrives stripe client secret
   const buyItem = async (product: Product) => {
     const token = await SecureStore.getItemAsync("token");
     try {
@@ -129,7 +129,6 @@ const StorePage: React.FC = () => {
         console.log('Token not found');
         return;
       }
-      // Make an API call to your server-side endpoint
       const response = await axiosInstance.post('/api/payment-intent', {
         productId: product.id,
         token: token,
