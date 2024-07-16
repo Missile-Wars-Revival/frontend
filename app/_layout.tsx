@@ -10,12 +10,24 @@ import { FontAwesome } from '@expo/vector-icons';
 import { ProximityCheckNotif } from "../components/Collision/collision";
 import useWebSocket, { } from "../hooks/api/websockets"; 
 import { WebSocketContext, WebSocketProviderProps } from "../util/Context/websocket";
-import { CountdownContext, CountdownProviderProps, useCountdown } from "../util/Context/countdown";
+import { CountdownContext, CountdownProviderProps } from "../util/Context/countdown";
+import { Platform } from 'react-native';
+import Purchases from 'react-native-purchases';
 
 // RootLayout component
 export default function RootLayout() {
   const queryClient = new QueryClient();
   const [isSplashVisible, setIsSplashVisible] = useState(true);
+
+  useEffect(() => {
+    // Configuration or other code that should run on component mount
+    Purchases.setDebugLogsEnabled(true);
+    if (Platform.OS === 'ios') {
+      Purchases.configure({ apiKey: "your_apple_api_key" });
+    } else {
+      Purchases.configure({ apiKey: "your_android_api_key" });
+    }
+  }, []);
 
   const handleSplashFinish = () => {
     setIsSplashVisible(false);
@@ -89,9 +101,9 @@ function NavBar() {
   };
 
   return (
-    //switch commenting to hide ranking pages
-    // <View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-around', backgroundColor: 'rgba(255, 255, 255, 0.0)', height: 100, alignItems: 'center' }}>
+    //switch commenting to hide ranking pages<View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-around', backgroundColor: 'rgba(255, 255, 255, 0.0)', height: 100, alignItems: 'center' }}>
     //   {['/', '/store','/league', '/friends', '/profile'].map((tab, index) => (
+    // 
     <View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-around', backgroundColor: 'rgba(255, 255, 255, 0.0)', height: 90, alignItems: 'center' }}>
       {['/', '/store', '/friends', '/profile'].map((tab, index) => (
         <TouchableOpacity

@@ -6,6 +6,7 @@ import { mainstorestyles } from '../components/Store/storestylesheets';
 import axiosInstance from '../api/axios-instance';
 import * as SecureStore from "expo-secure-store";
 import axios from 'axios';
+import Purchases from 'react-native-purchases';
 
 export interface Product {
   id: string;
@@ -121,34 +122,56 @@ const StorePage: React.FC = () => {
     AsyncStorage.setItem('cartitems', JSON.stringify(updatedCart));
     setCart(updatedCart);
   };
-//retrives stripe client secret
+  //retrives stripe client secret
   const buyItem = async (product: Product) => {
     const token = await SecureStore.getItemAsync("token");
-    try {
-      if (!token) {
-        console.log('Token not found');
-        return;
-      }
-      const response = await axiosInstance.post('/api/payment-intent', {
-        productId: product.id,
-        token: token,
-        price: product.price,
-      });
+    if (!token) {
+      console.log('Token not found');
+      return { status: 'token_not_found' };
+    }
 
-      if (response.data.status === 'pending') {
-        console.log('Client secret:', response.data.clientSecret);
-        return {
-          status: 'pending',
-          clientSecret: response.data.clientSecret,
-        };
+    if (!product.sku) {
+      console.log('Product SKU not found');
+      return { status: 'sku_not_found' };
+    }
+
+    try {
+      // First, retrieve the product details from RevenueCat
+      const offerings = await Purchases.getOfferings();
+      if (offerings.current) {
+        const storeProduct = offerings.current.availablePackages.find(p => p.product.identifier === product.sku);
+
+        if (!storeProduct) {
+          console.log('Store product not found');
+          return { status: 'store_product_not_found' };
+        }
+
+        // Handle the purchase with the store product
+        const { customerInfo } = await Purchases.purchaseStoreProduct(storeProduct.product);
+        if (customerInfo.entitlements.active["my_entitlement_identifier"]) {
+          console.log('Product purchased and entitlement active');
+          return { status: 'success' };
+        } else {
+          console.log('Entitlement not active');
+          return { status: 'entitlement_inactive' };
+        }
       } else {
-        throw new Error('Failed to create payment intent');
+        console.log('No offerings available');
+        return { status: 'offerings_not_found' };
       }
-    } catch (error) {
-      console.error('Error during payment initiation:', error);
-      return {
-        status: 'failed',
-      };
+    } catch (e) {
+      // Properly type-check the error before handling it
+      if (e instanceof Error) {
+        console.error('RevenueCat purchase error:', e.message);
+        if (e.message === "User cancelled") {
+          return { status: 'user_cancelled' };
+        }
+        return { status: 'purchase_error', error: e.message };
+      } else {
+        // Handle cases where the error is not an instance of Error
+        console.error('An unexpected error occurred');
+        return { status: 'unexpected_error', error: 'An unexpected error occurred' };
+      }
     }
   };
 
