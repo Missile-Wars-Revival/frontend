@@ -7,6 +7,8 @@ import axiosInstance from '../api/axios-instance';
 import * as SecureStore from "expo-secure-store";
 import axios from 'axios';
 import Purchases from 'react-native-purchases';
+import { addmoney } from '../api/money';
+import { additem } from '../api/add-item';
 
 export interface Product {
   id: string;
@@ -46,7 +48,7 @@ export const premproducts: Product[] = [
   //{ id: "9", name: 'GutShot', price: 5.99, image: require('../assets/missiles/GutShot.png'), description: 'GutShot missile', sku: "GutShot", type: 'Missiles' },
   { id: "11", name: 'Yokozuna', price: 4.99, image: require('../assets/missiles/Yokozuna.png'), description: 'Yokozuna missile', sku: "Yokozuna", type: 'Missiles' },
   { id: "13", name: 'Zippy', price: 5.99, image: require('../assets/missiles/Zippy.png'), description: 'Zippy', sku: "Zippy", type: 'Missiles' },
-  { id: "14", name: '1000 x Coins', price: 4.99, image: '🪙', description: '1000 Coinds', sku: "1000Coins", type: 'Coins' },
+  { id: "14", name: '1000 x Coins', price: 4.99, image: '🪙', description: '1000', sku: "1000Coins", type: 'Coins' },
   //{ id: "20", name: 'LootDrop', price: 4.99, image: require('../assets/mapassets/Airdropicon.png'), description: 'A Loot Drop', sku: "Loot Drop", type: 'Loot Drops' },
 ];
 
@@ -122,7 +124,8 @@ const StorePage: React.FC = () => {
     AsyncStorage.setItem('cartitems', JSON.stringify(updatedCart));
     setCart(updatedCart);
   };
-  //retrives stripe client secret
+
+ //buys item - SET API TOKENS IN _LAYOUT.TSX
   const buyItem = async (product: Product) => {
     const token = await SecureStore.getItemAsync("token");
     if (!token) {
@@ -148,8 +151,28 @@ const StorePage: React.FC = () => {
 
         // Handle the purchase with the store product
         const { customerInfo } = await Purchases.purchaseStoreProduct(storeProduct.product);
-        if (customerInfo.entitlements.active["my_entitlement_identifier"]) {
+        if (customerInfo.entitlements.active["my_entitlement_identifier"]) { //replace with entitlement ID for both ios and android
           console.log('Product purchased and entitlement active');
+          
+          switch (product.type) {
+            case 'Coins':
+              const amount = parseInt(product.description, 10);
+              if (!isNaN(amount)) {
+                await addmoney(token, amount);
+                console.log(`Added ${amount} coins to user's account.`);
+              } else {
+                console.log('Invalid coin amount.');
+                return { status: 'invalid_coin_amount' };
+              }
+              break;
+            case 'Missiles':
+              await additem(token, product.name, product.type);
+              console.log(`Added a missile (${product.name}) to inventory.`);
+              break;
+            default:
+              console.log('Unknown product type.');
+              return { status: 'unknown_product_type' };
+          }
           return { status: 'success' };
         } else {
           console.log('Entitlement not active');
