@@ -10,6 +10,9 @@ const WEBSOCKET_PROTOCOL = 'missilewars';
 
 const useWebSocket = () => {
     const [data, setData] = useState<any>(null);
+    const [missiledata, setmissileData] = useState<any>(null);
+    const [landminedata, setlandmineData] = useState<any>(null);
+    const [lootdata, setlootData] = useState<any>(null);
     const [websocket, setWebsocket] = useState<WebSocket | null>(null);
     const [reconnectAttempts, setReconnectAttempts] = useState(0);
 
@@ -38,43 +41,38 @@ const useWebSocket = () => {
 
             ws.onclose = () => {
                 console.log('WebSocket connection closed');
+                AsyncStorage.setItem('dbconnection', 'false');
                 reconnectWebsocket();
             };
 
             ws.onmessage = (event) => {
                 try {
                     const receivedData = decode(new Uint8Array(event.data));
-                    //console.log("Received data from websocket:", receivedData);
                     if (Array.isArray(receivedData)) {
-                        // Handle array of messages
-                        receivedData.forEach((receivedData) => {
-                            if (receivedData.itemType === "Missile") {
-                                const missiles = receivedData; 
-                                console.log("Received missiles:", missiles);
-                                setData(missiles); // Assuming 'payload' contains the missile data
-                            }
-                            if (receivedData.itemType === "Landmine") {
-                                const Landmine = receivedData; 
-                                console.log("Received Landmine:", Landmine);
-                                setData(Landmine); // Assuming 'payload' contains the missile data
-                            }
-                            if (receivedData.itemType === "Loot") {
-                                const Loot = receivedData; 
-                                console.log("Received Loot:", Loot);
-                                setData(Loot); // Assuming 'payload' contains the missile data
+                        receivedData.forEach((data) => {
+                            switch (data.itemType) {
+                                case "Missile":
+                                    //console.log("Received Missiles:", data);
+                                    setmissileData(data); 
+                                    break;
+                                case "Landmine":
+                                    //console.log("Received Landmine:", data);
+                                    setlandmineData(data); 
+                                    break;
+                                case "Loot":
+                                    //console.log("Received Loot:", data);
+                                    setlootData(data);
+                                    break;
+                                default:
+                                    console.warn("Unhandled itemType:", data.itemType);
                             }
                         });
-                    } else {
-                        // Handle single message
                     }
-
-                    // Further processing based on different types of messages
                 } catch (error) {
                     console.error("Error processing msgpack message, attempting JSON:", error);
                     try {
                         const receivedData = JSON.parse(event.data);
                         console.log("Received JSON data from websocket:", receivedData);
-                        
                     } catch (jsonError) {
                         console.error("Error processing JSON message:", jsonError);
                     }
@@ -111,20 +109,20 @@ const useWebSocket = () => {
     }, []);
 
     const sendWebsocket = async (data: WebSocketMessage) => {
-        if (websocket && websocket.readyState === WebSocket.OPEN) {
-            try {
-                const encodedData = encode(data);
-                console.log("Sending data to websocket", data);
-                websocket.send(encodedData);
-            } catch (error) {
-                console.error("Error encoding data for websocket:", error);
-            }
-        } else {
-            console.error("WebSocket is not open. Unable to send message.");
-        }
+        // if (websocket && websocket.readyState === WebSocket.OPEN) {
+        //     try {
+        //         const encodedData = encode(data);
+        //         console.log("Sending data to websocket", data);
+        //         websocket.send(encodedData);
+        //     } catch (error) {
+        //         console.error("Error sending websocket request",);
+        //     }
+        // } else {
+        //     console.error("WebSocket is not open. Unable to send message.");
+        // }
     };
 
-    return { data, sendWebsocket };
+    return { data, missiledata, landminedata, lootdata, sendWebsocket };
 };
 
 export default useWebSocket;

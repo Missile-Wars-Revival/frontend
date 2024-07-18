@@ -9,7 +9,7 @@ import { loadLastKnownLocation, saveLocation } from '../util/mapstore';
 import { getLocationPermission } from "../util/locationreq";
 import { dispatch } from "../api/dispatch";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getCurrentLocation, location } from "../util/locationreq";
+import { getCurrentLocation } from "../util/locationreq";
 import { mainmapstyles } from "../map-themes/map-stylesheet";
 import { DefRegLocationTask } from "../util/backgroundtasks";
 import * as SecureStore from "expo-secure-store";
@@ -17,12 +17,18 @@ import { updateFriendsOnlyStatus } from "../api/visibility";
 import useFetchMissiles from "../hooks/websockets/missilehook";
 import useFetchLoot from "../hooks/websockets/loothook";
 import useFetchLandmine from "../hooks/websockets/landminehook";
+import { Landmine, Loot, Missile } from "middle-earth";
 
 interface MapCompProps {
     selectedMapStyle: any;
 }
 
 export const MapComp = (props: MapCompProps) => {
+
+    const missileData = useFetchMissiles()
+    const lootData = useFetchLoot()
+    const LandmineData = useFetchLandmine()
+
     const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(false);
     const [isLoading, setIsLoading] = useState(true);
     const [hasDbConnection, setDbConnection] = useState<boolean>();
@@ -36,9 +42,6 @@ export const MapComp = (props: MapCompProps) => {
         latitudeDelta: 0.1922,
         longitudeDelta: 0.1421,
     });
-    const lootData = useFetchLoot();
-    const LandmineData = useFetchLandmine();
-    const missileData = useFetchMissiles();
 
     const dispatchLocation = async () => {
         try {

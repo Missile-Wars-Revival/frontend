@@ -36,23 +36,15 @@ interface LastNotified {
 const proximityThreshold = 0.002;
 
 export const ProximityCheckNotif: React.FC<{}> = () => {
-    const [lootLocations, setLootLocations] = useState<Loot[]>([]);
-    const [missileData, setMissileData] = useState<Missile[]>([]);
-    const [landmineData, setLandmineLocations] = useState<Landmine[]>([]);
+
+    const missileData = useFetchMissiles()
+    const lootLocations = useFetchLoot()
+    const landmineData = useFetchLandmine()
+
     const [userLocation, setUserLocation] = useState<location | null>(null);
     const [lastNotified, setLastNotified] = useState<LastNotified>({ loot: null, missile: null, landmine: null });
     const [isAlive, setisAlive] = useState(true);
     const { startCountdown, stopCountdown } = useCountdown();
-    
-    const fetchLootAndMissiles = useCallback(async () => {
-        setLootLocations(useFetchLoot());
-        setLandmineLocations(useFetchLandmine());
-        setMissileData(useFetchMissiles());
-    }, []);
-
-    useEffect(() => {
-        fetchLootAndMissiles();
-    }, [fetchLootAndMissiles]);
 
     const getCurrentLocationWrapper = async () => {
         const location: location = await getCurrentLocation();
@@ -396,14 +388,13 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
             }
         };
         const interval = setInterval(() => {
-            fetchLootAndMissiles();
             checkisAlive()
             getCurrentLocationWrapper();
             checkAndNotify();
         }, 10000);
 
         return () => clearInterval(interval);
-    }, [fetchLootAndMissiles, getCurrentLocationWrapper, checkAndNotify]);
+    }, [getCurrentLocationWrapper, checkAndNotify]);
 
     return null;
 };    

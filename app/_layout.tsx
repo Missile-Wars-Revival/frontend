@@ -38,10 +38,10 @@ export default function RootLayout() {
   }
 
   const WebSocketProvider = ({ children }: WebSocketProviderProps) => {
-    const { data, sendWebsocket } = useWebSocket();
+    const { data, missiledata, lootdata, landminedata, sendWebsocket } = useWebSocket();
 
     return (
-      <WebSocketContext.Provider value={{ data, sendWebsocket }}>
+      <WebSocketContext.Provider value={{ data, missiledata, lootdata, landminedata, sendWebsocket }}>
         {children}
       </WebSocketContext.Provider>
     );

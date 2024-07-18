@@ -3,6 +3,9 @@ import { WebSocketMessage } from "middle-earth";
 
 export interface WebSocketContextProps {
     data: any;
+    missiledata: any;
+    landminedata: any;
+    lootdata:any;
     sendWebsocket: (data: WebSocketMessage) => void;
   }
 
