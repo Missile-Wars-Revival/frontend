@@ -43,6 +43,7 @@
     "react-native-elements": "^3.4.3",
     "react-native-google-mobile-ads": "^14.0.0",
     "react-native-linear-gradient": "^2.8.3",
+    "react-native-maps": "1.14.0",
     "react-native-purchases": "^7.28.1",
     "react-native-reanimated": "~3.10.1",
     "react-native-responsive-screen": "^1.4.2",
@@ -51,7 +52,7 @@
     "react-native-svg": "15.2.0",
     "tailwind-merge": "^2.3.0",
     "zod": "^3.23.4",
-    "react-native-maps": "1.14.0"
+    "expo-av": "~14.0.6"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

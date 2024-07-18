@@ -287,10 +287,10 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
         
                     if (healthNumber <= 0) {
                         stopCountdown();
-                        Alert.alert("Dead", `You have been killed by a ${missiletype}missile sent by user: ${sentBy}`);
+                        Alert.alert("Dead", `You have been killed by a ${missiletype} missile sent by user: ${sentBy}`);
                         console.log('User health has reached zero or below.');
                         await AsyncStorage.setItem(`isAlive`, `false`)
-                        updateisAlive(false);
+                        updateisAlive(token, false);
                         await AsyncStorage.setItem('health', '0'); // Set health to zero in storage
                         setHealth(token, 0) //set health 0 in DB
                     } else {
@@ -355,7 +355,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                     Alert.alert("Dead", `You have been killed by a Landmine placed by user: ${sentBy}`);
                     console.log('User health has reached zero or below.');
                     await AsyncStorage.setItem(`isAlive`, `false`);
-                    updateisAlive(false);
+                    updateisAlive(token, false);
                     await AsyncStorage.setItem('health', '0'); // Set health to zero in storage
                     setHealth(token, 0); // set health 0 in DB
                 } else {

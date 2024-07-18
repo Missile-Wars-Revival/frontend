@@ -1,8 +1,9 @@
 import axiosInstance from "./axios-instance";
 import { isAxiosError } from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as SecureStore from "expo-secure-store";
 import { removemoney } from "./money";
+import { Alert } from "react-native";
+import { playDeathSound } from "../util/sounds/deathsound";
 
 export async function getHealth(
   token: string,
@@ -99,8 +100,7 @@ export async function addHealth(
 }
 
 //is Alive
-export const updateisAlive = async (isAlive: boolean) => {
-  const token = await SecureStore.getItemAsync("token");
+export const updateisAlive = async (token: string, isAlive: boolean) => {
   try {
     if (!token) {
       console.log('Token not found');
@@ -113,13 +113,16 @@ export const updateisAlive = async (isAlive: boolean) => {
       isAlive
     });
     console.log("isAlive status updated successfully to:", isAlive);
-    if (isAlive == false) {
+    if (isAlive === false) {
+      //playDeathSound();
       const response = await axiosInstance.get('/api/getMoney', {
         params: { token }
       });
       const amountmon = response.data.money
 
       const deductmon = amountmon * 0.4
+
+      Alert.alert(`You have lost 40% of your money which is: ${deductmon} Coins`)
 
       removemoney(token, deductmon)
     }

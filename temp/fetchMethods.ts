@@ -6,8 +6,8 @@ import { GeoLocation, Landmine, Loot, Missile } from "middle-earth";
               new Missile(
                          "TheNuke",                              // type
                          "Hit",                                  // status
-                         new GeoLocation(45.2949318,-0.852674),  // destination
-                         new GeoLocation(45.2949318, -0.852674), // currentLocation
+                         new GeoLocation(51.13272557956777,-3.3300418863676),  // destination
+                         new GeoLocation(51.13272557956777, -3.3300418863676), // currentLocation
                          2,                                      // missileId
                          100,                                    // radius
                          "Test",                                     // sentbyusername
