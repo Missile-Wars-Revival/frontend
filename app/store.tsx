@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, FlatList, Button, StyleSheet, Text, TouchableOpacity, Image, ImageBackground } from 'react-native';
+import { View, FlatList, Text, TouchableOpacity, Image, ImageBackground } from 'react-native';
 import Cart from '../components/Store/cart';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { mainstorestyles } from '../components/Store/storestylesheets';

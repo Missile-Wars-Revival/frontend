@@ -1,6 +1,4 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Landmine, Loot, Missile } from "middle-earth";
-import { fetchLootFromBackend, fetchlandmineFromBackend } from "../../temp/fetchMethods";
 import { getCurrentLocation } from "../../util/locationreq";
 import { location } from "../../util/locationreq"
 import * as Notifications from 'expo-notifications';

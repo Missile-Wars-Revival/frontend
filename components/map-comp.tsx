@@ -17,7 +17,6 @@ import { updateFriendsOnlyStatus } from "../api/visibility";
 import useFetchMissiles from "../hooks/websockets/missilehook";
 import useFetchLoot from "../hooks/websockets/loothook";
 import useFetchLandmine from "../hooks/websockets/landminehook";
-import { Landmine, Loot, Missile } from "middle-earth";
 
 interface MapCompProps {
     selectedMapStyle: any;
