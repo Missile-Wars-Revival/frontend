@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { GeoLocation, Landmine, Loot, Missile, MissileType } from "middle-earth";
-import { fetchLootFromBackend, fetchMissilesFromBackend, fetchlandmineFromBackend } from "../../temp/fetchMethods";
+import { Landmine, Loot, Missile } from "middle-earth";
+import { fetchLootFromBackend, fetchlandmineFromBackend } from "../../temp/fetchMethods";
 import { getCurrentLocation } from "../../util/locationreq";
 import { location } from "../../util/locationreq"
 import * as Notifications from 'expo-notifications';
@@ -15,6 +15,9 @@ import { additem } from "../../api/add-item";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { removeHealth, setHealth, updateisAlive } from "../../api/health";
 import { useCountdown } from "../../util/Context/countdown";
+import useFetchMissiles from "../../hooks/websockets/missilehook";
+import useFetchLoot from "../../hooks/websockets/loothook";
+import useFetchLandmine from "../../hooks/websockets/landminehook";
 
 Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -40,11 +43,11 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
     const [lastNotified, setLastNotified] = useState<LastNotified>({ loot: null, missile: null, landmine: null });
     const [isAlive, setisAlive] = useState(true);
     const { startCountdown, stopCountdown } = useCountdown();
-
+    
     const fetchLootAndMissiles = useCallback(async () => {
-        setLootLocations(await fetchLootFromBackend());
-        setLandmineLocations(await fetchlandmineFromBackend());
-        setMissileData(await fetchMissilesFromBackend());
+        setLootLocations(useFetchLoot());
+        setLandmineLocations(useFetchLandmine());
+        setMissileData(useFetchMissiles());
     }, []);
 
     useEffect(() => {

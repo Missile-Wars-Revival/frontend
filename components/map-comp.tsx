@@ -1,12 +1,10 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, Switch, Alert, Platform, ActivityIndicator } from "react-native";
 import MapView, { PROVIDER_DEFAULT, PROVIDER_GOOGLE } from "react-native-maps";
 import { AllLootDrops } from "./loot-drop";
 import { AllLandMines } from "./Landmine/map-landmines";
 import { AllMissiles } from "./Missile/map-missile";
 import { AllPlayers } from "./map-players";
-import { Landmine, Loot, Missile } from "middle-earth";
-import { fetchLootFromBackend, fetchMissilesFromBackend, fetchlandmineFromBackend } from "../temp/fetchMethods";
 import { loadLastKnownLocation, saveLocation } from '../util/mapstore';
 import { getLocationPermission } from "../util/locationreq";
 import { dispatch } from "../api/dispatch";
@@ -16,6 +14,9 @@ import { mainmapstyles } from "../map-themes/map-stylesheet";
 import { DefRegLocationTask } from "../util/backgroundtasks";
 import * as SecureStore from "expo-secure-store";
 import { updateFriendsOnlyStatus } from "../api/visibility";
+import useFetchMissiles from "../hooks/websockets/missilehook";
+import useFetchLoot from "../hooks/websockets/loothook";
+import useFetchLandmine from "../hooks/websockets/landminehook";
 
 interface MapCompProps {
     selectedMapStyle: any;
@@ -35,15 +36,9 @@ export const MapComp = (props: MapCompProps) => {
         latitudeDelta: 0.1922,
         longitudeDelta: 0.1421,
     });
-    const [lootLocations, setLootLocations] = useState<Loot[]>([]);
-    const [missileData, setMissileData] = useState<Missile[]>([]);
-    const [landmineData, setLandmineLocations] = useState<Landmine[]>([]);
-
-    const fetchLootAndMissiles = useCallback(async () => {
-        setLootLocations(await fetchLootFromBackend());
-        setLandmineLocations(await fetchlandmineFromBackend());
-        setMissileData(await fetchMissilesFromBackend());
-    }, []);
+    const lootData = useFetchLoot();
+    const LandmineData = useFetchLandmine();
+    const missileData = useFetchMissiles();
 
     const dispatchLocation = async () => {
         try {
@@ -123,7 +118,6 @@ export const MapComp = (props: MapCompProps) => {
                 setIsLocationEnabled(status === 'granted');
 
                 await getlocation();
-                await fetchLootAndMissiles();
                 await dispatchLocation();
                 await DefRegLocationTask();
 
@@ -157,7 +151,6 @@ export const MapComp = (props: MapCompProps) => {
                         setisAlive(false); // Set to a default value in case of error
                     }
 
-                    fetchLootAndMissiles();
                     getLocationPermission();
                     dispatchLocation();
                 }, 1000);
@@ -170,7 +163,7 @@ export const MapComp = (props: MapCompProps) => {
         };
 
         initializeApp();
-    }, [fetchLootAndMissiles]);
+    }, []);
 
     const toggleMode = async () => {
         const newMode = visibilitymode === 'friends' ? 'global' : 'friends';
@@ -245,8 +238,8 @@ export const MapComp = (props: MapCompProps) => {
                 showsUserLocation={true}
                 showsMyLocationButton={true}
                 customMapStyle={props.selectedMapStyle}>
-                <AllLootDrops lootLocations={lootLocations} />
-                <AllLandMines landminedata={landmineData} />
+                <AllLootDrops lootLocations={lootData} />
+                <AllLandMines landminedata={LandmineData} />
                 <AllMissiles missileData={missileData} />
                 <AllPlayers />
             </MapView>

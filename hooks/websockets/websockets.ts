@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { encode, decode } from "msgpack-lite";
-import { WebSocketMessage } from "middle-earth";
+import { decode, encode } from "msgpack-lite";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { WebSocketMessage } from "middle-earth";
 
 const WEBSOCKET_URL = process.env.EXPO_PUBLIC_WEBSOCKET_URL || "ws://localhost:3000";
 const RECONNECT_INTERVAL_BASE = 1000; // base interval in ms
@@ -14,12 +14,12 @@ const useWebSocket = () => {
     const [reconnectAttempts, setReconnectAttempts] = useState(0);
 
     const connectWebsocket = (): Promise<WebSocket> => {
-        return new Promise(async (resolve, reject) => {  // Make the outer function async
-            const ws = new WebSocket(WEBSOCKET_URL);
+        return new Promise(async (resolve, reject) => {
+            const ws = new WebSocket(WEBSOCKET_URL, WEBSOCKET_PROTOCOL);
 
-            ws.onopen = async () => {  // Mark the callback function as async
+            ws.onopen = () => {
                 console.log("Connected to websocket");
-                await AsyncStorage.setItem('dbconnection', 'true');
+                AsyncStorage.setItem('dbconnection', 'true');
                 resolve(ws);
             };
 
@@ -43,34 +43,47 @@ const useWebSocket = () => {
 
             ws.onmessage = (event) => {
                 try {
-                    let receivedData;
-
-                    // Attempt to decode MessagePack data
-                    try {
-                        receivedData = decode(new Uint8Array(event.data)); // Decode MessagePack data
-                        console.log("Received data from websocket (MessagePack)", receivedData);
-                    } catch (msgpackError) {
-                        console.log("Error decoding MessagePack data:", msgpackError);
-                        // Fallback to JSON parsing
-                        try {
-                            receivedData = JSON.parse(event.data); // Attempt JSON parsing
-                            console.log("Received data from websocket (JSON fallback)", receivedData);
-                        } catch (jsonError) {
-                            console.error("Error parsing JSON data:", jsonError);
-                            return; // Exit early if both decoding methods fail
-                        }
+                    const receivedData = decode(new Uint8Array(event.data));
+                    //console.log("Received data from websocket:", receivedData);
+                    if (Array.isArray(receivedData)) {
+                        // Handle array of messages
+                        receivedData.forEach((receivedData) => {
+                            if (receivedData.itemType === "Missile") {
+                                const missiles = receivedData; 
+                                console.log("Received missiles:", missiles);
+                                setData(missiles); // Assuming 'payload' contains the missile data
+                            }
+                            if (receivedData.itemType === "Landmine") {
+                                const Landmine = receivedData; 
+                                console.log("Received Landmine:", Landmine);
+                                setData(Landmine); // Assuming 'payload' contains the missile data
+                            }
+                            if (receivedData.itemType === "Loot") {
+                                const Loot = receivedData; 
+                                console.log("Received Loot:", Loot);
+                                setData(Loot); // Assuming 'payload' contains the missile data
+                            }
+                        });
+                    } else {
+                        // Handle single message
                     }
 
-                    setData(receivedData);
-                    // Handle or process receivedData as needed
+                    // Further processing based on different types of messages
                 } catch (error) {
-                    console.error("Error processing websocket message:", error);
+                    console.error("Error processing msgpack message, attempting JSON:", error);
+                    try {
+                        const receivedData = JSON.parse(event.data);
+                        console.log("Received JSON data from websocket:", receivedData);
+                        
+                    } catch (jsonError) {
+                        console.error("Error processing JSON message:", jsonError);
+                    }
                 }
             };
 
         } catch (error) {
             console.error("Failed to connect to websocket:", error);
-            await AsyncStorage.setItem('dbconnection', 'false');
+            AsyncStorage.setItem('dbconnection', 'false');
             reconnectWebsocket();
         }
     };
@@ -81,14 +94,12 @@ const useWebSocket = () => {
             return;
         }
 
-        setReconnectAttempts((prevAttempts) => prevAttempts + 1);
+        setReconnectAttempts(prevAttempts => prevAttempts + 1);
         const retryInterval = RECONNECT_INTERVAL_BASE * Math.pow(2, reconnectAttempts);
 
         console.log(`Retrying to connect to websocket in ${retryInterval / 1000} seconds...`);
 
-        setTimeout(async () => {
-            await initializeWebSocket();
-        }, retryInterval);
+        setTimeout(initializeWebSocket, retryInterval);
     };
 
     useEffect(() => {
@@ -112,7 +123,6 @@ const useWebSocket = () => {
             console.error("WebSocket is not open. Unable to send message.");
         }
     };
-
 
     return { data, sendWebsocket };
 };
