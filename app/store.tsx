@@ -126,7 +126,7 @@ const StorePage: React.FC = () => {
     setCart(updatedCart);
   };
 
- //buys item - SET API TOKENS IN _LAYOUT.TSX
+  //buys item - SET API TOKENS IN _LAYOUT.TSX
   const buyItem = async (product: Product) => {
     const token = await SecureStore.getItemAsync("token");
     if (!token) {
@@ -154,7 +154,7 @@ const StorePage: React.FC = () => {
         const { customerInfo } = await Purchases.purchaseStoreProduct(storeProduct.product);
         if (customerInfo.entitlements.active["my_entitlement_identifier"]) { //replace with entitlement ID for both ios and android (dont worry about yet)
           console.log('Product purchased and entitlement active');
-          
+
           switch (product.type) {
             case 'Coins':
               const amount = parseInt(product.description, 10);
