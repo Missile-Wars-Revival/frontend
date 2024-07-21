@@ -16,7 +16,7 @@ import * as SecureStore from "expo-secure-store";
 import { updateFriendsOnlyStatus } from "../api/visibility";
 import useFetchMissiles from "../hooks/websockets/missilehook";
 import useFetchLoot from "../hooks/websockets/loothook";
-import useFetchLandmine from "../hooks/websockets/landminehook";
+import useFetchLandmines from "../hooks/websockets/landminehook";
 
 interface MapCompProps {
     selectedMapStyle: any;
@@ -26,7 +26,7 @@ export const MapComp = (props: MapCompProps) => {
 
     const missileData = useFetchMissiles()
     const lootData = useFetchLoot()
-    const LandmineData = useFetchLandmine()
+    const LandmineData = useFetchLandmines()
 
     const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(false);
     const [isLoading, setIsLoading] = useState(true);

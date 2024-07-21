@@ -15,7 +15,7 @@ import { removeHealth, setHealth, updateisAlive } from "../../api/health";
 import { useCountdown } from "../../util/Context/countdown";
 import useFetchMissiles from "../../hooks/websockets/missilehook";
 import useFetchLoot from "../../hooks/websockets/loothook";
-import useFetchLandmine from "../../hooks/websockets/landminehook";
+import useFetchLandmines from "../../hooks/websockets/landminehook";
 
 Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -37,7 +37,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
 
     const missileData = useFetchMissiles()
     const lootLocations = useFetchLoot()
-    const landmineData = useFetchLandmine()
+    const landmineData = useFetchLandmines()
 
     const [userLocation, setUserLocation] = useState<location | null>(null);
     const [lastNotified, setLastNotified] = useState<LastNotified>({ loot: null, missile: null, landmine: null });

@@ -5,6 +5,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { useUserName } from "../../util/fetchusernameglobal";
 import { mapstyles } from '../../map-themes/map-stylesheet';
+import { AllPlayers } from '../map-players';
+import { AllLootDrops } from '../loot-drop';
+import { AllLandMines } from './map-landmines';
+import { AllMissiles } from '../Missile/map-missile';
+import useFetchMissiles from '../../hooks/websockets/missilehook';
+import useFetchLoot from '../../hooks/websockets/loothook';
+import useFetchLandmines from '../../hooks/websockets/landminehook';
 
 export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) => {
 
@@ -16,6 +23,10 @@ export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) =
   const [loading, setLoading] = useState(true);
   const [currentLocation, setCurrentLocation] = useState(null);
   const userName = useUserName();
+
+  const missileData = useFetchMissiles()
+  const lootData = useFetchLoot()
+  const LandmineData = useFetchLandmines()
 
   async function initializeLocation() {
     let { status } = await Location.requestForegroundPermissionsAsync();
@@ -125,6 +136,10 @@ export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) =
               longitudeDelta: 0.001
             })}
           >
+            <AllLootDrops lootLocations={lootData} />
+            <AllLandMines landminedata={LandmineData} />
+            <AllMissiles missileData={missileData} />
+             <AllPlayers />
             <Circle
               center={marker}
               radius={10}

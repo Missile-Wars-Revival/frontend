@@ -61,7 +61,7 @@ const useWebSocket = () => {
                         const receivedData = JSON.parse(event.data);
                         console.log("Received JSON data from websocket:", receivedData);
                         // Assuming data needs to be processed similarly to below
-                        
+
                         //processReceivedData(receivedData);
                         return; // Exit the function after handling
                     } else {

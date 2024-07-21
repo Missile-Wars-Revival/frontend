@@ -4,20 +4,20 @@ import { useEffect, useState } from "react";
 
 const useFetchLandmines = (): Landmine[] => {
     const { landminedata } = useWebSocketContext();
-    const [landmines, setlandmines] = useState<Landmine[]>([]);
+    const [landmine, setlandmine] = useState<Landmine[]>([]);
 
     useEffect(() => {
         if (landminedata) {
             //console.log('Received data:', landminedata);
             if (Array.isArray(landminedata)) {
                 //console.log('Data is an array:', landminedata);
-                const fetchedlandmines = landminedata.filter(item => item.itemType === "Missile");
+                const fetchedlandmines = landminedata.filter(item => item.itemType === "Landmine");
                 if (fetchedlandmines.length > 0) {
-                    setlandmines(fetchedlandmines.map(item => item));
+                    setlandmine(fetchedlandmines.map(item => item));
                 }
-            } else if (typeof landminedata === 'object' && landminedata.itemType === "Missile") {
-                //console.log('Data is a single missile object:', landminedata);
-                setlandmines([landminedata]);
+            } else if (typeof landminedata === 'object' && landminedata.itemType === "Landmine") {
+                //console.log('Data is a single landmine object:', landminedata);
+                setlandmine([landminedata]);
             } else {
                 console.warn('Data is not an array or a missile object:', landminedata);
             }
@@ -26,7 +26,7 @@ const useFetchLandmines = (): Landmine[] => {
         }
     }, [landminedata]);
 
-    return landmines;
+    return landmine;
 };
 
 export default useFetchLandmines;

@@ -14,11 +14,11 @@ export const AllLandMines = (props: AllLandmineProps) => {
     const userNAME = useUserName();
     return (
         <>
-        {props.landminedata .filter(landmine => landmine.placedby === userNAME) .map(({ id, type, location, placedby, placedtime, etaexpiretime, itemType }, index) => {
+        {props.landminedata .filter(landmine => landmine.placedby === userNAME) .map(({ type, location, placedby, placedtime, etaexpiretime }, index) => {
 
             return (
             <React.Fragment key={index}>
-                <MapLandmine location={location} type={type} placedby={placedby} placedtime={placedtime} etaexpiretime={etaexpiretime} id={id} itemType={itemType}  />
+                <MapLandmine location={location} type={type} placedby={placedby} placedtime={placedtime} etaexpiretime={etaexpiretime}  />
             </React.Fragment>
             );
         })}
@@ -26,7 +26,15 @@ export const AllLandMines = (props: AllLandmineProps) => {
     );
 }
 
-export const MapLandmine = (landmineProps: Landmine) => {
+interface LandmineProps {
+    type: string;
+    location: GeoLocation;
+    placedby: string;
+    placedtime: string;
+    etaexpiretime: string;
+  }
+
+export const MapLandmine = (landmineProps: LandmineProps) => {
     const resizedlandmineimage = LandmineImages[landmineProps.type];
     const resizedlandmineicon = { width: 50, height: 50 }; // Custom size for image
 
