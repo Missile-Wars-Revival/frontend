@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
-import { decode, encode } from "msgpack-lite";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { unzip, WebSocketMessage } from "middle-earth";
+import { unzip, WebSocketMessage, zip } from "middle-earth";
 
 const WEBSOCKET_URL = process.env.EXPO_PUBLIC_WEBSOCKET_URL || "ws://localhost:3000";
 const RECONNECT_INTERVAL_BASE = 1000; // base interval in ms
@@ -127,17 +126,17 @@ const useWebSocket = () => {
     }, []);
 
     const sendWebsocket = async (data: WebSocketMessage) => {
-        // if (websocket && websocket.readyState === WebSocket.OPEN) {
-        //     try {
-        //         const encodedData = encode(data);
-        //         console.log("Sending data to websocket", data);
-        //         websocket.send(encodedData);
-        //     } catch (error) {
-        //         console.error("Error sending websocket request",);
-        //     }
-        // } else {
-        //     console.error("WebSocket is not open. Unable to send message.");
-        // }
+        if (websocket && websocket.readyState === WebSocket.OPEN) {
+            try {
+                const encodedData = zip(data);
+                console.log("Sending data to websocket", data);
+                websocket.send(encodedData);
+            } catch (error) {
+                console.error("Error sending websocket request",);
+            }
+        } else {
+            console.error("WebSocket is not open. Unable to send message.");
+        }
     };
 
     return { data, missiledata, landminedata, lootdata, sendWebsocket };
