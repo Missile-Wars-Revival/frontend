@@ -10,7 +10,7 @@ const useFetchLoot = (): Loot[] => {
         if (lootdata) {
             //console.log('Received data:', lootdata);
             if (Array.isArray(lootdata)) {
-                console.log('Data is an array:', lootdata);
+                //console.log('Data is an array:', lootdata);
                 const fetchedLoots = lootdata.filter(item => item.itemType === "Loot");
                 if (fetchedLoots.length > 0) {
                     setLoots(fetchedLoots.map(item => item));

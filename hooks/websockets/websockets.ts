@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { decode, encode } from "msgpack-lite";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { WebSocketMessage } from "middle-earth";
+import { unzip, WebSocketMessage } from "middle-earth";
 
 const WEBSOCKET_URL = process.env.EXPO_PUBLIC_WEBSOCKET_URL || "ws://localhost:3000";
 const RECONNECT_INTERVAL_BASE = 1000; // base interval in ms
@@ -45,39 +45,57 @@ const useWebSocket = () => {
                 reconnectWebsocket();
             };
 
-            ws.onmessage = (event) => {
+            ws.onmessage = async (event) => {
                 try {
-                    const receivedData = decode(new Uint8Array(event.data));
-                    if (Array.isArray(receivedData)) {
-                        receivedData.forEach((data) => {
-                            switch (data.itemType) {
-                                case "Missile":
-                                    //console.log("Received Missiles:", data);
-                                    setmissileData(data); 
-                                    break;
-                                case "Landmine":
-                                    //console.log("Received Landmine:", data);
-                                    setlandmineData(data); 
-                                    break;
-                                case "Loot":
-                                    //console.log("Received Loot:", data);
-                                    setlootData(data);
-                                    break;
-                                default:
-                                    console.warn("Unhandled itemType:", data.itemType);
-                            }
-                        });
-                    }
-                } catch (error) {
-                    console.error("Error processing msgpack message, attempting JSON:", error);
-                    try {
+                    let uint8Array;
+            
+                    if (event.data instanceof Blob) {
+                        // Convert Blob to ArrayBuffer then to Uint8Array
+                        const arrayBuffer = await event.data.arrayBuffer();
+                        uint8Array = new Uint8Array(arrayBuffer);
+                    } else if (event.data instanceof ArrayBuffer) {
+                        // Directly convert ArrayBuffer to Uint8Array
+                        uint8Array = new Uint8Array(event.data);
+                    } else if (typeof event.data === 'string') {
+                        // Handle as a string directly, likely JSON
                         const receivedData = JSON.parse(event.data);
                         console.log("Received JSON data from websocket:", receivedData);
-                    } catch (jsonError) {
-                        console.error("Error processing JSON message:", jsonError);
+                        // Assuming data needs to be processed similarly to below
+                        
+                        //processReceivedData(receivedData);
+                        return; // Exit the function after handling
+                    } else {
+                        console.warn("Unhandled data type:", typeof event.data);
+                        return; // Exit if data type is not handled
                     }
+            
+                    // Use the adapted unzip function if data was ArrayBuffer or Blob
+                    const receivedData = unzip(uint8Array);
+            
+                    // Iterate over the messages array contained within the WebSocketMessage
+                    receivedData.messages.forEach((msg) => {
+                        switch (msg.itemType) {
+                            case "missiles":
+                                //console.log("Received Missiles:", msg.data);
+                                setmissileData(msg.data);
+                                break;
+                            case "landmines":
+                                //console.log("Received Landmine:", msg.data);
+                                setlandmineData(msg.data);
+                                break;
+                            case "loot":
+                                //console.log("Received Loot:", msg.data);
+                                setlootData(msg.data);
+                                break;
+                            default:
+                                console.warn("Unhandled itemType:", msg.itemType);
+                        }
+                    });
+                } catch (error) {
+                    console.error("Error processing websocket message:", error);
+                    // Handle error more globally if needed
                 }
-            };
+            };            
 
         } catch (error) {
             console.error("Failed to connect to websocket:", error);

@@ -4,29 +4,29 @@ import { useEffect, useState } from "react";
 
 const useFetchLandmines = (): Landmine[] => {
     const { landminedata } = useWebSocketContext();
-    const [Landmines, setLandmines] = useState<Landmine[]>([]);
+    const [landmines, setlandmines] = useState<Landmine[]>([]);
 
     useEffect(() => {
         if (landminedata) {
             //console.log('Received data:', landminedata);
             if (Array.isArray(landminedata)) {
                 //console.log('Data is an array:', landminedata);
-                const fetchedLandmines = landminedata.filter(item => item.itemType === "Landmine");
-                if (fetchedLandmines.length > 0) {
-                    setLandmines(fetchedLandmines.map(item => item.payload));
+                const fetchedlandmines = landminedata.filter(item => item.itemType === "Missile");
+                if (fetchedlandmines.length > 0) {
+                    setlandmines(fetchedlandmines.map(item => item));
                 }
-            } else if (typeof landminedata === 'object' && landminedata.itemType === "Landmine") {
-                //console.log('Data is a single Landmines object:', landminedata);
-                setLandmines([landminedata]);
+            } else if (typeof landminedata === 'object' && landminedata.itemType === "Missile") {
+                //console.log('Data is a single missile object:', landminedata);
+                setlandmines([landminedata]);
             } else {
-                //console.warn('Data is not an array or a Landmines object:', data);
+                console.warn('Data is not an array or a missile object:', landminedata);
             }
         } else {
             //console.log('Data is undefined or null');
         }
     }, [landminedata]);
 
-    return Landmines;
+    return landmines;
 };
 
 export default useFetchLandmines;
