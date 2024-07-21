@@ -5,13 +5,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { useUserName } from "../../util/fetchusernameglobal";
 import { mapstyles } from '../../map-themes/map-stylesheet';
-import { AllPlayers } from '../map-players';
-import { AllLootDrops } from '../loot-drop';
-import { AllLandMines } from '../Landmine/map-landmines';
-import { AllMissiles } from './map-missile';
-import useFetchMissiles from '../../hooks/websockets/missilehook';
-import useFetchLoot from '../../hooks/websockets/loothook';
-import useFetchLandmines from '../../hooks/websockets/landminehook';
 
 export const MissilePlacementPopup = ({ visible, onClose, selectedMissile }) => {
   const [region, setRegion] = useState(null);
@@ -24,10 +17,6 @@ export const MissilePlacementPopup = ({ visible, onClose, selectedMissile }) => 
   const [isLocationEnabled, setIsLocationEnabled] = useState(true);
   const [hasDbConnection, setDbConnection] = useState(false);
   const [isAlive, setisAlive] = useState(true);
-
-  const missileData = useFetchMissiles()
-  const lootData = useFetchLoot()
-  const LandmineData = useFetchLandmines()
 
   // Function to handle location permission and fetch current location
   async function initializeLocation() {
@@ -135,10 +124,6 @@ export const MissilePlacementPopup = ({ visible, onClose, selectedMissile }) => 
               longitudeDelta: 0.01
             })}
           >
-            <AllLootDrops lootLocations={lootData} />
-            <AllLandMines landminedata={LandmineData} />
-            <AllMissiles missileData={missileData} />
-             <AllPlayers />
             <Circle
               center={marker}
               //needs to be fetched depending on missile type!!!
