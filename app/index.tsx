@@ -34,6 +34,7 @@ import CountdownTimer from "../components/countdown";
 import { useCountdown } from "../util/Context/countdown";
 import { playDeathSound } from "../util/sounds/deathsound";
 import { RewardedAd, RewardedAdEventType, TestIds } from "react-native-google-mobile-ads";
+import useFetchHealth from "../hooks/websockets/healthhook";
 
 const adUnitId = Platform.OS === 'android' ? 'ca-app-pub-4035842398612787/2779084579' : 'ca-app-pub-4035842398612787/8310612855'
 
@@ -54,7 +55,8 @@ export default function Map() {
 
   // State for location enabled
   const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(true);
-  const [health, setHealthUI] = useState(100); // Initial health value
+
+  const health = useFetchHealth()
 
   // Fetch username from secure storage
   useEffect(() => {
@@ -69,36 +71,8 @@ export default function Map() {
 
     fetchCredentials();
   }, []);
-  useEffect(() => {
-    const getHealthOnStart = async () => {
-      const token = await SecureStore.getItemAsync("token");
-      try {
-        if (!token) {
-          console.log('Token not found');
-          return;
-        }
-        getisAlive(token)
-        const response = await getHealth(token);
-        if (response && response.health !== undefined) {
-          setHealthUI(response.health);
-          await AsyncStorage.setItem('health', response.health.toString()); // Note the change here
-        } else {
-          console.error('Health data is invalid:', response);
-        }
-      } catch (error) {
-        if (axios.isAxiosError(error)) {
-          console.error('Axios error:', error.message);
-        } else {
-          console.error('Error fetching health:', error);
-        }
-      }
-    };
-    getHealthOnStart();
-
-    const intervalId = setInterval(getHealthOnStart, 5000); //5 secss -- NEED CHANGE TO WEBSOCKET
-    return () => clearInterval(intervalId);
-  }, []);
-
+  
+  
   useEffect(() => {
     const addCurrencyAmount = async () => {
       const lastRewardedDate = await AsyncStorage.getItem('lastRewardedDate');

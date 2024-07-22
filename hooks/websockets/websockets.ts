@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { unzip, WebSocketMessage, zip } from "middle-earth";
+import * as SecureStore from "expo-secure-store";
 
 const WEBSOCKET_URL = process.env.EXPO_PUBLIC_WEBSOCKET_URL || "ws://localhost:3000";
 const RECONNECT_INTERVAL_BASE = 1000; // base interval in ms
@@ -20,18 +21,26 @@ const useWebSocket = () => {
 
     const connectWebsocket = (): Promise<WebSocket> => {
         return new Promise(async (resolve, reject) => {
-            const ws = new WebSocket(WEBSOCKET_URL, WEBSOCKET_PROTOCOL);
+            const token = await SecureStore.getItemAsync("token");
+            try {
+                if (!token) {
+                    console.log('Token not found');
+                    return;
+                }
+                const ws = new WebSocket(WEBSOCKET_URL, token);
 
-            ws.onopen = () => {
-                console.log("Connected to websocket");
-                AsyncStorage.setItem('dbconnection', 'true');
-                resolve(ws);
-            };
+                ws.onopen = () => {
+                    console.log("Connected to websocket");
+                    AsyncStorage.setItem('dbconnection', 'true');
+                    resolve(ws);
+                };
 
-            ws.onerror = (error) => {
-                console.error("WebSocket error:", error);
-                reject(error);
-            };
+                ws.onerror = (error) => {
+                    console.error("WebSocket error:", error);
+                    reject(error);
+                };
+            } catch (error) {
+            }
         });
     };
 
@@ -93,14 +102,13 @@ const useWebSocket = () => {
                                 //console.log("Received Loot:", msg.data);
                                 sethealthData(msg.data);
                                 break;
-                            case "friends":
-                                //console.log("Received Loot:", msg.data);
-                                setfriendsData(msg.data);
-                                break;
                             case "inventory":
                                 //console.log("Received Loot:", msg.data);
                                 setinventoryData(msg.data);
                                 break;
+                            case "friends":
+                                //console.log("Received Loot:", msg.data);
+                                setfriendsData(msg.data);
                             default:
                                 console.warn("Unhandled itemType:", msg.itemType);
                         }
