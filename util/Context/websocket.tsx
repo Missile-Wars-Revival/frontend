@@ -6,6 +6,9 @@ export interface WebSocketContextProps {
     missiledata: any;
     landminedata: any;
     lootdata:any;
+    healthdata: any;
+    friendsdata: any;
+    inventorydata: any;
     sendWebsocket: (data: WebSocketMessage) => void;
   }
 

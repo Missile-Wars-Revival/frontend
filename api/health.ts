@@ -114,7 +114,7 @@ export const updateisAlive = async (token: string, isAlive: boolean) => {
     });
     console.log("isAlive status updated successfully to:", isAlive);
     if (isAlive === false) {
-      //playDeathSound();
+      playDeathSound();
       const response = await axiosInstance.get('/api/getMoney', {
         params: { token }
       });

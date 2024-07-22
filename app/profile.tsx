@@ -8,6 +8,7 @@ import * as Location from 'expo-location';
 import * as SecureStore from "expo-secure-store";
 import axiosInstance from '../api/axios-instance';
 import { Ionicons } from '@expo/vector-icons';
+import { InventoryItem } from '../types/types';
 
 interface ItemImages {
   [key: string]: any;
@@ -30,13 +31,6 @@ export const itemimages: ItemImages = {
 
   // Add other missile images here
 };
-
-interface InventoryItem {
-  id: string;
-  name: string;
-  quantity: number;
-  image: ImageSourcePropType;
-}
 
 const ProfilePage: React.FC = () => {
 

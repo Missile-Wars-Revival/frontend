@@ -12,6 +12,9 @@ const useWebSocket = () => {
     const [missiledata, setmissileData] = useState<any>(null);
     const [landminedata, setlandmineData] = useState<any>(null);
     const [lootdata, setlootData] = useState<any>(null);
+    const [healthdata, sethealthData] = useState<any>(null);
+    const [friendsdata, setfriendsData] = useState<any>(null);
+    const [inventorydata, setinventoryData] = useState<any>(null);
     const [websocket, setWebsocket] = useState<WebSocket | null>(null);
     const [reconnectAttempts, setReconnectAttempts] = useState(0);
 
@@ -47,7 +50,7 @@ const useWebSocket = () => {
             ws.onmessage = async (event) => {
                 try {
                     let uint8Array;
-            
+
                     if (event.data instanceof Blob) {
                         // Convert Blob to ArrayBuffer then to Uint8Array
                         const arrayBuffer = await event.data.arrayBuffer();
@@ -67,10 +70,10 @@ const useWebSocket = () => {
                         console.warn("Unhandled data type:", typeof event.data);
                         return; // Exit if data type is not handled
                     }
-            
+
                     // Use the adapted unzip function if data was ArrayBuffer or Blob
                     const receivedData = unzip(uint8Array);
-            
+
                     // Iterate over the messages array contained within the WebSocketMessage
                     receivedData.messages.forEach((msg) => {
                         switch (msg.itemType) {
@@ -86,6 +89,18 @@ const useWebSocket = () => {
                                 //console.log("Received Loot:", msg.data);
                                 setlootData(msg.data);
                                 break;
+                            case "health":
+                                //console.log("Received Loot:", msg.data);
+                                sethealthData(msg.data);
+                                break;
+                            case "friends":
+                                //console.log("Received Loot:", msg.data);
+                                setfriendsData(msg.data);
+                                break;
+                            case "inventory":
+                                //console.log("Received Loot:", msg.data);
+                                setinventoryData(msg.data);
+                                break;
                             default:
                                 console.warn("Unhandled itemType:", msg.itemType);
                         }
@@ -94,7 +109,7 @@ const useWebSocket = () => {
                     console.error("Error processing websocket message:", error);
                     // Handle error more globally if needed
                 }
-            };            
+            };
 
         } catch (error) {
             console.error("Failed to connect to websocket:", error);
@@ -139,7 +154,7 @@ const useWebSocket = () => {
         }
     };
 
-    return { data, missiledata, landminedata, lootdata, sendWebsocket };
+    return { data, missiledata, landminedata, lootdata, healthdata, friendsdata, inventorydata, sendWebsocket };
 };
 
 export default useWebSocket;
