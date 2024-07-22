@@ -4,7 +4,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
 import axiosInstance from "../api/axios-instance";
 import axios from "axios";
-//import { RewardedAd, RewardedAdEventType, TestIds } from 'react-native-google-mobile-ads';
 
 // Android Themes
 import { androidDefaultMapStyle } from "../map-themes/Android-themes/defaultMapStyle";
@@ -36,10 +35,12 @@ import { useCountdown } from "../util/Context/countdown";
 import { playDeathSound } from "../util/sounds/deathsound";
 import { RewardedAd, RewardedAdEventType, TestIds } from "react-native-google-mobile-ads";
 
-const adUnitId =  __DEV__ ? TestIds.REWARDED : 'ca-app-pub-9160450369509545/6677957247';
+const adUnitId = Platform.OS === 'android' ? 'ca-app-pub-4035842398612787/2779084579' : 'ca-app-pub-4035842398612787/8310612855'
+
+//const adUnitId =  __DEV__ ? TestIds.REWARDED : 'ca-app-pub-4035842398612787/8310612855';
 
 const rewarded = RewardedAd.createForAdRequest(adUnitId, {
-  keywords: ['fashion', 'clothing'], //ads category
+  keywords: ['games', 'clothing'], //ads category
 });
 
 export default function Map() {
