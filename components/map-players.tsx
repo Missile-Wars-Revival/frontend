@@ -3,6 +3,7 @@ import { PlayerComp } from "./player";
 import { useUserName } from "../util/fetchusernameglobal";
 import { getTimeDifference, isInactiveFor12Hours } from "../util/get-time-difference";
 import useFetchPlayerlocations from "../hooks/websockets/playerlochook";
+import * as SecureStore from "expo-secure-store";
 
 export interface Players {
   username: string;
@@ -14,14 +15,14 @@ export interface Players {
 export const AllPlayers = () => {
 
   // const userName = useUserName();
-  const userName = useUserName();
+  const userName = (SecureStore.getItemAsync("username")) || "Test";
 
   const otherPlayersData = useFetchPlayerlocations() 
 
   return (
     <>
       {otherPlayersData
-        .filter(player => player.username.trim() !== userName.trim() && !isInactiveFor12Hours(player.updatedAt))
+      .filter(player => !isInactiveFor12Hours(player.updatedAt))
         .map((player, index) => {
           const { text } = getTimeDifference(player.updatedAt);
 

@@ -89,8 +89,8 @@ const QuickAddPage: React.FC = () => {
       }
     } catch (error) {
       // Handle any errors thrown from the addFriend function
-      console.error('Error adding friend:', error);
-      Alert.alert("An unexpected error occurred while adding friend.");
+      console.warn('Error adding friend:', error);
+      Alert.alert("This player is already your friend!");
     }
   };
 

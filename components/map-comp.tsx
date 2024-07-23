@@ -238,7 +238,7 @@ export const MapComp = (props: MapCompProps) => {
                 region={region}
                 showsCompass={false}
                 showsTraffic={false}
-                showsUserLocation={true}
+                showsUserLocation={false}
                 showsMyLocationButton={true}
                 customMapStyle={props.selectedMapStyle}>
                 <AllLootDrops lootLocations={lootData} />
