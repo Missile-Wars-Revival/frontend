@@ -1,47 +1,27 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { PlayerComp } from "./player";
 import { useUserName } from "../util/fetchusernameglobal";
 import { getTimeDifference, isInactiveFor12Hours } from "../util/get-time-difference";
-import { fetchOtherPlayersData } from "../api/getplayerlocations";
+import useFetchPlayerlocations from "../hooks/websockets/playerlochook";
 
 export interface Players {
   username: string;
-  latitude: number;
-  longitude: number;
+  latitude?: number;
+  longitude?: number;
   updatedAt: string;
 }
 
 export const AllPlayers = () => {
 
+  // const userName = useUserName();
   const userName = useUserName();
 
-  const [otherPlayersData, setOtherPlayersData] = useState([] as Players[]);
+  const otherPlayersData = useFetchPlayerlocations() 
 
-  const fetchOtherPlayers = async () => {
-    try {
-      const data = await fetchOtherPlayersData();
-      setOtherPlayersData(data);
-      //console.log("fetched", data)
-    } catch (error) {
-      console.error('Error fetching other players data:', error);
-    }
-  };
-
-  useEffect(() => {
-    fetchOtherPlayers(); // Initial fetch
-
-    // Set interval to send location to backend every 30 seconds
-    const intervalId = setInterval(fetchOtherPlayers, 30000);
-
-    // Cleanup interval on component unmount
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, []);
   return (
     <>
       {otherPlayersData
-        .filter(player => player.username !== userName && !isInactiveFor12Hours(player.updatedAt))
+        .filter(player => player.username.trim() !== userName.trim() && !isInactiveFor12Hours(player.updatedAt))
         .map((player, index) => {
           const { text } = getTimeDifference(player.updatedAt);
 

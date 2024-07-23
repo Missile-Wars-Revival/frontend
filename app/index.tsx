@@ -51,12 +51,7 @@ export default function Map() {
   const [isAlive, setisAlive] = useState(true);
   const [deathsoundPlayed, setdeathSoundPlayed] = useState(false);
   const [loaded, setLoaded] = useState(false);
-
-
-  // State for location enabled
-  const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(true);
-
-  const health = useFetchHealth()
+  const health = useFetchHealth()//WS hook
 
   // Fetch username from secure storage
   useEffect(() => {
@@ -224,14 +219,12 @@ export default function Map() {
             transparent={true}
             onClose={closePopup}
             onSelect={selectMapStyle}
-          />
-          {isLocationEnabled && (
+          />     
             <FireSelector
               selectedMapStyle={selectedMapStyle}
               getStoredMapStyle={getStoredMapStyle}
               selectMapStyle={selectMapStyle}
             />
-          )}
         </>
       )}
       {(!isAlive) && (

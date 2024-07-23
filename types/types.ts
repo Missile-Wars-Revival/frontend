@@ -25,5 +25,5 @@ export interface InventoryItem {
   id: string;
   name: string;
   quantity: number;
-  image: ImageSourcePropType;
+  image?: ImageSourcePropType;
 }

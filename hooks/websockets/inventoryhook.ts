@@ -4,29 +4,28 @@ import { useEffect, useState } from "react";
 
 const useFetchInventory = (): InventoryItem[] => {
     const { inventorydata } = useWebSocketContext();
-    const [Inventorys, setInventorys] = useState<InventoryItem[]>([]);
+    const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
 
     useEffect(() => {
-        if (inventorydata) {
-            //console.log('Received data:', inventorydata);
-            if (Array.isArray(inventorydata)) {
-                //console.log('Data is an array:', inventorydata);
-                const fetchedInventorys = inventorydata.filter(item => item.itemType === "Inventory");
-                if (fetchedInventorys.length > 0) {
-                    setInventorys(fetchedInventorys.map(item => item));
-                }
-            } else if (typeof inventorydata === 'object' && inventorydata.itemType === "Inventory") {
-                //console.log('Data is a single Inventory object:', inventorydata);
-                setInventorys([inventorydata]);
-            } else {
-                //console.warn('Data is not an array or a Inventory object:',inventorydata);
-            }
+        //console.log('Received data:', inventorydata);
+        // First check if data is indeed an array
+        if (Array.isArray(inventorydata)) {
+            // Process the array data
+            setInventoryItems(inventorydata.map(item => ({
+                category: item.category,
+                name: item.name,
+                quantity: item.quantity,
+                id: item.id || `id-${item.name}`,
+            })));
         } else {
-            //console.log('Data is undefined or null');
+            // Log a warning and handle non-array data appropriately
+            console.warn('Expected inventory data to be an array, but received:', typeof inventorydata);
+            // Optionally handle unexpected data formats or errors
+            // setInventoryItems([]); // Clearing or setting default data
         }
     }, [inventorydata]);
 
-    return Inventorys;
+    return inventoryItems;
 };
 
 export default useFetchInventory;

@@ -16,6 +16,7 @@ const useWebSocket = () => {
     const [healthdata, sethealthData] = useState<any>(null);
     const [friendsdata, setfriendsData] = useState<any>(null);
     const [inventorydata, setinventoryData] = useState<any>(null);
+    const [playerlocations, setplayerlocations] = useState<any>(null);
     const [websocket, setWebsocket] = useState<WebSocket | null>(null);
     const [reconnectAttempts, setReconnectAttempts] = useState(0);
 
@@ -99,16 +100,21 @@ const useWebSocket = () => {
                                 setlootData(msg.data);
                                 break;
                             case "health":
-                                //console.log("Received Loot:", msg.data);
+                                //console.log("Received health:", msg.data);
                                 sethealthData(msg.data);
                                 break;
                             case "inventory":
-                                //console.log("Received Loot:", msg.data);
+                                //console.log("Received inventory:", msg.data);
                                 setinventoryData(msg.data);
                                 break;
                             case "friends":
-                                //console.log("Received Loot:", msg.data);
+                                //console.log("Received friends:", msg.data);
                                 setfriendsData(msg.data);
+                                break;
+                            case "playerlocations":
+                                //console.log("Received playerlocations:", msg.data);
+                                setplayerlocations(msg.data);
+                                break;
                             default:
                                 console.warn("Unhandled itemType:", msg.itemType);
                         }
@@ -162,7 +168,7 @@ const useWebSocket = () => {
         }
     };
 
-    return { data, missiledata, landminedata, lootdata, healthdata, friendsdata, inventorydata, sendWebsocket };
+    return { data, missiledata, landminedata, lootdata, healthdata, friendsdata, inventorydata, playerlocations, sendWebsocket };
 };
 
 export default useWebSocket;

@@ -9,6 +9,7 @@ export interface WebSocketContextProps {
     healthdata: any;
     friendsdata: any;
     inventorydata: any;
+    playerlocations: any;
     sendWebsocket: (data: WebSocketMessage) => void;
   }
 

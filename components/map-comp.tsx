@@ -24,7 +24,8 @@ interface MapCompProps {
 
 export const MapComp = (props: MapCompProps) => {
 
-    const missileData = useFetchMissiles()
+    //WS hooks
+    const missileData = useFetchMissiles() 
     const lootData = useFetchLoot()
     const LandmineData = useFetchLandmines()
 
