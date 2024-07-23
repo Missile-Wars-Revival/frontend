@@ -107,6 +107,29 @@ export default function Map() {
   }, []);
 
   useEffect(() => {
+    const getisAliveeffect = async () => {
+      const token = await SecureStore.getItemAsync("token");
+      try {
+        if (!token) {
+          console.log('Token not found');
+          return;
+        }
+        getisAlive(token)
+      } catch (error) {
+        if (axios.isAxiosError(error)) {
+          console.error('Axios error:', error.message);
+        } else {
+          console.error('Error fetching health:', error);
+        }
+      }
+    };
+    getisAliveeffect();
+
+    const intervalId = setInterval(getisAliveeffect, 5000); 
+    return () => clearInterval(intervalId);
+  }, []);
+
+  useEffect(() => {
     const initializeApp = async () => {
       try {
         const isAliveStatusString = await AsyncStorage.getItem('isAlive');
@@ -189,7 +212,7 @@ export default function Map() {
     storeMapStyle(style);
   };
   const respawn = async () => {
-    rewarded.show();
+    //rewarded.show();
     const token = SecureStore.getItem("token");
   
     if (token === null) {

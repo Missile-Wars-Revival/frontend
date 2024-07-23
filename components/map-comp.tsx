@@ -219,7 +219,7 @@ export const MapComp = (props: MapCompProps) => {
     };
 
     // Only show loader if it's the first load or still loading
-    if (isLoading && !firstLoad) {
+    if (isLoading || !firstLoad) {
         return (
             <View style={mainmapstyles.loaderContainer}>
                 <ActivityIndicator size="large" color="#0000ff" />
