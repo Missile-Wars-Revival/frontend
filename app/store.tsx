@@ -6,6 +6,9 @@ import { mainstorestyles } from '../components/Store/storestylesheets';
 import axiosInstance from '../api/axios-instance';
 import * as SecureStore from "expo-secure-store";
 import axios from 'axios';
+import Purchases from 'react-native-purchases';
+import { addmoney } from '../api/money';
+import { additem } from '../api/add-item';
 
 export interface Product {
   id: string;
@@ -45,7 +48,8 @@ export const premproducts: Product[] = [
   //{ id: "9", name: 'GutShot', price: 5.99, image: require('../assets/missiles/GutShot.png'), description: 'GutShot missile', sku: "GutShot", type: 'Missiles' },
   { id: "11", name: 'Yokozuna', price: 4.99, image: require('../assets/missiles/Yokozuna.png'), description: 'Yokozuna missile', sku: "Yokozuna", type: 'Missiles' },
   { id: "13", name: 'Zippy', price: 5.99, image: require('../assets/missiles/Zippy.png'), description: 'Zippy', sku: "Zippy", type: 'Missiles' },
-  { id: "14", name: '1000 x Coins', price: 4.99, image: '🪙', description: '1000 Coinds', sku: "1000Coins", type: 'Coins' },
+  { id: "14", name: '500 x Coins', price: 2.99, image: require('../assets/store/500coins.png'), description: '500', sku: "500Coins", type: 'Coins' },
+  { id: "14", name: '1000 x Coins', price: 5.99, image: require('../assets/store/1000coins.png'), description: '1000', sku: "1000Coins", type: 'Coins' },
   //{ id: "20", name: 'LootDrop', price: 4.99, image: require('../assets/mapassets/Airdropicon.png'), description: 'A Loot Drop', sku: "Loot Drop", type: 'Loot Drops' },
 ];
 
@@ -121,34 +125,77 @@ const StorePage: React.FC = () => {
     AsyncStorage.setItem('cartitems', JSON.stringify(updatedCart));
     setCart(updatedCart);
   };
-//retrives stripe client secret
+
+ //buys item - SET API TOKENS IN _LAYOUT.TSX
   const buyItem = async (product: Product) => {
     const token = await SecureStore.getItemAsync("token");
-    try {
-      if (!token) {
-        console.log('Token not found');
-        return;
-      }
-      const response = await axiosInstance.post('/api/payment-intent', {
-        productId: product.id,
-        token: token,
-        price: product.price,
-      });
+    if (!token) {
+      console.log('Token not found');
+      return { status: 'token_not_found' };
+    }
 
-      if (response.data.status === 'pending') {
-        console.log('Client secret:', response.data.clientSecret);
-        return {
-          status: 'pending',
-          clientSecret: response.data.clientSecret,
-        };
+    if (!product.sku) {
+      console.log('Product SKU not found');
+      return { status: 'sku_not_found' };
+    }
+
+    try {
+      // First, retrieve the product details from RevenueCat
+      const offerings = await Purchases.getOfferings();
+      if (offerings.current) {
+        const storeProduct = offerings.current.availablePackages.find(p => p.product.identifier === product.sku);
+
+        if (!storeProduct) {
+          console.log('Store product not found');
+          return { status: 'store_product_not_found' };
+        }
+
+        // Handle the purchase with the store product
+        const { customerInfo } = await Purchases.purchaseStoreProduct(storeProduct.product);
+        if (customerInfo.entitlements.active["my_entitlement_identifier"]) { //replace with entitlement ID for both ios and android (dont worry about yet)
+          console.log('Product purchased and entitlement active');
+          
+          switch (product.type) {
+            case 'Coins':
+              const amount = parseInt(product.description, 10);
+              if (!isNaN(amount)) {
+                await addmoney(token, amount);
+                console.log(`Added ${amount} coins to user's account.`);
+              } else {
+                console.log('Invalid coin amount.');
+                return { status: 'invalid_coin_amount' };
+              }
+              break;
+            case 'Missiles':
+              await additem(token, product.name, product.type);
+              console.log(`Added a missile (${product.name}) to inventory.`);
+              break;
+            default:
+              console.log('Unknown product type.');
+              return { status: 'unknown_product_type' };
+          }
+          return { status: 'success' };
+        } else {
+          console.log('Entitlement not active');
+          return { status: 'entitlement_inactive' };
+        }
       } else {
-        throw new Error('Failed to create payment intent');
+        console.log('No offerings available');
+        return { status: 'offerings_not_found' };
       }
-    } catch (error) {
-      console.error('Error during payment initiation:', error);
-      return {
-        status: 'failed',
-      };
+    } catch (e) {
+      // Properly type-check the error before handling it
+      if (e instanceof Error) {
+        console.error('RevenueCat purchase error:', e.message);
+        if (e.message === "User cancelled") {
+          return { status: 'user_cancelled' };
+        }
+        return { status: 'purchase_error', error: e.message };
+      } else {
+        // Handle cases where the error is not an instance of Error
+        console.error('An unexpected error occurred');
+        return { status: 'unexpected_error', error: 'An unexpected error occurred' };
+      }
     }
   };
 
@@ -171,9 +218,9 @@ const StorePage: React.FC = () => {
   );
 
   return (
-    <ImageBackground source={require('../assets/mapbackdrop.png')} style={mainstorestyles.backgroundImage}>
+    <ImageBackground source={require('../assets/store/mapbackdrop.png')} style={mainstorestyles.backgroundImage}>
       <Image source={require('../assets/MissleWarsTitle.png')} style={mainstorestyles.titleImage} />
-      <Image source={require('../assets/SHOP.png')} style={mainstorestyles.shopImage} />
+      <Image source={require('../assets/store/SHOP.png')} style={mainstorestyles.shopImage} />
       <View style={mainstorestyles.headerContainer}>
         <View style={mainstorestyles.currencyContainer}>
           <Text style={mainstorestyles.currencyText} numberOfLines={1} ellipsizeMode="tail">

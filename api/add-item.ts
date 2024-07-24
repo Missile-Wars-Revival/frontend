@@ -4,13 +4,13 @@ import { isAxiosError } from "axios";
 export async function additem(
     token: string,
     itemName: string,
-    category: string,
+    type: string,
   ) {
     try {
       const response = await axiosInstance.post("/api/addItem", {
         token,
         itemName,
-        category,
+        type,
       });
       return response.data;
     } catch (error) {

@@ -33,6 +33,7 @@ import HealthBar from "../components/healthbar";
 import { getHealth, getisAlive, setHealth, updateisAlive } from "../api/health";
 import CountdownTimer from "../components/countdown";
 import { useCountdown } from "../util/Context/countdown";
+import { playDeathSound } from "../util/sounds/deathsound";
 
 // const adUnitId =  __DEV__ ? TestIds.REWARDED : 'ca-app-pub-9160450369509545/6677957247';
 
@@ -45,6 +46,7 @@ export default function Map() {
   const [themePopupVisible, setThemePopupVisible] = useState(false);
   const [userNAME, setUsername] = useState("");
   const [isAlive, setisAlive] = useState(true);
+  const [deathsoundPlayed, setdeathSoundPlayed] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
 
@@ -137,33 +139,31 @@ export default function Map() {
     const initializeApp = async () => {
       try {
         const isAliveStatusString = await AsyncStorage.getItem('isAlive');
-
         if (isAliveStatusString) {
-          const isAliveStatus = JSON.parse(isAliveStatusString); // Parse the JSON string into an object
+          const isAliveStatus = JSON.parse(isAliveStatusString);
 
-          if (isAliveStatus.isAlive) {
-            setisAlive(true);
-          } else {
-            setisAlive(false);
+          if (!isAliveStatus.isAlive && !deathsoundPlayed) {
+            playDeathSound();
+            setdeathSoundPlayed(true); // Ensure the sound is played only once
           }
+
+          setisAlive(isAliveStatus.isAlive);
         } else {
-          setisAlive(false);
+          setisAlive(false); // Default to false if no status is found
         }
       } catch (error) {
         console.error('Error initializing app:', error);
       }
     };
 
-    initializeApp()
+    initializeApp();
 
     const intervalId = setInterval(initializeApp, 1000);
 
-    return () => {
-      clearInterval(intervalId);
-    };
-  },
-    []);
-    // useEffect(() => {
+    return () => clearInterval(intervalId);
+  }, [deathsoundPlayed]);
+    
+  // useEffect(() => {
     //   const unsubscribeLoaded = rewarded.addAdEventListener(RewardedAdEventType.LOADED, () => {
     //     setLoaded(true);
     //   });
