@@ -32,7 +32,7 @@ export const isInactiveFor12Hours = (timestamp: TimeStamp): boolean => {
   const differenceInMilliseconds = currentTime - lastSeenTime;
   const differenceInHours = Math.floor(differenceInMilliseconds / (1000 * 60 * 60));
   
-  return differenceInHours >= 12;
+  return differenceInHours >= 10000;
 };
 
 

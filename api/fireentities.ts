@@ -24,3 +24,47 @@ export const firemissileloc = async (destlat: string, destlong: string, type: st
       throw new Error('Failed to update isAlive mode.');
     }
   };
+
+  export const firemissileplayer = async (playerusername: string, type: string,) => {
+    const token = await SecureStore.getItemAsync("token");
+      try {
+        if (!token) {
+          console.log('Token not found');
+          return;
+        }
+  
+        const response = await axiosInstance.post("/api/firemissile@player", {
+          token,
+          playerusername,
+          type,
+        });
+        return response.data
+      } catch (error) {
+        console.error("Failed to update isAlive status:", error);
+        throw new Error('Failed to update isAlive mode.');
+      }
+    };
+
+    export const placelandmine = async (loclat: string, loclong: string, type: string,) => {
+      const token = await SecureStore.getItemAsync("token");
+        try {
+          if (!token) {
+            console.log('Token not found');
+            return;
+          }
+
+          const locLat = loclat.toString();
+          const locLong = loclong.toString();
+    
+          const response = await axiosInstance.post("/api/placelandmine", {
+            token,
+            locLat,
+            locLong,
+            type,
+          });
+          return response.data
+        } catch (error) {
+          console.error("Failed to update isAlive status:", error);
+          throw new Error('Failed to update isAlive mode.');
+        }
+      };

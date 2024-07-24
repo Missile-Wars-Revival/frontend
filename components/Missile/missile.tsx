@@ -5,6 +5,7 @@ import React from "react";
 import { MissilePlacementPopup } from './missileplacement';
 import * as SecureStore from "expo-secure-store";
 import axiosInstance from "../../api/axios-instance";
+import { firemissileplayer } from "../../api/fireentities";
 
 //Missile types
 //   Amplifier:
@@ -101,6 +102,9 @@ export const MissileLibrary = ({ playerName }: { playerName: string }) => {
   const handleFire = () => {
     // Implement fire logic here
     console.log("Firing missile:", selectedMissile, "at player:", playerName);
+    if (selectedMissile) {
+      firemissileplayer(playerName, selectedMissile)
+    }
     setShowPopup(false);
   };
 

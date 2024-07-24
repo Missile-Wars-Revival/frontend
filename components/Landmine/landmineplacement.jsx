@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { useUserName } from "../../util/fetchusernameglobal";
 import { mapstyles } from '../../map-themes/map-stylesheet';
+import { placelandmine } from '../../api/fireentities';
 
 export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) => {
 
@@ -99,6 +100,7 @@ export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) =
       Alert.alert('Warning', 'Placing a landmine at your current location is not recommended!');
     } else {
       console.log(`FIRING LANDMINE: Coordinates: ${marker.latitude}, ${marker.longitude}; User: ${userName} Landmine Type: ${selectedLandmine.type}`);
+      placelandmine(marker.latitude, marker.longitude, selectedLandmine.type)
       onClose();
     }
   };
