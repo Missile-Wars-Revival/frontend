@@ -36,9 +36,7 @@ import { playDeathSound } from "../util/sounds/deathsound";
 import { RewardedAd, RewardedAdEventType, TestIds } from "react-native-google-mobile-ads";
 import useFetchHealth from "../hooks/websockets/healthhook";
 
-const adUnitId = Platform.OS === 'android' ? 'ca-app-pub-4035842398612787/2779084579' : 'ca-app-pub-4035842398612787/8310612855'
-
-//const adUnitId =  __DEV__ ? TestIds.REWARDED : 'ca-app-pub-4035842398612787/8310612855';
+const adUnitId =  __DEV__ ? TestIds.REWARDED : 'ca-app-pub-4035842398612787/8310612855';
 
 const rewarded = RewardedAd.createForAdRequest(adUnitId, {
   keywords: ['games', 'clothing'], //ads category
@@ -212,10 +210,9 @@ export default function Map() {
     storeMapStyle(style);
   };
   const respawn = async () => {
-    //rewarded.show();
     const token = SecureStore.getItem("token");
   
-    if (token === null) {
+    if (!token) {
       console.error("Token is null, cannot proceed with setting items");
       return; // Stop execution if token is null
     }
@@ -224,6 +221,7 @@ export default function Map() {
     updateisAlive(token, true);
     await AsyncStorage.setItem('health', '100');
     setHealth(token, 100);
+    rewarded.show();
   };
   const { countdownIsActive, stopCountdown } = useCountdown();
 
