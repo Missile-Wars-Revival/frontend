@@ -11,7 +11,7 @@ import { getRandomLoot } from "./Probability";
 import { addmoney } from "../../api/money";
 import { additem } from "../../api/add-item";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { removeHealth, setHealth, updateisAlive } from "../../api/health";
+import { addHealth, removeHealth, setHealth, updateisAlive } from "../../api/health";
 import { useCountdown } from "../../util/Context/countdown";
 import useFetchMissiles from "../../hooks/websockets/missilehook";
 import useFetchLoot from "../../hooks/websockets/loothook";
@@ -190,7 +190,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                             console.log(`You've obtained a ${reward.name}!`);
                             sendNotification("Loot Pickup", `Special Loot!! You got a: ${reward.name} as well as +200🎖️, +250 🪙`);
                             setLastNotified(prev => ({ ...prev, loot: today }));
-
+                            addHealth(token, 20)
                             if (reward.category === "Currency") {
                                 amount += 500;
                             } else {
