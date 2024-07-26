@@ -9,6 +9,9 @@ import axios from 'axios';
 import Purchases from 'react-native-purchases';
 import { addmoney } from '../api/money';
 import { additem } from '../api/add-item';
+import Purchases from 'react-native-purchases';
+import { addmoney } from '../api/money';
+import { additem } from '../api/add-item';
 
 export interface Product {
   id: string;
@@ -48,6 +51,8 @@ export const premproducts: Product[] = [
   //{ id: "9", name: 'GutShot', price: 5.99, image: require('../assets/missiles/GutShot.png'), description: 'GutShot missile', sku: "GutShot", type: 'Missiles' },
   { id: "11", name: 'Yokozuna', price: 4.99, image: require('../assets/missiles/Yokozuna.png'), description: 'Yokozuna missile', sku: "Yokozuna", type: 'Missiles' },
   { id: "13", name: 'Zippy', price: 5.99, image: require('../assets/missiles/Zippy.png'), description: 'Zippy', sku: "Zippy", type: 'Missiles' },
+  { id: "14", name: '500 x Coins', price: 2.99, image: require('../assets/store/500coins.png'), description: '500', sku: "500Coins", type: 'Coins' },
+  { id: "14", name: '1000 x Coins', price: 5.99, image: require('../assets/store/1000coins.png'), description: '1000', sku: "1000Coins", type: 'Coins' },
   { id: "14", name: '500 x Coins', price: 2.99, image: require('../assets/store/500coins.png'), description: '500', sku: "500Coins", type: 'Coins' },
   { id: "14", name: '1000 x Coins', price: 5.99, image: require('../assets/store/1000coins.png'), description: '1000', sku: "1000Coins", type: 'Coins' },
   //{ id: "20", name: 'LootDrop', price: 4.99, image: require('../assets/mapassets/Airdropicon.png'), description: 'A Loot Drop', sku: "Loot Drop", type: 'Loot Drops' },
@@ -195,6 +200,9 @@ const StorePage: React.FC = () => {
         // Handle cases where the error is not an instance of Error
         console.error('An unexpected error occurred');
         return { status: 'unexpected_error', error: 'An unexpected error occurred' };
+        // Handle cases where the error is not an instance of Error
+        console.error('An unexpected error occurred');
+        return { status: 'unexpected_error', error: 'An unexpected error occurred' };
       }
     }
   };
@@ -219,7 +227,9 @@ const StorePage: React.FC = () => {
 
   return (
     <ImageBackground source={require('../assets/store/mapbackdrop.png')} style={mainstorestyles.backgroundImage}>
+    <ImageBackground source={require('../assets/store/mapbackdrop.png')} style={mainstorestyles.backgroundImage}>
       <Image source={require('../assets/MissleWarsTitle.png')} style={mainstorestyles.titleImage} />
+      <Image source={require('../assets/store/SHOP.png')} style={mainstorestyles.shopImage} />
       <Image source={require('../assets/store/SHOP.png')} style={mainstorestyles.shopImage} />
       <View style={mainstorestyles.headerContainer}>
         <View style={mainstorestyles.currencyContainer}>

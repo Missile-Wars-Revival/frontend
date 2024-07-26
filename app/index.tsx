@@ -48,6 +48,7 @@ export default function Map() {
   const [userNAME, setUsername] = useState("");
   const [isAlive, setisAlive] = useState(true);
   const [deathsoundPlayed, setdeathSoundPlayed] = useState(false);
+  const [deathsoundPlayed, setdeathSoundPlayed] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const health = useFetchHealth()//WS hook
 
@@ -133,7 +134,14 @@ export default function Map() {
         const isAliveStatusString = await AsyncStorage.getItem('isAlive');
         if (isAliveStatusString) {
           const isAliveStatus = JSON.parse(isAliveStatusString);
+          const isAliveStatus = JSON.parse(isAliveStatusString);
 
+          if (!isAliveStatus.isAlive && !deathsoundPlayed) {
+            playDeathSound();
+            setdeathSoundPlayed(true); // Ensure the sound is played only once
+          }
+
+          setisAlive(isAliveStatus.isAlive);
           if (!isAliveStatus.isAlive && !deathsoundPlayed) {
             playDeathSound();
             setdeathSoundPlayed(true); // Ensure the sound is played only once
@@ -142,12 +150,14 @@ export default function Map() {
           setisAlive(isAliveStatus.isAlive);
         } else {
           setisAlive(false); // Default to false if no status is found
+          setisAlive(false); // Default to false if no status is found
         }
       } catch (error) {
         console.error('Error initializing app:', error);
       }
     };
 
+    initializeApp();
     initializeApp();
 
     const intervalId = setInterval(initializeApp, 1000);
