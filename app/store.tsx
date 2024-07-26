@@ -9,9 +9,6 @@ import axios from 'axios';
 import Purchases from 'react-native-purchases';
 import { addmoney } from '../api/money';
 import { additem } from '../api/add-item';
-import Purchases from 'react-native-purchases';
-import { addmoney } from '../api/money';
-import { additem } from '../api/add-item';
 
 export interface Product {
   id: string;
@@ -226,7 +223,6 @@ const StorePage: React.FC = () => {
   );
 
   return (
-    <ImageBackground source={require('../assets/store/mapbackdrop.png')} style={mainstorestyles.backgroundImage}>
     <ImageBackground source={require('../assets/store/mapbackdrop.png')} style={mainstorestyles.backgroundImage}>
       <Image source={require('../assets/MissleWarsTitle.png')} style={mainstorestyles.titleImage} />
       <Image source={require('../assets/store/SHOP.png')} style={mainstorestyles.shopImage} />

@@ -4,9 +4,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { removemoney } from "./money";
 import { Alert } from "react-native";
 import { playDeathSound } from "../util/sounds/deathsound";
-import { removemoney } from "./money";
-import { Alert } from "react-native";
-import { playDeathSound } from "../util/sounds/deathsound";
 
 export async function getHealth(
   token: string,
@@ -29,26 +26,6 @@ export async function getHealth(
     }
   }
 }
-  token: string,
-) {
-  try {
-    const response = await axiosInstance.post("/api/getHealth", {
-      token: token
-    });
-    return response.data;
-  } catch (error) {
-    if (isAxiosError(error)) {
-      console.log("failed to get health")
-      return (
-        error.response?.data || { success: false, message: "Request failed" }
-      );
-    } else {
-      console.log("failed to get health")
-      console.error(error);
-      return { success: false, message: "Request failed" };
-    }
-  }
-}
 
 export async function setHealth(
   token: string,
@@ -68,53 +45,6 @@ export async function setHealth(
       );
     } else {
       console.log("failed to add health")
-      console.error(error);
-      return { success: false, message: "Request failed" };
-    }
-  }
-}
-export async function setHealth(
-  token: string,
-  newHealth: number,
-) {
-  try {
-    const response = await axiosInstance.post("/api/setHealth", {
-      token: token,
-      newHealth: newHealth
-    });
-    return response.data;
-  } catch (error) {
-    if (isAxiosError(error)) {
-      console.log("failed to add health")
-      return (
-        error.response?.data || { success: false, message: "Request failed" }
-      );
-    } else {
-      console.log("failed to add health")
-      console.error(error);
-      return { success: false, message: "Request failed" };
-    }
-  }
-}
-
-export async function removeHealth(
-  token: string,
-  amount: number,
-) {
-  try {
-    const response = await axiosInstance.post("/api/removeHealth", {
-      token: token,
-      amount: amount
-    });
-    return response.data;
-  } catch (error) {
-    if (isAxiosError(error)) {
-      console.log("failed to remove health")
-      return (
-        error.response?.data || { success: false, message: "Request failed" }
-      );
-    } else {
-      console.log("failed to remove health")
       console.error(error);
       return { success: false, message: "Request failed" };
     }
@@ -144,29 +74,6 @@ export async function removeHealth(
   }
 }
 
-export async function addHealth(
-  token: string,
-  amount: number,
-) {
-  try {
-    const response = await axiosInstance.post("/api/addHealth", {
-      token: token,
-      amount: amount
-    });
-    return response.data;
-  } catch (error) {
-    if (isAxiosError(error)) {
-      console.log("failed to add health")
-      return (
-        error.response?.data || { success: false, message: "Request failed" }
-      );
-    } else {
-      console.log("failed to add health")
-      console.error(error);
-      return { success: false, message: "Request failed" };
-    }
-  }
-}
 export async function addHealth(
   token: string,
   amount: number,
@@ -225,29 +132,6 @@ export const updateisAlive = async (token: string, isAlive: boolean) => {
   }
 };
 
-//get alive status
-export async function getisAlive(
-  token: string,
-) {
-  try {
-    const response = await axiosInstance.post("/api/getisAlive", {
-      token,
-    });
-    await AsyncStorage.setItem('isAlive', JSON.stringify(response.data));
-    return response.data;
-  } catch (error) {
-    if (isAxiosError(error)) {
-      console.log("failed to remove money")
-      return (
-        error.response?.data || { success: false, message: "Request failed" }
-      );
-    } else {
-      console.log("failed to remove money")
-      console.error(error);
-      return { success: false, message: "Request failed" };
-    }
-  }
-}
 //get alive status
 export async function getisAlive(
   token: string,

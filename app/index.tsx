@@ -48,7 +48,6 @@ export default function Map() {
   const [userNAME, setUsername] = useState("");
   const [isAlive, setisAlive] = useState(true);
   const [deathsoundPlayed, setdeathSoundPlayed] = useState(false);
-  const [deathsoundPlayed, setdeathSoundPlayed] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const health = useFetchHealth()//WS hook
 
@@ -133,7 +132,6 @@ export default function Map() {
       try {
         const isAliveStatusString = await AsyncStorage.getItem('isAlive');
         if (isAliveStatusString) {
-          const isAliveStatus = JSON.parse(isAliveStatusString);
           const isAliveStatus = JSON.parse(isAliveStatusString);
 
           if (!isAliveStatus.isAlive && !deathsoundPlayed) {
