@@ -110,3 +110,22 @@ export const placeLoot = async (loclat: string, loclong: string) => {
     throw new Error('Failed to update isAlive mode.');
   }
 };
+
+export const lootpickup = async (lootid: number) => {
+  const token = await SecureStore.getItemAsync("token");
+  try {
+    if (!token) {
+      console.log('Token not found');
+      return;
+    }
+
+    const response = await axiosInstance.post("/api/lootpickup", {
+      token,
+      lootid,
+    });
+    return response.data
+  } catch (error) {
+    console.error("Failed to update isAlive status:", error);
+    throw new Error('Failed to update isAlive mode.');
+  }
+};

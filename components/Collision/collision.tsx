@@ -16,7 +16,7 @@ import { useCountdown } from "../../util/Context/countdown";
 import useFetchMissiles from "../../hooks/websockets/missilehook";
 import useFetchLoot from "../../hooks/websockets/loothook";
 import useFetchLandmines from "../../hooks/websockets/landminehook";
-import { steppedonlandmine } from "../../api/fireentities";
+import { lootpickup, steppedonlandmine } from "../../api/fireentities";
 
 Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -203,11 +203,12 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                             sendNotification("Loot Pickup", "No special loot this time! +200🎖️, +250 🪙");
                             setLastNotified(prev => ({ ...prev, loot: today }));
                         }
+//eventually merge add money and add ranke points into applylootpickup
 
                         addmoney(token, amount);  // Adds the computed amount once done
                         addrankpoints(token, 200); // adds 100 rank points for collecting
 
-                        //add functionality to remove the loot drop from DB
+                        lootpickup(loot.id) // removes loot drop
 
                         try {
                         } catch (error) {
