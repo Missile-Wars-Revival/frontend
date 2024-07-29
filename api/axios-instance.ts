@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const uri = 'http://159.223.160.6:3000';
+const uri = 'https://api.missilewars.dev';
 
 const axiosInstance = axios.create({
   baseURL: uri,
