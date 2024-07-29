@@ -68,11 +68,13 @@ export const LandmineLibraryView: React.FC<LandmineLibraryViewProps> = ({ Landmi
   const [loading, setLoading] = useState<boolean>(true);
   const [showplacmentPopup, setShowplacementPopup] = useState<boolean>(false);
   const [selectedLandmine, setSelectedLandmine] = useState<Landmine | null>(null);
+  const [noItems, setNoItems] = useState<boolean>(false);
 
   useEffect(() => {
     fetchLandmineLib().then(data => {
       setLandmineLibrary(data);
       setLoading(false);
+      setNoItems(data.length === 0);
     }).catch(error => {
       console.error('Error fetching Landmine library:', error);
     });
@@ -102,12 +104,16 @@ export const LandmineLibraryView: React.FC<LandmineLibraryViewProps> = ({ Landmi
         <View style={{ backgroundColor: 'white', borderRadius: 10, width: Dimensions.get('window').width - 40, maxHeight: Dimensions.get('window').height - 200 }}>
           <ScrollView contentContainerStyle={{ padding: 20 }}>
             <Text>Select your Landmine:</Text>
-            {landmineLibrary.map((landmine, index) => (
-              <TouchableOpacity key={index} onPress={() => handleLandmineClick(landmine.type)} style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 10 }}>
-                <Image source={LandmineImages[landmine.type]} style={{ width: 50, height: 50, marginRight: 10 }} />
-                <Text>{landmine.type} - Quantity: {landmine.quantity}</Text>
-              </TouchableOpacity>
-            ))}
+            {noItems ? ( // Conditionally render based on no items state
+              <Text>No items in inventory</Text>
+            ) : (
+              landmineLibrary.map((landmine, index) => (
+                <TouchableOpacity key={index} onPress={() => handleLandmineClick(landmine.type)} style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 10 }}>
+                  <Image source={LandmineImages[landmine.type]} style={{ width: 50, height: 50, marginRight: 10 }} />
+                  <Text>{landmine.type} - Quantity: {landmine.quantity}</Text>
+                </TouchableOpacity>
+              ))
+            )}
           </ScrollView>
           <View style={{ alignSelf: 'flex-end', padding: 10 }}>
             <Button title="Done" onPress={landminePlaceHandler} />

@@ -60,12 +60,14 @@ export const LootLibraryView: React.FC<LootLibraryViewProps> = ({ LootModalVisib
   const [loading, setLoading] = useState<boolean>(true);
   const [showplacmentPopup, setShowplacementPopup] = useState<boolean>(false);
   const [selectedLoot, setSelectedLoot] = useState<Loot | null>(null);
+  const [noItems, setNoItems] = useState<boolean>(false);
   const resizedlootimage = require("../../assets/mapassets/Airdropicon.png");
 
   useEffect(() => {
     fetchLootLib().then(data => {
       setLootLibrary(data);
       setLoading(false);
+      setNoItems(data.length === 0);
     }).catch(error => {
       console.error('Error fetching Loot library:', error);
     });
@@ -95,12 +97,16 @@ export const LootLibraryView: React.FC<LootLibraryViewProps> = ({ LootModalVisib
         <View style={{ backgroundColor: 'white', borderRadius: 10, width: Dimensions.get('window').width - 40, maxHeight: Dimensions.get('window').height - 200 }}>
           <ScrollView contentContainerStyle={{ padding: 20 }}>
             <Text>Select your Loot:</Text>
-            {LootLibrary.map((Loot, index) => (
-              <TouchableOpacity key={index} onPress={() => handleLootClick(Loot.type)} style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 10 }}>
-                <Image source={resizedlootimage} style={{ width: 50, height: 50, marginRight: 10 }} />
-                <Text>{Loot.type} - Quantity: {Loot.quantity}</Text>
-              </TouchableOpacity>
-            ))}
+            {noItems ? ( // Conditionally render based on no items state
+              <Text>No items in inventory</Text>
+            ) : (
+              LootLibrary.map((Loot, index) => (
+                <TouchableOpacity key={index} onPress={() => handleLootClick(Loot.type)} style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 10 }}>
+                   <Image source={resizedlootimage} style={{ width: 50, height: 50, marginRight: 10 }} />
+                  <Text>{Loot.type} - Quantity: {Loot.quantity}</Text>
+                </TouchableOpacity>
+              ))
+            )}
           </ScrollView>
           <View style={{ alignSelf: 'flex-end', padding: 10 }}>
             <Button title="Done" onPress={LootPlaceHandler} />

@@ -129,9 +129,9 @@ export const LootPlacementPopup = ({ visible, onClose, selectedLoot }) => {
           >
             <Circle
               center={marker}
-              radius={10}
-              fillColor="rgba(128, 128, 128, 0.3)"
-              strokeColor="rgba(128, 128, 128, 0.8)" />
+              radius={20}
+              fillColor="rgba(0, 0, 255, 0.2)"
+              strokeColor="rgba(0, 0, 255, 0.8)" />
             <Marker
               coordinate={marker}
               draggable
