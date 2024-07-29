@@ -144,12 +144,12 @@ export async function getisAlive(
     return response.data;
   } catch (error) {
     if (isAxiosError(error)) {
-      console.log("failed to remove money")
+      console.log("failed to get isAlive")
       return (
         error.response?.data || { success: false, message: "Request failed" }
       );
     } else {
-      console.log("failed to remove money")
+      console.log("failed to get isAlive")
       console.error(error);
       return { success: false, message: "Request failed" };
     }
