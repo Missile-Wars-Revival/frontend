@@ -87,3 +87,26 @@ export const steppedonlandmine = async (landmineid: number) => {
     throw new Error('Failed to update isAlive mode.');
   }
 };
+
+export const placeLoot = async (loclat: string, loclong: string) => {
+  const token = await SecureStore.getItemAsync("token");
+  try {
+    if (!token) {
+      console.log('Token not found');
+      return;
+    }
+
+    const locLat = loclat.toString();
+    const locLong = loclong.toString();
+
+    const response = await axiosInstance.post("/api/placeloot", {
+      token,
+      locLat,
+      locLong,
+    });
+    return response.data
+  } catch (error) {
+    console.error("Failed to update isAlive status:", error);
+    throw new Error('Failed to update isAlive mode.');
+  }
+};

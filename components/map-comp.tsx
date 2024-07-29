@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, Switch, Alert, Platform, ActivityIndicator } from "react-native";
 import MapView, { PROVIDER_DEFAULT, PROVIDER_GOOGLE } from "react-native-maps";
-import { AllLootDrops } from "./loot-drop";
+import { AllLootDrops } from "./Loot/map-loot";
 import { AllLandMines } from "./Landmine/map-landmines";
 import { AllMissiles } from "./Missile/map-missile";
 import { AllPlayers } from "./map-players";

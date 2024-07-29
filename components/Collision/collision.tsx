@@ -304,7 +304,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                 switch (proximityStatus) {
                     case 'within-landmine':
                         //inside landmine radius
-                        sendNotification("Danger!", "You just stepped on a Landmine! Damage has been taken.");
+                        sendNotification("Danger!", `You just stepped on a Landmine! Damage has been taken.`);
                         setLastNotified(prev => ({ ...prev, landmine: today }));
 
                         Alert.alert("Danger!", "You have stepped on a Landmine!!");

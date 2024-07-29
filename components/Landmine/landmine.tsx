@@ -38,7 +38,7 @@ const fetchLandmineLib = async (): Promise<LandmineType[]> => {
 
     // Filter the inventory to include only items with the category "Landmines"
     const landmineLibraryData = inventory
-      .filter((item: { category: string; }) => item.category === "Landmines")
+      .filter((item: { category: string; quantity: number;}) => item.category === "Landmines" && item.quantity > 0)
       .map((item: { name: any; quantity: any; }) => ({
         type: item.name,
         quantity: item.quantity

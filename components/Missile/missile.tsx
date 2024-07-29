@@ -39,7 +39,7 @@ const fetchMissileLib = async (): Promise<Missilelib[]> => {
 
     // Filter the inventory to include only items with the category "Missiles"
     const missileLibraryData = inventory
-      .filter((item: { category: string; }) => item.category === "Missiles")
+      .filter((item: { category: string; quantity: number;}) => item.category === "Missiles" && item.quantity > 0)
       .map((item: { name: any; quantity: any; }) => ({
         type: item.name,
         quantity: item.quantity
