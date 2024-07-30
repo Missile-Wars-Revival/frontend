@@ -29,7 +29,7 @@ import { MapStyle } from "../types/types";
 import { getCredentials } from "../util/logincache";
 import { router } from "expo-router";
 import HealthBar from "../components/healthbar";
-import { getHealth, getisAlive, setHealth, updateisAlive } from "../api/health";
+import { getisAlive, setHealth, updateisAlive } from "../api/health";
 import CountdownTimer from "../components/countdown";
 import { useCountdown } from "../util/Context/countdown";
 import { playDeathSound } from "../util/sounds/deathsound";
