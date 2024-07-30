@@ -226,7 +226,6 @@ const StorePage: React.FC = () => {
     <ImageBackground source={require('../assets/store/mapbackdrop.png')} style={mainstorestyles.backgroundImage}>
       <Image source={require('../assets/MissleWarsTitle.png')} style={mainstorestyles.titleImage} />
       <Image source={require('../assets/store/SHOP.png')} style={mainstorestyles.shopImage} />
-      <Image source={require('../assets/store/SHOP.png')} style={mainstorestyles.shopImage} />
       <View style={mainstorestyles.headerContainer}>
         <View style={mainstorestyles.currencyContainer}>
           <Text style={mainstorestyles.currencyText} numberOfLines={1} ellipsizeMode="tail">
