@@ -256,7 +256,6 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
         //apply missile damage
         async function applyMissileDamage(missiletype: string, missileDamage: number, sentBy: string) {
             const token = SecureStore.getItem("token");
-            console.log(token)
         
             if (!health || !token) {
                 console.error('Required data not found.');
@@ -390,7 +389,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [getCurrentLocationWrapper, checkAndNotify]);
+    }, [getCurrentLocationWrapper, checkAndNotify, userLocation, lootLocations, missileData, landmineData, lastNotified]);
 
     return null;
 };    
