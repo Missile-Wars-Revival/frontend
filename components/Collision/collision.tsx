@@ -4,11 +4,9 @@ import { location } from "../../util/locationreq"
 import * as Notifications from 'expo-notifications';
 import { convertimestampfuturemissile } from "../../util/get-time-difference";
 import { Alert } from "react-native";
-import { addrankpoints } from "../../api/rank";
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 import { getRandomLoot } from "./Probability";
-import { addmoney } from "../../api/money";
 import { additem } from "../../api/add-item";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { addHealth, getHealth, removeHealth, setHealth, updateisAlive } from "../../api/health";
@@ -17,6 +15,7 @@ import useFetchMissiles from "../../hooks/websockets/missilehook";
 import useFetchLoot from "../../hooks/websockets/loothook";
 import useFetchLandmines from "../../hooks/websockets/landminehook";
 import { lootpickup, steppedonlandmine } from "../../api/fireentities";
+import useFetchHealth from "../../hooks/websockets/healthhook";
 
 Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -39,6 +38,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
     const missileData = useFetchMissiles()
     const lootLocations = useFetchLoot()
     const landmineData = useFetchLandmines()
+    const health = useFetchHealth()
 
     const [userLocation, setUserLocation] = useState<location | null>(null);
     const [lastNotified, setLastNotified] = useState<LastNotified>({ loot: null, missile: null, landmine: null });
@@ -236,7 +236,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                             setLastNotified(prev => ({ ...prev, missile: today }));
                             Alert.alert("Danger!", "A Missile has impacted in your proximity! You may start taking damage!");
 
-                            applyMissileDamage(missile.type, 30, missile.sentbyusername); //10 = damage for missile per 30 secs
+                            applyMissileDamage(missile.type, 30, missile.sentbyusername); //30 = damage for missile per 30 secs
                         }
                         break;
                     case 'near-missile':
@@ -255,15 +255,15 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
         });
         //apply missile damage
         async function applyMissileDamage(missiletype: string, missileDamage: number, sentBy: string) {
-            const health = await AsyncStorage.getItem('health');
-            const token = await SecureStore.getItem("token");
+            const token = SecureStore.getItem("token");
+            console.log(token)
         
             if (!health || !token) {
                 console.error('Required data not found.');
                 return;
             }
         
-            let healthNumber = parseInt(health, 10);
+            let healthNumber = health;
             if (isNaN(healthNumber)) {
                 console.error('Invalid health value:', health);
                 return;
