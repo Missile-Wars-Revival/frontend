@@ -25,6 +25,7 @@
     ],
     "ios": {
       "supportsTablet": true,
+      "buildNumber": "2",
       "bundleIdentifier": "com.longtimenoc.missilewars",
       "infoPlist": {
         "NSLocationAlwaysUsageDescription": "This app needs access to your location to alert about nearby items of interest.",
