@@ -111,7 +111,7 @@ export const placeLoot = async (loclat: string, loclong: string) => {
   }
 };
 
-export const lootpickup = async (lootid: number) => {
+export const lootpickup = async (lootid: number, amount: number) => {
   const token = await SecureStore.getItemAsync("token");
   try {
     if (!token) {
@@ -122,6 +122,7 @@ export const lootpickup = async (lootid: number) => {
     const response = await axiosInstance.post("/api/lootpickup", {
       token,
       lootid,
+      amount,
     });
     return response.data
   } catch (error) {
