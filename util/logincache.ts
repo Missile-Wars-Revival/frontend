@@ -45,7 +45,6 @@ export async function clearCredentials(): Promise<void> {
     await AsyncStorage.removeItem("regionlocation"); //Cache of locaiton
     await AsyncStorage.removeItem("firstload"); //To cache if its first time opening app
     await AsyncStorage.setItem('dbconnection', 'true'); //To cache db connection status across the app
-    await AsyncStorage.removeItem("health"); //Players cached health (is stored locally as well to increase user update)
     await AsyncStorage.setItem(`isAlive`, `true`); //Stored locally for same reason as above
 
     console.log("All credentials and settings successfully cleared.");

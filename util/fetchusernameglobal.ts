@@ -3,7 +3,7 @@ import { getCredentials } from "./logincache";
 import { router } from "expo-router";
 
 export const useUserName = () => {
-    const [userNAME, setUserName] = useState<string | null>(null);
+    const [userNAME, setUserName] = useState<string>("Test2");
 
     useEffect(() => {
         const fetchCredentials = async () => {

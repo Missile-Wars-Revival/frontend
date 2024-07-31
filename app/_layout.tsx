@@ -8,7 +8,7 @@ import { useRouter, usePathname } from 'expo-router';
 import SplashScreen from './splashscreen';
 import { FontAwesome } from '@expo/vector-icons';
 import { ProximityCheckNotif } from "../components/Collision/collision";
-import useWebSocket, { } from "../hooks/api/websockets"; 
+import useWebSocket, { } from "../hooks/websockets/websockets"; 
 import { WebSocketContext, WebSocketProviderProps } from "../util/Context/websocket";
 import { CountdownContext, CountdownProviderProps } from "../util/Context/countdown";
 import { Platform } from 'react-native';
@@ -38,10 +38,10 @@ export default function RootLayout() {
   }
 
   const WebSocketProvider = ({ children }: WebSocketProviderProps) => {
-    const { data, sendWebsocket } = useWebSocket();
+    const { data, missiledata, landminedata, lootdata, healthdata, friendsdata, inventorydata, playerlocations, sendWebsocket } = useWebSocket();
 
     return (
-      <WebSocketContext.Provider value={{ data, sendWebsocket }}>
+      <WebSocketContext.Provider value={{ data, missiledata, landminedata, lootdata, healthdata, friendsdata, inventorydata, playerlocations, sendWebsocket }}>
         {children}
       </WebSocketContext.Provider>
     );

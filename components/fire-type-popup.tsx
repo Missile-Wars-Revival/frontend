@@ -4,6 +4,7 @@ import { Modal, View, Text, TouchableOpacity } from "react-native";
 interface FireTypeProps {
   landmineFireHandler: () => void;
   missileFireHandler: () => void;
+  lootrequesthandler: () => void;
 }
 
 export const FireType = (props: FireTypeProps) => {
@@ -22,13 +23,18 @@ export const FireType = (props: FireTypeProps) => {
     FireclosePopup();
     switch (style) {
       case "firelandmine":
-        //sconsole.log("place landmine")
+        //console.log("place landmine")
         //place landminecode;
         props.landmineFireHandler();
         break;
       case "firemissile":
-        console.log("Fire Missile")
+        //console.log("Fire Missile")
         props.missileFireHandler();
+        //Fire missile code;
+        break;
+      case "lootdrop":
+        //console.log("Fire Missile")
+        props.lootrequesthandler();
         //Fire missile code;
         break;
       default:
@@ -129,8 +135,8 @@ export const FireTypeStyle = ({
 
           {/* Room to expand: */}
 
-          {/* <TouchableOpacity
-            onPress={() => onSelect("cherry")}
+          <TouchableOpacity
+            onPress={() => onSelect("lootdrop")}
             style={{
               borderRadius: 10,
               padding: 10,
@@ -140,8 +146,8 @@ export const FireTypeStyle = ({
               alignItems: "center",
             }}
           >
-            <Text style={{ fontSize: 16 }}>Cherry Blossom</Text>
-          </TouchableOpacity> */}
+            <Text style={{ fontSize: 16 }}>Request Loot Drop</Text>
+          </TouchableOpacity>
           {/* <TouchableOpacity
             onPress={() => onSelect("cyber")}
             style={{

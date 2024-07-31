@@ -1,20 +1,21 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { GeoLocation, Landmine, Loot, Missile, MissileType } from "middle-earth";
-import { fetchLootFromBackend, fetchMissilesFromBackend, fetchlandmineFromBackend } from "../../temp/fetchMethods";
 import { getCurrentLocation } from "../../util/locationreq";
 import { location } from "../../util/locationreq"
 import * as Notifications from 'expo-notifications';
 import { convertimestampfuturemissile } from "../../util/get-time-difference";
 import { Alert } from "react-native";
-import { addrankpoints } from "../../api/rank";
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 import { getRandomLoot } from "./Probability";
-import { addmoney } from "../../api/money";
 import { additem } from "../../api/add-item";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { removeHealth, setHealth, updateisAlive } from "../../api/health";
+import { addHealth, getHealth, removeHealth, setHealth, updateisAlive } from "../../api/health";
 import { useCountdown } from "../../util/Context/countdown";
+import useFetchMissiles from "../../hooks/websockets/missilehook";
+import useFetchLoot from "../../hooks/websockets/loothook";
+import useFetchLandmines from "../../hooks/websockets/landminehook";
+import { lootpickup, steppedonlandmine } from "../../api/fireentities";
+import useFetchHealth from "../../hooks/websockets/healthhook";
 
 Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -33,23 +34,16 @@ interface LastNotified {
 const proximityThreshold = 0.002;
 
 export const ProximityCheckNotif: React.FC<{}> = () => {
-    const [lootLocations, setLootLocations] = useState<Loot[]>([]);
-    const [missileData, setMissileData] = useState<Missile[]>([]);
-    const [landmineData, setLandmineLocations] = useState<Landmine[]>([]);
+
+    const missileData = useFetchMissiles()
+    const lootLocations = useFetchLoot()
+    const landmineData = useFetchLandmines()
+    const health = useFetchHealth()
+
     const [userLocation, setUserLocation] = useState<location | null>(null);
     const [lastNotified, setLastNotified] = useState<LastNotified>({ loot: null, missile: null, landmine: null });
     const [isAlive, setisAlive] = useState(true);
     const { startCountdown, stopCountdown } = useCountdown();
-
-    const fetchLootAndMissiles = useCallback(async () => {
-        setLootLocations(await fetchLootFromBackend());
-        setLandmineLocations(await fetchlandmineFromBackend());
-        setMissileData(await fetchMissilesFromBackend());
-    }, []);
-
-    useEffect(() => {
-        fetchLootAndMissiles();
-    }, [fetchLootAndMissiles]);
 
     const getCurrentLocationWrapper = async () => {
         const location: location = await getCurrentLocation();
@@ -197,7 +191,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                             console.log(`You've obtained a ${reward.name}!`);
                             sendNotification("Loot Pickup", `Special Loot!! You got a: ${reward.name} as well as +200🎖️, +250 🪙`);
                             setLastNotified(prev => ({ ...prev, loot: today }));
-
+                            addHealth(token, 20)
                             if (reward.category === "Currency") {
                                 amount += 500;
                             } else {
@@ -210,10 +204,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                             setLastNotified(prev => ({ ...prev, loot: today }));
                         }
 
-                        addmoney(token, amount);  // Adds the computed amount once done
-                        addrankpoints(token, 200); // adds 100 rank points for collecting
-
-                        //add functionality to remove the loot drop from DB
+                        lootpickup(loot.id, amount) // removes loot drop and adds money
 
                         try {
                         } catch (error) {
@@ -245,7 +236,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                             setLastNotified(prev => ({ ...prev, missile: today }));
                             Alert.alert("Danger!", "A Missile has impacted in your proximity! You may start taking damage!");
 
-                            applyMissileDamage(missile.type, 30, missile.sentbyusername); //10 = damage for missile per 30 secs
+                            applyMissileDamage(missile.type, 30, missile.sentbyusername); //30 = damage for missile per 30 secs
                         }
                         break;
                     case 'near-missile':
@@ -264,15 +255,14 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
         });
         //apply missile damage
         async function applyMissileDamage(missiletype: string, missileDamage: number, sentBy: string) {
-            const health = await AsyncStorage.getItem('health');
-            const token = await SecureStore.getItem("token");
+            const token = SecureStore.getItem("token");
         
             if (!health || !token) {
                 console.error('Required data not found.');
                 return;
             }
         
-            let healthNumber = parseInt(health, 10);
+            let healthNumber = health;
             if (isNaN(healthNumber)) {
                 console.error('Invalid health value:', health);
                 return;
@@ -310,25 +300,28 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                 switch (proximityStatus) {
                     case 'within-landmine':
                         //inside landmine radius
-                        sendNotification("Danger!", "You just stepped on a Landmine! Damage has been taken.");
+                        sendNotification("Danger!", `You just stepped on a Landmine! Damage has been taken.`);
                         setLastNotified(prev => ({ ...prev, landmine: today }));
 
                         Alert.alert("Danger!", "You have stepped on a Landmine!!");
-                        applyLandmineDamage(50, landmine.placedby)
+                        applyLandmineDamage(landmine.id ,landmine.placedby)
                         break;
                     case 'near-landmine':
                         // Send warning if near but not within the landmine radius
-                        // sendNotification("Landmine Proximity Warning", "A landmine is nearby. Be cautious!");
-                        // setLastNotified(prev => ({ ...prev, landmine: today }));
+                         sendNotification("Landmine Proximity Warning", "A landmine is nearby. Be cautious!");
+                         setLastNotified(prev => ({ ...prev, landmine: today }));
                         break;
                 }
             }
         });
 
         //apply Landmine damage
-        async function applyLandmineDamage(LandmineDamage: number, sentBy: string) {
-            const health = await AsyncStorage.getItem('health');
+        async function applyLandmineDamage(landmineid: number, sentBy: string) {
+            steppedonlandmine(landmineid)
+            
             const token = SecureStore.getItem("token");
+            if (token) {
+                const health = await getHealth(token)
 
             if (!health || !token) {
                 console.error('Required data not found.');
@@ -347,10 +340,6 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                     return; // Exit the function if token is null
                 }
 
-                healthNumber -= LandmineDamage;
-                await AsyncStorage.setItem('health', healthNumber.toString());
-                removeHealth(token, LandmineDamage); // remove db health
-
                 if (healthNumber <= 0) {
                     Alert.alert("Dead", `You have been killed by a Landmine placed by user: ${sentBy}`);
                     console.log('User health has reached zero or below.');
@@ -364,6 +353,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
             }
 
             applyDamage();  // Execute the function once
+        }
 
         }
 
@@ -393,14 +383,13 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
             }
         };
         const interval = setInterval(() => {
-            fetchLootAndMissiles();
             checkisAlive()
             getCurrentLocationWrapper();
             checkAndNotify();
-        }, 10000);
+        }, 1000);
 
         return () => clearInterval(interval);
-    }, [fetchLootAndMissiles, getCurrentLocationWrapper, checkAndNotify]);
+    }, [getCurrentLocationWrapper, checkAndNotify, userLocation, lootLocations, missileData, landmineData, lastNotified]);
 
     return null;
 };    

@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, ReactNode } from 'react';
+import { createContext, useContext, ReactNode } from 'react';
 
 // Define a type for the context value
 export type CountdownContextType = {

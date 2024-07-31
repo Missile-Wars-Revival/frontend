@@ -4,7 +4,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
 import axiosInstance from "../api/axios-instance";
 import axios from "axios";
-//import { RewardedAd, RewardedAdEventType, TestIds } from 'react-native-google-mobile-ads';
 
 // Android Themes
 import { androidDefaultMapStyle } from "../map-themes/Android-themes/defaultMapStyle";
@@ -30,16 +29,18 @@ import { MapStyle } from "../types/types";
 import { getCredentials } from "../util/logincache";
 import { router } from "expo-router";
 import HealthBar from "../components/healthbar";
-import { getHealth, getisAlive, setHealth, updateisAlive } from "../api/health";
+import { getisAlive, setHealth, updateisAlive } from "../api/health";
 import CountdownTimer from "../components/countdown";
 import { useCountdown } from "../util/Context/countdown";
 import { playDeathSound } from "../util/sounds/deathsound";
+import { RewardedAd, RewardedAdEventType, TestIds } from "react-native-google-mobile-ads";
+import useFetchHealth from "../hooks/websockets/healthhook";
 
-// const adUnitId =  __DEV__ ? TestIds.REWARDED : 'ca-app-pub-9160450369509545/6677957247';
+const adUnitId =  __DEV__ ? TestIds.REWARDED : 'ca-app-pub-4035842398612787/8310612855';
 
-// const rewarded = RewardedAd.createForAdRequest(adUnitId, {
-//   keywords: ['fashion', 'clothing'], //ads category
-// });
+const rewarded = RewardedAd.createForAdRequest(adUnitId, {
+  keywords: ['games', 'clothing'], //ads category
+});
 
 export default function Map() {
   const [selectedMapStyle, setSelectedMapStyle] = useState<MapStyle[]>(Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle);
@@ -48,11 +49,7 @@ export default function Map() {
   const [isAlive, setisAlive] = useState(true);
   const [deathsoundPlayed, setdeathSoundPlayed] = useState(false);
   const [loaded, setLoaded] = useState(false);
-
-
-  // State for location enabled
-  const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(true);
-  const [health, setHealthUI] = useState(100); // Initial health value
+  const health = useFetchHealth()//WS hook
 
   // Fetch username from secure storage
   useEffect(() => {
@@ -67,36 +64,8 @@ export default function Map() {
 
     fetchCredentials();
   }, []);
-  useEffect(() => {
-    const getHealthOnStart = async () => {
-      const token = await SecureStore.getItemAsync("token");
-      try {
-        if (!token) {
-          console.log('Token not found');
-          return;
-        }
-        getisAlive(token)
-        const response = await getHealth(token);
-        if (response && response.health !== undefined) {
-          setHealthUI(response.health);
-          await AsyncStorage.setItem('health', response.health.toString()); // Note the change here
-        } else {
-          console.error('Health data is invalid:', response);
-        }
-      } catch (error) {
-        if (axios.isAxiosError(error)) {
-          console.error('Axios error:', error.message);
-        } else {
-          console.error('Error fetching health:', error);
-        }
-      }
-    };
-    getHealthOnStart();
-
-    const intervalId = setInterval(getHealthOnStart, 5000); //5 secss -- NEED CHANGE TO WEBSOCKET
-    return () => clearInterval(intervalId);
-  }, []);
-
+  
+  
   useEffect(() => {
     const addCurrencyAmount = async () => {
       const lastRewardedDate = await AsyncStorage.getItem('lastRewardedDate');
@@ -136,6 +105,29 @@ export default function Map() {
   }, []);
 
   useEffect(() => {
+    const getisAliveeffect = async () => {
+      const token = await SecureStore.getItemAsync("token");
+      try {
+        if (!token) {
+          console.log('Token not found');
+          return;
+        }
+        getisAlive(token)
+      } catch (error) {
+        if (axios.isAxiosError(error)) {
+          console.error('Axios error:', error.message);
+        } else {
+          console.error('Error fetching health:', error);
+        }
+      }
+    };
+    getisAliveeffect();
+
+    const intervalId = setInterval(getisAliveeffect, 5000); 
+    return () => clearInterval(intervalId);
+  }, []);
+
+  useEffect(() => {
     const initializeApp = async () => {
       try {
         const isAliveStatusString = await AsyncStorage.getItem('isAlive');
@@ -148,7 +140,14 @@ export default function Map() {
           }
 
           setisAlive(isAliveStatus.isAlive);
+          if (!isAliveStatus.isAlive && !deathsoundPlayed) {
+            playDeathSound();
+            setdeathSoundPlayed(true); // Ensure the sound is played only once
+          }
+
+          setisAlive(isAliveStatus.isAlive);
         } else {
+          setisAlive(false); // Default to false if no status is found
           setisAlive(false); // Default to false if no status is found
         }
       } catch (error) {
@@ -157,32 +156,33 @@ export default function Map() {
     };
 
     initializeApp();
+    initializeApp();
 
     const intervalId = setInterval(initializeApp, 1000);
 
     return () => clearInterval(intervalId);
   }, [deathsoundPlayed]);
     
-  // useEffect(() => {
-    //   const unsubscribeLoaded = rewarded.addAdEventListener(RewardedAdEventType.LOADED, () => {
-    //     setLoaded(true);
-    //   });
-    //   const unsubscribeEarned = rewarded.addAdEventListener(
-    //     RewardedAdEventType.EARNED_REWARD,
-    //     reward => {
-    //       console.log('User earned reward of ', reward);
-    //     },
-    //   );
+  useEffect(() => {
+      const unsubscribeLoaded = rewarded.addAdEventListener(RewardedAdEventType.LOADED, () => {
+        setLoaded(true);
+      });
+      const unsubscribeEarned = rewarded.addAdEventListener(
+        RewardedAdEventType.EARNED_REWARD,
+        reward => {
+          console.log('User earned reward of ', reward);
+        },
+      );
   
-    //   // Start loading the rewarded ad straight away
-    //   rewarded.load();
+      // Start loading the rewarded ad straight away
+      rewarded.load();
   
-    //   // Unsubscribe from events on unmount
-    //   return () => {
-    //     unsubscribeLoaded();
-    //     unsubscribeEarned();
-    //   };
-    // }, []);
+      // Unsubscribe from events on unmount
+      return () => {
+        unsubscribeLoaded();
+        unsubscribeEarned();
+      };
+    }, []);
 
   const showPopup = () => {
     setThemePopupVisible(true);
@@ -218,10 +218,9 @@ export default function Map() {
     storeMapStyle(style);
   };
   const respawn = async () => {
-    //rewarded.show();
     const token = SecureStore.getItem("token");
   
-    if (token === null) {
+    if (!token) {
       console.error("Token is null, cannot proceed with setting items");
       return; // Stop execution if token is null
     }
@@ -230,6 +229,7 @@ export default function Map() {
     updateisAlive(token, true);
     await AsyncStorage.setItem('health', '100');
     setHealth(token, 100);
+    rewarded.show();
   };
   const { countdownIsActive, stopCountdown } = useCountdown();
 
@@ -248,14 +248,12 @@ export default function Map() {
             transparent={true}
             onClose={closePopup}
             onSelect={selectMapStyle}
-          />
-          {isLocationEnabled && (
+          />     
             <FireSelector
               selectedMapStyle={selectedMapStyle}
               getStoredMapStyle={getStoredMapStyle}
               selectMapStyle={selectMapStyle}
             />
-          )}
         </>
       )}
       {(!isAlive) && (

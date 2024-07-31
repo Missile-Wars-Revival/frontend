@@ -5,9 +5,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { useUserName } from "../../util/fetchusernameglobal";
 import { mapstyles } from '../../map-themes/map-stylesheet';
-import { placelandmine } from '../../api/fireentities';
+import { placeLoot } from '../../api/fireentities';
 
-export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) => {
+export const LootPlacementPopup = ({ visible, onClose, selectedLoot }) => {
 
   const [region, setRegion] = useState(null);
   const [isLocationEnabled, setIsLocationEnabled] = useState(true);
@@ -95,12 +95,12 @@ export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) =
   }
 
   // Function to check if the marker is at the player's current location
-  const handleLandminePlacement = () => {
+  const handleLootPlacement = () => {
     if (marker.latitude === currentLocation.latitude && marker.longitude === currentLocation.longitude) {
-      Alert.alert('Warning', 'Placing a landmine at your current location is not recommended!');
+      Alert.alert('Warning', 'Placing a Loot at your current location is not recommended!');
     } else {
-      console.log(`FIRING LANDMINE: Coordinates: ${marker.latitude}, ${marker.longitude}; User: ${userName} Landmine Type: ${selectedLandmine.type}`);
-      placelandmine(marker.latitude, marker.longitude, selectedLandmine.type)
+      console.log(`FIRING Loot: Coordinates: ${marker.latitude}, ${marker.longitude}; User: ${userName}`);
+      placeLoot(marker.latitude, marker.longitude)
       onClose();
     }
   };
@@ -129,9 +129,9 @@ export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) =
           >
             <Circle
               center={marker}
-              radius={10}
-              fillColor="rgba(128, 128, 128, 0.3)"
-              strokeColor="rgba(128, 128, 128, 0.8)" />
+              radius={20}
+              fillColor="rgba(0, 0, 255, 0.2)"
+              strokeColor="rgba(0, 0, 255, 0.8)" />
             <Marker
               coordinate={marker}
               draggable
@@ -152,7 +152,7 @@ export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) =
           )}
           <View style={{ flexDirection: 'row', justifyContent: 'space-around', padding: 10 }}>
             <Button title="Cancel" onPress={onClose} />
-            <Button title="Fire" onPress={handleLandminePlacement} />
+            <Button title="Fire" onPress={handleLootPlacement} />
           </View>
         </View>
       </View>

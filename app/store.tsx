@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, FlatList, Button, StyleSheet, Text, TouchableOpacity, Image, ImageBackground } from 'react-native';
+import { View, FlatList, Text, TouchableOpacity, Image, ImageBackground } from 'react-native';
 import Cart from '../components/Store/cart';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { mainstorestyles } from '../components/Store/storestylesheets';
@@ -21,8 +21,8 @@ export interface Product {
 }
 
 export const products: Product[] = [
-  { id: "1", name: 'Amplifier', price: 500, image: require('../assets/missiles/Amplifier.png'), description: 'High impact missile', sku: "Amplifier", type: 'Missiles' },
-  { id: "2", name: 'Ballista', price: 250, image: require('../assets/missiles/Ballista.png'), description: 'Long-range missile', sku: "Ballista", type: 'Missiles' },
+  { id: "1", name: 'Amplifier', price: 250, image: require('../assets/missiles/Amplifier.png'), description: 'High impact missile', sku: "Amplifier", type: 'Missiles' },
+  { id: "2", name: 'Ballista', price: 500, image: require('../assets/missiles/Ballista.png'), description: 'Long-range missile', sku: "Ballista", type: 'Missiles' },
   { id: "3", name: 'BigBertha', price: 500, image: require('../assets/missiles/BigBertha.png'), description: 'Large warhead missile', sku: "Big Bertha", type: 'Landmines' },
   { id: "4", name: 'Bombabom', price: 400, image: require('../assets/missiles/Bombabom.png'), description: 'Cluster bomb missile', sku: "Bombabom", type: 'Landmines' },
   { id: "4", name: 'BunkerBlocker', price: 2000, image: require('../assets/missiles/BunkerBlocker.png'), description: 'Bunker Blocker missile', sku: "BunkerBlocker", type: 'Landmines' },
@@ -48,6 +48,8 @@ export const premproducts: Product[] = [
   //{ id: "9", name: 'GutShot', price: 5.99, image: require('../assets/missiles/GutShot.png'), description: 'GutShot missile', sku: "GutShot", type: 'Missiles' },
   { id: "11", name: 'Yokozuna', price: 4.99, image: require('../assets/missiles/Yokozuna.png'), description: 'Yokozuna missile', sku: "Yokozuna", type: 'Missiles' },
   { id: "13", name: 'Zippy', price: 5.99, image: require('../assets/missiles/Zippy.png'), description: 'Zippy', sku: "Zippy", type: 'Missiles' },
+  { id: "14", name: '500 x Coins', price: 2.99, image: require('../assets/store/500coins.png'), description: '500', sku: "500Coins", type: 'Coins' },
+  { id: "14", name: '1000 x Coins', price: 5.99, image: require('../assets/store/1000coins.png'), description: '1000', sku: "1000Coins", type: 'Coins' },
   { id: "14", name: '500 x Coins', price: 2.99, image: require('../assets/store/500coins.png'), description: '500', sku: "500Coins", type: 'Coins' },
   { id: "14", name: '1000 x Coins', price: 5.99, image: require('../assets/store/1000coins.png'), description: '1000', sku: "1000Coins", type: 'Coins' },
   //{ id: "20", name: 'LootDrop', price: 4.99, image: require('../assets/mapassets/Airdropicon.png'), description: 'A Loot Drop', sku: "Loot Drop", type: 'Loot Drops' },
@@ -126,7 +128,7 @@ const StorePage: React.FC = () => {
     setCart(updatedCart);
   };
 
- //buys item - SET API TOKENS IN _LAYOUT.TSX
+  //buys item - SET API TOKENS IN _LAYOUT.TSX
   const buyItem = async (product: Product) => {
     const token = await SecureStore.getItemAsync("token");
     if (!token) {
@@ -154,7 +156,7 @@ const StorePage: React.FC = () => {
         const { customerInfo } = await Purchases.purchaseStoreProduct(storeProduct.product);
         if (customerInfo.entitlements.active["my_entitlement_identifier"]) { //replace with entitlement ID for both ios and android (dont worry about yet)
           console.log('Product purchased and entitlement active');
-          
+
           switch (product.type) {
             case 'Coins':
               const amount = parseInt(product.description, 10);
@@ -192,6 +194,9 @@ const StorePage: React.FC = () => {
         }
         return { status: 'purchase_error', error: e.message };
       } else {
+        // Handle cases where the error is not an instance of Error
+        console.error('An unexpected error occurred');
+        return { status: 'unexpected_error', error: 'An unexpected error occurred' };
         // Handle cases where the error is not an instance of Error
         console.error('An unexpected error occurred');
         return { status: 'unexpected_error', error: 'An unexpected error occurred' };

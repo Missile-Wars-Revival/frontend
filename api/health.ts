@@ -50,7 +50,6 @@ export async function setHealth(
     }
   }
 }
-
 export async function removeHealth(
   token: string,
   amount: number,
@@ -114,7 +113,7 @@ export const updateisAlive = async (token: string, isAlive: boolean) => {
     });
     console.log("isAlive status updated successfully to:", isAlive);
     if (isAlive === false) {
-      //playDeathSound();
+      playDeathSound();
       const response = await axiosInstance.get('/api/getMoney', {
         params: { token }
       });
@@ -145,12 +144,12 @@ export async function getisAlive(
     return response.data;
   } catch (error) {
     if (isAxiosError(error)) {
-      console.log("failed to remove money")
+      console.log("failed to get isAlive")
       return (
         error.response?.data || { success: false, message: "Request failed" }
       );
     } else {
-      console.log("failed to remove money")
+      console.log("failed to get isAlive")
       console.error(error);
       return { success: false, message: "Request failed" };
     }
