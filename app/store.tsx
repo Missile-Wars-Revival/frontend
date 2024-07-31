@@ -154,7 +154,7 @@ const StorePage: React.FC = () => {
 
         // Handle the purchase with the store product
         const { customerInfo } = await Purchases.purchaseStoreProduct(storeProduct.product);
-        if (customerInfo.entitlements.active["my_entitlement_identifier"]) { //replace with entitlement ID for both ios and android (dont worry about yet)
+        if (customerInfo.entitlements.active[product.type]) { //replace with entitlement ID for both ios and android (dont worry about yet)
           console.log('Product purchased and entitlement active');
 
           switch (product.type) {

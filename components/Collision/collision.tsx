@@ -175,7 +175,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
 
         //Loot reward:
         lootLocations.forEach(async loot => {
-            const proximityStatus = checkLootandLandmineProximity("loot", loot.location, userLocation, 10);
+            const proximityStatus = checkLootandLandmineProximity("loot", loot.location, userLocation, 20);
             if (lastNotified.loot !== today) {
                 switch (proximityStatus) {
                     case 'within-loot':
@@ -389,7 +389,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [getCurrentLocationWrapper, checkAndNotify, userLocation, lootLocations, missileData, landmineData, lastNotified]);
+    }, [getCurrentLocationWrapper, checkAndNotify]);
 
     return null;
 };    

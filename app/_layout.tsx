@@ -23,7 +23,7 @@ export default function RootLayout() {
     // Configuration or other code that should run on component mount
     Purchases.setDebugLogsEnabled(true);
     if (Platform.OS === 'ios') {
-      Purchases.configure({ apiKey: "your_apple_api_key" });
+      Purchases.configure({ apiKey: "appl_DhhCcaRAelpsFMqaQCjiKcUWNcR" });
     } else {
       Purchases.configure({ apiKey: "your_android_api_key" });
     }
