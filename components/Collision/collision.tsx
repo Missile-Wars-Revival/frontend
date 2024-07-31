@@ -203,11 +203,12 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                             sendNotification("Loot Pickup", "No special loot this time! +200🎖️, +250 🪙");
                             setLastNotified(prev => ({ ...prev, loot: today }));
                         }
-//eventually merge add money and add ranke points into applylootpickup
+                        //eventually merge add money and add ranke points into applylootpickup
 
                         addmoney(token, amount);  // Adds the computed amount once done
                         addrankpoints(token, 200); // adds 100 rank points for collecting
-
+                        console.log("loot", loot)
+                        console.log(loot.id)
                         lootpickup(loot.id) // removes loot drop
 
                         try {
