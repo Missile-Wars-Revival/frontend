@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { View, FlatList, Text, TouchableOpacity, Image, ImageBackground } from 'react-native';
+import { View, FlatList, Text, TouchableOpacity, Image, ImageBackground, ImageSourcePropType } from 'react-native';
 import Cart from '../components/Store/cart';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { mainstorestyles } from '../components/Store/storestylesheets';
 import axiosInstance from '../api/axios-instance';
 import * as SecureStore from "expo-secure-store";
 import axios from 'axios';
-import Purchases from 'react-native-purchases';
+import Purchases, { PRODUCT_TYPE } from 'react-native-purchases';
 import { addmoney } from '../api/money';
 import { additem } from '../api/add-item';
 
@@ -15,6 +15,17 @@ export interface Product {
   name: string;
   type: string;
   price: number;
+  image: any;
+  description: string;
+  sku?: string;
+}
+
+export interface PremProduct {
+  id: string;
+  name: string;
+  type: string;
+  price: number;
+  displayprice: string;
   image: any;
   description: string;
   sku?: string;
@@ -36,24 +47,23 @@ export const products: Product[] = [
   { id: "20", name: 'LootDrop', price: 400, image: require('../assets/mapassets/Airdropicon.png'), description: 'A Loot Drop', sku: "Loot Drop", type: 'Loot Drops' },
 ];
 
-export const premproducts: Product[] = [
-  { id: "1", name: 'Amplifier', price: 3.99, image: require('../assets/missiles/Amplifier.png'), description: 'High impact missile', sku: "Amplifier", type: 'Missiles' },
-  { id: "2", name: 'Ballista', price: 2.99, image: require('../assets/missiles/Ballista.png'), description: 'Long-range missile', sku: "Ballista", type: 'Missiles' },
-  //{ id: "3", name: 'BigBertha', price: 6.99, image: require('../assets/missiles/BigBertha.png'), description: 'Large warhead missile', sku: "Big Bertha", type: 'Landmines' },
-  { id: "4", name: 'Bombabom', price: 4.99, image: require('../assets/missiles/Bombabom.png'), description: 'Cluster bomb missile', sku: "Bombabom", type: 'Landmines' },
-  { id: "4", name: 'BunkerBlocker', price: 5.99, image: require('../assets/missiles/BunkerBlocker.png'), description: 'Bunker Blocker missile', sku: "BunkerBlocker", type: 'Landmines' },
-  { id: "6", name: 'Buzzard', price: 2.99, image: require('../assets/missiles/Buzzard.png'), description: 'Medium-range missile', sku: "Buzzard", type: 'Missiles' },
-  //{ id: "7", name: 'ClusterBomb', price: 5.99, image: require('../assets/missiles/ClusterBomb.png'), description: 'ClusterBomb missile', sku: "ClusterBomb", type: 'Missiles' },
-  { id: "8", name: 'CorporateRaider', price: 3.99, image: require('../assets/missiles/CorporateRaider.png'), description: 'CorporateRaider missile', sku: "CorporateRaider", type: 'Missiles' },
-  //{ id: "9", name: 'GutShot', price: 5.99, image: require('../assets/missiles/GutShot.png'), description: 'GutShot missile', sku: "GutShot", type: 'Missiles' },
-  { id: "11", name: 'Yokozuna', price: 4.99, image: require('../assets/missiles/Yokozuna.png'), description: 'Yokozuna missile', sku: "Yokozuna", type: 'Missiles' },
-  { id: "13", name: 'Zippy', price: 5.99, image: require('../assets/missiles/Zippy.png'), description: 'Zippy', sku: "Zippy", type: 'Missiles' },
-  { id: "14", name: '500 x Coins', price: 2.99, image: require('../assets/store/500coins.png'), description: '500', sku: "500Coins", type: 'Coins' },
-  { id: "14", name: '1000 x Coins', price: 5.99, image: require('../assets/store/1000coins.png'), description: '1000', sku: "1000Coins", type: 'Coins' },
-  { id: "14", name: '500 x Coins', price: 2.99, image: require('../assets/store/500coins.png'), description: '500', sku: "500Coins", type: 'Coins' },
-  { id: "14", name: '1000 x Coins', price: 5.99, image: require('../assets/store/1000coins.png'), description: '1000', sku: "1000Coins", type: 'Coins' },
-  //{ id: "20", name: 'LootDrop', price: 4.99, image: require('../assets/mapassets/Airdropicon.png'), description: 'A Loot Drop', sku: "Loot Drop", type: 'Loot Drops' },
-];
+// export const premproducts: Product[] = [
+//   { id: "1", name: 'Amplifier', price: 3.99, image: require('../assets/missiles/Amplifier.png'), description: 'High impact missile', sku: "Amplifier", type: 'Missiles' },
+//   { id: "2", name: 'Ballista', price: 2.99, image: require('../assets/missiles/Ballista.png'), description: 'Long-range missile', sku: "Ballista", type: 'Missiles' },
+//   //{ id: "3", name: 'BigBertha', price: 6.99, image: require('../assets/missiles/BigBertha.png'), description: 'Large warhead missile', sku: "Big Bertha", type: 'Landmines' },
+//   { id: "4", name: 'Bombabom', price: 4.99, image: require('../assets/missiles/Bombabom.png'), description: 'Cluster bomb missile', sku: "Bombabom", type: 'Landmines' },
+//   { id: "4", name: 'BunkerBlocker', price: 5.99, image: require('../assets/missiles/BunkerBlocker.png'), description: 'Bunker Blocker missile', sku: "BunkerBlocker", type: 'Landmines' },
+//   { id: "6", name: 'Buzzard', price: 2.99, image: require('../assets/missiles/Buzzard.png'), description: 'Medium-range missile', sku: "Buzzard", type: 'Missiles' },
+//   //{ id: "7", name: 'ClusterBomb', price: 5.99, image: require('../assets/missiles/ClusterBomb.png'), description: 'ClusterBomb missile', sku: "ClusterBomb", type: 'Missiles' },
+//   { id: "8", name: 'CorporateRaider', price: 3.99, image: require('../assets/missiles/CorporateRaider.png'), description: 'CorporateRaider missile', sku: "CorporateRaider", type: 'Missiles' },
+//   //{ id: "9", name: 'GutShot', price: 5.99, image: require('../assets/missiles/GutShot.png'), description: 'GutShot missile', sku: "GutShot", type: 'Missiles' },
+//   { id: "11", name: 'Yokozuna', price: 4.99, image: require('../assets/missiles/Yokozuna.png'), description: 'Yokozuna missile', sku: "Yokozuna", type: 'Missiles' },
+//   { id: "13", name: 'Zippy', price: 5.99, image: require('../assets/missiles/Zippy.png'), description: 'Zippy', sku: "Zippy", type: 'Missiles' },
+//   { id: "14", name: '500 x Coins', price: 2.99, image: require('../assets/store/500coins.png'), description: '500', sku: "500Coins", type: 'Coins' },
+//   { id: "14", name: '1000 x Coins', price: 5.99, image: require('../assets/store/1000coins.png'), description: '1000', sku: "1000Coins", type: 'Coins' },
+//   { id: "14", name: '1000 x Coins', price: 5.99, image: require('../assets/store/1000coins.png'), description: '1000', sku: "1000Coins", type: 'Coins' },
+//   //{ id: "20", name: 'LootDrop', price: 4.99, image: require('../assets/mapassets/Airdropicon.png'), description: 'A Loot Drop', sku: "Loot Drop", type: 'Loot Drops' },
+// ];
 
 const StorePage: React.FC = () => {
   const [cart, setCart] = useState<{ product: Product; quantity: number }[]>([]);
@@ -61,6 +71,92 @@ const StorePage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [currencyAmount, setCurrencyAmount] = useState<number>(0);
   const [isPremiumStore, setIsPremiumStore] = useState<boolean>(false);
+  const [premiumProducts, setPremiumProducts] = useState<PremProduct[]>([]);
+
+  //match items to category 
+  const mapProductType = (productid: string) => {
+    switch (productid) {
+      case "Amplifier":
+        return "Missiles";
+      case "Ballista":
+        return "Missiles";
+      case "BigBertha":
+        return "Landmine";
+      case "BunkerBlocker":
+        return "Landmine";
+      case "Buzzard":
+        return "Missiles";
+      case "ClusterBomb":
+        return "Missiles";
+      case "CorporateRaider":
+        return "Missiles";
+      case "GutShot":
+        return "Missiles";
+      case "Yokozuna":
+        return "Missiles";
+      case "Zippy":
+        return "Missiles";
+      case "Coins500_":
+        return "Coins";
+      case "Coins1000_":
+        return "Coins";
+      case "Coins2000_":
+        return "Coins";
+      default:
+        return "Other";
+    }
+  };
+
+  const images: any = {
+    Amplifier: require('../assets/missiles/Amplifier.png'),
+    Ballista: require('../assets/missiles/Ballista.png'),
+    BigBertha: require('../assets/missiles/BigBertha.png'),
+    Bombabom: require('../assets/missiles/Bombabom.png'),
+    BunkerBlocker: require('../assets/missiles/BunkerBlocker.png'),
+    Buzzard: require('../assets/missiles/Buzzard.png'),
+    ClusterBomb: require('../assets/missiles/ClusterBomb.png'),
+    CorporateRaider: require('../assets/missiles/CorporateRaider.png'),
+    GutShot: require('../assets/missiles/GutShot.png'),
+    TheNuke: require('../assets/missiles/TheNuke.png'),
+    Yokozuna: require('../assets/missiles/Yokozuna.png'),
+    Zippy: require('../assets/missiles/Zippy.png'),
+    Coins500_: require('../assets/store/500coins.png'),
+    Coins1000_: require('../assets/store/1000coins.png'),
+    Coins2000_: require('../assets/store/1000coins.png'),
+    default: require('../assets/logo.png'), // Default image if identifier not found
+  };
+
+  const getImageForProduct = (identifier: string): ImageSourcePropType => {
+    return images[identifier] || images.default;
+  };
+// fetch items in store
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const offerings = await Purchases.getOfferings();
+        if (offerings.current) {
+          const mappedProducts = offerings.current.availablePackages.map(pkg => ({
+            id: pkg.product.identifier,
+            name: pkg.product.title.trim(),
+            type: mapProductType(pkg.product.identifier),
+            price: pkg.product.price,
+            displayprice: pkg.product.priceString,
+            image: getImageForProduct(pkg.product.identifier),
+            description: pkg.product.description,
+            sku: pkg.product.identifier,
+          }));
+          setPremiumProducts(mappedProducts);
+          //console.log(mappedProducts)
+        } else {
+          console.log('No offerings available');
+        }
+      } catch (error) {
+        console.error('Failed to fetch offerings:', error);
+      }
+    };
+
+    fetchProducts();
+  }, []);
 
   useEffect(() => {
     const loadCart = async () => {
@@ -129,7 +225,7 @@ const StorePage: React.FC = () => {
   };
 
   //buys item - SET API TOKENS IN _LAYOUT.TSX
-  const buyItem = async (product: Product) => {
+  const buyItem = async (product: PremProduct) => {
     const token = await SecureStore.getItemAsync("token");
     if (!token) {
       console.log('Token not found');
@@ -154,7 +250,7 @@ const StorePage: React.FC = () => {
 
         // Handle the purchase with the store product
         const { customerInfo } = await Purchases.purchaseStoreProduct(storeProduct.product);
-        if (customerInfo.entitlements.active[product.type]) { //replace with entitlement ID for both ios and android (dont worry about yet)
+        if (customerInfo.entitlements.active[product.type]) {
           console.log('Product purchased and entitlement active');
 
           switch (product.type) {
@@ -197,9 +293,6 @@ const StorePage: React.FC = () => {
         // Handle cases where the error is not an instance of Error
         console.error('An unexpected error occurred');
         return { status: 'unexpected_error', error: 'An unexpected error occurred' };
-        // Handle cases where the error is not an instance of Error
-        console.error('An unexpected error occurred');
-        return { status: 'unexpected_error', error: 'An unexpected error occurred' };
       }
     }
   };
@@ -214,11 +307,11 @@ const StorePage: React.FC = () => {
     </TouchableOpacity>
   );
 
-  const premrenderButton = ({ item }: { item: Product }) => (
+  const premrenderButton = ({ item }: { item: PremProduct }) => (
     <TouchableOpacity style={mainstorestyles.button} onPress={() => buyItem(item).then(result => console.log(result))}>
       <Text style={mainstorestyles.buttonText}>{item.name}</Text>
       <Image source={item.image} style={mainstorestyles.buttonImage} />
-      <Text style={mainstorestyles.buttonText}>£{item.price}</Text>
+      <Text style={mainstorestyles.buttonText}>{item.displayprice}</Text>
     </TouchableOpacity>
   );
 
@@ -283,7 +376,7 @@ const StorePage: React.FC = () => {
         <View style={mainstorestyles.container}>
           <>
             <FlatList
-              data={premproducts}
+              data={premiumProducts}
               keyExtractor={(item) => item.id.toString()}
               renderItem={premrenderButton}
               numColumns={3}

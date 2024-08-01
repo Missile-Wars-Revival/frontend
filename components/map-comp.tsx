@@ -43,41 +43,13 @@ export const MapComp = (props: MapCompProps) => {
         longitudeDelta: 0.1421,
     });
 
-    const dispatchLocation = async () => {
-        try {
-            const location = await getCurrentLocation();
-            const token = await SecureStore.getItemAsync("token");
-            if (token && location.latitude && location.longitude) {
-                await dispatch(token, location.latitude, location.longitude);
-                //console.log("Location dispatched successfully");
-            } else {
-                //console.log("Invalid token or location data", token, location);
-            }
-        } catch (error) {
-            //console.log("Failed to dispatch location", error);
-        }
-    };
-
-
-    const getlocation = async () => {
-        try {
-            const location = await getCurrentLocation();
-            const newRegion = {
-                latitude: location.latitude,
-                longitude: location.longitude,
-                latitudeDelta: 0.01,
-                longitudeDelta: 0.01
-            };
-            setRegion(newRegion);
-            await saveLocation(newRegion);
-            setIsLoading(false);
-        } catch (error) {
-        }
-    };
-
     useEffect(() => {
         const initializeApp = async () => {
             try {
+                const cachedRegion = await loadLastKnownLocation();
+                if (cachedRegion !== null) {
+                    setRegion(cachedRegion);
+                }
                 // Check if it's the first load
                 const isFirstLoad = await AsyncStorage.getItem('firstload');
                 const isDBConnection = await AsyncStorage.getItem('dbconnection');
@@ -105,11 +77,6 @@ export const MapComp = (props: MapCompProps) => {
                     setDbConnection(true)
                 } else {
                     setDbConnection(false);
-                }
-
-                const cachedRegion = await loadLastKnownLocation();
-                if (cachedRegion !== null) {
-                    setRegion(cachedRegion);
                 }
 
                 const cachedMode = await AsyncStorage.getItem('visibilitymode');
@@ -167,6 +134,38 @@ export const MapComp = (props: MapCompProps) => {
 
         initializeApp();
     }, []);
+
+    const dispatchLocation = async () => {
+        try {
+            const location = await getCurrentLocation();
+            const token = await SecureStore.getItemAsync("token");
+            if (token && location.latitude && location.longitude) {
+                await dispatch(token, location.latitude, location.longitude);
+                //console.log("Location dispatched successfully");
+            } else {
+                //console.log("Invalid token or location data", token, location);
+            }
+        } catch (error) {
+            //console.log("Failed to dispatch location", error);
+        }
+    };
+
+
+    const getlocation = async () => {
+        try {
+            const location = await getCurrentLocation();
+            const newRegion = {
+                latitude: location.latitude,
+                longitude: location.longitude,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01
+            };
+            setRegion(newRegion);
+            await saveLocation(newRegion);
+            setIsLoading(false);
+        } catch (error) {
+        }
+    };
 
     const toggleMode = async () => {
         const newMode = visibilitymode === 'friends' ? 'global' : 'friends';

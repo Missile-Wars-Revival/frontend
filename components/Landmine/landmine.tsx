@@ -55,8 +55,6 @@ const fetchLandmineLib = async (): Promise<LandmineType[]> => {
 
 //landmine images for both map and library
 export const LandmineImages: LandmineImages = {
-  Amplifier: require('../../assets/missiles/Amplifier.png'),
-  Ballista: require('../../assets/missiles/Ballista.png'),
   BigBertha: require('../../assets/missiles/BigBertha.png'),
   Bombabom: require('../../assets/missiles/Bombabom.png'),
   BunkerBlocker: require('../../assets/missiles/BunkerBlocker.png'),
