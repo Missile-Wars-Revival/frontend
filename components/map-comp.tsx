@@ -138,6 +138,13 @@ export const MapComp = (props: MapCompProps) => {
     const dispatchLocation = async () => {
         try {
             const location = await getCurrentLocation();
+            const newRegion = {
+                latitude: location.latitude,
+                longitude: location.longitude,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01
+            };
+            await saveLocation(newRegion);
             const token = await SecureStore.getItemAsync("token");
             if (token && location.latitude && location.longitude) {
                 await dispatch(token, location.latitude, location.longitude);
@@ -160,7 +167,6 @@ export const MapComp = (props: MapCompProps) => {
                 latitudeDelta: 0.01,
                 longitudeDelta: 0.01
             };
-            setRegion(newRegion);
             await saveLocation(newRegion);
             setIsLoading(false);
         } catch (error) {
