@@ -69,10 +69,12 @@ function SignUpForm() {
     register("password");
   }, [register]);
 
+  const token = "this needs to change and be fetched correctly";
+
   const mutation = useRegister(
     async () => {
-      const { username, password } = form.getValues();
-      await saveCredentials(username, password);
+      const { username } = form.getValues();
+      await saveCredentials(username, token);
       router.navigate("/");
     },
   );
