@@ -191,7 +191,6 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                             console.log(`You've obtained a ${reward.name}!`);
                             sendNotification("Loot Pickup", `Special Loot!! You got a: ${reward.name} as well as +200🎖️, +250 🪙`);
                             setLastNotified(prev => ({ ...prev, loot: today }));
-                            addHealth(token, 20)
                             if (reward.category === "Currency") {
                                 amount += 500;
                             } else {
@@ -203,7 +202,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                             sendNotification("Loot Pickup", "No special loot this time! +200🎖️, +250 🪙");
                             setLastNotified(prev => ({ ...prev, loot: today }));
                         }
-
+                        addHealth(token, 20)
                         lootpickup(loot.id, amount) // removes loot drop and adds money
 
                         try {
