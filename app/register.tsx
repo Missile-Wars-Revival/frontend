@@ -11,7 +11,7 @@ import { useEffect } from "react";
 import { User, LockKeyhole, Mail } from "lucide-react-native";
 import useRegister from "../hooks/api/useRegister";
 import { useForm } from "react-hook-form";
-import * as z from "zod";
+import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import React from "react";
 import { saveCredentials } from "../util/logincache";
@@ -42,6 +42,10 @@ const SignUpData = z.object({
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
       "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character"
     ),
+  verifyPassword: z.string()
+}).refine((data) => data.password === data.verifyPassword, {
+  message: "Passwords must match",
+  path: ["verifyPassword"], // This specifies the path where the error should be attached.
 });
 
 type SignUpFormInputs = z.infer<typeof SignUpData>;
@@ -53,6 +57,7 @@ function SignUpForm() {
       email: "",
       username: "",
       password: "",
+      verifyPassword: "",
     },
   });
 
@@ -67,6 +72,7 @@ function SignUpForm() {
     register("username");
     register("email");
     register("password");
+    register("verifyPassword");
   }, [register]);
 
   const mutation = useRegister(
@@ -98,6 +104,8 @@ function SignUpForm() {
         placeholder="Email"
         onChangeText={(text) => setValue("email", text)}
         className="w-[90vw] h-[5vh] rounded-[20px]"
+        keyboardType="email-address"  // Set the keyboard type optimized for emails
+        autoCorrect={false}           // Disable auto-correct
         icon={
           <View className="inset-y-[9px]">
             <Mail size={24} color="black" />
@@ -110,6 +118,12 @@ function SignUpForm() {
       <Input
         placeholder="Password"
         onChangeText={(text) => setValue("password", text)}
+        secureTextEntry={true}
+        autoCorrect={false}
+        autoCapitalize="none"
+        keyboardType="default"
+        textContentType="newPassword"  
+        autoComplete="password"   
         className="w-[90vw] h-[5vh] rounded-[20px]"
         icon={
           <View className="inset-y-[7px]">
@@ -119,6 +133,25 @@ function SignUpForm() {
       />
       {errors.password && (
         <Text className="text-red-800">{errors.password.message}</Text>
+      )}
+      <Input
+        placeholder="Verify Password"
+        onChangeText={(text) => setValue("verifyPassword", text)}
+        secureTextEntry={true}
+        autoCorrect={false}
+        autoCapitalize="none"
+        keyboardType="default"
+        textContentType="password"      
+        autoComplete="password"
+        className="w-[90vw] h-[5vh] rounded-[20px]"
+        icon={
+          <View className="inset-y-[7px]">
+            <LockKeyhole size={24} color="black" />
+          </View>
+        }
+      />
+      {errors.verifyPassword && (
+        <Text className="text-red-800">{errors.verifyPassword.message}</Text>
       )}
       <TouchableHighlight
         onPress={handleSubmit(onSubmit)}
