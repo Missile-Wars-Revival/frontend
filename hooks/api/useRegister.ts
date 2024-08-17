@@ -1,7 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { register } from "../../api/register";
 
-export default function useRegister(onSuccess?: () => void) {
+export default function useRegister(
+  onSuccess?: (token: string) => void,
+  onError?: () => void
+) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({
@@ -13,13 +16,22 @@ export default function useRegister(onSuccess?: () => void) {
       email: string;
       password: string;
     }) => register(username, email, password),
-    onSuccess: () => {
+    onSuccess: (data) => {
+      const token = data.token; // Assuming the token is returned in the `data` object
       queryClient.invalidateQueries({
         queryKey: ["users"],
         refetchType: "active",
       });
+
       if (onSuccess) {
-        onSuccess();
+        onSuccess(token);
+      }
+    },
+    onError: (error) => {
+      console.error(error);
+
+      if (onError) {
+        onError();
       }
     },
   });
