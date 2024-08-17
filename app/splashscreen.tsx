@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Image, Animated } from 'react-native';
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import mobileAds from 'react-native-google-mobile-ads';
 
 mobileAds()
@@ -18,8 +17,6 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
   const [fadeAnim] = useState(new Animated.Value(0));
 
   useEffect(() => {
-   AsyncStorage.setItem(`isAlive`, `true`);
-   AsyncStorage.setItem('health', '100');
     const timer = setTimeout(() => {
       onFinish();
     }, 2000); // 2 seconds splash screen

@@ -140,22 +140,14 @@ export default function Map() {
           }
 
           setisAlive(isAliveStatus.isAlive);
-          if (!isAliveStatus.isAlive && !deathsoundPlayed) {
-            playDeathSound();
-            setdeathSoundPlayed(true); // Ensure the sound is played only once
-          }
-
-          setisAlive(isAliveStatus.isAlive);
         } else {
-          setisAlive(false); // Default to false if no status is found
-          setisAlive(false); // Default to false if no status is found
+          setisAlive(true); // Default to true if no status is found
         }
       } catch (error) {
         console.error('Error initializing app:', error);
       }
     };
 
-    initializeApp();
     initializeApp();
 
     const intervalId = setInterval(initializeApp, 1000);

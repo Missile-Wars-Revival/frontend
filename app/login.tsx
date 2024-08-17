@@ -35,6 +35,12 @@ export default function Login() {
             <Input
               placeholder="Password"
               onChangeText={(text) => setPassword(text)}
+              secureTextEntry={true}
+              autoCorrect={false}
+              autoCapitalize="none"
+              keyboardType="default"
+              textContentType="newPassword"
+              autoComplete="password"
               className="w-[90vw] h-[5vh] rounded-[20px]"
               icon={
                 <View className="inset-y-[-1px]">

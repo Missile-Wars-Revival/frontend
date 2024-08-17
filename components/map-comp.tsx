@@ -5,8 +5,8 @@ import { AllLootDrops } from "./Loot/map-loot";
 import { AllLandMines } from "./Landmine/map-landmines";
 import { AllMissiles } from "./Missile/map-missile";
 import { AllPlayers } from "./map-players";
-import { loadLastKnownLocation, saveLocation } from '../util/mapstore';
-import { getLocationPermission } from "../util/locationreq";
+import { loadLastKnownLocation } from '../util/mapstore';
+import { getLocationPermission, getlocation } from "../util/locationreq";
 import { dispatch } from "../api/dispatch";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCurrentLocation } from "../util/locationreq";
@@ -25,22 +25,22 @@ interface MapCompProps {
 export const MapComp = (props: MapCompProps) => {
 
     //WS hooks
-    const missileData = useFetchMissiles() 
+    const missileData = useFetchMissiles()
     const lootData = useFetchLoot()
     const LandmineData = useFetchLandmines()
 
     const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(false);
     const [isLoading, setIsLoading] = useState(true);
-    const [hasDbConnection, setDbConnection] = useState<boolean>();
+    const [hasDbConnection, setDbConnection] = useState<boolean>(true);
     const [isAlive, setisAlive] = useState<boolean>(true);
-    const [firstLoad, setFirstLoad] = useState<boolean>(true);
+    const [firstLoad, setFirstLoad] = useState<boolean>();
     const [visibilitymode, setMode] = useState<'friends' | 'global'>('global');
 
     const [region, setRegion] = useState({
         latitude: 0,
         longitude: 0,
-        latitudeDelta: 0.1922,
-        longitudeDelta: 0.1421,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
     });
 
     useEffect(() => {
@@ -50,25 +50,35 @@ export const MapComp = (props: MapCompProps) => {
                 if (cachedRegion !== null) {
                     setRegion(cachedRegion);
                 }
-                // Check if it's the first load
+
+                // Check if it's the first load & DB Connection
                 const isFirstLoad = await AsyncStorage.getItem('firstload');
                 const isDBConnection = await AsyncStorage.getItem('dbconnection');
+
                 const token = await SecureStore.getItemAsync("token");
                 if (!token) {
                     console.error("Authentication token is missing");
                     return; // Exit function if no token is found
                 }
-                if (isFirstLoad == null) {
+                if ((isFirstLoad == null) || (isFirstLoad === `true`)) {
+                    setFirstLoad(true);
                     Alert.alert(
                         "Your location is set to Global",
                         "This means everyone in your league can see your location.",
                         [
-                            { text: "OK", onPress: () => setFirstLoad(false) }
+                            { text: "OK", onPress: () => console.log("Global button pressed") }
                         ]
                     );
                     await updateFriendsOnlyStatus(token, false);
-                    setFirstLoad(false);
+
+                    const savedlocation = await loadLastKnownLocation();
+                    if (savedlocation == null) {
+                        await getlocation();
+                    }
+                    setRegion(savedlocation);
+
                     await AsyncStorage.setItem('firstload', 'false');
+                    setFirstLoad(false);
                 }
                 if (isDBConnection === "false") {
                     setDbConnection(false)
@@ -77,17 +87,17 @@ export const MapComp = (props: MapCompProps) => {
                     setDbConnection(true)
                 } else {
                     setDbConnection(false);
+                    setFirstLoad(false);
                 }
 
                 const cachedMode = await AsyncStorage.getItem('visibilitymode');
                 if (cachedMode !== null) {
                     setMode(cachedMode as 'friends' | 'global');
                 }
-
+                getLocationPermission();
                 const status = await getLocationPermission();
                 setIsLocationEnabled(status === 'granted');
 
-                await getlocation();
                 await dispatchLocation();
                 await DefRegLocationTask();
 
@@ -115,13 +125,12 @@ export const MapComp = (props: MapCompProps) => {
                             }
                         } else {
                             // Handle null (e.g., key does not exist)
-                            setisAlive(false); // Assume false if nothing is stored
+                            setisAlive(true); // Assume false if nothing is stored
                         }
                     } catch (error) {
                         setisAlive(false); // Set to a default value in case of error
                     }
 
-                    getLocationPermission();
                     dispatchLocation();
                 }, 1000);
 
@@ -138,13 +147,7 @@ export const MapComp = (props: MapCompProps) => {
     const dispatchLocation = async () => {
         try {
             const location = await getCurrentLocation();
-            const newRegion = {
-                latitude: location.latitude,
-                longitude: location.longitude,
-                latitudeDelta: 0.01,
-                longitudeDelta: 0.01
-            };
-            await saveLocation(newRegion);
+            getlocation()
             const token = await SecureStore.getItemAsync("token");
             if (token && location.latitude && location.longitude) {
                 await dispatch(token, location.latitude, location.longitude);
@@ -154,22 +157,6 @@ export const MapComp = (props: MapCompProps) => {
             }
         } catch (error) {
             //console.log("Failed to dispatch location", error);
-        }
-    };
-
-
-    const getlocation = async () => {
-        try {
-            const location = await getCurrentLocation();
-            const newRegion = {
-                latitude: location.latitude,
-                longitude: location.longitude,
-                latitudeDelta: 0.01,
-                longitudeDelta: 0.01
-            };
-            await saveLocation(newRegion);
-            setIsLoading(false);
-        } catch (error) {
         }
     };
 
@@ -223,13 +210,12 @@ export const MapComp = (props: MapCompProps) => {
         console.log("Mode changed to:", visibilitymode);
     };
 
-    // Only show loader if it's the first load or still loading
-    if (isLoading && !firstLoad) {
+    if (firstLoad === true) {
         return (
             <View style={mainmapstyles.loaderContainer}>
                 <ActivityIndicator size="large" color="#0000ff" />
                 <Text></Text>
-                <Text style={mainmapstyles.overlayText}>Connecting To Servers...</Text>
+                <Text style={mainmapstyles.overlayText}>Connecting To Servers For The First Time...</Text>
             </View>
         );
     }

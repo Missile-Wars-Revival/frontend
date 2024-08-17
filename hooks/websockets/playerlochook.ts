@@ -25,7 +25,7 @@ const useFetchPlayerlocations = (): Players[] => {
                 console.warn('Data is not an array:', playerlocations);
             }
         } else {
-            console.log('Data is undefined or null');
+            //console.log('Data is undefined or null');
         }
     }, [playerlocations]);
 

@@ -163,7 +163,7 @@ function SignUpForm() {
       </TouchableHighlight>
       <TouchableHighlight
         onPress={() => router.navigate("/login")}
-        className="rounded-[20px] w-[355px] h-[45px] flex items-center justify-center border-2 mt-[5] absolute top-[350%]"
+        className="rounded-[20px] w-[355px] h-[45px] flex items-center justify-center border-2 mt-[5] absolute top-[250%]"
       >
         <View>
           <Text className=" font-bold">Return To Login</Text>

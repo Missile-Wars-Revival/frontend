@@ -13,6 +13,7 @@ import { WebSocketContext, WebSocketProviderProps } from "../util/Context/websoc
 import { CountdownContext, CountdownProviderProps } from "../util/Context/countdown";
 import { Platform } from 'react-native';
 import Purchases from 'react-native-purchases';
+import { getLocationPermission, getlocation } from "../util/locationreq";
 
 // RootLayout component
 export default function RootLayout() {
@@ -79,6 +80,14 @@ function NavBar() {
 
   // Update selectedTab when pathname changes
   useEffect(() => {
+    const initializeApp = async () => {
+      getLocationPermission();
+      const status = await getLocationPermission();
+      if (status) {
+        await getlocation();
+      }
+    }
+    initializeApp()
     setSelectedTab(pathname);
   }, [pathname]);
 
@@ -153,7 +162,7 @@ function RootLayoutNav() {
         <Stack>
           <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="login" options={{ headerShown: false, gestureEnabled: false, animation: 'slide_from_bottom' }} />
-          <Stack.Screen name="register" options={{ headerShown: false, gestureEnabled: false }} />
+          <Stack.Screen name="register" options={{ headerShown: false, gestureEnabled: true }} />
           <Stack.Screen name="league" options={{ headerShown: false, gestureEnabled: false }} />
           <Stack.Screen name="store" options={{ headerShown: false, gestureEnabled: false }} />
           <Stack.Screen name="friends" options={{ headerShown: false }} />
