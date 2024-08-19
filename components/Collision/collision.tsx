@@ -235,7 +235,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                             setLastNotified(prev => ({ ...prev, missile: today }));
                             Alert.alert("Danger!", "A Missile has impacted in your proximity! You may start taking damage!");
 
-                            applyMissileDamage(missile.type, 30, missile.sentbyusername); //30 = damage for missile per 30 secs
+                            applyMissileDamage(missile.type, missile.damage, missile.sentbyusername); 
                         }
                         break;
                     case 'near-missile':
