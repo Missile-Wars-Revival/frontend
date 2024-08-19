@@ -4,6 +4,7 @@ import {
   View,
   TouchableHighlight,
   Image,
+  ScrollView,
 } from "react-native";
 import { router } from "expo-router";
 import { Input } from "../components/ui/input";
@@ -18,14 +19,18 @@ import { saveCredentials } from "../util/logincache";
 
 export default function Register() {
   return (
+    <ScrollView>
     <SafeAreaView className="flex-1 justify-center items-center space-y-8">
       <Image
         source={require("../assets/icons/MissleWarsTitle.png")}
         className="w-[425px] h-[200px] absolute top-[25]"
         resizeMode="contain"
       />
+      <View style={{ height: 750 }}></View>
       <SignUpForm />
     </SafeAreaView>
+    <View style={{ height: 150 }}></View>
+    </ScrollView>
   );
 }
 
@@ -90,7 +95,7 @@ function SignUpForm() {
   };
 
   return (
-    <View className="space-y-4 absolute top-[26%]">
+    <SafeAreaView className="space-y-4 absolute top-[26%]">
       <Input
         placeholder="Username"
         autoCorrect={false}    
@@ -156,7 +161,7 @@ function SignUpForm() {
       )}
       <TouchableHighlight
         onPress={handleSubmit(onSubmit)}
-        className="bg-[#773765] rounded-[20px] w-[355px] h-[45px] flex items-center justify-center absolute top-[120%]"
+        className="bg-[#773765] rounded-[20px] w-[90vw] h-[45px] flex items-center justify-center absolute top-[120%]"
       >
         <View>
           <Text className="text-white font-bold">Sign Up!</Text>
@@ -164,12 +169,12 @@ function SignUpForm() {
       </TouchableHighlight>
       <TouchableHighlight
         onPress={() => router.navigate("/login")}
-        className="rounded-[20px] w-[355px] h-[45px] flex items-center justify-center border-2 mt-[5] absolute top-[250%]"
+        className="rounded-[20px] w-[90vw] h-[45px] flex items-center justify-center border-2 mt-[5] absolute top-[250%]"
       >
         <View>
           <Text className=" font-bold">Return To Login</Text>
         </View>
       </TouchableHighlight>
-    </View>
+    </SafeAreaView>
   );
 }
