@@ -13,7 +13,6 @@ import { WebSocketContext, WebSocketProviderProps } from "../util/Context/websoc
 import { CountdownContext, CountdownProviderProps } from "../util/Context/countdown";
 import { Platform } from 'react-native';
 import Purchases from 'react-native-purchases';
-import { getLocationPermission, getlocation } from "../util/locationreq";
 
 // RootLayout component
 export default function RootLayout() {

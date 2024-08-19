@@ -87,5 +87,17 @@ export const mainmapstyles = StyleSheet.create({
         marginLeft: -110,
         color: 'white',
     },
-    
+    relocateButton: {
+        flex: 0,
+        position: 'absolute',
+        height: 42,  // Button height
+        width: 42,   // Button width, assuming a square shape for aesthetic consistency
+        right: 10,
+        bottom: 15,
+        padding: 10,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)', 
+        borderRadius: 21, // Half of height or width to make it perfectly circular
+        alignItems: 'center', // Center the icon horizontally
+        justifyContent: 'center', // Center the icon vertically
+    },
 });

@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, Switch, Alert, Platform, ActivityIndicator } from "react-native";
+import { View, Text, Switch, Alert, Platform, ActivityIndicator, TouchableOpacity } from "react-native";
 import MapView, { PROVIDER_DEFAULT, PROVIDER_GOOGLE } from "react-native-maps";
 import { AllLootDrops } from "./Loot/map-loot";
 import { AllLandMines } from "./Landmine/map-landmines";
 import { AllMissiles } from "./Missile/map-missile";
 import { AllPlayers } from "./map-players";
-import { loadLastKnownLocation } from '../util/mapstore';
+import { loadLastKnownLocation, saveLocation } from '../util/mapstore';
 import { getLocationPermission, getlocation } from "../util/locationreq";
 import { dispatch } from "../api/dispatch";
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -17,6 +17,7 @@ import { updateFriendsOnlyStatus } from "../api/visibility";
 import useFetchMissiles from "../hooks/websockets/missilehook";
 import useFetchLoot from "../hooks/websockets/loothook";
 import useFetchLandmines from "../hooks/websockets/landminehook";
+import { FontAwesome } from '@expo/vector-icons';
 
 interface MapCompProps {
     selectedMapStyle: any;
@@ -219,6 +220,28 @@ export const MapComp = (props: MapCompProps) => {
         );
     }
 
+    const relocate = async (setRegion: (arg0: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number; }) => void) => {
+        try {
+            const location = await getCurrentLocation();
+            if (location) {
+                const newRegion = {
+                    latitude: location.latitude,
+                    longitude: location.longitude,
+                    latitudeDelta: 0.01,
+                    longitudeDelta: 0.01
+                };
+                await saveLocation(newRegion);
+                setRegion(newRegion)
+            }
+            else {
+                return
+            }
+        }
+        catch {
+
+        }
+    };
+
     // Render map and other components once initialization is complete
     return (
         <View style={mainmapstyles.container}>
@@ -236,6 +259,11 @@ export const MapComp = (props: MapCompProps) => {
                 <AllMissiles missileData={missileData} />
                 <AllPlayers />
             </MapView>
+            <TouchableOpacity
+                style={mainmapstyles.relocateButton}
+                onPress={() => relocate(setRegion)}>
+                <FontAwesome name="location-arrow" size={24} color="#ffffff" />
+            </TouchableOpacity>
             {(!isAlive) && (
                 <View style={mainmapstyles.overlay}>
                     <Text style={mainmapstyles.overlayText}>Map is disabled due to your death</Text>
