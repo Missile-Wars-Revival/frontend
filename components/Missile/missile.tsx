@@ -5,6 +5,7 @@ import React from "react";
 import { MissilePlacementPopup } from './missileplacement';
 import * as SecureStore from "expo-secure-store";
 import axiosInstance from "../../api/axios-instance";
+import { firemissileplayer } from "../../api/fireentities";
 
 //Missile types
 //   Amplifier:
@@ -38,7 +39,7 @@ const fetchMissileLib = async (): Promise<Missilelib[]> => {
 
     // Filter the inventory to include only items with the category "Missiles"
     const missileLibraryData = inventory
-      .filter((item: { category: string; }) => item.category === "Missiles")
+      .filter((item: { category: string; quantity: number;}) => item.category === "Missiles" && item.quantity > 0)
       .map((item: { name: any; quantity: any; }) => ({
         type: item.name,
         quantity: item.quantity
@@ -77,12 +78,14 @@ export const MissileLibrary = ({ playerName }: { playerName: string }) => {
   const [loading, setLoading] = useState(true);
   const [selectedMissile, setSelectedMissile] = useState<string | null>(null);
   const [showPopup, setShowPopup] = useState(false);
+  const [noItems, setNoItems] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchMissileLibrary = async () => {
       try {
         const missileLibraryData = await fetchMissileLib();
         setMissileLibrary(missileLibraryData);
+        setNoItems(missileLibraryData.length === 0);
       } catch (error) {
         console.error('Error fetching missile library:', error);
       } finally {
@@ -101,6 +104,9 @@ export const MissileLibrary = ({ playerName }: { playerName: string }) => {
   const handleFire = () => {
     // Implement fire logic here
     console.log("Firing missile:", selectedMissile, "at player:", playerName);
+    if (selectedMissile) {
+      firemissileplayer(playerName, selectedMissile)
+    }
     setShowPopup(false);
   };
 
@@ -119,17 +125,20 @@ export const MissileLibrary = ({ playerName }: { playerName: string }) => {
   return (
     <ScrollView contentContainerStyle={{ padding: 20 }}>
       <Text>Select your Missile:</Text>
-      {missileLibrary.map((missile, index) => (
+      {noItems ? ( // Conditionally render based on no items state
+              <Text>No items in inventory</Text>
+            ) : (
+      missileLibrary.map((missile, index) => (
         <TouchableOpacity key={index} onPress={() => handleMissileClick(missile.type)} style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 10 }}>
           <Image source={missileImages[missile.type]} style={{ width: 50, height: 50, marginRight: 10 }} />
           <Text>{missile.type} - Quantity: {missile.quantity}</Text>
         </TouchableOpacity>
-      ))}
+      ))
+    )}
       <Modal visible={showPopup} animationType="slide">
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <Text>Target: {playerName}</Text>
           <Text>Missile Type: {selectedMissile}</Text>
-          {/* Add player name input */}
           <Image source={missileImages[selectedMissile || ""]} style={{ width: 100, height: 100, marginVertical: 10 }} />
           <Button title="Fire" onPress={handleFire} color="red" />
           <Button title="Cancel" onPress={handleCancel} />

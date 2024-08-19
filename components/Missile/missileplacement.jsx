@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { useUserName } from "../../util/fetchusernameglobal";
 import { mapstyles } from '../../map-themes/map-stylesheet';
+import { firemissileloc } from '../../api/fireentities';
 
 export const MissilePlacementPopup = ({ visible, onClose, selectedMissile }) => {
   const [region, setRegion] = useState(null);
@@ -98,6 +99,7 @@ export const MissilePlacementPopup = ({ visible, onClose, selectedMissile }) => 
       Alert.alert('Warning', 'Firing a Missile at your current location is not recommended!');
     } else {
       console.log(`FIRING Missile: Dest coords: ${marker.latitude}, ${marker.longitude}; sentbyUser: ${userName} Missile Type: ${selectedMissile}, current coords: ${currentLocation.latitude}, ${currentLocation.longitude}`);
+      firemissileloc(marker.latitude, marker.longitude, selectedMissile)
       onClose();
     }
   };

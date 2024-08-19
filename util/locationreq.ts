@@ -1,5 +1,6 @@
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { saveLocation } from './mapstore';
 
 export interface location {
     latitude: number; 
@@ -58,3 +59,17 @@ export const getLocationPermission = async () => {
         }
         return status;
     };
+
+export const getlocation = async () => {
+    try {
+        const location = await getCurrentLocation();
+        const newRegion = {
+            latitude: location.latitude,
+            longitude: location.longitude,
+            latitudeDelta: 0.01,
+            longitudeDelta: 0.01
+        };
+        await saveLocation(newRegion);
+    } catch (error) {
+    }
+};

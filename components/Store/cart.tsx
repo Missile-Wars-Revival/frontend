@@ -1,14 +1,14 @@
 import React from 'react';
 import { View, Text, FlatList, TouchableOpacity, GestureResponderEvent, Alert } from 'react-native'; // make sure to install axios or use fetch
 import { storepagestyles } from './storestylesheets';
-import { GameItem } from 'middle-earth';
 import axiosInstance from '../../api/axios-instance';
 import * as SecureStore from "expo-secure-store";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from "expo-router";
+import { Product } from '../../app/store';
 
 interface CartItem {
-  product: GameItem;
+  product: Product;
   quantity: number;
 }
 

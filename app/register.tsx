@@ -4,6 +4,7 @@ import {
   View,
   TouchableHighlight,
   Image,
+  ScrollView,
 } from "react-native";
 import { router } from "expo-router";
 import { Input } from "../components/ui/input";
@@ -11,21 +12,25 @@ import { useEffect } from "react";
 import { User, LockKeyhole, Mail } from "lucide-react-native";
 import useRegister from "../hooks/api/useRegister";
 import { useForm } from "react-hook-form";
-import * as z from "zod";
+import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import React from "react";
 import { saveCredentials } from "../util/logincache";
 
 export default function Register() {
   return (
+    <ScrollView>
     <SafeAreaView className="flex-1 justify-center items-center space-y-8">
       <Image
         source={require("../assets/icons/MissleWarsTitle.png")}
         className="w-[425px] h-[200px] absolute top-[25]"
         resizeMode="contain"
       />
+      <View style={{ height: 750 }}></View>
       <SignUpForm />
     </SafeAreaView>
+    <View style={{ height: 150 }}></View>
+    </ScrollView>
   );
 }
 
@@ -42,6 +47,10 @@ const SignUpData = z.object({
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
       "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character"
     ),
+  verifyPassword: z.string()
+}).refine((data) => data.password === data.verifyPassword, {
+  message: "Passwords must match",
+  path: ["verifyPassword"], // This specifies the path where the error should be attached.
 });
 
 type SignUpFormInputs = z.infer<typeof SignUpData>;
@@ -53,6 +62,7 @@ function SignUpForm() {
       email: "",
       username: "",
       password: "",
+      verifyPassword: "",
     },
   });
 
@@ -67,12 +77,13 @@ function SignUpForm() {
     register("username");
     register("email");
     register("password");
+    register("verifyPassword");
   }, [register]);
 
   const mutation = useRegister(
-    async () => {
-      const { username, password } = form.getValues();
-      await saveCredentials(username, password);
+    async (token) => {
+      const { username } = form.getValues();
+      await saveCredentials(username, token);
       router.navigate("/");
     },
   );
@@ -84,9 +95,10 @@ function SignUpForm() {
   };
 
   return (
-    <View className="space-y-4 absolute top-[26%]">
+    <SafeAreaView className="space-y-4 absolute top-[26%]">
       <Input
         placeholder="Username"
+        autoCorrect={false}    
         onChangeText={(text) => setValue("username", text)}
         className="w-[90vw] h-[5vh] rounded-[20px]"
         icon={<User size={24} color="black" />}
@@ -98,6 +110,8 @@ function SignUpForm() {
         placeholder="Email"
         onChangeText={(text) => setValue("email", text)}
         className="w-[90vw] h-[5vh] rounded-[20px]"
+        keyboardType="email-address"  
+        autoCorrect={false}           
         icon={
           <View className="inset-y-[9px]">
             <Mail size={24} color="black" />
@@ -110,6 +124,12 @@ function SignUpForm() {
       <Input
         placeholder="Password"
         onChangeText={(text) => setValue("password", text)}
+        secureTextEntry={true}
+        autoCorrect={false}
+        autoCapitalize="none"
+        keyboardType="default"
+        textContentType="newPassword"  
+        autoComplete="password"   
         className="w-[90vw] h-[5vh] rounded-[20px]"
         icon={
           <View className="inset-y-[7px]">
@@ -120,9 +140,28 @@ function SignUpForm() {
       {errors.password && (
         <Text className="text-red-800">{errors.password.message}</Text>
       )}
+      <Input
+        placeholder="Verify Password"
+        onChangeText={(text) => setValue("verifyPassword", text)}
+        secureTextEntry={true}
+        autoCorrect={false}
+        autoCapitalize="none"
+        keyboardType="default"
+        textContentType="password"      
+        autoComplete="password"
+        className="w-[90vw] h-[5vh] rounded-[20px]"
+        icon={
+          <View className="inset-y-[7px]">
+            <LockKeyhole size={24} color="black" />
+          </View>
+        }
+      />
+      {errors.verifyPassword && (
+        <Text className="text-red-800">{errors.verifyPassword.message}</Text>
+      )}
       <TouchableHighlight
         onPress={handleSubmit(onSubmit)}
-        className="bg-[#773765] rounded-[20px] w-[355px] h-[45px] flex items-center justify-center absolute top-[120%]"
+        className="bg-[#773765] rounded-[20px] w-[90vw] h-[45px] flex items-center justify-center absolute top-[120%]"
       >
         <View>
           <Text className="text-white font-bold">Sign Up!</Text>
@@ -130,12 +169,12 @@ function SignUpForm() {
       </TouchableHighlight>
       <TouchableHighlight
         onPress={() => router.navigate("/login")}
-        className="rounded-[20px] w-[355px] h-[45px] flex items-center justify-center border-2 mt-[5] absolute top-[350%]"
+        className="rounded-[20px] w-[90vw] h-[45px] flex items-center justify-center border-2 mt-[5] absolute top-[250%]"
       >
         <View>
           <Text className=" font-bold">Return To Login</Text>
         </View>
       </TouchableHighlight>
-    </View>
+    </SafeAreaView>
   );
 }

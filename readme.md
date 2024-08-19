@@ -61,3 +61,7 @@ or <br />
 `eas build --profile production --platform all` <br />
 or <br />
 `eas build --profile production --platform ios` <br />
+
+### Submit to App store:
+`eas submit --platform ios` <br />
+`eas submit --platform android` <br />

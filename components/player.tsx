@@ -3,6 +3,7 @@ import { Button, View, Image, Text, Modal, Dimensions } from "react-native";
 import { Circle, Marker } from "react-native-maps";
 import { MissileLibrary } from "./Missile/missile";
 import { Players } from "./map-players";
+import { useUserName } from "../util/fetchusernameglobal";
 const resizedplayerimage = require("../assets/mapassets/Female_Avatar_PNG.png"); // Your custom image path
 const resizedplayericon = { width: 30, height: 30 }; // Custom size for image
 
@@ -14,16 +15,15 @@ interface PlayerProps {
 }
 export const PlayerComp = (props: PlayerProps) => {
   const [selectedMarkerIndex, setSelectedMarkerIndex] = useState<number | null>(null);
-
   const [showMissileLibrary, setShowMissileLibrary] = useState(false);
 
+  const userName = useUserName()
 
   const fireMissile = (playerName: string) => {
     setShowMissileLibrary(true);
   };
 
   return (
-
     <View>
       <Circle
         center={{
@@ -55,7 +55,7 @@ export const PlayerComp = (props: PlayerProps) => {
           <Text style={{ color: 'grey' }}>{props.player.username}</Text>
 
           {/* Missile Lib Button */}
-          {selectedMarkerIndex !== 10 && selectedMarkerIndex === props.index && (
+          {selectedMarkerIndex !== 10 && selectedMarkerIndex === props.index && props.player.username !== userName && (
             <View style={{ backgroundColor: 'red', borderRadius: 5, marginTop: 2 }}>
               {/* Ensure onPress event is passed the player's username */}
               <Button

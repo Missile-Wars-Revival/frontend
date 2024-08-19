@@ -7,7 +7,6 @@ export async function dispatch(
   longitude: number
 ) {
   try {
-    // Send location data without password
     const response = await axiosInstance.post("/api/dispatch", {
       token,
       latitude: latitude.toString(),
