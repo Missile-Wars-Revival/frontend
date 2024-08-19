@@ -93,6 +93,7 @@ function SignUpForm() {
     <View className="space-y-4 absolute top-[26%]">
       <Input
         placeholder="Username"
+        autoCorrect={false}    
         onChangeText={(text) => setValue("username", text)}
         className="w-[90vw] h-[5vh] rounded-[20px]"
         icon={<User size={24} color="black" />}
@@ -104,8 +105,8 @@ function SignUpForm() {
         placeholder="Email"
         onChangeText={(text) => setValue("email", text)}
         className="w-[90vw] h-[5vh] rounded-[20px]"
-        keyboardType="email-address"  // Set the keyboard type optimized for emails
-        autoCorrect={false}           // Disable auto-correct
+        keyboardType="email-address"  
+        autoCorrect={false}           
         icon={
           <View className="inset-y-[9px]">
             <Mail size={24} color="black" />

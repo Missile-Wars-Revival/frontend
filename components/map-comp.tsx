@@ -76,6 +76,7 @@ export const MapComp = (props: MapCompProps) => {
                         await getlocation();
                     }
                     setRegion(savedlocation);
+                    await DefRegLocationTask();
 
                     await AsyncStorage.setItem('firstload', 'false');
                     setFirstLoad(false);
@@ -99,7 +100,6 @@ export const MapComp = (props: MapCompProps) => {
                 setIsLocationEnabled(status === 'granted');
 
                 await dispatchLocation();
-                await DefRegLocationTask();
 
                 const intervalId = setInterval(async () => {
                     // Periodically check DB connection status
@@ -131,7 +131,6 @@ export const MapComp = (props: MapCompProps) => {
                         setisAlive(false); // Set to a default value in case of error
                     }
 
-                    dispatchLocation();
                 }, 1000);
 
                 return () => clearInterval(intervalId);

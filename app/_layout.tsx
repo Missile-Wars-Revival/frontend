@@ -80,14 +80,6 @@ function NavBar() {
 
   // Update selectedTab when pathname changes
   useEffect(() => {
-    const initializeApp = async () => {
-      getLocationPermission();
-      const status = await getLocationPermission();
-      if (status) {
-        await getlocation();
-      }
-    }
-    initializeApp()
     setSelectedTab(pathname);
   }, [pathname]);
 
@@ -125,10 +117,10 @@ function NavBar() {
             width: 50,
             height: 50,
             borderRadius: 25,
-            backgroundColor: 'rgba(0, 0, 0, 0.1)', // Adjust opacity here
+            backgroundColor: 'rgba(0, 0, 0, 0.1)', 
             alignItems: 'center',
             justifyContent: 'center',
-            marginBottom: 10  // Raises the icon slightly
+            marginBottom: 10  
           }}>
             <FontAwesome
               name={tab === '/' ? 'map' :

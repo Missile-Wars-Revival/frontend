@@ -1,4 +1,4 @@
-import { SafeAreaView, Text, View, Image, TouchableHighlight } from "react-native";
+import { SafeAreaView, Text, View, Image, TouchableHighlight, ScrollView } from "react-native";
 import { router } from "expo-router";
 import { Input } from "../components/ui/input";
 import { useState } from "react";
@@ -17,7 +17,8 @@ export default function Login() {
   const [isError, setIsError] = useState(false);
 
   return (
-    <SafeAreaView className="flex-1 items-center">
+    <ScrollView>
+    <SafeAreaView className="flex-1 items-center">  
       <Image
         source={require("../assets/icons/MissleWarsTitle.png")}
         className="w-[425] h-[200] mt-[0]"
@@ -27,6 +28,7 @@ export default function Login() {
         <View className="space-y-4">
           <Input
             placeholder="Username"
+            autoCorrect={false}    
             onChangeText={(text) => setUsername(text)}
             className="w-[90vw] h-[5vh] rounded-[20px]"
             icon={<User size={24} color="black" />}
@@ -69,6 +71,7 @@ export default function Login() {
       />
       <SignUpButton />
     </SafeAreaView>
+    </ScrollView>
   );
 }
 
@@ -97,7 +100,7 @@ function LoginButton({
   return (
     <TouchableHighlight
       onPress={() => mutation.mutate({ username, password, notificationToken })}
-      className={`bg-[#773765] rounded-[20px] w-[375] h-[45] flex items-center justify-center mt-[40]`}
+      className={`bg-[#773765] rounded-[20px] w-[90vw] h-[5.3vh] flex items-center justify-center mt-[40]`}
     >
       <View>
         <Text className="text-white font-bold">Let's Fight</Text>
@@ -112,7 +115,7 @@ function SignUpButton() {
       onPress={() => {
         router.navigate("/register");
       }}
-      className="rounded-[20px] w-[375px] h-[45px] flex items-center justify-center border-2 mt-[5]"
+      className="rounded-[20px] w-[90vw] h-[5.3vh] flex items-center justify-center border-2 mt-[5]"
     >
       <View>
         <Text className=" font-bold">Sign up with Email</Text>
