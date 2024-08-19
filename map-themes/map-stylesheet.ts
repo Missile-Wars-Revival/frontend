@@ -90,14 +90,14 @@ export const mainmapstyles = StyleSheet.create({
     relocateButton: {
         flex: 0,
         position: 'absolute',
-        height: 42,  // Button height
-        width: 42,   // Button width, assuming a square shape for aesthetic consistency
+        height: 42,  
+        width: 42,   
         right: 10,
         bottom: 15,
         padding: 10,
         backgroundColor: 'rgba(0, 0, 0, 0.6)', 
-        borderRadius: 21, // Half of height or width to make it perfectly circular
-        alignItems: 'center', // Center the icon horizontally
-        justifyContent: 'center', // Center the icon vertically
+        borderRadius: 21, 
+        alignItems: 'center', 
+        justifyContent: 'center', 
     },
 });
