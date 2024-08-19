@@ -36,7 +36,7 @@ export const products: Product[] = [
   { id: "2", name: 'Ballista', price: 500, image: require('../assets/missiles/Ballista.png'), description: 'Long-range missile', sku: "Ballista", type: 'Missiles' },
   { id: "3", name: 'BigBertha', price: 500, image: require('../assets/missiles/BigBertha.png'), description: 'Large warhead missile', sku: "Big Bertha", type: 'Landmines' },
   { id: "4", name: 'Bombabom', price: 400, image: require('../assets/missiles/Bombabom.png'), description: 'Cluster bomb missile', sku: "Bombabom", type: 'Landmines' },
-  { id: "4", name: 'BunkerBlocker', price: 2000, image: require('../assets/missiles/BunkerBlocker.png'), description: 'Bunker Blocker missile', sku: "BunkerBlocker", type: 'Landmines' },
+  { id: "4", name: 'BunkerBlocker', price: 2000, image: require('../assets/missiles/BunkerBlocker.png'), description: 'Bunker Blocker', sku: "BunkerBlocker", type: 'Landmines' },
   { id: "6", name: 'Buzzard', price: 3000, image: require('../assets/missiles/Buzzard.png'), description: 'Medium-range missile', sku: "Buzzard", type: 'Missiles' },
   { id: "7", name: 'ClusterBomb', price: 4500, image: require('../assets/missiles/ClusterBomb.png'), description: 'ClusterBomb missile', sku: "ClusterBomb", type: 'Missiles' },
   { id: "8", name: 'CorporateRaider', price: 2000, image: require('../assets/missiles/CorporateRaider.png'), description: 'CorporateRaider missile', sku: "CorporateRaider", type: 'Missiles' },
@@ -46,24 +46,6 @@ export const products: Product[] = [
   { id: "13", name: 'Zippy', price: 250, image: require('../assets/missiles/Zippy.png'), description: 'Zippy', sku: "Zippy", type: 'Missiles' },
   { id: "20", name: 'LootDrop', price: 400, image: require('../assets/mapassets/Airdropicon.png'), description: 'A Loot Drop', sku: "Loot Drop", type: 'Loot Drops' },
 ];
-
-// export const premproducts: Product[] = [
-//   { id: "1", name: 'Amplifier', price: 3.99, image: require('../assets/missiles/Amplifier.png'), description: 'High impact missile', sku: "Amplifier", type: 'Missiles' },
-//   { id: "2", name: 'Ballista', price: 2.99, image: require('../assets/missiles/Ballista.png'), description: 'Long-range missile', sku: "Ballista", type: 'Missiles' },
-//   //{ id: "3", name: 'BigBertha', price: 6.99, image: require('../assets/missiles/BigBertha.png'), description: 'Large warhead missile', sku: "Big Bertha", type: 'Landmines' },
-//   { id: "4", name: 'Bombabom', price: 4.99, image: require('../assets/missiles/Bombabom.png'), description: 'Cluster bomb missile', sku: "Bombabom", type: 'Landmines' },
-//   { id: "4", name: 'BunkerBlocker', price: 5.99, image: require('../assets/missiles/BunkerBlocker.png'), description: 'Bunker Blocker missile', sku: "BunkerBlocker", type: 'Landmines' },
-//   { id: "6", name: 'Buzzard', price: 2.99, image: require('../assets/missiles/Buzzard.png'), description: 'Medium-range missile', sku: "Buzzard", type: 'Missiles' },
-//   //{ id: "7", name: 'ClusterBomb', price: 5.99, image: require('../assets/missiles/ClusterBomb.png'), description: 'ClusterBomb missile', sku: "ClusterBomb", type: 'Missiles' },
-//   { id: "8", name: 'CorporateRaider', price: 3.99, image: require('../assets/missiles/CorporateRaider.png'), description: 'CorporateRaider missile', sku: "CorporateRaider", type: 'Missiles' },
-//   //{ id: "9", name: 'GutShot', price: 5.99, image: require('../assets/missiles/GutShot.png'), description: 'GutShot missile', sku: "GutShot", type: 'Missiles' },
-//   { id: "11", name: 'Yokozuna', price: 4.99, image: require('../assets/missiles/Yokozuna.png'), description: 'Yokozuna missile', sku: "Yokozuna", type: 'Missiles' },
-//   { id: "13", name: 'Zippy', price: 5.99, image: require('../assets/missiles/Zippy.png'), description: 'Zippy', sku: "Zippy", type: 'Missiles' },
-//   { id: "14", name: '500 x Coins', price: 2.99, image: require('../assets/store/500coins.png'), description: '500', sku: "500Coins", type: 'Coins' },
-//   { id: "14", name: '1000 x Coins', price: 5.99, image: require('../assets/store/1000coins.png'), description: '1000', sku: "1000Coins", type: 'Coins' },
-//   { id: "14", name: '1000 x Coins', price: 5.99, image: require('../assets/store/1000coins.png'), description: '1000', sku: "1000Coins", type: 'Coins' },
-//   //{ id: "20", name: 'LootDrop', price: 4.99, image: require('../assets/mapassets/Airdropicon.png'), description: 'A Loot Drop', sku: "Loot Drop", type: 'Loot Drops' },
-// ];
 
 const StorePage: React.FC = () => {
   const [cart, setCart] = useState<{ product: Product; quantity: number }[]>([]);
