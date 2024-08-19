@@ -1,17 +1,14 @@
 import axiosInstance from "./axios-instance";
 import { isAxiosError } from "axios";
 
-export async function additem(
-    token: string,
-    itemName: string,
-    category: string,
-  ) {
+export async function additem(token: string, itemName: string, category: string) {
     try {
       const response = await axiosInstance.post("/api/addItem", {
         token,
         itemName,
         category,
       });
+      console.log("response", response.data)
       return response.data;
     } catch (error) {
       if (isAxiosError(error)) {

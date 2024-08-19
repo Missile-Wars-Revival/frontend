@@ -37,7 +37,7 @@
   "submit": {
     "production": {
       "android": {
-        "serviceAccountKeyPath": "../path/to/api-xxx-yyy-zzz.json",
+        "serviceAccountKeyPath": "./missile-wars-432403-ce5d48177a45",
         "track": "internal"
       },
       "ios": {

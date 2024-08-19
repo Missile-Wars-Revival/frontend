@@ -4,6 +4,7 @@ import { MissileFireConfirmationPopup, MissileLibraryView } from "./Missile/miss
 import { View } from "react-native";
 import { MapStyleElement } from "react-native-maps";
 import { LandmineLibraryView } from "./Landmine/landmine";
+import { LootLibraryView } from "./Loot/loot";
 
 interface FireSelectorProps {
     selectedMapStyle: MapStyleElement[];
@@ -15,6 +16,7 @@ export const FireSelector = (props: FireSelectorProps) => {
     const [MissileModalVisible, setMissileModalVisible] = useState(false);
     const [MissilefireposModalVisible, setMissilefireposModalVisible] = useState(false);
     const [LandmineModalVisible, setLandmineModalVisible] = useState(false);
+    const [LootModelVisable, setLootModelVisable] = useState(false);
 
     return (
         <View>
@@ -26,8 +28,10 @@ export const FireSelector = (props: FireSelectorProps) => {
             {/* Landmine library popup */}
             <LandmineLibraryView LandmineModalVisible={LandmineModalVisible} landminePlaceHandler={() => setLandmineModalVisible(false)} />
 
+            <LootLibraryView LootModalVisible={LootModelVisable} LootPlaceHandler={() => setLootModelVisable(false)} />
+
             {/* Fire Select button */}
-            <FireType landmineFireHandler={() => setLandmineModalVisible(true)} missileFireHandler={() => setMissileModalVisible(true)} />
+            <FireType landmineFireHandler={() => setLandmineModalVisible(true)} missileFireHandler={() => setMissileModalVisible(true)} lootrequesthandler={() => setLootModelVisable(true)}/>
 
         </View>
     )

@@ -1,9 +1,9 @@
 {
   "expo": {
-    "name": "missile-wars",
+    "name": "Missile Wars",
     "slug": "missilewars",
     "scheme": "missile-wars",
-    "version": "0.0.1",
+    "version": "0.0.3",
     "orientation": "portrait",
     "icon": "./assets/logo.png",
     "userInterfaceStyle": "light",
@@ -25,6 +25,7 @@
     ],
     "ios": {
       "supportsTablet": true,
+      "buildNumber": "8",
       "bundleIdentifier": "com.longtimenoc.missilewars",
       "infoPlist": {
         "NSLocationAlwaysUsageDescription": "This app needs access to your location to alert about nearby items of interest.",
@@ -75,8 +76,8 @@
       [
         "react-native-google-mobile-ads",
         {
-          "androidAppId": "ca-app-pub-9160450369509545~8843325279",
-          "iosAppId": "ca-app-pub-9160450369509545~4744298160",
+          "androidAppId": "ca-app-pub-4035842398612787~8146111264",
+          "iosAppId": "ca-app-pub-4035842398612787~7024601286",
           "userTrackingUsageDescription": "This identifier will be used to deliver personalized ads to you."
         }
       ]

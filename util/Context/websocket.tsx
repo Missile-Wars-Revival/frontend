@@ -1,9 +1,15 @@
 import { ReactNode, createContext, useContext } from "react";
-import useWebSocket from "../../hooks/api/websockets";
 import { WebSocketMessage } from "middle-earth";
 
 export interface WebSocketContextProps {
     data: any;
+    missiledata: any;
+    landminedata: any;
+    lootdata:any;
+    healthdata: any;
+    friendsdata: any;
+    inventorydata: any;
+    playerlocations: any;
     sendWebsocket: (data: WebSocketMessage) => void;
   }
 

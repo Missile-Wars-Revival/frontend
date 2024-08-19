@@ -56,6 +56,25 @@ export const AllMissiles = (props: AllMissilesProps) => {
 
 export const MapMissile = (missileProps: MissileProps) => {
 
+    const geolib = require('geolib');
+
+    const generateTrajectory = (start: any, end: any, segments: number) => {
+        const totalDistance = geolib.getDistance(start, end);
+        const bearing = geolib.getGreatCircleBearing(start, end);
+        let points = [start]; // Start with the initial position
+
+        for (let i = 1; i < segments; i++) {
+            const distanceTraveled = (totalDistance / segments) * i;
+            const intermediatePoint = geolib.computeDestinationPoint(start, distanceTraveled, bearing);
+            points.push({ latitude: intermediatePoint.latitude, longitude: intermediatePoint.longitude });
+        }
+
+        points.push(end);
+        return points;
+    };
+
+    const trajectoryCoordinates = generateTrajectory(missileProps.currentLocation, missileProps.destination, 100);
+
     const resizedmissileimage = missileImages[missileProps.type];
     const resizedmissileicon = { width: 50, height: 50 }; // Custom size for image
 
@@ -87,7 +106,7 @@ export const MapMissile = (missileProps: MissileProps) => {
             </Marker>
             {/* Render trajectory line */}
             <Polyline
-                coordinates={missileProps.trajectoryCoordinates}
+                coordinates={trajectoryCoordinates}
                 strokeColor="red"
                 strokeWidth={3}
             />

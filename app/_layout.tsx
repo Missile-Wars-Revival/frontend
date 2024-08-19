@@ -8,14 +8,26 @@ import { useRouter, usePathname } from 'expo-router';
 import SplashScreen from './splashscreen';
 import { FontAwesome } from '@expo/vector-icons';
 import { ProximityCheckNotif } from "../components/Collision/collision";
-import useWebSocket, { } from "../hooks/api/websockets"; 
+import useWebSocket, { } from "../hooks/websockets/websockets"; 
 import { WebSocketContext, WebSocketProviderProps } from "../util/Context/websocket";
-import { CountdownContext, CountdownProviderProps, useCountdown } from "../util/Context/countdown";
+import { CountdownContext, CountdownProviderProps } from "../util/Context/countdown";
+import { Platform } from 'react-native';
+import Purchases from 'react-native-purchases';
 
 // RootLayout component
 export default function RootLayout() {
   const queryClient = new QueryClient();
   const [isSplashVisible, setIsSplashVisible] = useState(true);
+
+  useEffect(() => {
+    // Configuration or other code that should run on component mount
+    Purchases.setDebugLogsEnabled(true);
+    if (Platform.OS === 'ios') {
+      Purchases.configure({ apiKey: "appl_DhhCcaRAelpsFMqaQCjiKcUWNcR" });
+    } else {
+      Purchases.configure({ apiKey: "your_android_api_key" });
+    }
+  }, []);
 
   const handleSplashFinish = () => {
     setIsSplashVisible(false);
@@ -26,10 +38,10 @@ export default function RootLayout() {
   }
 
   const WebSocketProvider = ({ children }: WebSocketProviderProps) => {
-    const { data, sendWebsocket } = useWebSocket();
+    const { data, missiledata, landminedata, lootdata, healthdata, friendsdata, inventorydata, playerlocations, sendWebsocket } = useWebSocket();
 
     return (
-      <WebSocketContext.Provider value={{ data, sendWebsocket }}>
+      <WebSocketContext.Provider value={{ data, missiledata, landminedata, lootdata, healthdata, friendsdata, inventorydata, playerlocations, sendWebsocket }}>
         {children}
       </WebSocketContext.Provider>
     );
@@ -89,9 +101,9 @@ function NavBar() {
   };
 
   return (
-    //switch commenting to hide ranking pages
-    // <View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-around', backgroundColor: 'rgba(255, 255, 255, 0.0)', height: 100, alignItems: 'center' }}>
+    //switch commenting to hide ranking pages<View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-around', backgroundColor: 'rgba(255, 255, 255, 0.0)', height: 100, alignItems: 'center' }}>
     //   {['/', '/store','/league', '/friends', '/profile'].map((tab, index) => (
+    // 
     <View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-around', backgroundColor: 'rgba(255, 255, 255, 0.0)', height: 90, alignItems: 'center' }}>
       {['/', '/store', '/friends', '/profile'].map((tab, index) => (
         <TouchableOpacity
@@ -104,10 +116,10 @@ function NavBar() {
             width: 50,
             height: 50,
             borderRadius: 25,
-            backgroundColor: 'rgba(0, 0, 0, 0.1)', // Adjust opacity here
+            backgroundColor: 'rgba(0, 0, 0, 0.1)', 
             alignItems: 'center',
             justifyContent: 'center',
-            marginBottom: 10  // Raises the icon slightly
+            marginBottom: 10  
           }}>
             <FontAwesome
               name={tab === '/' ? 'map' :
@@ -141,7 +153,7 @@ function RootLayoutNav() {
         <Stack>
           <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="login" options={{ headerShown: false, gestureEnabled: false, animation: 'slide_from_bottom' }} />
-          <Stack.Screen name="register" options={{ headerShown: false, gestureEnabled: false }} />
+          <Stack.Screen name="register" options={{ headerShown: false, gestureEnabled: true }} />
           <Stack.Screen name="league" options={{ headerShown: false, gestureEnabled: false }} />
           <Stack.Screen name="store" options={{ headerShown: false, gestureEnabled: false }} />
           <Stack.Screen name="friends" options={{ headerShown: false }} />
