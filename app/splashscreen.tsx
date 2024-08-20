@@ -9,7 +9,6 @@ mobileAds()
     // Initialization complete!
   });
 
-
 interface SplashScreenProps {
   onFinish: () => void;
 }
