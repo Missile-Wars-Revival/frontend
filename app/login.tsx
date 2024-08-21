@@ -1,25 +1,25 @@
 import { SafeAreaView, Text, View, Image, TouchableHighlight, ScrollView } from "react-native";
 import { router } from "expo-router";
 import { Input } from "../components/ui/input";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import useLogin from "../hooks/api/useLogin";
 import { User, LockKeyhole } from "lucide-react-native";
 import React from "react";
-import { Appearance, useColorScheme } from 'react-native';
+import { useColorScheme } from 'react-native';
 import { saveCredentials } from "../util/logincache";
 import { usePushNotifications } from "../components/Notifications/usePushNotifications";
-import { language } from "../components/localisation";
+import { LocalizationContext } from "../util/Context/localisation";
 
 export default function Login() {
 
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
 
-  // Define colors based on theme
+  // Define colors based on theme test
   const styles = {
     backgroundColor: isDark ? '#333' : '#fff',
     textColor: isDark ? '#fff' : '#333',
-    buttonColor: isDark ? '#5865F2' : '#773765', // Example colors for light/dark mode
+    buttonColor: isDark ? '#5865F2' : '#773765', 
     borderColor: isDark ? '#5865F2' : '#773765',
     errorTextColor: '#ff4757',
     iconColor: '#000000'
@@ -32,9 +32,14 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [isError, setIsError] = useState(false);
 
-  useEffect(() => {
-    language()
-  }, []);
+  const context = useContext(LocalizationContext);
+
+    // Handle potential undefined context
+    if (!context) {
+        return <Text>Loading...</Text>; // or some other fallback UI
+    }
+
+    const { localization } = context;
 
   return (
     <ScrollView style={{ backgroundColor: styles.backgroundColor }}>
@@ -47,7 +52,7 @@ export default function Login() {
         <View>
           <View className="space-y-4">
             <Input
-              placeholder="Username"
+              placeholder={localization.usernameprompt}
               autoCorrect={false}
               onChangeText={(text) => setUsername(text)}
               className="w-[90vw] h-[5vh] rounded-[20px]"
@@ -55,7 +60,7 @@ export default function Login() {
             />
             <View>
               <Input
-                placeholder="Password"
+                placeholder={localization.passwordprompt}
                 onChangeText={(text) => setPassword(text)}
                 secureTextEntry={true}
                 autoCorrect={false}
@@ -84,15 +89,13 @@ export default function Login() {
           notificationToken={notificationToken}
           setIsError={setIsError}
           buttonColor={styles.buttonColor}
-          textColor={styles.textColor}
-          borderColor={styles.borderColor}
         />
         <Image
           source={require("../assets/icons/cometDivider.png")}
           resizeMode="stretch"
           className="w-[410] h-[12%] mt-[220]"
         />
-        <SignUpButton borderColor={styles.borderColor} />
+        <SignUpButton borderColor={styles.borderColor} textColor={styles.textColor} />
       </SafeAreaView>
     </ScrollView>
   );
@@ -104,18 +107,22 @@ function LoginButton({
   notificationToken,
   setIsError,
   buttonColor,
-  borderColor,
-  textColor,
 }: {
   username: string;
   password: string;
   notificationToken: string;
   setIsError: (error: boolean) => void;
   buttonColor: string;
-  borderColor: string;
-  textColor: string;
   className?: string;
 }) {
+  const context = useContext(LocalizationContext);
+
+  // Handle potential undefined context
+  if (!context) {
+      return <Text>Loading...</Text>; // or some other fallback UI
+  }
+
+  const { localization } = context;
   const mutation = useLogin(
     async (token) => {
       await saveCredentials(username, token);
@@ -129,16 +136,24 @@ function LoginButton({
   return (
     <TouchableHighlight
       onPress={() => mutation.mutate({ username, password, notificationToken })}
-      className={`bg-[${buttonColor}] rounded-[20px] w-[90vw] h-[5.3vh] flex items-center justify-center border-2 mt-[35] border-[${borderColor}`}
+      className={`bg-[${buttonColor}] rounded-[20px] w-[90vw] h-[5.3vh] flex items-center justify-center mt-[35]`}
     >
       <View>
-        <Text className={`text-[${textColor}] font-bold`}>Let's Fight</Text>
+        <Text className={`text-[#fff] font-bold`}>{localization.signin}</Text>
       </View>
     </TouchableHighlight>
   );
 }
 
-function SignUpButton({ borderColor } : {borderColor: string;}){
+function SignUpButton({ borderColor, textColor } : {borderColor: string; textColor: string;}){
+  const context = useContext(LocalizationContext);
+
+  // Handle potential undefined context
+  if (!context) {
+      return <Text>Loading...</Text>; // or some other fallback UI
+  }
+
+  const { localization } = context;
   return (
     <TouchableHighlight
       onPress={() => {
@@ -147,7 +162,7 @@ function SignUpButton({ borderColor } : {borderColor: string;}){
       className={`rounded-[20px] w-[90vw] h-[5.3vh] flex items-center justify-center border-2 mt-[5] border-[${borderColor}]`}
     >
       <View>
-        <Text className=" font-bold">Sign up with Email</Text>
+        <Text className={`text-[${textColor}] font-bold`}>{localization.signuplog}</Text>
       </View>
     </TouchableHighlight>
   );

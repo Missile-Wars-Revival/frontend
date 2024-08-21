@@ -13,6 +13,7 @@ import { WebSocketContext, WebSocketProviderProps } from "../util/Context/websoc
 import { CountdownContext, CountdownProviderProps } from "../util/Context/countdown";
 import { Platform } from 'react-native';
 import Purchases from 'react-native-purchases';
+import { LocalizationProvider } from "../util/Context/localisation";
 
 // RootLayout component
 export default function RootLayout() {
@@ -65,7 +66,9 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <CountdownProvider>
         <WebSocketProvider>
+        <LocalizationProvider>
           <RootLayoutNav />
+          </LocalizationProvider>
         </WebSocketProvider>
       </CountdownProvider>
     </QueryClientProvider>
