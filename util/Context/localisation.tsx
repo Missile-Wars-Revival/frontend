@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { getLocales } from 'expo-localization';
+import { translations } from '../translation';
 import { I18n } from 'i18n-js';
 
 // Define the type for the translations
@@ -10,12 +11,6 @@ interface Translations {
     signin: string;
     signuplog: string;
 }
-
-// Default translations setup
-const translations = {
-    en: { usernameprompt: 'Username', passwordprompt: 'Password', verifypasswordprompt: 'Verify Password', signin: `Let's Fight!`, signuplog: `Sign up with Email` },
-    fr: { usernameprompt: 'Identifiant', passwordprompt: 'Mot de passe', verifypasswordprompt: 'Mot de passe', signin: `Se connecter`, signuplog: `S’inscrire via email` },
-};
 
 // Context type
 interface LocalizationContextType {
