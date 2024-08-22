@@ -6,14 +6,15 @@ import { I18n } from 'i18n-js';
 interface Translations {
     usernameprompt: string;
     passwordprompt: string;
+    verifypasswordprompt: string;
     signin: string;
     signuplog: string;
 }
 
 // Default translations setup
 const translations = {
-    en: { usernameprompt: 'Username', passwordprompt: 'Password', signin: `Let's Fight!`, signuplog: `Sign up with Email` },
-    fr: { usernameprompt: 'Identifiant', passwordprompt: 'Mot de passe', signin: `Se connecter`, signuplog: `S’inscrire via email` },
+    en: { usernameprompt: 'Username', passwordprompt: 'Password', verifypasswordprompt: 'Verify Password', signin: `Let's Fight!`, signuplog: `Sign up with Email` },
+    fr: { usernameprompt: 'Identifiant', passwordprompt: 'Mot de passe', verifypasswordprompt: 'Mot de passe', signin: `Se connecter`, signuplog: `S’inscrire via email` },
 };
 
 // Context type
@@ -37,6 +38,7 @@ export const LocalizationProvider: React.FC<LocalizationProviderProps> = ({ chil
         setLocalization({
             usernameprompt: i18n.t('usernameprompt'),
             passwordprompt: i18n.t('passwordprompt'),
+            verifypasswordprompt: i18n.t('verifypasswordprompt'),
             signin: i18n.t('signin'),
             signuplog: i18n.t('signuplog')
         });

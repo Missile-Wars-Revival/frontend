@@ -6,7 +6,6 @@ import * as SecureStore from "expo-secure-store";
 const WEBSOCKET_URL = process.env.EXPO_PUBLIC_WEBSOCKET_URL || "ws://localhost:3000";
 const RECONNECT_INTERVAL_BASE = 1000; // base interval in ms
 const MAX_RECONNECT_ATTEMPTS = 10;
-const WEBSOCKET_PROTOCOL = 'missilewars';
 
 const useWebSocket = () => {
     const [data, setData] = useState<any>(null);
@@ -18,6 +17,7 @@ const useWebSocket = () => {
     const [inventorydata, setinventoryData] = useState<any>(null);
     const [playerlocations, setplayerlocations] = useState<any>(null);
     const [websocket, setWebsocket] = useState<WebSocket | null>(null);
+    const [isInitialized, setIsInitialized] = useState<boolean>(false);
     const [reconnectAttempts, setReconnectAttempts] = useState(0);
 
     const connectWebsocket = (): Promise<WebSocket> => {
@@ -33,6 +33,7 @@ const useWebSocket = () => {
                 ws.onopen = () => {
                     console.log("Connected to websocket");
                     AsyncStorage.setItem('dbconnection', 'true');
+                    setIsInitialized(true);
                     resolve(ws);
                 };
 
@@ -49,12 +50,10 @@ const useWebSocket = () => {
         try {
             const ws = await connectWebsocket();
             setWebsocket(ws);
-            setReconnectAttempts(0); // Reset reconnect attempts on successful connection
 
             ws.onclose = () => {
                 console.log('WebSocket connection closed');
                 AsyncStorage.setItem('dbconnection', 'false');
-                reconnectWebsocket();
             };
 
             ws.onmessage = async (event) => {
@@ -128,31 +127,47 @@ const useWebSocket = () => {
         } catch (error) {
             console.error("Failed to connect to websocket:", error);
             AsyncStorage.setItem('dbconnection', 'false');
-            reconnectWebsocket();
         }
-    };
-
-    const reconnectWebsocket = async () => {
-        if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-            console.error("Max reconnect attempts reached. Could not connect to WebSocket.");
-            return;
-        }
-
-        setReconnectAttempts(prevAttempts => prevAttempts + 1);
-        const retryInterval = RECONNECT_INTERVAL_BASE * Math.pow(2, reconnectAttempts);
-
-        console.log(`Retrying to connect to websocket in ${retryInterval / 1000} seconds...`);
-
-        setTimeout(initializeWebSocket, retryInterval);
     };
 
     useEffect(() => {
-        initializeWebSocket();
-
-        return () => {
-            websocket?.close();
+        const checkConnection = async () => {
+            const isConnected = await AsyncStorage.getItem('signedIn');
+            if (isConnected === 'true') {
+                if (!isInitialized) {
+                    setIsInitialized(true);
+                }
+            } else {
+                if (websocket) {
+                    websocket.close();
+                }
+                setIsInitialized(false);
+                AsyncStorage.setItem('dbconnection', 'false');
+            }
         };
-    }, []);
+    
+        checkConnection(); // Run once on mount
+        const interval = setInterval(checkConnection, 5000); // Then every 5 seconds
+    
+        return () => {
+            clearInterval(interval);
+            if (websocket) {
+                websocket.close();
+            }
+        };
+    }, [isInitialized]); // React only when isInitialized changes
+
+    useEffect(() => {
+        console.log("isInitialized has been updated to:", isInitialized);
+        if (!isInitialized) {
+            initializeWebSocket();
+        }
+        if (isInitialized) {
+
+        }
+    }, [isInitialized]); // Dependency on isInitialized to run only when it changes
+    
+    
 
     const sendWebsocket = async (data: WebSocketMessage) => {
         if (websocket && websocket.readyState === WebSocket.OPEN) {

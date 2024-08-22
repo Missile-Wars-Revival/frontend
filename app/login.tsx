@@ -8,6 +8,7 @@ import React from "react";
 import { useColorScheme } from 'react-native';
 import { saveCredentials } from "../util/logincache";
 import { usePushNotifications } from "../components/Notifications/usePushNotifications";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LocalizationContext } from "../util/Context/localisation";
 
 export default function Login() {
@@ -127,6 +128,7 @@ function LoginButton({
     async (token) => {
       await saveCredentials(username, token);
       console.log("Logged in with token", token);
+      await AsyncStorage.setItem('signedIn', 'true');
       router.push('/');
     },
     () => {
@@ -159,7 +161,7 @@ function SignUpButton({ borderColor, textColor } : {borderColor: string; textCol
       onPress={() => {
         router.navigate("/register");
       }}
-      className={`rounded-[20px] w-[90vw] h-[5.3vh] flex items-center justify-center border-2 mt-[5] border-[${borderColor}]`}
+      className="rounded-[20px] w-[90vw] h-[5.3vh] flex items-center justify-center border-2 mt-[5]"
     >
       <View>
         <Text className={`text-[${textColor}] font-bold`}>{localization.signuplog}</Text>

@@ -46,6 +46,7 @@ export async function clearCredentials(): Promise<void> {
     await AsyncStorage.setItem("firstload", `true`); //To cache if its first time opening app
     await AsyncStorage.setItem('dbconnection', 'true'); //To cache db connection status across the app
     await AsyncStorage.setItem(`isAlive`, `true`); //Stored locally for same reason as above
+    await AsyncStorage.setItem('signedIn', 'false');
 
     console.log("All credentials and settings successfully cleared.");
   } catch (error) {

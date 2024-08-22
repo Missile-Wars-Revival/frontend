@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { Input } from "../components/ui/input";
-import { useEffect } from "react";
+import { useContext, useEffect } from "react";
 import { User, LockKeyhole, Mail } from "lucide-react-native";
 import useRegister from "../hooks/api/useRegister";
 import { useForm } from "react-hook-form";
@@ -16,6 +16,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import React from "react";
 import { saveCredentials } from "../util/logincache";
+import { LocalizationContext } from "../util/Context/localisation";
 
 export default function Register() {
   return (
@@ -56,6 +57,15 @@ const SignUpData = z.object({
 type SignUpFormInputs = z.infer<typeof SignUpData>;
 
 function SignUpForm() {
+  const context = useContext(LocalizationContext);
+
+  // Handle potential undefined context
+  if (!context) {
+      return <Text>Loading...</Text>; // or some other fallback UI
+  }
+
+  const { localization } = context;
+
   const form = useForm({
     resolver: zodResolver(SignUpData),
     defaultValues: {
@@ -97,7 +107,7 @@ function SignUpForm() {
   return (
     <SafeAreaView className="space-y-4 absolute top-[26%]">
       <Input
-        placeholder="Username"
+        placeholder={localization.usernameprompt}
         autoCorrect={false}    
         onChangeText={(text) => setValue("username", text)}
         className="w-[90vw] h-[5vh] rounded-[20px]"
@@ -122,7 +132,7 @@ function SignUpForm() {
         <Text className="text-red-800">{errors.email.message}</Text>
       )}
       <Input
-        placeholder="Password"
+        placeholder={localization.passwordprompt}
         onChangeText={(text) => setValue("password", text)}
         secureTextEntry={true}
         autoCorrect={false}
@@ -141,7 +151,7 @@ function SignUpForm() {
         <Text className="text-red-800">{errors.password.message}</Text>
       )}
       <Input
-        placeholder="Verify Password"
+        placeholder={localization.verifypasswordprompt}
         onChangeText={(text) => setValue("verifyPassword", text)}
         secureTextEntry={true}
         autoCorrect={false}
@@ -164,7 +174,7 @@ function SignUpForm() {
         className="bg-[#773765] rounded-[20px] w-[90vw] h-[45px] flex items-center justify-center absolute top-[120%]"
       >
         <View>
-          <Text className="text-white font-bold">Sign Up!</Text>
+          <Text className="text-white font-bold">{localization.signuplog}</Text>
         </View>
       </TouchableHighlight>
       <TouchableHighlight
