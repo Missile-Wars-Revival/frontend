@@ -17,6 +17,7 @@ const useWebSocket = () => {
     const [inventorydata, setinventoryData] = useState<any>(null);
     const [playerlocations, setplayerlocations] = useState<any>(null);
     const [websocket, setWebsocket] = useState<WebSocket | null>(null);
+    const [isInitialized, setIsInitialized] = useState<boolean>(false)
     const [reconnectAttempts, setReconnectAttempts] = useState(0);
 
     const connectWebsocket = (): Promise<WebSocket> => {
@@ -49,6 +50,7 @@ const useWebSocket = () => {
             const ws = await connectWebsocket();
             setWebsocket(ws);
             setReconnectAttempts(0); // Reset reconnect attempts on successful connection
+            setIsInitialized(true);
 
             ws.onclose = () => {
                 console.log('WebSocket connection closed');
@@ -144,14 +146,42 @@ const useWebSocket = () => {
 
         setTimeout(initializeWebSocket, retryInterval);
     };
-
+    
     useEffect(() => {
-        initializeWebSocket();
+        const checkConnection = async () => {
+            const isSignedin = await AsyncStorage.getItem('signedIn');
+            //console.log("Signed in:", isSignedin)
+            if (isSignedin === 'true') {
+                    //console.log("is instial", isInitialized)
+                    setIsInitialized(true)
+                    await AsyncStorage.setItem('dbconnection', 'true');
+
+            } else {
+                if (websocket) {
+                    websocket.close();
+                    await AsyncStorage.setItem('dbconnection', 'false');
+                }
+            }
+        };
+
+        checkConnection(); // Run once on mount
+        const interval = setInterval(checkConnection, 5000); // Then every 5 seconds
 
         return () => {
-            websocket?.close();
+            clearInterval(interval);
+            if (websocket) {
+                websocket.close();
+            }
+            AsyncStorage.setItem('dbconnection', 'false');
         };
     }, []);
+
+    useEffect(() => {
+        console.log("isInitialized has been updated to:", isInitialized);
+        if (isInitialized) {
+            initializeWebSocket();
+        }
+    }, [isInitialized]); // Dependency on isInitialized to run only when it changes
 
     const sendWebsocket = async (data: WebSocketMessage) => {
         if (websocket && websocket.readyState === WebSocket.OPEN) {
