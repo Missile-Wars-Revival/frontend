@@ -42,6 +42,7 @@ const useWebSocket = () => {
 
         ws.onmessage = async (event) => {
             try {
+                await AsyncStorage.setItem('dbconnection', 'true');
                 let uint8Array;
 
                 if (event.data instanceof Blob) {
@@ -55,7 +56,6 @@ const useWebSocket = () => {
                     // Handle as a string directly, likely JSON
                     const receivedData = JSON.parse(event.data);
                     console.log("Received JSON data from websocket:", receivedData);
-                    AsyncStorage.setItem('dbconnection', 'true');
                     // Assuming data needs to be processed similarly to below
 
                     //processReceivedData(receivedData);
@@ -140,6 +140,7 @@ const useWebSocket = () => {
             const isSignedIn = await AsyncStorage.getItem('signedIn');
             if (isSignedIn === 'true' && !isConnected) {
                 await connectWebsocket();
+                await AsyncStorage.setItem('dbconnection', 'true');
             } else if (isSignedIn !== 'true' && isConnected) {
                 await signOut();
             }
