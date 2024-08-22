@@ -16,6 +16,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import React from "react";
 import { saveCredentials } from "../util/logincache";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LocalizationContext } from "../util/Context/localisation";
 
 export default function Register() {
@@ -94,6 +95,7 @@ function SignUpForm() {
     async (token) => {
       const { username } = form.getValues();
       await saveCredentials(username, token);
+      await AsyncStorage.setItem('signedIn', 'true');
       router.navigate("/");
     },
   );

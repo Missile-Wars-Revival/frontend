@@ -1,7 +1,7 @@
 import { SafeAreaView, Text, View, Image, TouchableHighlight, ScrollView } from "react-native";
 import { router } from "expo-router";
 import { Input } from "../components/ui/input";
-import { useContext, useEffect, useState } from "react";
+import { useContext, useState } from "react";
 import useLogin from "../hooks/api/useLogin";
 import { User, LockKeyhole } from "lucide-react-native";
 import React from "react";
@@ -138,7 +138,7 @@ function LoginButton({
   return (
     <TouchableHighlight
       onPress={() => mutation.mutate({ username, password, notificationToken })}
-      className={`bg-[${buttonColor}] rounded-[20px] w-[90vw] h-[5.3vh] flex items-center justify-center mt-[35]`}
+      className={`bg-[#773765] rounded-[20px] w-[90vw] h-[5.3vh] flex items-center justify-center mt-[40]`}
     >
       <View>
         <Text className={`text-[#fff] font-bold`}>{localization.signin}</Text>
