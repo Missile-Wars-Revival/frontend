@@ -3,7 +3,7 @@
     "name": "Missile Wars",
     "slug": "missilewars",
     "scheme": "missile-wars",
-    "version": "0.0.3",
+    "version": "0.0.4",
     "orientation": "portrait",
     "icon": "./assets/logo.png",
     "userInterfaceStyle": "light",
@@ -25,7 +25,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "buildNumber": "10",
+      "buildNumber": "0",
       "bundleIdentifier": "com.longtimenoc.missilewars",
       "infoPlist": {
         "NSLocationAlwaysUsageDescription": "This app needs access to your location to alert about nearby items of interest.",
