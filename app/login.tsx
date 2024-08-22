@@ -20,7 +20,7 @@ export default function Login() {
   const styles = {
     backgroundColor: isDark ? '#333' : '#fff',
     textColor: isDark ? '#fff' : '#333',
-    buttonColor: isDark ? '#5865F2' : '#773765', 
+    buttonColor: isDark ? '#773765' : '#773765', 
     borderColor: isDark ? '#5865F2' : '#773765',
     errorTextColor: '#ff4757',
     iconColor: '#000000'
@@ -96,7 +96,7 @@ export default function Login() {
           resizeMode="stretch"
           className="w-[410] h-[12%] mt-[220]"
         />
-        <SignUpButton borderColor={styles.borderColor} textColor={styles.textColor} />
+        <SignUpButton textColor={styles.textColor} />
       </SafeAreaView>
     </ScrollView>
   );
@@ -147,7 +147,7 @@ function LoginButton({
   );
 }
 
-function SignUpButton({ borderColor, textColor } : {borderColor: string; textColor: string;}){
+function SignUpButton({ textColor } : { textColor: string;}){
   const context = useContext(LocalizationContext);
 
   // Handle potential undefined context
