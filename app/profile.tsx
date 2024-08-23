@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { SafeAreaView, StyleSheet, Text, View, Image, TouchableOpacity, Switch, Modal, ScrollView, ImageSourcePropType, FlatList } from 'react-native';
+import { SafeAreaView, StyleSheet, Text, View, Image, TouchableOpacity, Switch, Modal, ScrollView, ImageSourcePropType, FlatList, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { clearCredentials } from '../util/logincache';
 import { useUserName } from '../util/fetchusernameglobal';
@@ -8,6 +8,7 @@ import * as Location from 'expo-location';
 import * as SecureStore from "expo-secure-store";
 import axiosInstance from '../api/axios-instance';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { InventoryItem } from '../types/types';
 
 interface ItemImages {
@@ -32,6 +33,8 @@ export const itemimages: ItemImages = {
   // Add other missile images here
 };
 
+const resizedplayerimage = require("../assets/mapassets/Female_Avatar_PNG.png");
+
 const ProfilePage: React.FC = () => {
 
   const userNAME = useUserName(); //logged in user
@@ -44,7 +47,7 @@ const ProfilePage: React.FC = () => {
   const [useBackgroundLocation, setUseBackgroundLocation] = useState(false);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+  const [userImage, setUserImage] = useState<string | null>(null);
 
   useEffect(() => {
     fetchInventory().then(setInventory).catch(console.error);
@@ -89,6 +92,92 @@ const ProfilePage: React.FC = () => {
     router.push("/settings");
   };
 
+  useEffect(() => {
+    (async () => {
+      // Request media library permissions
+      const mediaLibraryStatus = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (mediaLibraryStatus.status !== 'granted') {
+        alert('Sorry, we need camera roll permissions to make this work!');
+      }
+
+      // Request camera permissions
+      const cameraStatus = await ImagePicker.requestCameraPermissionsAsync();
+      if (cameraStatus.status !== 'granted') {
+        alert('Sorry, we need camera permissions to make this work!');
+      }
+      const savedImageUri = await AsyncStorage.getItem('profileImageUri');
+      if (savedImageUri) {
+        setUserImage(savedImageUri);
+      }
+    })();
+  }, []);
+
+  const saveImageUri = async (uri: string) => {
+    await AsyncStorage.setItem('profileImageUri', uri);
+    setUserImage(uri);
+  };
+
+  const pickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const firstAsset = result.assets[0];
+      if (firstAsset && firstAsset.uri) {
+        setUserImage(firstAsset.uri); 
+        saveImageUri(firstAsset.uri)
+      }
+    }
+  };
+
+  const takePhoto = async () => {
+    let result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const firstAsset = result.assets[0];
+      if (firstAsset && firstAsset.uri) {
+        setUserImage(firstAsset.uri); 
+        saveImageUri(firstAsset.uri)
+      }
+    }
+  };
+  const setdefaultasimage = async (image: any) => {
+    setUserImage(null)
+    await AsyncStorage.removeItem('profileImageUri');
+  }
+
+  const removePhoto = () => {
+    Alert.alert(
+      "Remove Profile Photo",
+      "Are you sure you want to remove your profile photo?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Remove", onPress: () => setdefaultasimage(resizedplayerimage) },
+      ]
+    );
+  };
+
+  const openImagePicker = () => {
+    Alert.alert(
+      "Change Profile Photo",
+      "Choose an option",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Remove Photo", onPress: removePhoto },
+        { text: "Take Photo", onPress: takePhoto },
+        { text: "Choose from Library", onPress: pickImage },
+      ]
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -98,7 +187,13 @@ const ProfilePage: React.FC = () => {
         </TouchableOpacity>
       </View>
       <View style={styles.profileContainer}>
-        <Image style={styles.profileImage} source={{ uri: 'https://via.placeholder.com/150' }} />
+        <TouchableOpacity onPress={openImagePicker}>
+          <Image
+            source={userImage ? { uri: userImage } : resizedplayerimage}
+            style={styles.profileImage}
+            onError={(e) => console.log('Failed to load image:', e.nativeEvent.error)}
+          />
+        </TouchableOpacity>
         <Text style={styles.profileName}>{userNAME}</Text>
         <Text style={styles.profileDetails}>Email: example@example.com</Text>
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
