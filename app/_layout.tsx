@@ -15,9 +15,31 @@ import { Platform } from 'react-native';
 import Purchases from 'react-native-purchases';
 import { LocalizationProvider } from "../util/Context/localisation";
 
+const queryClient = new QueryClient();
+
+const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }) => {
+  const websocketData = useWebSocket();
+  return (
+    <WebSocketContext.Provider value={websocketData}>
+      {children}
+    </WebSocketContext.Provider>
+  );
+};
+
+const CountdownProvider: React.FC<CountdownProviderProps> = ({ children }) => {
+  const [countdownIsActive, setCountdownIsActive] = useState(false);
+  const startCountdown = () => setCountdownIsActive(true);
+  const stopCountdown = () => setCountdownIsActive(false);
+
+  return (
+    <CountdownContext.Provider value={{ countdownIsActive, startCountdown, stopCountdown }}>
+      {children}
+    </CountdownContext.Provider>
+  );
+};
+
 // RootLayout component
 export default function RootLayout() {
-  const queryClient = new QueryClient();
   const [isSplashVisible, setIsSplashVisible] = useState(true);
 
   useEffect(() => {
@@ -37,30 +59,6 @@ export default function RootLayout() {
   if (isSplashVisible) {
     return <SplashScreen onFinish={handleSplashFinish} />;
   }
-
-  const WebSocketProvider = ({ children }: WebSocketProviderProps) => {
-    const { data, missiledata, landminedata, lootdata, healthdata, friendsdata, inventorydata, playerlocations, sendWebsocket } = useWebSocket();
-
-    return (
-      <WebSocketContext.Provider value={{ data, missiledata, landminedata, lootdata, healthdata, friendsdata, inventorydata, playerlocations, sendWebsocket }}>
-        {children}
-      </WebSocketContext.Provider>
-    );
-  };
-
-  const CountdownProvider: React.FC<CountdownProviderProps> = ({ children }) => {
-    const [countdownIsActive, setCountdownIsActive] = useState(false);
-
-    const startCountdown = () => setCountdownIsActive(true);
-    const stopCountdown = () => setCountdownIsActive(false);
-
-    return (
-      <CountdownContext.Provider value={{ countdownIsActive, startCountdown, stopCountdown }}>
-        {children}
-      </CountdownContext.Provider>
-    );
-  };
-
 
   return (
     <QueryClientProvider client={queryClient}>

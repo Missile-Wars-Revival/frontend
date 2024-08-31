@@ -3,9 +3,11 @@ import { Missilelib } from "../../types/types";
 import { Text, View, TouchableOpacity, Image, Button, Modal, ScrollView } from "react-native";
 import React from "react";
 import { MissilePlacementPopup } from './missileplacement';
-import * as SecureStore from "expo-secure-store";
-import axiosInstance from "../../api/axios-instance";
 import { firemissileplayer } from "../../api/fireentities";
+import useFetchInventory from "../../hooks/websockets/inventoryhook";
+
+//ws fetch inventory
+const inventoryItems = useFetchInventory();
 
 //Missile types
 //   Amplifier:
@@ -20,37 +22,6 @@ import { firemissileplayer } from "../../api/fireentities";
 //   TheNuke: 
 //   Yokozuna: 
 //   Zippy: 
-
-//Missile Library needs to be fetched by backend:
-
-
-const fetchMissileLib = async (): Promise<Missilelib[]> => {
-  try {
-    const token = await SecureStore.getItemAsync("token");
-    if (!token) {
-      throw new Error("No authentication token found.");
-    }
-
-    const response = await axiosInstance.get('/api/getInventory', {
-      params: { token }
-    });
-
-    const inventory = response.data;
-
-    // Filter the inventory to include only items with the category "Missiles"
-    const missileLibraryData = inventory
-      .filter((item: { category: string; quantity: number;}) => item.category === "Missiles" && item.quantity > 0)
-      .map((item: { name: any; quantity: any; }) => ({
-        type: item.name,
-        quantity: item.quantity
-      }));
-
-    return missileLibraryData;
-  } catch (error) {
-    console.error('Failed to fetch missile library', error);
-    throw error;
-  }
-};
 
 interface MissileImages {
   [key: string]: any;
@@ -81,20 +52,18 @@ export const MissileLibrary = ({ playerName }: { playerName: string }) => {
   const [noItems, setNoItems] = useState<boolean>(false);
 
   useEffect(() => {
-    const fetchMissileLibrary = async () => {
-      try {
-        const missileLibraryData = await fetchMissileLib();
-        setMissileLibrary(missileLibraryData);
-        setNoItems(missileLibraryData.length === 0);
-      } catch (error) {
-        console.error('Error fetching missile library:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    // Filter inventory items to get missiles
+    const missileLibraryData = inventoryItems
+      .filter(item => item.category === "Missiles" && item.quantity > 0)
+      .map(item => ({
+        type: item.name,
+        quantity: item.quantity
+      }));
 
-    fetchMissileLibrary();
-  }, []);
+    setMissileLibrary(missileLibraryData);
+    setNoItems(missileLibraryData.length === 0);
+    setLoading(false);
+  }, [inventoryItems]);
 
   const handleMissileClick = (missileType: string) => {
     setSelectedMissile(missileType);
@@ -125,9 +94,12 @@ export const MissileLibrary = ({ playerName }: { playerName: string }) => {
   return (
     <ScrollView contentContainerStyle={{ padding: 20 }}>
       <Text>Select your Missile:</Text>
-      {noItems ? ( // Conditionally render based on no items state
-              <Text>No items in inventory</Text>
-            ) : (
+      {noItems ? (
+        <View style={{ alignItems: 'center', marginVertical: 20 }}>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>No Missiles Available</Text>
+          <Text style={{ textAlign: 'center' }}>You don't have any missiles in your inventory. Visit the store to purchase some!</Text>
+        </View>
+      ) : (
       missileLibrary.map((missile, index) => (
         <TouchableOpacity key={index} onPress={() => handleMissileClick(missile.type)} style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 10 }}>
           <Image source={missileImages[missile.type]} style={{ width: 50, height: 50, marginRight: 10 }} />
@@ -155,21 +127,21 @@ export const MissilefireposLibrary = () => {
   const [loading, setLoading] = useState(true);
   const [showplacmentPopup, setShowplacementPopup] = useState(false);
   const [selectedMissile, setSelectedMissile] = useState<string | null>(null);
+  const [noItems, setNoItems] = useState<boolean>(false);
 
   useEffect(() => {
-    const fetchMissileLibrary = async () => {
-      try {
-        const missileLibraryData = await fetchMissileLib();
-        setMissileLibrary(missileLibraryData);
-      } catch (error) {
-        console.error('Error fetching missile library:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    // Filter inventory items to get missiles
+    const missileLibraryData = inventoryItems
+      .filter(item => item.category === "Missiles" && item.quantity > 0)
+      .map(item => ({
+        type: item.name,
+        quantity: item.quantity
+      }));
 
-    fetchMissileLibrary();
-  }, []);
+    setMissileLibrary(missileLibraryData);
+    setNoItems(missileLibraryData.length === 0);
+    setLoading(false);
+  }, [inventoryItems]);
 
   const handleMissileClick = (selectedMissile: string) => {
     setSelectedMissile(selectedMissile);
@@ -192,20 +164,28 @@ export const MissilefireposLibrary = () => {
 
   return (
     <ScrollView contentContainerStyle={{ padding: 20 }}>
-      <Text>Select your Missile:</Text>
-      {missileLibrary.map((missile, index) => (
-        <TouchableOpacity key={index} onPress={() => handleMissileClick(missile.type)} style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 10 }}>
-          <Image source={missileImages[missile.type]} style={{ width: 50, height: 50, marginRight: 10 }} />
-          <Text>{missile.type} - Quantity: {missile.quantity}</Text>
-        </TouchableOpacity>
-      ))}
+      {noItems ? (
+        <View style={{ alignItems: 'center', marginVertical: 20 }}>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>No Missiles Available</Text>
+          <Text style={{ textAlign: 'center' }}>You don't have any missiles in your inventory. Visit the store to purchase some!</Text>
+        </View>
+      ) : (
+        <>
+          <Text>Select your Missile:</Text>
+          {missileLibrary.map((missile, index) => (
+            <TouchableOpacity key={index} onPress={() => handleMissileClick(missile.type)} style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 10 }}>
+              <Image source={missileImages[missile.type]} style={{ width: 50, height: 50, marginRight: 10 }} />
+              <Text>{missile.type} - Quantity: {missile.quantity}</Text>
+            </TouchableOpacity>
+          ))}
+        </>
+      )}
       <Modal
         animationType="slide"
         transparent={true}
         visible={showplacmentPopup}>
         {showplacmentPopup && <MissilePlacementPopup visible={showplacmentPopup} onClose={handleCancel} selectedMissile={selectedMissile} />}
       </Modal>
-
     </ScrollView>
   );
 };
