@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { SafeAreaView, StyleSheet, Text, View, Image, TouchableOpacity, Switch, Modal, ScrollView, ImageSourcePropType, FlatList } from 'react-native';
+import React, { useEffect, useState, useMemo } from 'react';
+import { SafeAreaView, StyleSheet, Text, View, Image, TouchableOpacity, Switch, Modal, ScrollView, ImageSourcePropType, FlatList, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { clearCredentials } from '../util/logincache';
 import { useUserName } from '../util/fetchusernameglobal';
@@ -8,7 +8,10 @@ import * as Location from 'expo-location';
 import * as SecureStore from "expo-secure-store";
 import axiosInstance from '../api/axios-instance';
 import { Ionicons } from '@expo/vector-icons';
-import { InventoryItem } from '../types/types';
+import * as ImagePicker from 'expo-image-picker';
+import useFetchInventory from '../hooks/websockets/inventoryhook';
+import { getselfprofile } from '../api/getprofile';
+import { Statistics } from './user-profile';
 
 interface ItemImages {
   [key: string]: any;
@@ -32,51 +35,43 @@ export const itemimages: ItemImages = {
   // Add other missile images here
 };
 
-const ProfilePage: React.FC = () => {
+const resizedplayerimage = require('../assets/mapassets/Female_Avatar_PNG.png');
 
-  const userNAME = useUserName(); //logged in user
+interface SelfProfile {
+  username: string;
+  email: string;
+  mutualFriends: string[];
+  statistics: Statistics;
+}
+
+interface ApiResponse {
+  success: boolean;
+  userProfile: SelfProfile;
+}
+
+const ProfilePage: React.FC = () => {
+  const userNAME = useUserName();
+  const [useBackgroundLocation, setUseBackgroundLocation] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [userImage, setUserImage] = useState<string | null>(null);
+  const [friends, setFriends] = useState<{ username: string }[]>([]);
+  const inventory = useFetchInventory();
+  const [statistics, setStatistics] = useState<Statistics | null>(null);
+  const [email, setEmail] = useState<string | null>(null);
+
+  const filteredInventory = useMemo(() => {
+    return inventory.filter(item => item.quantity > 0);
+  }, [inventory]);
 
   const handleLogout = async () => {
     await clearCredentials();
     router.push("/login");
   };
 
-  const [useBackgroundLocation, setUseBackgroundLocation] = useState(false);
-  const [inventory, setInventory] = useState<InventoryItem[]>([]);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
-
-  useEffect(() => {
-    fetchInventory().then(setInventory).catch(console.error);
-    loadPreference();
-  }, []);
-
-
   const loadPreference = async () => {
     const preference = await AsyncStorage.getItem('useBackgroundLocation');
     setUseBackgroundLocation(preference === 'true');
   };
-
-  const fetchInventory = async () => {
-    try {
-      const token = await SecureStore.getItemAsync("token");
-      if (!token) {
-        throw new Error("No authentication token found.");
-      }
-      const response = await axiosInstance.get('/api/getInventory', {
-        params: { token }
-      });
-      return response.data.map((item: { category: any; name: string | number; }, index: any) => ({
-        ...item,
-        id: `${item.category}-${item.name}-${index}`, // Unique ID
-        image: itemimages[item.name] as ImageSourcePropType
-      }));
-    } catch (error) {
-      console.error('Failed to fetch inventory', error);
-      throw error;
-    }
-  };
-
 
   const toggleSwitch = async () => {
     const newValue = !useBackgroundLocation;
@@ -89,65 +84,272 @@ const ProfilePage: React.FC = () => {
     router.push("/settings");
   };
 
+  const saveImageUri = async (uri: string) => {
+    await AsyncStorage.setItem('profileImageUri', uri);
+    setUserImage(uri);
+  };
+
+  const pickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const firstAsset = result.assets[0];
+      if (firstAsset && firstAsset.uri) {
+        setUserImage(firstAsset.uri); 
+        saveImageUri(firstAsset.uri)
+      }
+    }
+  };
+
+  const takePhoto = async () => {
+    let result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const firstAsset = result.assets[0];
+      if (firstAsset && firstAsset.uri) {
+        setUserImage(firstAsset.uri); 
+        saveImageUri(firstAsset.uri)
+      }
+    }
+  };
+
+  const setdefaultasimage = async (image: any) => {
+    setUserImage(null)
+    await AsyncStorage.removeItem('profileImageUri');
+  }
+
+  const removePhoto = () => {
+    Alert.alert(
+      "Remove Profile Photo",
+      "Are you sure you want to remove your profile photo?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Remove", onPress: () => setdefaultasimage(resizedplayerimage) },
+      ]
+    );
+  };
+
+  const openImagePicker = () => {
+    Alert.alert(
+      "Change Profile Photo",
+      "Choose an option",
+      [
+        { text: "Take Photo", onPress: takePhoto },
+        { text: "Choose from Library", onPress: pickImage },
+        { text: "Remove Photo", onPress: removePhoto },
+        { text: "Cancel", style: "cancel" },
+      ]
+    );
+  };
+
+  const fetchFriends = async () => {
+    try {
+      const token = await SecureStore.getItemAsync("token");
+      if (!token) throw new Error("No authentication token found.");
+      const response = await axiosInstance.get('/api/friends', { params: { token } });
+      setFriends(response.data.friends || []);
+    } catch (error) {
+      console.error('Failed to fetch friends', error);
+    }
+  };
+
+  const navigateToUserProfile = (username: string) => {
+    router.push({
+      pathname: "/user-profile",
+      params: { username }
+    });
+  };
+
+  useEffect(() => {
+    fetchFriends();
+  }, []);
+
+  useEffect(() => {
+    loadPreference();
+    (async () => {
+      // Request media library permissions
+      const mediaLibraryStatus = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (mediaLibraryStatus.status !== 'granted') {
+        alert('Sorry, we need camera roll permissions to make this work!');
+      }
+
+      // Request camera permissions
+      const cameraStatus = await ImagePicker.requestCameraPermissionsAsync();
+      if (cameraStatus.status !== 'granted') {
+        alert('Sorry, we need camera permissions to make this work!');
+      }
+      const savedImageUri = await AsyncStorage.getItem('profileImageUri');
+      if (savedImageUri) {
+        setUserImage(savedImageUri);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    fetchUserStatistics();
+  }, []);
+
+  const fetchUserStatistics = async () => {
+    try {
+      const response = await getselfprofile() as ApiResponse;
+      if (response.success && response.userProfile) {
+        setStatistics(response.userProfile.statistics);
+        setEmail(response.userProfile.email);
+      } else {
+        console.error('Failed to fetch user statistics: Invalid response structure');
+      }
+    } catch (error) {
+      console.error('Failed to fetch user statistics', error);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerText}>Profile Page</Text>
+        <Text style={styles.headerText}>Profile</Text>
         <TouchableOpacity style={styles.settingsButton} onPress={openSettings}>
           <Ionicons name="settings" size={24} color="white" />
         </TouchableOpacity>
       </View>
-      <View style={styles.profileContainer}>
-        <Image style={styles.profileImage} source={{ uri: 'https://via.placeholder.com/150' }} />
-        <Text style={styles.profileName}>{userNAME}</Text>
-        <Text style={styles.profileDetails}>Email: example@example.com</Text>
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutButtonText}>Sign Out</Text>
-        </TouchableOpacity>
-        <Text></Text>
-        <Text>{useBackgroundLocation ? 'Background Location Access is enabled.' : 'Foreground Location Access'}</Text>
-        <Switch onValueChange={toggleSwitch} value={useBackgroundLocation} />
-        <Text></Text>
-        <Text>Inventory</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.previewBar}>
-          {inventory.map(item => (
-            <TouchableOpacity key={item.id} onPress={() => setModalVisible(true)}>
-              <Image style={styles.itemPreview} source={item.image} />
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-        <Modal visible={modalVisible} animationType="slide" onRequestClose={() => setModalVisible(false)}>
-          <View style={styles.fullModalView}>
-            <FlatList
-              data={inventory}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <View style={styles.gridItem}>
-                  <Image style={styles.gridItemImage} source={item.image} />
-                  <Text style={styles.gridItemText}>{item.name} - Quantity: {item.quantity}</Text>
-                </View>
-              )}
-              numColumns={4}
-              columnWrapperStyle={styles.columnWrapper}
-              contentContainerStyle={styles.contentContainer}
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.profileContainer}>
+          <TouchableOpacity onPress={openImagePicker}>
+            <Image
+              source={userImage ? { uri: userImage } : resizedplayerimage}
+              style={styles.profileImage}
             />
+          </TouchableOpacity>
+          <Text style={styles.profileName}>{userNAME}</Text>
+          <Text style={styles.profileDetails}>Email: {email}</Text>
+          
+          <View style={styles.badgesContainer}>
+            <Text style={styles.sectionTitle}>Badges</Text>
+            <View style={styles.badgesList}>
+              {statistics && statistics.badges && statistics.badges.length > 0 ? (
+                statistics.badges.map((badge, index) => (
+                  <View key={index} style={styles.badge}><Text>{badge}</Text></View>
+                ))
+              ) : (
+                <Text>No badges yet</Text>
+              )}
+            </View>
+          </View>
+
+          <View style={styles.settingContainer}>
+            <Text style={styles.settingText}>
+              {useBackgroundLocation ? 'Background Location Access is enabled.' : 'Foreground Location Access'}
+            </Text>
+            <Switch onValueChange={toggleSwitch} value={useBackgroundLocation} />
+          </View>
+
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Text style={styles.logoutButtonText}>Sign Out</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>Statistics</Text>
+          {statistics ? (
+            <View style={styles.statisticsContainer}>
+              <Text style={styles.statItem}>Deaths: {statistics.numDeaths}</Text>
+              <Text style={styles.statItem}>Loot Placed: {statistics.numLootPlaced}</Text>
+              <Text style={styles.statItem}>Landmines Placed: {statistics.numLandminesPlaced}</Text>
+              <Text style={styles.statItem}>Missiles Placed: {statistics.numMissilesPlaced}</Text>
+              <Text style={styles.statItem}>Loot Pickups: {statistics.numLootPickups}</Text>
+            </View>
+          ) : (
+            <Text>Loading statistics...</Text>
+          )}
+        </View>
+
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>Inventory</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.slider}>
+            {filteredInventory.map(item => (
+              <TouchableOpacity key={item.id} onPress={() => setModalVisible(true)} style={styles.sliderItem}>
+                <Image style={styles.itemImage} source={itemimages[item.name]} />
+                <Text style={styles.itemName}>{item.name}</Text>
+                <Text style={styles.itemQuantity}>x{item.quantity}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>Friends</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.slider}>
+            {friends.map((friend, index) => (
+              <TouchableOpacity 
+                key={index} 
+                style={styles.sliderItem}
+                onPress={() => navigateToUserProfile(friend.username)}
+              >
+                <Image source={resizedplayerimage} style={styles.friendImage} />
+                <Text style={styles.friendName}>{friend.username}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      </ScrollView>
+
+      <Modal visible={modalVisible} animationType="slide" onRequestClose={() => setModalVisible(false)}>
+        <SafeAreaView style={styles.modalSafeArea}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Your Inventory</Text>
             <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
               <Text style={styles.closeButtonText}>Close</Text>
             </TouchableOpacity>
           </View>
-        </Modal>
-      </View>
+          <View style={styles.fullModalView}>
+            {filteredInventory.length > 0 ? (
+              <FlatList
+                data={filteredInventory}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <View style={styles.inventoryItem}>
+                    <Image 
+                      style={styles.inventoryItemImage} 
+                      source={itemimages[item.name]}
+                    />
+                    <View style={styles.inventoryItemDetails}>
+                      <Text style={styles.inventoryItemName}>{item.name}</Text>
+                      <Text style={styles.inventoryItemQuantity}>Quantity: {item.quantity}</Text>
+                    </View>
+                  </View>
+                )}
+                numColumns={2}
+                columnWrapperStyle={styles.inventoryColumnWrapper}
+                contentContainerStyle={styles.inventoryContentContainer}
+              />
+            ) : (
+              <Text style={styles.emptyInventoryText}>Your inventory is empty.</Text>
+            )}
+          </View>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 };
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#f0f2f5',
   },
   header: {
     padding: 20,
-    backgroundColor: '#6200ea',
+    backgroundColor: '#4a5568',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
   headerText: {
@@ -156,99 +358,210 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   settingsButton: {
-    position: 'absolute',
-    top: 25,
-    left: 330,
-    flexDirection: 'row',
-    alignItems: 'center',
+    padding: 10,
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
   profileContainer: {
-    flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
     padding: 20,
+    backgroundColor: '#ffffff',
+    borderRadius: 10,
+    margin: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   profileImage: {
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    marginBottom: 20,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    marginBottom: 15,
+  },
+  emptyInventoryText: {
+    fontSize: 18,
+    textAlign: 'center',
+    color: '#666',
+    marginTop: 20,
   },
   profileName: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 5,
   },
   profileDetails: {
     fontSize: 16,
-    color: '#606060',
-    marginBottom: 5,
+    color: '#718096',
+    marginBottom: 15,
+  },
+  badgesContainer: {
+    width: '100%',
+    marginBottom: 20,
+  },
+  badgesList: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  badge: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#edf2f7',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 5,
+  },
+  settingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 20,
+  },
+  settingText: {
+    fontSize: 16,
+    color: '#4a5568',
   },
   logoutButton: {
-    marginTop: 20,
-    padding: 10,
-    backgroundColor: '#d9534f',
+    backgroundColor: '#e53e3e',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
     borderRadius: 5,
   },
   logoutButtonText: {
     color: '#ffffff',
-    fontSize: 18,
+    fontSize: 16,
+    fontWeight: 'bold',
   },
-  previewBar: {
-    marginTop: 20,
+  sectionContainer: {
+    marginBottom: 20,
+    padding: 10,
+    backgroundColor: '#ffffff',
+    borderRadius: 10,
+    margin: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#2d3748',
+  },
+  slider: {
     flexDirection: 'row',
   },
-  itemPreview: {
-    width: 80,
-    height: 80,
-    marginRight: 10,
-  },
-  modalView: {
-    flex: 1,
-    padding: 20,
+  sliderItem: {
+    marginRight: 15,
     alignItems: 'center',
-    justifyContent: 'center',
+  },
+  itemImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+  },
+  itemName: {
+    marginTop: 5,
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  itemQuantity: {
+    fontSize: 12,
+    color: '#718096',
+  },
+  friendImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+  },
+  friendName: {
+    marginTop: 5,
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  modalSafeArea: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+    backgroundColor: '#ffffff',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
   },
   fullModalView: {
     flex: 1,
-    padding: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: '100%', // Adjust to full width
-    height: '100%', // Adjust to full height
-  },
-  gridItem: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 100, // Increased width for better visibility
-    height: 150, // Height adjusted for better layout
-    margin: 5,
-  },
-  gridItemImage: {
-    width: '100%', // Use full width of the grid item
-    height: 100, // Height reduced for better proportionality
-    resizeMode: 'contain', // Ensure the image fits well
-  },
-  gridItemText: {
-    fontSize: 12,
-    textAlign: 'center',
-  },
-  columnWrapper: {
-    justifyContent: 'space-between',
-  },
-  contentContainer: {
-    paddingVertical: 20,
+    padding: 15,
   },
   closeButton: {
     padding: 10,
-    backgroundColor: 'grey',
-    borderRadius: 5,
-    alignSelf: 'center', // Ensure the button is centered
-    marginTop: 20,
   },
   closeButtonText: {
-    color: 'white',
+    color: '#007AFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  inventoryItem: {
+    flex: 1,
+    margin: 8,
+    padding: 16,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.23,
+    shadowRadius: 2.62,
+    elevation: 4,
+  },
+  inventoryItemImage: {
+    width: 80,
+    height: 80,
+    resizeMode: 'contain',
+    marginBottom: 10,
+  },
+  inventoryItemDetails: {
+    alignItems: 'center',
+  },
+  inventoryItemName: {
+    fontSize: 16,
+    fontWeight: 'bold',
     textAlign: 'center',
+    marginBottom: 5,
+  },
+  inventoryItemQuantity: {
+    fontSize: 14,
+    color: '#666',
+  },
+  inventoryColumnWrapper: {
+    justifyContent: 'space-between',
+  },
+  inventoryContentContainer: {
+    paddingBottom: 20,
+  },
+  statisticsContainer: {
+    padding: 10,
+  },
+  statItem: {
+    fontSize: 16,
+    marginBottom: 5,
   },
 });
 

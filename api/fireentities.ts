@@ -69,7 +69,7 @@ export const placelandmine = async (loclat: string, loclong: string, landminetyp
   }
 };
 
-export const steppedonlandmine = async (landmineid: number) => {
+export const steppedonlandmine = async (landmineid: number, landminedamage: number) => {
   const token = await SecureStore.getItemAsync("token");
   try {
     if (!token) {
@@ -80,6 +80,7 @@ export const steppedonlandmine = async (landmineid: number) => {
     const response = await axiosInstance.post("/api/steppedonlandmine", {
       token,
       landmineid,
+      landminedamage,
     });
     return response.data
   } catch (error) {

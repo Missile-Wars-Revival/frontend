@@ -11,11 +11,11 @@ const useFetchInventory = (): InventoryItem[] => {
         // First check if data is indeed an array
         if (Array.isArray(inventorydata)) {
             // Process the array data
-            setInventoryItems(inventorydata.map(item => ({
+            setInventoryItems(inventorydata.map((item, index) => ({
                 category: item.category,
                 name: item.name,
                 quantity: item.quantity,
-                id: item.id || `id-${item.name}`,
+                id: item.id || `id-${item.name}-${index}`,
             })));
         } else {
             // Log a warning and handle non-array data appropriately

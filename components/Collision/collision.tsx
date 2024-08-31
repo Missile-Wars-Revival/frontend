@@ -303,7 +303,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                         setLastNotified(prev => ({ ...prev, landmine: today }));
 
                         Alert.alert("Danger!", "You have stepped on a Landmine!!");
-                        applyLandmineDamage(landmine.id ,landmine.placedby)
+                        applyLandmineDamage(landmine.id ,landmine.placedby, landmine.damage)
                         break;
                     case 'near-landmine':
                         // Send warning if near but not within the landmine radius
@@ -315,8 +315,8 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
         });
 
         //apply Landmine damage
-        async function applyLandmineDamage(landmineid: number, sentBy: string) {
-            steppedonlandmine(landmineid)
+        async function applyLandmineDamage(landmineid: number, sentBy: string, damage: number) {
+            steppedonlandmine(landmineid, damage)
             
             const token = SecureStore.getItem("token");
             if (token) {
@@ -356,7 +356,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
 
         }
 
-    }, [userLocation, lootLocations, missileData, landmineData, lastNotified]);
+    }, [userLocation, lootLocations, missileData, landmineData, lastNotified])
 
     useEffect(() => {
         checkAndNotify();

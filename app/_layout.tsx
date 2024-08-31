@@ -151,7 +151,7 @@ function RootLayoutNav() {
     <SafeAreaProvider>
       <View style={{ flex: 1 }}>
         <Stack>
-          <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="login" options={{ headerShown: false, gestureEnabled: false, animation: 'slide_from_bottom' }} />
           <Stack.Screen name="register" options={{ headerShown: false, gestureEnabled: true }} />
           <Stack.Screen name="league" options={{ headerShown: false, gestureEnabled: false }} />
@@ -159,6 +159,7 @@ function RootLayoutNav() {
           <Stack.Screen name="friends" options={{ headerShown: false }} />
           <Stack.Screen name="add-friends" options={{ headerShown: false }} />
           <Stack.Screen name="profile" options={{ headerShown: false }} />
+          <Stack.Screen name="user-profile" options={{ headerShown: false }} />
           <Stack.Screen name="settings" options={{ headerShown: false }} />
         </Stack>
         {!hideNavBarRoutes.includes(pathname) && <NavBar />}

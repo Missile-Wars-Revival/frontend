@@ -3,7 +3,7 @@ import { isAxiosError } from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { removemoney } from "./money";
 import { Alert } from "react-native";
-import { playDeathSound } from "../util/sounds/deathsound";
+//import { playDeathSound } from "../util/sounds/deathsound";
 
 export async function getHealth(
   token: string,
@@ -113,7 +113,7 @@ export const updateisAlive = async (token: string, isAlive: boolean) => {
     });
     console.log("isAlive status updated successfully to:", isAlive);
     if (isAlive === false) {
-      playDeathSound();
+      //playDeathSound();
       const response = await axiosInstance.get('/api/getMoney', {
         params: { token }
       });

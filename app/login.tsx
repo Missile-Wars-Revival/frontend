@@ -7,6 +7,7 @@ import { User, LockKeyhole } from "lucide-react-native";
 import React from "react";
 import { saveCredentials } from "../util/logincache";
 import { usePushNotifications } from "../components/Notifications/usePushNotifications";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Login() {
   const { expoPushToken, notification } = usePushNotifications();
@@ -91,6 +92,7 @@ function LoginButton({
     async (token) => {
       await saveCredentials(username, token);
       console.log("Logged in with token", token);
+      await AsyncStorage.setItem('signedIn', 'true');
       router.push('/');
     },
     () => {
