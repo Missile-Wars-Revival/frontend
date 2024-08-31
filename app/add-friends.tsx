@@ -154,7 +154,7 @@ const QuickAddPage: React.FC = () => {
         return;
       }
 
-      const result = await searchOtherPlayersData(text, currentUserUsername);
+      const result = await searchOtherPlayersData(text);
       
       const filteredResult = result.filter(player => player.username !== currentUserUsername);
       

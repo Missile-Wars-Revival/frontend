@@ -32,25 +32,53 @@ export async function fetchOtherPlayersData(): Promise<any[]> {
     }
 }
 
-export async function searchOtherPlayersData(searchTerm: string, username: string): Promise<any[]> {
+export async function searchOtherPlayersData(searchTerm: string): Promise<any[]> {
     try {
+        const token = await SecureStore.getItemAsync("token");
+        if (!token) {
+            throw new Error("No authentication token found.");
+        }
         const response = await axiosInstance.get('/api/searchplayers', {
             params: {
-                searchTerm: searchTerm,
-                username: username
+                token,
+                searchTerm,
             }
         });
-
-        if (response.status !== 200) {
-            throw new Error('Failed to fetch player locations');
-        }
-
-        return response.data.map((player: any) => ({
-            username: player.username,
-            updatedAt: player.updatedAt
-        }));
+       // console.log(response.data);
+        // The backend already returns the data in the correct format, so we don't need to map it again
+        return response.data;
     } catch (error) {
-        console.error("Error fetching other players data:", error);
+        if (axios.isAxiosError(error)) {
+            console.error("Error fetching other players data:", error.response?.data || error.message);
+        } else {
+            console.error("Error fetching other players data:", error);
+        }
+        // Return an empty array if an error occurs
+        return [];
+    }
+}
+
+export async function searchFriendsAdded(searchTerm: string): Promise<any[]> {
+    try {
+        const token = await SecureStore.getItemAsync("token");
+        if (!token) {
+            throw new Error("No authentication token found.");
+        }
+        const response = await axiosInstance.get('/api/searchfriendsadded', {
+            params: {
+                token,
+                searchTerm,
+            }
+        });
+        //console.log(response.data);
+        // The backend already returns the data in the correct format, so we don't need to map it again
+        return response.data;
+    } catch (error) {
+        if (axios.isAxiosError(error)) {
+            console.error("Error fetching other players data:", error.response?.data || error.message);
+        } else {
+            console.error("Error fetching other players data:", error);
+        }
         // Return an empty array if an error occurs
         return [];
     }

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, FlatList, Modal, Alert, RefreshControl, Dimensions, Button, Image } from "react-native";
+import { View, Text, TouchableOpacity, FlatList, Modal, Alert, RefreshControl, Dimensions, Button, Image, TextInput } from "react-native";
 import { useRouter } from "expo-router";
 import { useUserName } from "../util/fetchusernameglobal";
 import * as SecureStore from 'expo-secure-store';
@@ -7,6 +7,7 @@ import axios from "axios";
 import axiosInstance from "../api/axios-instance";
 import { removeFriend } from "../api/friends";
 import { MissileLibrary } from "../components/Missile/missile";
+import { searchFriendsAdded } from "../api/getplayerlocations";
 
 interface Friend {
   username: string;
@@ -25,6 +26,9 @@ const FriendsPage: React.FC = () => {
   const [showMissileLibrary, setShowMissileLibrary] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState("");
   const userNAME = useUserName();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filteredFriends, setFilteredFriends] = useState<Friend[]>([]);
+  const [isSearchActive, setIsSearchActive] = useState(false);
 
   const handleRemPress = (friendUsername: string) => {
     setSelectedFriend(friendUsername);
@@ -107,6 +111,87 @@ const FriendsPage: React.FC = () => {
     });
   };
 
+  const handleSearch = async (text: string) => {
+    setSearchTerm(text);
+    if (!text.trim()) {
+      setFilteredFriends([]);
+      setIsSearchActive(false);
+      return;
+    }
+    
+    setIsSearchActive(true);
+    try {
+      const currentUserUsername = await SecureStore.getItemAsync("username");
+      
+      if (currentUserUsername === null) {
+        console.error("No username found in secure storage.");
+        setFilteredFriends([]);
+        return;
+      }
+
+      const result = await searchFriendsAdded(text);
+      
+      const filteredResult = result.filter(friend => friend.username !== currentUserUsername);
+      
+      setFilteredFriends(filteredResult);
+    } catch (error) {
+      console.error("Failed to search for friends:", error);
+      setFilteredFriends([]);
+    }
+  };
+
+  const renderFriendItem = ({ item }: { item: Friend }) => (
+    <View className="flex-row justify-between items-center bg-white p-4 mb-2 rounded-lg shadow">
+      <TouchableOpacity 
+        className="flex-row flex-1 items-center"
+        onPress={() => navigateToUserProfile(item.username)}
+      >
+        <Image
+          source={resizedplayerimage}
+          className="w-12 h-12 rounded-full"
+        />
+        <Text className="flex-1 text-lg font-semibold ml-4">{item.username}</Text>
+      </TouchableOpacity>
+      <View className="flex-row">
+        <TouchableOpacity
+          className="bg-red-500 w-10 h-10 rounded-full justify-center items-center mr-2"
+          onPress={() => fireMissile(item.username)}
+        >
+          <Text className="text-white text-xl">🚀</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          className="bg-red-500 w-10 h-10 rounded-full justify-center items-center"
+          onPress={() => handleRemPress(item.username)}
+        >
+          <Text className="text-white text-xl">X</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderSearchResultItem = ({ item }: { item: Friend }) => (
+    <View className="flex-row justify-between items-center bg-white p-4 mb-2 rounded-lg shadow">
+      <TouchableOpacity 
+        className="flex-row flex-1 items-center"
+        onPress={() => navigateToUserProfile(item.username)}
+      >
+        <Image
+          source={resizedplayerimage}
+          className="w-12 h-12 rounded-full"
+        />
+        <Text className="flex-1 text-lg font-semibold ml-4">{item.username}</Text>
+      </TouchableOpacity>
+      <View className="flex-row">
+        <TouchableOpacity
+          className="bg-red-500 w-10 h-10 rounded-full justify-center items-center"
+          onPress={() => handleRemPress(item.username)}
+        >
+          <Text className="text-white text-xl">X</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
   return (
     <View className="flex-1 bg-gray-100 p-4 pt-12">
       <View className="flex-row justify-between items-center mb-4">
@@ -124,44 +209,35 @@ const FriendsPage: React.FC = () => {
           <Text className="text-white text-xl">🔔</Text>
         </TouchableOpacity>
       </View>
+      <TextInput
+        className="bg-white p-2 rounded-lg mb-4"
+        placeholder="Search friends..."
+        value={searchTerm}
+        onChangeText={handleSearch}
+      />
+
       {loading ? (
         <Text className="text-center text-gray-600">Loading...</Text>
       ) : error ? (
         <Text className="text-center text-red-500">{error}</Text>
+      ) : isSearchActive ? (
+        <FlatList
+          data={filteredFriends}
+          keyExtractor={(item) => item.username}
+          renderItem={renderSearchResultItem}
+          ListEmptyComponent={
+            <Text className="text-center text-gray-600">
+              {searchTerm.trim() ? "No friends found" : "Type to search friends"}
+            </Text>
+          }
+        />
       ) : friends.length === 0 ? (
         <Text className="text-center text-gray-600">No friends found</Text>
       ) : (
         <FlatList
           data={friends}
           keyExtractor={(item) => item.username}
-          renderItem={({ item }) => (
-            <View className="flex-row justify-between items-center bg-white p-4 mb-2 rounded-lg shadow">
-              <TouchableOpacity 
-                className="flex-row flex-1 items-center"
-                onPress={() => navigateToUserProfile(item.username)}
-              >
-                <Image
-                  source={resizedplayerimage}
-                  className="w-12 h-12 rounded-full"
-                />
-                <Text className="flex-1 text-lg font-semibold ml-4">{item.username}</Text>
-              </TouchableOpacity>
-              <View className="flex-row">
-                <TouchableOpacity
-                  className="bg-red-500 w-10 h-10 rounded-full justify-center items-center mr-2"
-                  onPress={() => fireMissile(item.username)}
-                >
-                  <Text className="text-white text-xl">🚀</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  className="bg-red-500 w-10 h-10 rounded-full justify-center items-center"
-                  onPress={() => handleRemPress(item.username)}
-                >
-                  <Text className="text-white text-xl">X</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
+          renderItem={renderFriendItem}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
