@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { unzip, WebSocketMessage, zip } from "middle-earth";
 import * as SecureStore from "expo-secure-store";
@@ -17,17 +17,30 @@ const useWebSocket = () => {
     const [playerlocations, setplayerlocations] = useState<any>(null);
     const [websocket, setWebsocket] = useState<WebSocket | null>(null);
     const [isConnected, setIsConnected] = useState<boolean>(false);
+    const [token, setToken] = useState<string | null>(null);
+    const websocketRef = useRef<WebSocket | null>(null);
+    const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    const connectWebsocket = async () => {
-        const token = await SecureStore.getItemAsync("token");
+    const connectWebsocket = useCallback(async () => {
         if (!token) {
-            console.log('WS Token not found');
-            setIsConnected(false);
+            console.log('No token available. Skipping WebSocket connection.');
             return;
         }
+
+        if (websocketRef.current?.readyState === WebSocket.OPEN) {
+            console.log('WebSocket already connected.');
+            return;
+        }
+
         const ws = new WebSocket(WEBSOCKET_URL, token);
 
+        const connectionTimeout = setTimeout(() => {
+            console.log("WebSocket connection attempt timed out");
+            ws.close();
+        }, 10000);
+
         ws.onopen = () => {
+            clearTimeout(connectionTimeout);
             console.log("Connected to websocket");
             setIsConnected(true);
             AsyncStorage.setItem('dbconnection', 'true');
@@ -114,16 +127,52 @@ const useWebSocket = () => {
         };
 
         setWebsocket(ws);
-    };
+    }, [token]);
 
-    const reconnectWebsocket = () => {
-        setTimeout(() => {
+    const reconnectWebsocket = useCallback(() => {
+        if (reconnectTimeoutRef.current) {
+            clearTimeout(reconnectTimeoutRef.current);
+        }
+        reconnectTimeoutRef.current = setTimeout(() => {
             if (!isConnected) {
                 console.log("Attempting to reconnect WebSocket...");
                 connectWebsocket();
             }
         }, RECONNECT_INTERVAL);
-    };
+    }, [isConnected, connectWebsocket]);
+
+    useEffect(() => {
+        const initializeWebSocket = async () => {
+            const isSignedIn = await AsyncStorage.getItem('signedIn');
+            if (isSignedIn === 'true') {
+                const storedToken = await SecureStore.getItemAsync("token");
+                setToken(storedToken);
+            }
+        };
+
+        initializeWebSocket();
+
+        return () => {
+            if (reconnectTimeoutRef.current) {
+                clearTimeout(reconnectTimeoutRef.current);
+            }
+            if (websocketRef.current) {
+                websocketRef.current.close();
+            }
+        };
+    }, []);
+
+    useEffect(() => {
+        if (token && !isConnected) {
+            connectWebsocket();
+        }
+    }, [token, isConnected, connectWebsocket]);
+
+    useEffect(() => {
+        if (!isConnected) {
+            reconnectWebsocket();
+        }
+    }, [isConnected, reconnectWebsocket]);
 
     const signOut = async () => {
         if (websocket && websocket.readyState === WebSocket.OPEN) {
@@ -136,20 +185,28 @@ const useWebSocket = () => {
     };
     
     useEffect(() => {
-        const checkSignInStatus = async () => {
+        let intervalId: NodeJS.Timeout;
+
+        const initializeWebSocket = async () => {
             const isSignedIn = await AsyncStorage.getItem('signedIn');
             if (isSignedIn === 'true' && !isConnected) {
                 await connectWebsocket();
-                await AsyncStorage.setItem('dbconnection', 'true');
-            } else if (isSignedIn !== 'true' && isConnected) {
-                await signOut();
             }
         };
 
-        const interval = setInterval(checkSignInStatus, 5000); // Check every 5 seconds
+        initializeWebSocket();
+
+        intervalId = setInterval(async () => {
+            const isSignedIn = await AsyncStorage.getItem('signedIn');
+            if (isSignedIn === 'true' && !isConnected) {
+                await connectWebsocket();
+            } else if (isSignedIn !== 'true' && isConnected) {
+                await signOut();
+            }
+        }, RECONNECT_INTERVAL);
 
         return () => {
-            clearInterval(interval);
+            clearInterval(intervalId);
             if (websocket) {
                 websocket.close();
             }
@@ -171,7 +228,7 @@ const useWebSocket = () => {
         }
     };
 
-    return { data, missiledata, landminedata, lootdata, healthdata, friendsdata, inventorydata, playerlocations, sendWebsocket };
+    return { data, missiledata, landminedata, lootdata, healthdata, friendsdata, inventorydata, playerlocations, sendWebsocket, isConnected };
 };
 
 export default useWebSocket;

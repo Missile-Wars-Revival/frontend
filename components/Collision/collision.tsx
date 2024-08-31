@@ -327,7 +327,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                 return;
             }
 
-            let healthNumber = parseInt(health, 10);
+            let healthNumber = health;
             if (isNaN(healthNumber)) {
                 console.error('Invalid health value:', health);
                 return;
