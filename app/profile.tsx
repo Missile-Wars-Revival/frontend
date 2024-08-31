@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { SafeAreaView, StyleSheet, Text, View, Image, TouchableOpacity, Switch, Modal, ScrollView, ImageSourcePropType, FlatList, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { clearCredentials } from '../util/logincache';
@@ -9,8 +9,9 @@ import * as SecureStore from "expo-secure-store";
 import axiosInstance from '../api/axios-instance';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { InventoryItem } from '../types/types';
 import useFetchInventory from '../hooks/websockets/inventoryhook';
+import { getselfprofile } from '../api/getprofile';
+import { Statistics } from './user-profile';
 
 interface ItemImages {
   [key: string]: any;
@@ -34,7 +35,19 @@ export const itemimages: ItemImages = {
   // Add other missile images here
 };
 
-const resizedplayerimage = require("../assets/mapassets/Female_Avatar_PNG.png");
+const resizedplayerimage = require('../assets/mapassets/Female_Avatar_PNG.png');
+
+interface SelfProfile {
+  username: string;
+  email: string;
+  mutualFriends: string[];
+  statistics: Statistics;
+}
+
+interface ApiResponse {
+  success: boolean;
+  userProfile: SelfProfile;
+}
 
 const ProfilePage: React.FC = () => {
   const userNAME = useUserName();
@@ -43,6 +56,12 @@ const ProfilePage: React.FC = () => {
   const [userImage, setUserImage] = useState<string | null>(null);
   const [friends, setFriends] = useState<{ username: string }[]>([]);
   const inventory = useFetchInventory();
+  const [statistics, setStatistics] = useState<Statistics | null>(null);
+  const [email, setEmail] = useState<string | null>(null);
+
+  const filteredInventory = useMemo(() => {
+    return inventory.filter(item => item.quantity > 0);
+  }, [inventory]);
 
   const handleLogout = async () => {
     await clearCredentials();
@@ -124,10 +143,10 @@ const ProfilePage: React.FC = () => {
       "Change Profile Photo",
       "Choose an option",
       [
-        { text: "Cancel", style: "cancel" },
-        { text: "Remove Photo", onPress: removePhoto },
         { text: "Take Photo", onPress: takePhoto },
         { text: "Choose from Library", onPress: pickImage },
+        { text: "Remove Photo", onPress: removePhoto },
+        { text: "Cancel", style: "cancel" },
       ]
     );
   };
@@ -141,6 +160,13 @@ const ProfilePage: React.FC = () => {
     } catch (error) {
       console.error('Failed to fetch friends', error);
     }
+  };
+
+  const navigateToUserProfile = (username: string) => {
+    router.push({
+      pathname: "/user-profile",
+      params: { username }
+    });
   };
 
   useEffect(() => {
@@ -168,6 +194,24 @@ const ProfilePage: React.FC = () => {
     })();
   }, []);
 
+  useEffect(() => {
+    fetchUserStatistics();
+  }, []);
+
+  const fetchUserStatistics = async () => {
+    try {
+      const response = await getselfprofile() as ApiResponse;
+      if (response.success && response.userProfile) {
+        setStatistics(response.userProfile.statistics);
+        setEmail(response.userProfile.email);
+      } else {
+        console.error('Failed to fetch user statistics: Invalid response structure');
+      }
+    } catch (error) {
+      console.error('Failed to fetch user statistics', error);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -185,15 +229,18 @@ const ProfilePage: React.FC = () => {
             />
           </TouchableOpacity>
           <Text style={styles.profileName}>{userNAME}</Text>
-          <Text style={styles.profileDetails}>Email: example@example.com</Text>
+          <Text style={styles.profileDetails}>Email: {email}</Text>
           
           <View style={styles.badgesContainer}>
             <Text style={styles.sectionTitle}>Badges</Text>
             <View style={styles.badgesList}>
-              {/* Placeholder badges */}
-              <View style={styles.badge}><Text>🏆</Text></View>
-              <View style={styles.badge}><Text>🎖️</Text></View>
-              <View style={styles.badge}><Text>🥇</Text></View>
+              {statistics && statistics.badges && statistics.badges.length > 0 ? (
+                statistics.badges.map((badge, index) => (
+                  <View key={index} style={styles.badge}><Text>{badge}</Text></View>
+                ))
+              ) : (
+                <Text>No badges yet</Text>
+              )}
             </View>
           </View>
 
@@ -210,9 +257,24 @@ const ProfilePage: React.FC = () => {
         </View>
 
         <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>Statistics</Text>
+          {statistics ? (
+            <View style={styles.statisticsContainer}>
+              <Text style={styles.statItem}>Deaths: {statistics.numDeaths}</Text>
+              <Text style={styles.statItem}>Loot Placed: {statistics.numLootPlaced}</Text>
+              <Text style={styles.statItem}>Landmines Placed: {statistics.numLandminesPlaced}</Text>
+              <Text style={styles.statItem}>Missiles Placed: {statistics.numMissilesPlaced}</Text>
+              <Text style={styles.statItem}>Loot Pickups: {statistics.numLootPickups}</Text>
+            </View>
+          ) : (
+            <Text>Loading statistics...</Text>
+          )}
+        </View>
+
+        <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Inventory</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.slider}>
-            {inventory.map(item => (
+            {filteredInventory.map(item => (
               <TouchableOpacity key={item.id} onPress={() => setModalVisible(true)} style={styles.sliderItem}>
                 <Image style={styles.itemImage} source={itemimages[item.name]} />
                 <Text style={styles.itemName}>{item.name}</Text>
@@ -226,7 +288,11 @@ const ProfilePage: React.FC = () => {
           <Text style={styles.sectionTitle}>Friends</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.slider}>
             {friends.map((friend, index) => (
-              <TouchableOpacity key={index} style={styles.sliderItem}>
+              <TouchableOpacity 
+                key={index} 
+                style={styles.sliderItem}
+                onPress={() => navigateToUserProfile(friend.username)}
+              >
                 <Image source={resizedplayerimage} style={styles.friendImage} />
                 <Text style={styles.friendName}>{friend.username}</Text>
               </TouchableOpacity>
@@ -236,24 +302,39 @@ const ProfilePage: React.FC = () => {
       </ScrollView>
 
       <Modal visible={modalVisible} animationType="slide" onRequestClose={() => setModalVisible(false)}>
-        <View style={styles.fullModalView}>
-          <FlatList
-            data={inventory}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <View style={styles.gridItem}>
-                <Image style={styles.gridItemImage} source={item.image} />
-                <Text style={styles.gridItemText}>{item.name} - Quantity: {item.quantity}</Text>
-              </View>
+        <SafeAreaView style={styles.modalSafeArea}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Your Inventory</Text>
+            <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
+              <Text style={styles.closeButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.fullModalView}>
+            {filteredInventory.length > 0 ? (
+              <FlatList
+                data={filteredInventory}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <View style={styles.inventoryItem}>
+                    <Image 
+                      style={styles.inventoryItemImage} 
+                      source={itemimages[item.name]}
+                    />
+                    <View style={styles.inventoryItemDetails}>
+                      <Text style={styles.inventoryItemName}>{item.name}</Text>
+                      <Text style={styles.inventoryItemQuantity}>Quantity: {item.quantity}</Text>
+                    </View>
+                  </View>
+                )}
+                numColumns={2}
+                columnWrapperStyle={styles.inventoryColumnWrapper}
+                contentContainerStyle={styles.inventoryContentContainer}
+              />
+            ) : (
+              <Text style={styles.emptyInventoryText}>Your inventory is empty.</Text>
             )}
-            numColumns={4}
-            columnWrapperStyle={styles.columnWrapper}
-            contentContainerStyle={styles.contentContainer}
-          />
-          <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
-            <Text style={styles.closeButtonText}>Close</Text>
-          </TouchableOpacity>
-        </View>
+          </View>
+        </SafeAreaView>
       </Modal>
     </SafeAreaView>
   );
@@ -299,6 +380,12 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: 60,
     marginBottom: 15,
+  },
+  emptyInventoryText: {
+    fontSize: 18,
+    textAlign: 'center',
+    color: '#666',
+    marginTop: 20,
   },
   profileName: {
     fontSize: 24,
@@ -398,46 +485,83 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
   },
+  modalSafeArea: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+    backgroundColor: '#ffffff',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+  },
   fullModalView: {
     flex: 1,
-    padding: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: '100%',
-    height: '100%',
-  },
-  gridItem: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 100,
-    height: 150,
-    margin: 5,
-  },
-  gridItemImage: {
-    width: '100%',
-    height: 100,
-    resizeMode: 'contain',
-  },
-  gridItemText: {
-    fontSize: 12,
-    textAlign: 'center',
-  },
-  columnWrapper: {
-    justifyContent: 'space-between',
-  },
-  contentContainer: {
-    paddingVertical: 20,
+    padding: 15,
   },
   closeButton: {
     padding: 10,
-    backgroundColor: 'grey',
-    borderRadius: 5,
-    alignSelf: 'center',
-    marginTop: 20,
   },
   closeButtonText: {
-    color: 'white',
+    color: '#007AFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  inventoryItem: {
+    flex: 1,
+    margin: 8,
+    padding: 16,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.23,
+    shadowRadius: 2.62,
+    elevation: 4,
+  },
+  inventoryItemImage: {
+    width: 80,
+    height: 80,
+    resizeMode: 'contain',
+    marginBottom: 10,
+  },
+  inventoryItemDetails: {
+    alignItems: 'center',
+  },
+  inventoryItemName: {
+    fontSize: 16,
+    fontWeight: 'bold',
     textAlign: 'center',
+    marginBottom: 5,
+  },
+  inventoryItemQuantity: {
+    fontSize: 14,
+    color: '#666',
+  },
+  inventoryColumnWrapper: {
+    justifyContent: 'space-between',
+  },
+  inventoryContentContainer: {
+    paddingBottom: 20,
+  },
+  statisticsContainer: {
+    padding: 10,
+  },
+  statItem: {
+    fontSize: 16,
+    marginBottom: 5,
   },
 });
 

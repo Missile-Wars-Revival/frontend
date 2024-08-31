@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, View, Button, Dimensions, ScrollView, Text, TouchableOpacity, Image } from 'react-native';
 import { LootPlacementPopup } from './lootplacement';
-import useFetchInventory from "../../hooks/websockets/inventoryhook";
+import * as SecureStore from "expo-secure-store";
+import axiosInstance from '../../api/axios-instance';
 
 interface LootType {
   type: string;
@@ -21,44 +22,64 @@ interface LootImages {
   [key: string]: any;
 }
 
-// Use the websocket hook to fetch inventory
-const inventoryItems = useFetchInventory();
+//backend needs to fetch users Loot library
+const fetchLootLib = async (): Promise<LootType[]> => {
+  try {
+    const token = await SecureStore.getItemAsync("token");
+    if (!token) {
+      throw new Error("No authentication token found.");
+    }
 
-// Loot images for both map and library
-export const LootImages: LootImages = {
-  // Add your loot images here, for example:
-  Airdrop: require("../../assets/mapassets/Airdropicon.png"),
-  // Add other loot images as needed
-};
+    const response = await axiosInstance.get('/api/getInventory', {
+      params: { token }
+    });
 
-export const LootLibraryView: React.FC<LootLibraryViewProps> = ({ LootModalVisible, LootPlaceHandler }) => {
-  const [LootLibrary, setLootLibrary] = useState<LootType[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [showPlacementPopup, setShowPlacementPopup] = useState<boolean>(false);
-  const [selectedLoot, setSelectedLoot] = useState<Loot | null>(null);
-  const [noItems, setNoItems] = useState<boolean>(false);
+    const inventory = response.data;
 
-  useEffect(() => {
-    // Filter inventory items to get loot
-    const LootLibraryData = inventoryItems
-      .filter(item => item.category === "Loot Drops" && item.quantity > 0)
-      .map(item => ({
+    // Filter the inventory to include only items with the category "Loots"
+    const LootLibraryData = inventory
+      .filter((item: { category: string; quantity: number;}) => item.category === "Loot Drops" && item.quantity > 0)
+      .map((item: { name: any; quantity: any; }) => ({
         type: item.name,
         quantity: item.quantity
       }));
 
-    setLootLibrary(LootLibraryData);
-    setNoItems(LootLibraryData.length === 0);
-    setLoading(false);
-  }, [inventoryItems]);
+    return LootLibraryData;
+  } catch (error) {
+    console.error('Failed to fetch Loot library', error);
+    throw error;
+  }
+};
+
+
+
+//Loot images for both map and library
+
+export const LootLibraryView: React.FC<LootLibraryViewProps> = ({ LootModalVisible, LootPlaceHandler }) => {
+  const [LootLibrary, setLootLibrary] = useState<LootType[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [showplacmentPopup, setShowplacementPopup] = useState<boolean>(false);
+  const [selectedLoot, setSelectedLoot] = useState<Loot | null>(null);
+  const [noItems, setNoItems] = useState<boolean>(false);
+  const resizedlootimage = require("../../assets/mapassets/Airdropicon.png");
+
+  useEffect(() => {
+    fetchLootLib().then(data => {
+      setLootLibrary(data);
+      setLoading(false);
+      setNoItems(data.length === 0);
+    }).catch(error => {
+      console.error('Error fetching Loot library:', error);
+    });
+  }, []);
 
   const handleLootClick = (LootType: string) => {
     setSelectedLoot({ type: LootType });
-    setShowPlacementPopup(true);
+    setShowplacementPopup(true);
   };
 
   const handleClosePopup = () => {
-    setShowPlacementPopup(false);
+    setShowplacementPopup(false);
   };
 
   if (loading) {
@@ -76,15 +97,12 @@ export const LootLibraryView: React.FC<LootLibraryViewProps> = ({ LootModalVisib
         <View style={{ backgroundColor: 'white', borderRadius: 10, width: Dimensions.get('window').width - 40, maxHeight: Dimensions.get('window').height - 200 }}>
           <ScrollView contentContainerStyle={{ padding: 20 }}>
             <Text>Select your Loot:</Text>
-            {noItems ? (
-              <View style={{ alignItems: 'center', marginVertical: 20 }}>
-                <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>No Loot Available</Text>
-                <Text style={{ textAlign: 'center' }}>You don't have any loot in your inventory. Visit the store to purchase some!</Text>
-              </View>
+            {noItems ? ( // Conditionally render based on no items state
+              <Text>No items in inventory</Text>
             ) : (
               LootLibrary.map((Loot, index) => (
                 <TouchableOpacity key={index} onPress={() => handleLootClick(Loot.type)} style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 10 }}>
-                  <Image source={LootImages[Loot.type] || LootImages.Airdrop} style={{ width: 50, height: 50, marginRight: 10 }} />
+                   <Image source={resizedlootimage} style={{ width: 50, height: 50, marginRight: 10 }} />
                   <Text>{Loot.type} - Quantity: {Loot.quantity}</Text>
                 </TouchableOpacity>
               ))
@@ -95,12 +113,7 @@ export const LootLibraryView: React.FC<LootLibraryViewProps> = ({ LootModalVisib
           </View>
         </View>
       </View>
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={showPlacementPopup}>
-        {showPlacementPopup && <LootPlacementPopup visible={showPlacementPopup} onClose={handleClosePopup} selectedLoot={selectedLoot} />}
-      </Modal>
+      {showplacmentPopup && <LootPlacementPopup visible={showplacmentPopup} onClose={handleClosePopup} selectedLoot={selectedLoot} />}
     </Modal>
   );
 };

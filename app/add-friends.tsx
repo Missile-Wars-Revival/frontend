@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Text, View, FlatList, TouchableOpacity, Alert, RefreshControl, TextInput, Keyboard, TouchableWithoutFeedback  } from "react-native";
+import { Text, View, FlatList, TouchableOpacity, Alert, RefreshControl, TextInput, Keyboard, TouchableWithoutFeedback, SafeAreaView, Image } from "react-native";
 import { NearbyPlayersData, searchOtherPlayersData } from "../api/getplayerlocations";
-import { addFriend } from "../api/friends"; // Import the addFriend function
-import { removeFriend } from "../api/friends";
+import { addFriend, removeFriend } from "../api/friends";
 import { router } from "expo-router";
 import { getCredentials } from "../util/logincache";
 import { getCurrentLocation, location } from "../util/locationreq";
 import * as SecureStore from "expo-secure-store";
+import { Ionicons } from '@expo/vector-icons';
 
 interface Filterddata {
   username: string,
@@ -14,8 +14,20 @@ interface Filterddata {
   longitude: string,
 }
 
+const resizedplayerimage = require("../assets/mapassets/Female_Avatar_PNG.png");
+
 const QuickAddPage: React.FC = () => {
   const [userNAME, setUsername] = useState("");
+  const [userLocation, setUserLocation] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [playersData, setPlayersData] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [filteredData, setFilteredData] = useState<Filterddata[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     const fetchCredentials = async () => {
@@ -31,16 +43,6 @@ const QuickAddPage: React.FC = () => {
 
     fetchCredentials();
   }, []);
-  const [userLocation, setUserLocation] = useState<{
-    latitude: number;
-    longitude: number;
-  } | null>(null);
-  const [searchTerm, setSearchTerm] = useState<string>("");
-  const [playersData, setPlayersData] = useState<any[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [filteredData, setFilteredData] = useState<Filterddata[]>([]);;
-  const [hasInteracted, setHasInteracted] = useState(false); 
 
   const fetchLocation = async () => {
     const location: location = await getCurrentLocation();
@@ -136,138 +138,126 @@ const QuickAddPage: React.FC = () => {
   const handleSearch = async (text: string) => {
     setSearchTerm(text);
     if (!text.trim()) {
-        setHasInteracted(false);
-        setFilteredData([]);
-        return;
+      setFilteredData([]);
+      setIsSearching(false);
+      return;
     }
     
+    setIsSearching(true);
     try {
-        const currentUserUsername = await SecureStore.getItemAsync("username");
-        
-        if (currentUserUsername === null) {
-            console.error("No username found in secure storage.");
-            setFilteredData([]);
-            setHasInteracted(false);  
-            return;
-        }
-
-        const result = await searchOtherPlayersData(text, currentUserUsername);
-        
-        const filteredResult = result.filter(player => player.username !== currentUserUsername);
-        
-        setFilteredData(filteredResult);
-        setHasInteracted(true);
-    } catch (error) {
-        console.error("Failed to search for players:", error);
+      const currentUserUsername = await SecureStore.getItemAsync("username");
+      
+      if (currentUserUsername === null) {
+        console.error("No username found in secure storage.");
         setFilteredData([]);
-    }
-};
+        setIsSearching(false);
+        return;
+      }
 
-  const handleDismiss = () => {
-    setHasInteracted(false);
-    Keyboard.dismiss();  
+      const result = await searchOtherPlayersData(text, currentUserUsername);
+      
+      const filteredResult = result.filter(player => player.username !== currentUserUsername);
+      
+      setFilteredData(filteredResult);
+    } catch (error) {
+      console.error("Failed to search for players:", error);
+      setFilteredData([]);
+    }
   };
 
-  const quickaddItem = ({ item }: { item: any }) => (
-    <View className="flex-row items-center justify-between mb-[10px]">
-      <Text className="text-[16px] flex-1">{item.username}</Text>
-      <View className="flex-row items-center">
-        <TouchableOpacity
-          className="bg-green-600 p-[10px] rounded-[5px] w-[35px] h-[35px] justify-center items-center mr-[10px]"
-          onPress={() => handleAddFriend(item.username)}
-        >
-          <Text className="font-[13px] text-white">+</Text>
-        </TouchableOpacity>
-        {/* Commented out as rmeoving friend in quick add not needed yet */}
-        {/* <TouchableOpacity
-          className="bg-red-500 p-[10px] rounded-[5px] w-[35px] h-[35px] justify-center items-center mr-[10px]"
-          onPress={() => handleRemoveFriend(item.username)}
-        >
-          <Text className="font-[13px] text-white">x</Text>
-        </TouchableOpacity> */}
-      </View>
-    </View>
-  );
+  const navigateToUserProfile = (username: string) => {
+    router.push({
+      pathname: "/user-profile",
+      params: { username }
+    });
+  };
 
-  const searchitem = ({ item }: { item: any }) => (
-    <View className="flex-row items-center justify-between mb-[10px]">
-      <Text className="text-[16px] flex-1">{item.username}</Text>
-      <View className="flex-row items-center">
-        <TouchableOpacity
-          className="bg-green-600 p-[10px] rounded-[5px] w-[35px] h-[35px] justify-center items-center mr-[10px]"
-          onPress={() => handleAddFriend(item.username)}
-        >
-          <Text className="font-[13px] text-white">+</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          className="bg-red-500 p-[10px] rounded-[5px] w-[35px] h-[35px] justify-center items-center mr-[10px]"
-          onPress={() => handleRemoveFriend(item.username)}
-        >
-          <Text className="font-[13px] text-white">x</Text>
-        </TouchableOpacity>
-      </View>
+  const renderPlayerItem = ({ item }: { item: any }) => (
+    <View className="flex-row items-center justify-between mb-4 bg-white p-4 rounded-lg shadow">
+      <TouchableOpacity 
+        className="flex-row flex-1 items-center"
+        onPress={() => navigateToUserProfile(item.username)}
+      >
+        <Image
+          source={resizedplayerimage}
+          className="w-12 h-12 rounded-full"
+        />
+        <Text className="flex-1 text-lg font-semibold ml-4">{item.username}</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        className="bg-green-600 p-2 rounded-full w-10 h-10 justify-center items-center"
+        onPress={() => handleAddFriend(item.username)}
+      >
+        <Ionicons name="add" size={24} color="white" />
+      </TouchableOpacity>
     </View>
   );
 
   return (
-    <TouchableWithoutFeedback onPress={handleDismiss}>
-    <View style={{ flex: 1, padding: 20, paddingTop: 50 }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: -25 }}>
-        <Text style={{ fontSize: 20 }}>Add Friends</Text>
-      </View>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 }}>
-        <TouchableOpacity
-          style={{
-            width: 60,
-            height: 30,
-            borderRadius: 15,
-            justifyContent: 'center',
-            alignItems: 'center',
-            backgroundColor: 'blue',
-          }}
-          onPress={() => router.navigate("/friends")}
-        >
-          <Text style={{ fontSize: 20, color: 'white' }}>Back</Text>
-        </TouchableOpacity>
-      </View>
-      <TextInput
-        style={{ height: 40, borderColor: 'gray', borderWidth: 1, marginBottom: 20, paddingLeft: 10 }}
-        placeholder="Search for friends..."
-        value={searchTerm}
-        onChangeText={handleSearch}
-      />
-      {hasInteracted && (
-      <FlatList
-        data={filteredData}
-        renderItem={searchitem}
-        keyExtractor={item => item.username}
-        style={{ marginBottom: 10 }}
-      />
-    )}
-      {loading ? (
-        <Text>Loading...</Text>
-      ) : playersData.length === 0 ? (
-        <Text style={{ fontSize: 16, textAlign: 'center' }}>
-          No players found near you
-        </Text>
-      ) : (
-        <>
-          <Text style={{ fontSize: 20, paddingBottom: 10 }}>Player's Nearby:</Text>
-          <FlatList
-            data={playersData}
-            renderItem={quickaddItem}
-            keyExtractor={(item) => item.username}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={onRefresh}
-                colors={["#9Bd35A", "#689F38"]} // Customize color
-              />
-            }
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <SafeAreaView className="flex-1 bg-gray-100">
+        <View className="flex-1 px-4 pt-6">
+          <View className="flex-row justify-between items-center mb-6">
+            <TouchableOpacity
+              className="bg-blue-500 p-2 rounded-full"
+              onPress={() => router.push("/friends")}
+            >
+              <Ionicons name="arrow-back" size={24} color="white" />
+            </TouchableOpacity>
+            <Text className="text-2xl font-bold text-gray-800">Add Friends</Text>
+            <View className="w-10" /> 
+          </View>
+          
+          <TextInput
+            className="bg-white border border-gray-300 rounded-lg px-4 py-2 mb-4"
+            placeholder="Search for friends..."
+            value={searchTerm}
+            onChangeText={handleSearch}
           />
-        </>
-      )}
-    </View>
+          
+          {isSearching && (
+            <View className="mb-4">
+              <Text className="text-xl font-semibold mb-2 text-gray-800">Search Results:</Text>
+              <FlatList
+                data={filteredData}
+                renderItem={renderPlayerItem}
+                keyExtractor={item => item.username}
+                ListEmptyComponent={
+                  <Text className="text-center text-gray-600">No players found</Text>
+                }
+              />
+            </View>
+          )}
+          
+          {!isSearching && (
+            <>
+              {loading ? (
+                <Text className="text-lg text-center text-gray-600">Loading...</Text>
+              ) : playersData.length === 0 ? (
+                <Text className="text-lg text-center text-gray-600">
+                  No players found near you
+                </Text>
+              ) : (
+                <>
+                  <Text className="text-xl font-semibold mb-4 text-gray-800">Players Nearby:</Text>
+                  <FlatList
+                    data={playersData}
+                    renderItem={renderPlayerItem}
+                    keyExtractor={(item) => item.username}
+                    refreshControl={
+                      <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        colors={["#4A5568"]}
+                      />
+                    }
+                  />
+                </>
+              )}
+            </>
+          )}
+        </View>
+      </SafeAreaView>
     </TouchableWithoutFeedback>
   );
 };
