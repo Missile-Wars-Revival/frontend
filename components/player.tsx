@@ -10,15 +10,15 @@ const resizedplayerimage = require("../assets/mapassets/Female_Avatar_PNG.png");
 
 const styles = StyleSheet.create({
   profileImage: {
-    width: 30,
-    height: 30,
-    borderRadius: 15, // Half of width/height to make it circular
+    width: 36,
+    height: 36,
+    borderRadius: 18, // Half of width/height to make it circular
     overflow: 'hidden', // Ensures the image doesn't spill outside the rounded borders
   },
   username: {
     color: 'grey',
     marginTop: 2,
-    fontSize: 10, // Adjust as needed
+    fontSize: 12, // Adjust as needed
   },
 });
 

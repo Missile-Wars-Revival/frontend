@@ -26,11 +26,9 @@ import { ThemeSelectButton } from "../components/theme-select-button";
 import { FireSelector } from "../components/fire-selector";
 import { MapComp } from "../components/map-comp";
 import { MapStyle } from "../types/types";
-import { getCredentials } from "../util/logincache";
 import { router } from "expo-router";
 import HealthBar from "../components/healthbar";
 import { getisAlive, setHealth, updateisAlive } from "../api/health";
-import CountdownTimer from "../components/countdown";
 import { useCountdown } from "../util/Context/countdown";
 import { playDeathSound } from "../util/sounds/deathsound";
 import { RewardedAd, RewardedAdEventType, TestIds } from "react-native-google-mobile-ads";
@@ -54,9 +52,9 @@ export default function Map() {
   // Fetch username from secure storage
   useEffect(() => {
     const fetchCredentials = async () => {
-      const credentials = await getCredentials();
+      const credentials = await SecureStore.getItemAsync("username");
       if (credentials) {
-        setUsername(credentials.username);
+        setUsername(credentials);
       } else {
         router.navigate("/login");
       }
@@ -231,7 +229,6 @@ export default function Map() {
         <>
         <MapComp selectedMapStyle={selectedMapStyle} />
         <HealthBar health={health} />
-        {countdownIsActive && <CountdownTimer duration={30} onExpire={stopCountdown} />}
           {Platform.OS === 'android' && (
             <ThemeSelectButton onPress={showPopup}>Theme</ThemeSelectButton>
           )}

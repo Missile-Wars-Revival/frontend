@@ -3,7 +3,7 @@ import 'react-native-reanimated';
 import React, { useEffect, useState } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import SplashScreen from './splashscreen';
 import { FontAwesome } from '@expo/vector-icons';
@@ -13,6 +13,8 @@ import { WebSocketContext, WebSocketProviderProps } from "../util/Context/websoc
 import { CountdownContext, CountdownProviderProps } from "../util/Context/countdown";
 import { Platform } from 'react-native';
 import Purchases from 'react-native-purchases';
+import CountdownTimer from '../components/countdown';
+import { useCountdown } from '../util/Context/countdown';
 
 // RootLayout component
 export default function RootLayout() {
@@ -101,7 +103,8 @@ function NavBar() {
   };
 
   return (
-    //switch commenting to hide ranking pages<View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-around', backgroundColor: 'rgba(255, 255, 255, 0.0)', height: 100, alignItems: 'center' }}>
+    //switch commenting to hide ranking pages
+    //<View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-around', backgroundColor: 'rgba(255, 255, 255, 0.0)', height: 100, alignItems: 'center' }}>
     //   {['/', '/store','/league', '/friends', '/profile'].map((tab, index) => (
     // 
     <View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-around', backgroundColor: 'rgba(255, 255, 255, 0.0)', height: 90, alignItems: 'center' }}>
@@ -146,6 +149,7 @@ function NavBar() {
 function RootLayoutNav() {
   const pathname = usePathname();
   const hideNavBarRoutes = ['/login', '/register', '/add-friends'];
+  const { countdownIsActive, stopCountdown } = useCountdown();
 
   return (
     <SafeAreaProvider>
@@ -162,8 +166,24 @@ function RootLayoutNav() {
           <Stack.Screen name="user-profile" options={{ headerShown: false }} />
           <Stack.Screen name="settings" options={{ headerShown: false }} />
         </Stack>
+        {countdownIsActive && (
+          <View style={styles.countdownContainer}>
+            <CountdownTimer duration={30} onExpire={stopCountdown} />
+          </View>
+        )}
         {!hideNavBarRoutes.includes(pathname) && <NavBar />}
       </View>
     </SafeAreaProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  countdownContainer: {
+    position: 'absolute',
+    bottom: 90, // Adjust this value based on your navbar height
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 1000, // Ensure it's above other components
+  },
+});

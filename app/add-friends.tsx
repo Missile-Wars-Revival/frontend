@@ -3,7 +3,6 @@ import { Text, View, FlatList, TouchableOpacity, Alert, RefreshControl, TextInpu
 import { NearbyPlayersData, searchOtherPlayersData } from "../api/getplayerlocations";
 import { addFriend, removeFriend } from "../api/friends";
 import { router } from "expo-router";
-import { getCredentials } from "../util/logincache";
 import { getCurrentLocation, location } from "../util/locationreq";
 import * as SecureStore from "expo-secure-store";
 import { Ionicons } from '@expo/vector-icons';
@@ -18,7 +17,6 @@ interface Filterddata {
 const resizedplayerimage = require("../assets/mapassets/Female_Avatar_PNG.png");
 
 const QuickAddPage: React.FC = () => {
-  const [userNAME, setUsername] = useState("");
   const [userLocation, setUserLocation] = useState<{
     latitude: number;
     longitude: number;
@@ -32,9 +30,8 @@ const QuickAddPage: React.FC = () => {
 
   useEffect(() => {
     const fetchCredentials = async () => {
-      const credentials = await getCredentials();
-      if (credentials) {
-        setUsername(credentials.username);
+      const username = await SecureStore.getItemAsync("username");
+      if (username) {
       } else {
         console.log('Credentials not found, please log in');
         // Optionally redirect to login page

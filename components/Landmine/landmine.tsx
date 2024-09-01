@@ -3,6 +3,9 @@ import { Modal, View, Button, Dimensions, ScrollView, Text, TouchableOpacity, Im
 import { LandminePlacementPopup } from './landmineplacement';
 import * as SecureStore from "expo-secure-store";
 import axiosInstance from '../../api/axios-instance';
+import { create } from 'twrnc';
+
+const tw = create(require('../../tailwind.config.js'));
 
 interface LandmineType {
   type: string;
@@ -51,8 +54,6 @@ const fetchLandmineLib = async (): Promise<LandmineType[]> => {
   }
 };
 
-
-
 //landmine images for both map and library
 export const LandmineImages: LandmineImages = {
   BigBertha: require('../../assets/missiles/BigBertha.png'),
@@ -60,6 +61,20 @@ export const LandmineImages: LandmineImages = {
   BunkerBlocker: require('../../assets/missiles/BunkerBlocker.png'),
   // ... other landmine images
 };
+
+const LandmineSelector = ({ onSelect, landmines }: { onSelect: (landmine: string) => void, landmines: LandmineType[] }) => (
+  <ScrollView style={tw`flex-1`}>
+    {landmines.map((landmine, index) => (
+      <TouchableOpacity key={index} onPress={() => onSelect(landmine.type)} style={tw`flex-row items-center bg-white p-2 mb-1 rounded-lg shadow`}>
+        <Image source={LandmineImages[landmine.type]} style={tw`w-8 h-8 mr-2`} />
+        <View style={tw`flex-1`}>
+          <Text style={tw`text-sm font-semibold`}>{landmine.type}</Text>
+          <Text style={tw`text-xs text-gray-500`}>Quantity: {landmine.quantity}</Text>
+        </View>
+      </TouchableOpacity>
+    ))}
+  </ScrollView>
+);
 
 export const LandmineLibraryView: React.FC<LandmineLibraryViewProps> = ({ LandmineModalVisible, landminePlaceHandler }) => {
   const [landmineLibrary, setLandmineLibrary] = useState<LandmineType[]>([]);
@@ -87,6 +102,14 @@ export const LandmineLibraryView: React.FC<LandmineLibraryViewProps> = ({ Landmi
     setShowplacementPopup(false);
   };
 
+  const getModalHeight = () => {
+    if (loading || noItems) return 'h-1/3';
+    const itemCount = landmineLibrary.length;
+    if (itemCount <= 3) return 'h-1/3';
+    if (itemCount <= 6) return 'h-1/2';
+    return 'h-2/3';
+  };
+
   if (loading) {
     return <View><Text>Loading...</Text></View>;
   }
@@ -98,27 +121,33 @@ export const LandmineLibraryView: React.FC<LandmineLibraryViewProps> = ({ Landmi
       visible={LandmineModalVisible}
       onRequestClose={landminePlaceHandler}
     >
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
-        <View style={{ backgroundColor: 'white', borderRadius: 10, width: Dimensions.get('window').width - 40, maxHeight: Dimensions.get('window').height - 200 }}>
-          <ScrollView contentContainerStyle={{ padding: 20 }}>
-            <Text>Select your Landmine:</Text>
-            {noItems ? ( // Conditionally render based on no items state
-              <Text>No items in inventory</Text>
-            ) : (
-              landmineLibrary.map((landmine, index) => (
-                <TouchableOpacity key={index} onPress={() => handleLandmineClick(landmine.type)} style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 10 }}>
-                  <Image source={LandmineImages[landmine.type]} style={{ width: 50, height: 50, marginRight: 10 }} />
-                  <Text>{landmine.type} - Quantity: {landmine.quantity}</Text>
-                </TouchableOpacity>
-              ))
-            )}
-          </ScrollView>
-          <View style={{ alignSelf: 'flex-end', padding: 10 }}>
-            <Button title="Done" onPress={landminePlaceHandler} />
-          </View>
+      <View style={tw`flex-1 justify-center items-center bg-black bg-opacity-50`}>
+        <View style={tw`bg-white rounded-lg p-4 w-11/12 ${getModalHeight()} max-h-[90%]`}>
+          <Text style={tw`text-xl font-bold mb-2`}>Select your Landmine:</Text>
+          {loading ? (
+            <View style={tw`flex-1 justify-center items-center`}>
+              <Text>Loading...</Text>
+            </View>
+          ) : noItems ? (
+            <Text style={tw`text-center mt-4`}>No items in inventory</Text>
+          ) : (
+            <LandmineSelector onSelect={handleLandmineClick} landmines={landmineLibrary} />
+          )}
+          <TouchableOpacity
+            style={tw`bg-blue-500 px-6 py-2 rounded-lg mt-4 self-end`}
+            onPress={landminePlaceHandler}
+          >
+            <Text style={tw`text-white font-bold`}>Done</Text>
+          </TouchableOpacity>
         </View>
       </View>
-      {showplacmentPopup && <LandminePlacementPopup visible={showplacmentPopup} onClose={handleClosePopup} selectedLandmine={selectedLandmine} />}
+      {showplacmentPopup && (
+        <LandminePlacementPopup
+          visible={showplacmentPopup}
+          onClose={handleClosePopup}
+          selectedLandmine={selectedLandmine}
+        />
+      )}
     </Modal>
   );
 };

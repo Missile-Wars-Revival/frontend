@@ -1,15 +1,21 @@
 import { useEffect, useState } from "react";
-import { getCredentials } from "./logincache";
 import { router } from "expo-router";
+import * as SecureStore from "expo-secure-store";
 
 export const useUserName = () => {
-    const [userNAME, setUserName] = useState<string>("Test2");
+    const [userNAME, setUserName] = useState<string>("load failed");
 
     useEffect(() => {
         const fetchCredentials = async () => {
-            const credentials = await getCredentials();
-            if (credentials) {
-                setUserName(credentials.username);
+            const token = await SecureStore.getItemAsync("token");
+            if (token) {
+                const user = await SecureStore.getItemAsync("username");
+                if (user) {
+                    setUserName(user);
+                } else {
+                    console.log('Username not found');
+                    setUserName("Unknown User");
+                }
             } else {
                 console.log('Credentials not found, please log in');
                 // Optionally redirect to login page

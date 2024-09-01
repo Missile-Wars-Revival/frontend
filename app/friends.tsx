@@ -289,8 +289,17 @@ const FriendsPage: React.FC = () => {
         visible={showMissileLibrary}
         onRequestClose={() => setShowMissileLibrary(false)}
       >
-        <View className="flex-1 justify-center items-center bg-black bg-opacity-50">
-          <View className="bg-white rounded-lg w-11/12 max-h-3/4">
+        <View className="flex-1 justify-end">
+          <View className="h-[90%] bg-white rounded-t-3xl overflow-hidden">
+            <View className="flex-row justify-between items-center p-4 bg-gray-100">
+              <Text className="text-xl font-bold">Missile Library</Text>
+              <TouchableOpacity
+                className="bg-blue-500 px-4 py-2 rounded-lg"
+                onPress={() => setShowMissileLibrary(false)}
+              >
+                <Text className="text-white font-bold">Done</Text>
+              </TouchableOpacity>
+            </View>
             <MissileLibrary 
               playerName={selectedPlayer} 
               onMissileFired={() => {

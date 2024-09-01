@@ -15,24 +15,6 @@ export async function saveCredentials(
   }
 }
 
-export async function getCredentials() {
-  try {
-    const username = await SecureStore.getItemAsync("username");
-    const token = await SecureStore.getItemAsync("token");
-
-    if (username && token) {
-      return { username, token };
-    } else {
-      // Handle the case where credentials are not found
-      console.log("No credentials stored");
-      return null;
-    }
-  } catch (error) {
-    console.error("Failed to fetch credentials", error);
-    return null;
-  }
-}
-
 export async function clearCredentials(): Promise<void> {
   try {
     // Clearing credentials stored in SecureStore

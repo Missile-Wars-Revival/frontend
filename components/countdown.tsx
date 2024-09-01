@@ -56,9 +56,6 @@ interface TimerProps {
 
 const styles = StyleSheet.create({
   container: {
-    position: 'absolute',
-    top: height * 0.7,
-    left: width * 0.05,
     width: width * 0.9, // Timer is now 90% of the screen width
     height: height * 0.05, // Reduced height for a thinner bar
     backgroundColor: '#ddd',

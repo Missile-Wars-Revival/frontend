@@ -77,13 +77,13 @@ export const missileImages: MissileImages = {
 };
 
 const MissileSelector = ({ onSelect, missiles }: { onSelect: (missile: string) => void, missiles: Missilelib[] }) => (
-  <ScrollView style={tw`max-h-[60%]`}>
+  <ScrollView style={tw`flex-1`}>
     {missiles.map((missile, index) => (
-      <TouchableOpacity key={index} onPress={() => onSelect(missile.type)} style={tw`flex-row items-center bg-white p-4 mb-2 rounded-lg shadow`}>
-        <Image source={missileImages[missile.type]} style={tw`w-12 h-12 mr-4`} />
+      <TouchableOpacity key={index} onPress={() => onSelect(missile.type)} style={tw`flex-row items-center bg-white p-2 mb-1 rounded-lg shadow`}>
+        <Image source={missileImages[missile.type]} style={tw`w-8 h-8 mr-2`} />
         <View style={tw`flex-1`}>
-          <Text style={tw`text-lg font-semibold`}>{missile.type}</Text>
-          <Text style={tw`text-gray-500`}>Quantity: {missile.quantity}</Text>
+          <Text style={tw`text-sm font-semibold`}>{missile.type}</Text>
+          <Text style={tw`text-xs text-gray-500`}>Quantity: {missile.quantity}</Text>
         </View>
       </TouchableOpacity>
     ))}
@@ -149,8 +149,8 @@ export const MissileLibrary = ({ playerName, onMissileFired, onClose }: { player
   }
 
   return (
-    <View style={tw`bg-white rounded-lg p-4 max-h-[80%]`}>
-      <Text style={tw`text-xl font-bold mb-4`}>Select Missile to Fire at {playerName}</Text>
+    <View style={tw`bg-white rounded-lg p-4 h-[90%]`}>
+      <Text style={tw`text-xl font-bold mb-2`}>Select Missile to Fire at {playerName}</Text>
       <MissileSelector onSelect={handleMissileClick} missiles={missileLibrary} />
       <Modal visible={showPopup} animationType="fade" transparent={true}>
         <View style={tw`flex-1 justify-center items-center bg-black bg-opacity-50`}>
@@ -209,15 +209,15 @@ export const MissilefireposLibrary = ({ onClose }: { onClose: () => void }) => {
 
   if (loading) {
     return (
-      <View style={tw`bg-white rounded-lg p-4 max-h-[80%]`}>
+      <View style={tw`bg-white rounded-lg p-4 h-[90%]`}>
         <Text>Loading...</Text>
       </View>
     );
   }
 
   return (
-    <View style={tw`bg-white rounded-lg p-4 max-h-[80%]`}>
-      <Text style={tw`text-xl font-bold mb-4`}>Select Missile to Fire at Location</Text>
+    <View style={tw`bg-white rounded-lg p-4 h-[90%]`}>
+      <Text style={tw`text-xl font-bold mb-2`}>Select Missile to Fire at Location</Text>
       <MissileSelector onSelect={handleMissileClick} missiles={missileLibrary} />
       {showPlacementPopup && selectedMissile && (
         <MissilePlacementPopup

@@ -1,27 +1,24 @@
 import React from 'react';
-import { View, FlatList, StyleSheet } from 'react-native';
+import { View, FlatList, StyleSheet, Image } from 'react-native';
 import { ListItem, Text } from 'react-native-elements';
 
 type Player = {
   id: number;
   name: string;
   points: number;
-  rank?: number; // Optional rank
+  rank?: number;
+  avatar?: string;
 };
 
 const playersData: Player[] = [
-  { id: 1, name: 'Test User', points: 2000 },
-  { id: 2, name: 'Other Test User', points: 2689 },
+  { id: 1, name: 'Test User', points: 2000, avatar: 'https://example.com/avatar1.png' },
+  { id: 2, name: 'Other Test User', points: 2689, avatar: 'https://example.com/avatar2.png' },
   // Add more player data
 ];
 
-// Sort players by points in descending order
-playersData.sort((a, b) => b.points - a.points);
-
-// Assign ranks based on sorted order
-playersData.forEach((player, index) => {
-  player.rank = index + 1; // Assign rank starting from 1
-});
+// Sort players by points in descending order and assign ranks
+playersData.sort((a, b) => b.points - a.points)
+           .forEach((player, index) => { player.rank = index + 1; });
 
 const PlayerList: React.FC = () => {
   const renderItem = ({ item }: { item: Player }) => (
@@ -29,58 +26,61 @@ const PlayerList: React.FC = () => {
       <View style={styles.rankContainer}>
         <Text style={styles.rankText}>{item.rank}</Text>
       </View>
+      <Image source={{ uri: item.avatar }} style={styles.avatar} />
       <ListItem.Content>
         <ListItem.Title style={styles.playerName}>{item.name}</ListItem.Title>
-        <ListItem.Subtitle style={styles.pointsText}>{`Points: ${item.points}`}</ListItem.Subtitle>
+        <ListItem.Subtitle style={styles.pointsText}>{`${item.points} points`}</ListItem.Subtitle>
       </ListItem.Content>
     </ListItem>
   );
 
   return (
-    <View style={styles.container}>
-      <FlatList
-        data={playersData}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={renderItem}
-      />
-    </View>
+    <FlatList
+      data={playersData}
+      keyExtractor={(item) => item.id.toString()}
+      renderItem={renderItem}
+      contentContainerStyle={styles.container}
+    />
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: '#f0f0f0', // Background color
-    paddingHorizontal: 15,
-    paddingTop: 10,
+    paddingVertical: 10,
   },
   listItem: {
-    backgroundColor: '#ffffff', // Item background color
+    backgroundColor: '#ffffff',
     borderRadius: 10,
     marginBottom: 10,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 15,
-    paddingHorizontal: 10,
-    elevation: 3, // Shadow for Android
-    shadowColor: '#000', // Shadow for iOS
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    elevation: 2,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
+    shadowOpacity: 0.2,
+    shadowRadius: 1.5,
   },
   rankContainer: {
-    backgroundColor: '#ffc107', // Rank background color (similar to Clash of Clans)
-    borderRadius: 50,
-    width: 36,
-    height: 36,
+    backgroundColor: '#ffd700',
+    borderRadius: 20,
+    width: 30,
+    height: 30,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 15,
+    marginRight: 10,
   },
   rankText: {
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: 'bold',
-    color: '#ffffff', // Rank text color
+    color: '#ffffff',
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 10,
   },
   playerName: {
     fontSize: 16,
@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
   },
   pointsText: {
     fontSize: 14,
-    color: '#808080', // Points text color
+    color: '#4a90e2',
   },
 });
 

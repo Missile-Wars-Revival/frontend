@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, View, Button, Dimensions, ScrollView, Text, TouchableOpacity, Image } from 'react-native';
+import { Modal, View, TouchableOpacity, Dimensions, ScrollView, Text, Image } from 'react-native';
 import { LootPlacementPopup } from './lootplacement';
 import * as SecureStore from "expo-secure-store";
 import axiosInstance from '../../api/axios-instance';
+import { create } from 'twrnc';
+
+const tw = create(require('../../tailwind.config.js'));
 
 interface LootType {
   type: string;
@@ -16,10 +19,6 @@ interface LootLibraryViewProps {
 
 interface Loot {
   type: string;
-}
-
-interface LootImages {
-  [key: string]: any;
 }
 
 //backend needs to fetch users Loot library
@@ -51,9 +50,19 @@ const fetchLootLib = async (): Promise<LootType[]> => {
   }
 };
 
-
-
-//Loot images for both map and library
+const LootSelector = ({ onSelect, loots }: { onSelect: (loot: string) => void, loots: LootType[] }) => (
+  <ScrollView style={tw`flex-1`}>
+    {loots.map((loot, index) => (
+      <TouchableOpacity key={index} onPress={() => onSelect(loot.type)} style={tw`flex-row items-center bg-white p-2 mb-1 rounded-lg shadow`}>
+        <Image source={require("../../assets/mapassets/Airdropicon.png")} style={tw`w-8 h-8 mr-2`} />
+        <View style={tw`flex-1`}>
+          <Text style={tw`text-sm font-semibold`}>{loot.type}</Text>
+          <Text style={tw`text-xs text-gray-500`}>Quantity: {loot.quantity}</Text>
+        </View>
+      </TouchableOpacity>
+    ))}
+  </ScrollView>
+);
 
 export const LootLibraryView: React.FC<LootLibraryViewProps> = ({ LootModalVisible, LootPlaceHandler }) => {
   const [LootLibrary, setLootLibrary] = useState<LootType[]>([]);
@@ -61,7 +70,6 @@ export const LootLibraryView: React.FC<LootLibraryViewProps> = ({ LootModalVisib
   const [showplacmentPopup, setShowplacementPopup] = useState<boolean>(false);
   const [selectedLoot, setSelectedLoot] = useState<Loot | null>(null);
   const [noItems, setNoItems] = useState<boolean>(false);
-  const resizedlootimage = require("../../assets/mapassets/Airdropicon.png");
 
   useEffect(() => {
     fetchLootLib().then(data => {
@@ -70,6 +78,7 @@ export const LootLibraryView: React.FC<LootLibraryViewProps> = ({ LootModalVisib
       setNoItems(data.length === 0);
     }).catch(error => {
       console.error('Error fetching Loot library:', error);
+      setLoading(false);
     });
   }, []);
 
@@ -82,9 +91,13 @@ export const LootLibraryView: React.FC<LootLibraryViewProps> = ({ LootModalVisib
     setShowplacementPopup(false);
   };
 
-  if (loading) {
-    return <View><Text>Loading...</Text></View>;
-  }
+  const getModalHeight = () => {
+    if (loading || noItems) return 'h-1/3';
+    const itemCount = LootLibrary.length;
+    if (itemCount <= 3) return 'h-1/3';
+    if (itemCount <= 6) return 'h-1/2';
+    return 'h-2/3';
+  };
 
   return (
     <Modal
@@ -93,27 +106,33 @@ export const LootLibraryView: React.FC<LootLibraryViewProps> = ({ LootModalVisib
       visible={LootModalVisible}
       onRequestClose={LootPlaceHandler}
     >
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
-        <View style={{ backgroundColor: 'white', borderRadius: 10, width: Dimensions.get('window').width - 40, maxHeight: Dimensions.get('window').height - 200 }}>
-          <ScrollView contentContainerStyle={{ padding: 20 }}>
-            <Text>Select your Loot:</Text>
-            {noItems ? ( // Conditionally render based on no items state
-              <Text>No items in inventory</Text>
-            ) : (
-              LootLibrary.map((Loot, index) => (
-                <TouchableOpacity key={index} onPress={() => handleLootClick(Loot.type)} style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 10 }}>
-                   <Image source={resizedlootimage} style={{ width: 50, height: 50, marginRight: 10 }} />
-                  <Text>{Loot.type} - Quantity: {Loot.quantity}</Text>
-                </TouchableOpacity>
-              ))
-            )}
-          </ScrollView>
-          <View style={{ alignSelf: 'flex-end', padding: 10 }}>
-            <Button title="Done" onPress={LootPlaceHandler} />
-          </View>
+      <View style={tw`flex-1 justify-center items-center bg-black bg-opacity-50`}>
+        <View style={tw`bg-white rounded-lg p-4 w-11/12 ${getModalHeight()} max-h-[90%]`}>
+          <Text style={tw`text-xl font-bold mb-2`}>Select your Loot:</Text>
+          {loading ? (
+            <View style={tw`flex-1 justify-center items-center`}>
+              <Text>Loading...</Text>
+            </View>
+          ) : noItems ? (
+            <Text style={tw`text-center mt-4`}>No items in inventory</Text>
+          ) : (
+            <LootSelector onSelect={handleLootClick} loots={LootLibrary} />
+          )}
+          <TouchableOpacity
+            style={tw`bg-blue-500 px-6 py-2 rounded-lg mt-4 self-end`}
+            onPress={LootPlaceHandler}
+          >
+            <Text style={tw`text-white font-bold`}>Done</Text>
+          </TouchableOpacity>
         </View>
       </View>
-      {showplacmentPopup && <LootPlacementPopup visible={showplacmentPopup} onClose={handleClosePopup} selectedLoot={selectedLoot} />}
+      {showplacmentPopup && selectedLoot && (
+        <LootPlacementPopup 
+          visible={showplacmentPopup} 
+          onClose={handleClosePopup} 
+          selectedLoot={selectedLoot} 
+        />
+      )}
     </Modal>
   );
 };
