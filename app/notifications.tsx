@@ -38,28 +38,34 @@ const NotificationsPage: React.FC = () => {
 	const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
 
 	const handleAccept = useCallback(async (item: Notification) => {
-    console.log('Accept friend request:', item);
-    try {
-      const token = await SecureStore.getItemAsync("token");
-      if (!token) {
-        console.error('No token found');
-        return;
-      }
-      
-      const response = await addFriend(token, item.sentby);
-      console.log('Friend request accepted:', response.message);
-      
-      await markAsRead(item.id);
-      setHiddenIds(prev => new Set(prev).add(item.id));
-    } catch (error) {
-      console.error('Failed to accept friend request:', error);
-      // Optionally, show an error message to the user
-    }
-  }, [markAsRead]);
+		console.log('Accept friend request:', item);
+		try {
+			const token = await SecureStore.getItemAsync("token");
+			if (!token) {
+				console.error('No token found');
+				return;
+			}
+			
+			const response = await addFriend(token, item.sentby);
+			console.log('Friend request accepted:', response.message);
+			
+			// Remove the notification instead of marking it as read
+			await deleteNotificationById(item.id);
+			setHiddenIds(prev => new Set(prev).add(item.id));
+		} catch (error) {
+			console.error('Failed to accept friend request:', error);
+			// Optionally, show an error message to the user
+      setHiddenIds(prev => {
+				const newSet = new Set(prev);
+				newSet.delete(item.id);
+				return newSet;
+			});
+		}
+	}, [deleteNotificationById]);
 
-  const handleDecline = useCallback(async (item: Notification) => {
-    console.log('Decline friend request:', item);
-    setHiddenIds(prev => new Set(prev).add(item.id));
+	const handleDecline = useCallback(async (item: Notification) => {
+		console.log('Decline friend request:', item);
+		setHiddenIds(prev => new Set(prev).add(item.id));
 		try {
 			await deleteNotificationById(item.id);
 		} catch (error) {
