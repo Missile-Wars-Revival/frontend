@@ -1,8 +1,10 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, SafeAreaView, Platform, StatusBar } from 'react-native';
 import { useNotifications } from '../components/Notifications/useNotifications';
 import * as SecureStore from "expo-secure-store";
 import { addFriend } from '../api/friends';
+import { Ionicons } from '@expo/vector-icons'; // Make sure to import Ionicons
+import { useRouter } from 'expo-router'; // Import useRouter
 
 interface Notification {
 	id: string;
@@ -36,6 +38,7 @@ const getTimeDifference = (timestamp: string): string => {
 const NotificationsPage: React.FC = () => {
 	const { notifications, isLoading, error, fetchNotifications, markAsRead, deleteNotificationById } = useNotifications();
 	const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
+	const router = useRouter(); // Initialize useRouter
 
 	const handleAccept = useCallback(async (item: Notification) => {
 		console.log('Accept friend request:', item);
@@ -108,54 +111,68 @@ const NotificationsPage: React.FC = () => {
 		);
 	}, [hiddenIds, markAsRead, handleAccept, handleDecline]);
 
-	if (isLoading) {
-		return (
-			<View style={styles.centerContainer}>
-				<Text>Loading notifications...</Text>
-			</View>
-		);
-	}
-
-	if (error) {
-		return (
-			<View style={styles.centerContainer}>
-				<Text>{error}</Text>
-				<TouchableOpacity style={styles.retryButton} onPress={fetchNotifications}>
-					<Text style={styles.retryButtonText}>Retry</Text>
-				</TouchableOpacity>
-			</View>
-		);
-	}
-
 	return (
-		<View style={styles.container}>
-			<Text style={styles.header}>Notifications</Text>
-			{notifications.length === 0 ? (
-				<Text style={styles.noNotifications}>No notifications</Text>
-			) : (
-				<FlatList
-					data={notifications}
-					renderItem={renderNotificationItem}
-					keyExtractor={(item) => item.id}
-					contentContainerStyle={styles.listContainer}
-					refreshing={isLoading}
-					onRefresh={fetchNotifications}
-				/>
-			)}
-		</View>
+		<SafeAreaView style={styles.safeArea}>
+			<View style={styles.container}>
+				<View style={styles.header}>
+					<TouchableOpacity onPress={() => router.push('/friends')} style={styles.backButton}>
+						<Ionicons name="arrow-back" size={24} color="#fff" />
+					</TouchableOpacity>
+					<Text style={styles.headerText}>Notifications</Text>
+				</View>
+				{isLoading ? (
+					<View style={styles.centerContainer}>
+						<Text>Loading notifications...</Text>
+					</View>
+				) : error ? (
+					<View style={styles.centerContainer}>
+						<Text>{error}</Text>
+						<TouchableOpacity style={styles.retryButton} onPress={fetchNotifications}>
+							<Text style={styles.retryButtonText}>Retry</Text>
+						</TouchableOpacity>
+					</View>
+				) : (
+					<FlatList
+						data={notifications}
+						renderItem={renderNotificationItem}
+						keyExtractor={(item) => item.id}
+						contentContainerStyle={styles.listContainer}
+						refreshing={isLoading}
+						onRefresh={fetchNotifications}
+						ListEmptyComponent={
+							<Text style={styles.noNotifications}>No notifications</Text>
+						}
+					/>
+				)}
+			</View>
+		</SafeAreaView>
 	);
 };
 
 const styles = StyleSheet.create({
+	safeArea: {
+		flex: 1,
+		backgroundColor: '#4a5568', // Match this with your header color
+	},
 	container: {
 		flex: 1,
 		backgroundColor: '#f5f5f5',
 	},
 	header: {
-		fontSize: 24,
+		flexDirection: 'row',
+		alignItems: 'center',
+		padding: 16,
+		backgroundColor: '#4a5568',
+		paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+	},
+	backButton: {
+		padding: 8,
+		marginRight: 16,
+	},
+	headerText: {
+		fontSize: 20,
 		fontWeight: 'bold',
-		padding: 20,
-		backgroundColor: '#fff',
+		color: '#ffffff',
 	},
 	listContainer: {
 		padding: 10,

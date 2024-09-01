@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, Dimensions, Animated } from 'react-native';
 
 // Get screen dimensions
@@ -14,32 +14,41 @@ interface TimerProps {
     const [timeLeft, setTimeLeft] = useState(duration);
     const animatedWidth = useRef(new Animated.Value(width)).current; // Start with full width
     const colorAnimation = useRef(new Animated.Value(0)).current;
-  
-    useEffect(() => {
-      const interval = setInterval(() => {
-        setTimeLeft(timeLeft => {
-          const nextTime = timeLeft - 1;
-          if (nextTime < 0) {
-            clearInterval(interval);
-            onExpire();
-            return 0;
+    const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+    const updateTimer = useCallback(() => {
+      setTimeLeft((prevTime) => {
+        const nextTime = prevTime - 1;
+        if (nextTime < 0) {
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
           }
-          colorAnimation.setValue((duration - nextTime) / duration); // Update color based on time left
-          return nextTime;
-        });
-      }, 1000);
-  
-      return () => clearInterval(interval);
-    }, []);
-  
+          onExpire();
+          return 0;
+        }
+        colorAnimation.setValue((duration - nextTime) / duration);
+        return nextTime;
+      });
+    }, [duration, onExpire, colorAnimation]);
+
+    useEffect(() => {
+      intervalRef.current = setInterval(updateTimer, 1000);
+
+      return () => {
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+        }
+      };
+    }, [updateTimer]);
+
     useEffect(() => {
       Animated.timing(animatedWidth, {
         toValue: (timeLeft / duration) * width, // Calculate width as a fraction of time left
         duration: 1000,
         useNativeDriver: false
       }).start();
-    }, [timeLeft]);
-  
+    }, [timeLeft, duration, animatedWidth]);
+
     const backgroundColor = colorAnimation.interpolate({
       inputRange: [0, 1],
       outputRange: ['green', 'red']
