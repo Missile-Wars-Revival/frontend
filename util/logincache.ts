@@ -1,5 +1,6 @@
 import * as SecureStore from "expo-secure-store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { logout } from "../api/login";
 
 export async function saveCredentials(
   username: string,
@@ -17,6 +18,7 @@ export async function saveCredentials(
 
 export async function clearCredentials(): Promise<void> {
   try {
+    await logout();
     // Clearing credentials stored in SecureStore
     await SecureStore.deleteItemAsync("username");
     await SecureStore.deleteItemAsync("token");
