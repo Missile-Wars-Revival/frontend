@@ -3,6 +3,7 @@ import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert } from 'react
 import { getNotifications } from '../api/notifications';
 
 interface Notification {
+  id: number;
   title: string;
   body: string;
   timestamp: string;

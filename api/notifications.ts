@@ -6,10 +6,11 @@ interface NotificationResponse {
 }
 
 interface Notification {
-	title: string;
-	body: string;
-	timestamp: string;
-}
+    id: number;
+    title: string;
+    body: string;
+    timestamp: string;
+  }
 
 export const getNotifications = async (): Promise<Notification[]> => {
 	try {
