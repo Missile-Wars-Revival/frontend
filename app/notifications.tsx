@@ -8,6 +8,7 @@ interface Notification {
 	id: string;
 	title: string;
 	body: string;
+  sentby: string;
 	timestamp: string;
 	isRead: boolean;
 	userId: string;
@@ -45,7 +46,7 @@ const NotificationsPage: React.FC = () => {
         return;
       }
       
-      const response = await addFriend(token, item.userId);
+      const response = await addFriend(token, item.sentby);
       console.log('Friend request accepted:', response.message);
       
       await markAsRead(item.id);

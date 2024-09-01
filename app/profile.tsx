@@ -182,6 +182,19 @@ const ProfilePage: React.FC = () => {
   };
 
   const openImagePicker = () => {
+    (async () => {
+      // Request media library permissions
+      const mediaLibraryStatus = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (mediaLibraryStatus.status !== 'granted') {
+        alert('Sorry, we need camera roll permissions to make this work!');
+      }
+
+      // Request camera permissions
+      const cameraStatus = await ImagePicker.requestCameraPermissionsAsync();
+      if (cameraStatus.status !== 'granted') {
+        alert('Sorry, we need camera permissions to make this work!');
+      }
+    })();
     Alert.alert(
       "Change Profile Photo",
       "Choose an option",
@@ -224,19 +237,6 @@ const ProfilePage: React.FC = () => {
   useEffect(() => {
     loadProfileImage();
     fetchFriends();
-    (async () => {
-      // Request media library permissions
-      const mediaLibraryStatus = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (mediaLibraryStatus.status !== 'granted') {
-        alert('Sorry, we need camera roll permissions to make this work!');
-      }
-
-      // Request camera permissions
-      const cameraStatus = await ImagePicker.requestCameraPermissionsAsync();
-      if (cameraStatus.status !== 'granted') {
-        alert('Sorry, we need camera permissions to make this work!');
-      }
-    })();
   }, []);
 
   useEffect(() => {
@@ -311,9 +311,9 @@ const ProfilePage: React.FC = () => {
           {statistics ? (
             <View style={styles.statisticsContainer}>
               <Text style={styles.statItem}>Deaths: {statistics.numDeaths}</Text>
-              <Text style={styles.statItem}>Loot Placed: {statistics.numLootPlaced}</Text>
+              <Text style={styles.statItem}>Missiles Fired: {statistics.numMissilesPlaced}</Text>
               <Text style={styles.statItem}>Landmines Placed: {statistics.numLandminesPlaced}</Text>
-              <Text style={styles.statItem}>Missiles Placed: {statistics.numMissilesPlaced}</Text>
+              <Text style={styles.statItem}>Loot Placed: {statistics.numLootPlaced}</Text>
               <Text style={styles.statItem}>Loot Pickups: {statistics.numLootPickups}</Text>
             </View>
           ) : (

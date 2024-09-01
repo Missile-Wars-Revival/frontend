@@ -56,6 +56,7 @@ export default function Map() {
       if (credentials) {
         setUsername(credentials);
       } else {
+        await AsyncStorage.setItem('signedIn', 'false');
         router.navigate("/login");
       }
     };

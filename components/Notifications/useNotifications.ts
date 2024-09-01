@@ -30,6 +30,7 @@ interface Notification {
 	id: string;
 	title: string;
 	body: string;
+	sentby: string;
 	timestamp: string;
 	isRead: boolean;
 	userId: string;

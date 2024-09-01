@@ -120,11 +120,11 @@ const UserProfilePage: React.FC = () => {
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Statistics</Text>
           <View style={styles.statisticsContainer}>
-            <Text style={styles.statItem}>Deaths: {userProfile.statistics.numDeaths}</Text>
-            <Text style={styles.statItem}>Loot Placed: {userProfile.statistics.numLootPlaced}</Text>
-            <Text style={styles.statItem}>Landmines Placed: {userProfile.statistics.numLandminesPlaced}</Text>
-            <Text style={styles.statItem}>Missiles Placed: {userProfile.statistics.numMissilesPlaced}</Text>
-            <Text style={styles.statItem}>Loot Pickups: {userProfile.statistics.numLootPickups}</Text>
+              <Text style={styles.statItem}>Deaths: {userProfile.statistics.numDeaths}</Text>
+              <Text style={styles.statItem}>Missiles Fired: {userProfile.statistics.numMissilesPlaced}</Text>
+              <Text style={styles.statItem}>Landmines Placed: {userProfile.statistics.numLandminesPlaced}</Text>
+              <Text style={styles.statItem}>Loot Placed: {userProfile.statistics.numLootPlaced}</Text>
+              <Text style={styles.statItem}>Loot Pickups: {userProfile.statistics.numLootPickups}</Text>
           </View>
         </View>
 
