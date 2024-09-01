@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, FlatList, Modal, Alert, RefreshControl, Dimensions, Button, Image, TextInput } from "react-native";
+import { View, Text, TouchableOpacity, FlatList, Modal, Alert, RefreshControl, Image, TextInput } from "react-native";
 import { useRouter } from "expo-router";
 import { useUserName } from "../util/fetchusernameglobal";
 import * as SecureStore from 'expo-secure-store';
@@ -8,12 +8,12 @@ import axiosInstance from "../api/axios-instance";
 import { removeFriend } from "../api/friends";
 import { MissileLibrary } from "../components/Missile/missile";
 import { searchFriendsAdded } from "../api/getplayerlocations";
+import { fetchAndCacheImage } from "../util/imagecache";
 
 interface Friend {
   username: string;
+  profileImageUrl: string;
 }
-
-const resizedplayerimage = require("../assets/mapassets/Female_Avatar_PNG.png");
 
 const FriendsPage: React.FC = () => {
   const [friends, setFriends] = useState<Friend[]>([]);
@@ -57,7 +57,13 @@ const FriendsPage: React.FC = () => {
       });
   
       if (response.data && response.data.friends) {
-        setFriends(response.data.friends);
+        const friendsWithImages = await Promise.all(
+          response.data.friends.map(async (friend: Friend) => ({
+            ...friend,
+            profileImageUrl: await fetchAndCacheImage(friend.username),
+          }))
+        );
+        setFriends(friendsWithImages);
       } else {
         console.log('No friends data found');
       }
@@ -133,7 +139,14 @@ const FriendsPage: React.FC = () => {
       
       const filteredResult = result.filter(friend => friend.username !== currentUserUsername);
       
-      setFilteredFriends(filteredResult);
+      const filteredResultWithImages = await Promise.all(
+        filteredResult.map(async (friend) => ({
+          ...friend,
+          profileImageUrl: await fetchAndCacheImage(friend.username),
+        }))
+      );
+      
+      setFilteredFriends(filteredResultWithImages);
     } catch (error) {
       console.error("Failed to search for friends:", error);
       setFilteredFriends([]);
@@ -147,7 +160,7 @@ const FriendsPage: React.FC = () => {
         onPress={() => navigateToUserProfile(item.username)}
       >
         <Image
-          source={resizedplayerimage}
+          source={{ uri: item.profileImageUrl }}
           className="w-12 h-12 rounded-full"
         />
         <Text className="flex-1 text-lg font-semibold ml-4">{item.username}</Text>
@@ -176,7 +189,7 @@ const FriendsPage: React.FC = () => {
         onPress={() => navigateToUserProfile(item.username)}
       >
         <Image
-          source={resizedplayerimage}
+          source={{ uri: item.profileImageUrl }}
           className="w-12 h-12 rounded-full"
         />
         <Text className="flex-1 text-lg font-semibold ml-4">{item.username}</Text>
@@ -278,10 +291,14 @@ const FriendsPage: React.FC = () => {
       >
         <View className="flex-1 justify-center items-center bg-black bg-opacity-50">
           <View className="bg-white rounded-lg w-11/12 max-h-3/4">
-            <MissileLibrary playerName={selectedPlayer} />
-            <View className="p-4 self-end">
-              <Button title="Done" onPress={() => setShowMissileLibrary(false)} />
-            </View>
+            <MissileLibrary 
+              playerName={selectedPlayer} 
+              onMissileFired={() => {
+                // Handle missile fired event
+                setShowMissileLibrary(false);
+              }}
+              onClose={() => setShowMissileLibrary(false)}
+            />
           </View>
         </View>
       </Modal>

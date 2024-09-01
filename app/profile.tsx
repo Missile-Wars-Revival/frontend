@@ -1,8 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { SafeAreaView, StyleSheet, Text, View, Image, TouchableOpacity, Switch, Modal, ScrollView, ImageSourcePropType, FlatList, Alert } from 'react-native';
+import { SafeAreaView, StyleSheet, Text, View, TouchableOpacity, Switch, Modal, ScrollView, FlatList, Alert, Image } from 'react-native';
 import { router } from 'expo-router';
 import { clearCredentials } from '../util/logincache';
-import { useUserName } from '../util/fetchusernameglobal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import * as SecureStore from "expo-secure-store";
@@ -12,6 +11,10 @@ import * as ImagePicker from 'expo-image-picker';
 import useFetchInventory from '../hooks/websockets/inventoryhook';
 import { getselfprofile } from '../api/getprofile';
 import { Statistics } from './user-profile';
+import firebase from '../util/firebase/config';
+import { fetchAndCacheImage } from '../util/imagecache';
+
+const DEFAULT_IMAGE = require('../assets/mapassets/Female_Avatar_PNG.png');
 
 interface ItemImages {
   [key: string]: any;
@@ -35,8 +38,6 @@ export const itemimages: ItemImages = {
   // Add other missile images here
 };
 
-const resizedplayerimage = require('../assets/mapassets/Female_Avatar_PNG.png');
-
 interface SelfProfile {
   username: string;
   email: string;
@@ -49,15 +50,29 @@ interface ApiResponse {
   userProfile: SelfProfile;
 }
 
+interface Friend {
+  username: string;
+  profileImageUrl: string;
+}
+
 const ProfilePage: React.FC = () => {
-  const userNAME = useUserName();
   const [useBackgroundLocation, setUseBackgroundLocation] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
-  const [userImage, setUserImage] = useState<string | null>(null);
-  const [friends, setFriends] = useState<{ username: string }[]>([]);
+  const [userImageUrl, setUserImageUrl] = useState<string | null>(null);
+  const [friends, setFriends] = useState<Friend[]>([]);
   const inventory = useFetchInventory();
   const [statistics, setStatistics] = useState<Statistics | null>(null);
   const [email, setEmail] = useState<string | null>(null);
+  const [username, setUsername] = useState<string | null>(null);
+  const [friendImages, setFriendImages] = useState<{ [key: string]: string }>({});
+
+  useEffect(() => {
+    const fetchUsername = async () => {
+      const name = await SecureStore.getItemAsync("username");
+      setUsername(name);
+    };
+    fetchUsername();
+  }, []);
 
   const filteredInventory = useMemo(() => {
     return inventory.filter(item => item.quantity > 0);
@@ -84,9 +99,22 @@ const ProfilePage: React.FC = () => {
     router.push("/settings");
   };
 
-  const saveImageUri = async (uri: string) => {
-    await AsyncStorage.setItem('profileImageUri', uri);
-    setUserImage(uri);
+  const loadProfileImage = async () => {
+    const name = await SecureStore.getItemAsync("username");
+    if (name) {
+      const imageUrl = await fetchAndCacheImage(name);
+      setUserImageUrl(imageUrl);
+    }
+  };
+
+  const uploadImageToFirebase = async (uri: string) => {
+    const name = await SecureStore.getItemAsync("username");
+    const response = await fetch(uri);
+    const blob = await response.blob();
+    const ref = firebase.storage().ref().child(`profileImages/${name}`);
+    await ref.put(blob);
+    const url = await ref.getDownloadURL();
+    return url;
   };
 
   const pickImage = async () => {
@@ -100,8 +128,8 @@ const ProfilePage: React.FC = () => {
     if (!result.canceled && result.assets && result.assets.length > 0) {
       const firstAsset = result.assets[0];
       if (firstAsset && firstAsset.uri) {
-        setUserImage(firstAsset.uri); 
-        saveImageUri(firstAsset.uri)
+        const url = await uploadImageToFirebase(firstAsset.uri);
+        await loadProfileImage(); // Reload the image to ensure it's updated in the UI
       }
     }
   };
@@ -116,16 +144,25 @@ const ProfilePage: React.FC = () => {
     if (!result.canceled && result.assets && result.assets.length > 0) {
       const firstAsset = result.assets[0];
       if (firstAsset && firstAsset.uri) {
-        setUserImage(firstAsset.uri); 
-        saveImageUri(firstAsset.uri)
+        const url = await uploadImageToFirebase(firstAsset.uri);
+        await loadProfileImage(); // Reload the image to ensure it's updated in the UI
       }
     }
   };
 
-  const setdefaultasimage = async (image: any) => {
-    setUserImage(null)
-    await AsyncStorage.removeItem('profileImageUri');
-  }
+  const setdefaultasimage = async () => {
+    setUserImageUrl(null);
+    await AsyncStorage.removeItem(`profileImage_${username}`);
+    
+    // Remove the image from Firebase Storage
+    try {
+      await firebase.storage().ref(`profileImages/${username}`).delete();
+    } catch (error) {
+      console.error('Error deleting image from Firebase:', error);
+    }
+    // Reload the default image
+    await loadProfileImage();
+  };
 
   const removePhoto = () => {
     Alert.alert(
@@ -133,7 +170,7 @@ const ProfilePage: React.FC = () => {
       "Are you sure you want to remove your profile photo?",
       [
         { text: "Cancel", style: "cancel" },
-        { text: "Remove", onPress: () => setdefaultasimage(resizedplayerimage) },
+        { text: "Remove", onPress: () => setdefaultasimage() },
       ]
     );
   };
@@ -156,7 +193,16 @@ const ProfilePage: React.FC = () => {
       const token = await SecureStore.getItemAsync("token");
       if (!token) throw new Error("No authentication token found.");
       const response = await axiosInstance.get('/api/friends', { params: { token } });
-      setFriends(response.data.friends || []);
+      const friendsData = response.data.friends || [];
+      
+      // Fetch and cache friend profile images
+      const images: { [key: string]: string } = {};
+      for (const friend of friendsData) {
+        images[friend.username] = await fetchAndCacheImage(friend.username);
+      }
+      setFriendImages(images);
+      
+      setFriends(friendsData);
     } catch (error) {
       console.error('Failed to fetch friends', error);
     }
@@ -170,11 +216,8 @@ const ProfilePage: React.FC = () => {
   };
 
   useEffect(() => {
+    loadProfileImage();
     fetchFriends();
-  }, []);
-
-  useEffect(() => {
-    loadPreference();
     (async () => {
       // Request media library permissions
       const mediaLibraryStatus = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -187,14 +230,11 @@ const ProfilePage: React.FC = () => {
       if (cameraStatus.status !== 'granted') {
         alert('Sorry, we need camera permissions to make this work!');
       }
-      const savedImageUri = await AsyncStorage.getItem('profileImageUri');
-      if (savedImageUri) {
-        setUserImage(savedImageUri);
-      }
     })();
   }, []);
 
   useEffect(() => {
+    loadPreference();
     fetchUserStatistics();
   }, []);
 
@@ -211,7 +251,6 @@ const ProfilePage: React.FC = () => {
       console.error('Failed to fetch user statistics', error);
     }
   };
-
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -224,11 +263,11 @@ const ProfilePage: React.FC = () => {
         <View style={styles.profileContainer}>
           <TouchableOpacity onPress={openImagePicker}>
             <Image
-              source={userImage ? { uri: userImage } : resizedplayerimage}
+              source={{ uri: userImageUrl || Image.resolveAssetSource(DEFAULT_IMAGE).uri }}
               style={styles.profileImage}
             />
           </TouchableOpacity>
-          <Text style={styles.profileName}>{userNAME}</Text>
+          <Text style={styles.profileName}>{username}</Text>
           <Text style={styles.profileDetails}>Email: {email}</Text>
           
           <View style={styles.badgesContainer}>
@@ -276,7 +315,10 @@ const ProfilePage: React.FC = () => {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.slider}>
             {filteredInventory.map(item => (
               <TouchableOpacity key={item.id} onPress={() => setModalVisible(true)} style={styles.sliderItem}>
-                <Image style={styles.itemImage} source={itemimages[item.name]} />
+                <Image
+                  source={itemimages[item.name]}
+                  style={styles.itemImage}
+                />
                 <Text style={styles.itemName}>{item.name}</Text>
                 <Text style={styles.itemQuantity}>x{item.quantity}</Text>
               </TouchableOpacity>
@@ -293,7 +335,10 @@ const ProfilePage: React.FC = () => {
                 style={styles.sliderItem}
                 onPress={() => navigateToUserProfile(friend.username)}
               >
-                <Image source={resizedplayerimage} style={styles.friendImage} />
+                <Image
+                  source={{ uri: friendImages[friend.username] || Image.resolveAssetSource(DEFAULT_IMAGE).uri }}
+                  style={styles.friendImage}
+                />
                 <Text style={styles.friendName}>{friend.username}</Text>
               </TouchableOpacity>
             ))}
@@ -316,9 +361,9 @@ const ProfilePage: React.FC = () => {
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => (
                   <View style={styles.inventoryItem}>
-                    <Image 
-                      style={styles.inventoryItemImage} 
+                    <Image
                       source={itemimages[item.name]}
+                      style={styles.inventoryItemImage}
                     />
                     <View style={styles.inventoryItemDetails}>
                       <Text style={styles.inventoryItemName}>{item.name}</Text>
@@ -376,10 +421,10 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   profileImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    marginBottom: 15,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    marginBottom: 10,
   },
   emptyInventoryText: {
     fontSize: 18,
@@ -562,6 +607,15 @@ const styles = StyleSheet.create({
   statItem: {
     fontSize: 16,
     marginBottom: 5,
+  },
+  defaultImageButton: {
+    backgroundColor: '#ddd',
+    padding: 10,
+    borderRadius: 5,
+    marginTop: 10,
+  },
+  defaultImageButtonText: {
+    color: '#333',
   },
 });
 

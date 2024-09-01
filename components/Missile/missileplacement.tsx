@@ -7,17 +7,29 @@ import { useUserName } from "../../util/fetchusernameglobal";
 import { mapstyles } from '../../map-themes/map-stylesheet';
 import { firemissileloc } from '../../api/fireentities';
 
-export const MissilePlacementPopup = ({ visible, onClose, selectedMissile }) => {
-  const [region, setRegion] = useState(null);
-  const [marker, setMarker] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [currentLocation, setCurrentLocation] = useState(null);
-  const userName = useUserName();
+interface MissilePlacementPopupProps {
+  visible: boolean;
+  onClose: () => void;
+  selectedMissile: string;
+  onMissileFired: () => void;
+}
 
-  //import is locaiton enabled from map-comp!!!!!
-  const [isLocationEnabled, setIsLocationEnabled] = useState(true);
-  const [hasDbConnection, setDbConnection] = useState(false);
-  const [isAlive, setisAlive] = useState(true);
+interface Region {
+  latitude: number;
+  longitude: number;
+  latitudeDelta: number;
+  longitudeDelta: number;
+}
+
+export const MissilePlacementPopup: React.FC<MissilePlacementPopupProps> = ({ visible, onClose, selectedMissile, onMissileFired }) => {
+  const [region, setRegion] = useState<Region | null>(null);
+  const [marker, setMarker] = useState<Region | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [currentLocation, setCurrentLocation] = useState<Region | null>(null);
+  const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(true);
+  const [hasDbConnection, setDbConnection] = useState<boolean>(false);
+  const [isAlive, setisAlive] = useState<boolean>(true);
+  const userName = useUserName();
 
   // Function to handle location permission and fetch current location
   async function initializeLocation() {
@@ -93,13 +105,12 @@ export const MissilePlacementPopup = ({ visible, onClose, selectedMissile }) => 
       </View>
     );
   }
-
   const handleMissilePlacement = () => {
-    if (marker.latitude === currentLocation.latitude && marker.longitude === currentLocation.longitude) {
+    if (marker && currentLocation && marker.latitude === currentLocation.latitude && marker.longitude === currentLocation.longitude) {
       Alert.alert('Warning', 'Firing a Missile at your current location is not recommended!');
-    } else {
+    } else if (marker && currentLocation) {
       console.log(`FIRING Missile: Dest coords: ${marker.latitude}, ${marker.longitude}; sentbyUser: ${userName} Missile Type: ${selectedMissile}, current coords: ${currentLocation.latitude}, ${currentLocation.longitude}`);
-      firemissileloc(marker.latitude, marker.longitude, selectedMissile)
+      firemissileloc(marker.latitude.toString(), marker.longitude.toString(), selectedMissile);
       onClose();
     }
   };
@@ -115,7 +126,12 @@ export const MissilePlacementPopup = ({ visible, onClose, selectedMissile }) => 
         <View style={{ backgroundColor: 'white', borderRadius: 10, width: Dimensions.get('window').width - 40, height: Dimensions.get('window').height - 200 }}>
           <MapView
             style={{ flex: 1 }}
-            initialRegion={region}
+            initialRegion={region ?? {
+              latitude: 0,
+              longitude: 0,
+              latitudeDelta: 0.01,
+              longitudeDelta: 0.01
+            }}
             showsUserLocation={true}
             provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
             showsMyLocationButton={true}
@@ -126,16 +142,23 @@ export const MissilePlacementPopup = ({ visible, onClose, selectedMissile }) => 
               longitudeDelta: 0.01
             })}
           >
-            <Circle
-              center={marker}
-              //needs to be fetched depending on missile type!!!
-              radius={40}
-              fillColor="rgba(255, 0, 0, 0.2)"
-              strokeColor="rgba(255, 0, 0, 0.8)" />
+            {marker && (
+              <Circle
+                center={marker}
+                //needs to be fetched depending on missile type!!!
+                radius={40}
+                fillColor="rgba(255, 0, 0, 0.2)"
+                strokeColor="rgba(255, 0, 0, 0.8)"
+              />
+            )}
             <Marker
-              coordinate={marker}
+              coordinate={marker || { latitude: 0, longitude: 0 }}
               draggable
-              onDragEnd={(e) => setMarker(e.nativeEvent.coordinate)}
+              onDragEnd={(e) => setMarker({
+                ...e.nativeEvent.coordinate,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01
+              })}
             />
           </MapView>
           {(!isLocationEnabled || !hasDbConnection) && (

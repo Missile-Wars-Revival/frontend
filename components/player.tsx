@@ -1,11 +1,26 @@
-import React, { useState } from "react";
-import { Button, View, Image, Text, Modal, Dimensions } from "react-native";
+import React, { useState, useEffect } from "react";
+import { Button, View, Image, Text, Modal, Dimensions, StyleSheet } from "react-native";
 import { Circle, Marker } from "react-native-maps";
 import { MissileLibrary } from "./Missile/missile";
 import { Players } from "./map-players";
 import { useUserName } from "../util/fetchusernameglobal";
-const resizedplayerimage = require("../assets/mapassets/Female_Avatar_PNG.png"); // Your custom image path
-const resizedplayericon = { width: 30, height: 30 }; // Custom size for image
+import { fetchAndCacheImage } from "../util/imagecache";
+
+const resizedplayerimage = require("../assets/mapassets/Female_Avatar_PNG.png");
+
+const styles = StyleSheet.create({
+  profileImage: {
+    width: 30,
+    height: 30,
+    borderRadius: 15, // Half of width/height to make it circular
+    overflow: 'hidden', // Ensures the image doesn't spill outside the rounded borders
+  },
+  username: {
+    color: 'grey',
+    marginTop: 2,
+    fontSize: 10, // Adjust as needed
+  },
+});
 
 interface PlayerProps {
   location: { latitude: number; longitude: number };
@@ -13,11 +28,22 @@ interface PlayerProps {
   timestamp: string;
   index: number;
 }
+
 export const PlayerComp = (props: PlayerProps) => {
   const [selectedMarkerIndex, setSelectedMarkerIndex] = useState<number | null>(null);
   const [showMissileLibrary, setShowMissileLibrary] = useState(false);
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
 
-  const userName = useUserName()
+  const userName = useUserName();
+
+  useEffect(() => {
+    const loadProfileImage = async () => {
+      const imageUrl = await fetchAndCacheImage(props.player.username);
+      setProfileImageUrl(imageUrl);
+    };
+
+    loadProfileImage();
+  }, [props.player.username]);
 
   const fireMissile = (playerName: string) => {
     setShowMissileLibrary(true);
@@ -49,17 +75,17 @@ export const PlayerComp = (props: PlayerProps) => {
           }
         }}
       >
-        {/* Wrap image and button inside a View */}
         <View style={{ alignItems: 'center' }}>
-          <Image source={resizedplayerimage} style={resizedplayericon} />
-          <Text style={{ color: 'grey' }}>{props.player.username}</Text>
+          <Image 
+            source={profileImageUrl ? { uri: profileImageUrl } : resizedplayerimage} 
+            style={styles.profileImage} 
+          />
+          <Text style={styles.username}>{props.player.username}</Text>
 
-          {/* Missile Lib Button */}
           {selectedMarkerIndex !== 10 && selectedMarkerIndex === props.index && props.player.username !== userName && (
-            <View style={{ backgroundColor: 'red', borderRadius: 5, marginTop: 2 }}>
-              {/* Ensure onPress event is passed the player's username */}
+            <View style={{ backgroundColor: 'red', borderRadius: 5, marginTop: 2, padding: 2 }}>
               <Button
-                title={`Fire Missile At Player: ${props.player.username}`}
+                title="Fire Missile"
                 onPress={() => {
                   fireMissile(props.player.username);
                 }}
@@ -68,7 +94,6 @@ export const PlayerComp = (props: PlayerProps) => {
             </View>
           )}
 
-          {/* Missile library popup */}
           <Modal
             animationType="slide"
             transparent={true}
@@ -77,8 +102,11 @@ export const PlayerComp = (props: PlayerProps) => {
           >
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
               <View style={{ backgroundColor: 'white', borderRadius: 10, width: Dimensions.get('window').width - 40, maxHeight: Dimensions.get('window').height - 200 }}>
-                {/* Include MissileLibrary component */}
-                <MissileLibrary playerName={props.player.username} />
+                <MissileLibrary 
+                  playerName={props.player.username} 
+                  onMissileFired={() => setShowMissileLibrary(false)}
+                  onClose={() => setShowMissileLibrary(false)}
+                />
                 <View style={{ alignSelf: 'flex-end', padding: 10 }}>
                   <Button title="Done" onPress={() => setShowMissileLibrary(false)} />
                 </View>
@@ -88,5 +116,5 @@ export const PlayerComp = (props: PlayerProps) => {
         </View>
       </Marker>
     </View>
-  )
-}
+  );
+};

@@ -7,11 +7,12 @@ import { getCredentials } from "../util/logincache";
 import { getCurrentLocation, location } from "../util/locationreq";
 import * as SecureStore from "expo-secure-store";
 import { Ionicons } from '@expo/vector-icons';
-
+import { fetchAndCacheImage } from "../util/imagecache";
 interface Filterddata {
   username: string,
   latitude: string,
   longitude: string,
+  profileImageUrl: string | null;
 }
 
 const resizedplayerimage = require("../assets/mapassets/Female_Avatar_PNG.png");
@@ -96,28 +97,28 @@ const QuickAddPage: React.FC = () => {
     }
   };
 
-  const handleRemoveFriend = async (friendUsername: string) => {
-    const token = await SecureStore.getItemAsync("token");
-    try {
-        if (!token) {
-            console.log('Token not found');
-            return; 
-        }
-        const response = await removeFriend(token, friendUsername);
-        if (response.message === "Friend removed successfully") {
-            // Assuming the server sends a response status OK on successful friend removal
-            Alert.alert("Success", "Friend successfully removed.");
-        } else {
-            // If the response is not OK, parse the response for error messages
-            const result = await response.json();
-            Alert.alert("Error", result.message || "Failed to remove friend.");
-        }
-    } catch (error) {
-        // Catch any other errors here
-        console.error('Error removing friend:', error);
-        Alert.alert("Error", "An unexpected error occurred while removing the friend.");
-    }
-  };
+  // const handleRemoveFriend = async (friendUsername: string) => {
+  //   const token = await SecureStore.getItemAsync("token");
+  //   try {
+  //       if (!token) {
+  //           console.log('Token not found');
+  //           return; 
+  //       }
+  //       const response = await removeFriend(token, friendUsername);
+  //       if (response.message === "Friend removed successfully") {
+  //           // Assuming the server sends a response status OK on successful friend removal
+  //           Alert.alert("Success", "Friend successfully removed.");
+  //       } else {
+  //           // If the response is not OK, parse the response for error messages
+  //           const result = await response.json();
+  //           Alert.alert("Error", result.message || "Failed to remove friend.");
+  //       }
+  //   } catch (error) {
+  //       // Catch any other errors here
+  //       console.error('Error removing friend:', error);
+  //       Alert.alert("Error", "An unexpected error occurred while removing the friend.");
+  //   }
+  // };
   const onRefresh = async () => {
     setRefreshing(true);
     if (userLocation) {
@@ -158,7 +159,14 @@ const QuickAddPage: React.FC = () => {
       
       const filteredResult = result.filter(player => player.username !== currentUserUsername);
       
-      setFilteredData(filteredResult);
+      const filteredResultWithImages = await Promise.all(
+        filteredResult.map(async (player) => ({
+          ...player,
+          profileImageUrl: await fetchAndCacheImage(player.username),
+        }))
+      );
+      
+      setFilteredData(filteredResultWithImages);
     } catch (error) {
       console.error("Failed to search for players:", error);
       setFilteredData([]);
@@ -172,14 +180,14 @@ const QuickAddPage: React.FC = () => {
     });
   };
 
-  const renderPlayerItem = ({ item }: { item: any }) => (
+  const renderPlayerItem = ({ item }: { item: Filterddata }) => (
     <View className="flex-row items-center justify-between mb-4 bg-white p-4 rounded-lg shadow">
       <TouchableOpacity 
         className="flex-row flex-1 items-center"
         onPress={() => navigateToUserProfile(item.username)}
       >
         <Image
-          source={resizedplayerimage}
+          source={item.profileImageUrl ? { uri: item.profileImageUrl } : resizedplayerimage}
           className="w-12 h-12 rounded-full"
         />
         <Text className="flex-1 text-lg font-semibold ml-4">{item.username}</Text>

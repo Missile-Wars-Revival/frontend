@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { SafeAreaView, StyleSheet, Text, View, Image, ScrollView, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getuserprofile } from '../api/getprofile';
+import { fetchAndCacheImage } from '../util/imagecache';
 
-const resizedplayerimage = require('../assets/mapassets/Female_Avatar_PNG.png');
+const DEFAULT_IMAGE = require('../assets/mapassets/Female_Avatar_PNG.png');
 
 export interface Statistics {
   badges: string[];
@@ -28,13 +29,22 @@ interface ApiResponse {
 const UserProfilePage: React.FC = () => {
   const { username } = useLocalSearchParams<{ username: string }>();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [userImageUrl, setUserImageUrl] = useState<string | null>(null);
+  const [friendImages, setFriendImages] = useState<{ [key: string]: string }>({});
   const router = useRouter();
 
   useEffect(() => {
     if (username) {
       fetchUserProfile();
+      loadProfileImage();
     }
   }, [username]);
+
+  useEffect(() => {
+    if (userProfile && userProfile.mutualFriends) {
+      loadFriendImages();
+    }
+  }, [userProfile]);
 
   const fetchUserProfile = async () => {
     try {
@@ -46,6 +56,23 @@ const UserProfilePage: React.FC = () => {
       }
     } catch (error) {
       console.error('Failed to fetch user profile', error);
+    }
+  };
+
+  const loadProfileImage = async () => {
+    if (username) {
+      const imageUrl = await fetchAndCacheImage(username);
+      setUserImageUrl(imageUrl);
+    }
+  };
+
+  const loadFriendImages = async () => {
+    if (userProfile && userProfile.mutualFriends) {
+      const images: { [key: string]: string } = {};
+      for (const friend of userProfile.mutualFriends) {
+        images[friend] = await fetchAndCacheImage(friend);
+      }
+      setFriendImages(images);
     }
   };
 
@@ -68,7 +95,7 @@ const UserProfilePage: React.FC = () => {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.profileContainer}>
           <Image
-            source={resizedplayerimage}
+            source={{ uri: userImageUrl || Image.resolveAssetSource(DEFAULT_IMAGE).uri }}
             style={styles.profileImage}
           />
           <Text style={styles.profileName}>{userProfile.username}</Text>
@@ -103,7 +130,10 @@ const UserProfilePage: React.FC = () => {
             {userProfile.mutualFriends && userProfile.mutualFriends.length > 0 ? (
               userProfile.mutualFriends.map((friend, index) => (
                 <TouchableOpacity key={index} style={styles.sliderItem}>
-                  <Image source={resizedplayerimage} style={styles.friendImage} />
+                  <Image 
+                    source={{ uri: friendImages[friend] || Image.resolveAssetSource(DEFAULT_IMAGE).uri }} 
+                    style={styles.friendImage} 
+                  />
                   <Text style={styles.friendName}>{friend}</Text>
                 </TouchableOpacity>
               ))
