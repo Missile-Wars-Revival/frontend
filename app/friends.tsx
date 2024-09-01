@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { View, Text, TouchableOpacity, FlatList, Modal, Alert, RefreshControl, Image, TextInput } from "react-native";
 import { useRouter } from "expo-router";
 import { useUserName } from "../util/fetchusernameglobal";
@@ -9,6 +9,7 @@ import { removeFriend } from "../api/friends";
 import { MissileLibrary } from "../components/Missile/missile";
 import { searchFriendsAdded } from "../api/getplayerlocations";
 import { fetchAndCacheImage } from "../util/imagecache";
+import { useNotifications, notificationEmitter } from "../components/Notifications/useNotifications";
 
 interface Friend {
   username: string;
@@ -29,6 +30,20 @@ const FriendsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredFriends, setFilteredFriends] = useState<Friend[]>([]);
   const [isSearchActive, setIsSearchActive] = useState(false);
+  const { unreadCount: initialUnreadCount } = useNotifications();
+  const [localUnreadCount, setLocalUnreadCount] = useState(initialUnreadCount);
+
+  const handleUnreadCountUpdate = useCallback((count: number) => {
+    setLocalUnreadCount(count);
+  }, []);
+
+  useEffect(() => {
+    notificationEmitter.on('unreadCountUpdated', handleUnreadCountUpdate);
+
+    return () => {
+      notificationEmitter.off('unreadCountUpdated', handleUnreadCountUpdate);
+    };
+  }, [handleUnreadCountUpdate]);
 
   const handleRemPress = (friendUsername: string) => {
     setSelectedFriend(friendUsername);
@@ -220,6 +235,11 @@ const FriendsPage: React.FC = () => {
           onPress={() => router.push("/notifications")}
         >
           <Text className="text-white text-xl">🔔</Text>
+          {localUnreadCount > 0 && (
+            <View className="absolute -top-1 -right-1 bg-red-500 rounded-full w-5 h-5 justify-center items-center">
+              <Text className="text-white text-xs font-bold">{localUnreadCount}</Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
       <TextInput
