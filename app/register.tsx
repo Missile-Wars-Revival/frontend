@@ -17,6 +17,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import React from "react";
 import { saveCredentials } from "../util/logincache";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from "../util/Context/authcontext";
 
 export default function Register() {
   return (
@@ -80,12 +81,13 @@ function SignUpForm() {
     register("password");
     register("verifyPassword");
   }, [register]);
-
+  const { setIsSignedIn } = useAuth();
   const mutation = useRegister(
     async (token) => {
       const { username } = form.getValues();
       await saveCredentials(username, token);
       await AsyncStorage.setItem('signedIn', 'true');
+      setIsSignedIn(true);
       router.navigate("/");
     },
   );

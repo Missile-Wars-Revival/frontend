@@ -15,6 +15,7 @@ import { Platform } from 'react-native';
 import Purchases from 'react-native-purchases';
 import CountdownTimer from '../components/countdown';
 import { useCountdown } from '../util/Context/countdown';
+import { AuthProvider } from "../util/Context/authcontext";
 
 // RootLayout component
 export default function RootLayout() {
@@ -65,11 +66,13 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <AuthProvider>
       <CountdownProvider>
         <WebSocketProvider>
           <RootLayoutNav />
         </WebSocketProvider>
       </CountdownProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

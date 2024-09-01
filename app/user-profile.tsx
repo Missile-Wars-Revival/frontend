@@ -17,6 +17,7 @@ export interface Statistics {
 
 interface UserProfile {
   username: string;
+  rankpoints: number;
   mutualFriends: string[];
   statistics: Statistics;
 }
@@ -99,6 +100,9 @@ const UserProfilePage: React.FC = () => {
             style={styles.profileImage}
           />
           <Text style={styles.profileName}>{userProfile.username}</Text>
+          <View style={styles.rankPointsContainer}>
+            <Text style={styles.rankPoints}>🏅 {userProfile.rankpoints} Rank Points</Text>
+          </View>
           <View style={styles.badgesContainer}>
             <Text style={styles.sectionTitle}>Badges</Text>
             <View style={styles.badgesList}>
@@ -258,6 +262,15 @@ const styles = StyleSheet.create({
   statItem: {
     fontSize: 16,
     marginBottom: 5,
+  },
+  rankPointsContainer: {
+    alignSelf: 'flex-start',
+    marginBottom: 10,
+  },
+  rankPoints: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#4a5568',
   },
 });
 

@@ -13,6 +13,7 @@ import { getselfprofile } from '../api/getprofile';
 import { Statistics } from './user-profile';
 import firebase from '../util/firebase/config';
 import { fetchAndCacheImage } from '../util/imagecache';
+import { useAuth } from '../util/Context/authcontext';
 
 const DEFAULT_IMAGE = require('../assets/mapassets/Female_Avatar_PNG.png');
 
@@ -41,6 +42,7 @@ export const itemimages: ItemImages = {
 interface SelfProfile {
   username: string;
   email: string;
+  rankpoints: number;
   mutualFriends: string[];
   statistics: Statistics;
 }
@@ -65,6 +67,8 @@ const ProfilePage: React.FC = () => {
   const [email, setEmail] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
   const [friendImages, setFriendImages] = useState<{ [key: string]: string }>({});
+  const [rankPoints, setRankPoints] = useState<number | null>(null);
+  const { setIsSignedIn } = useAuth();
 
   useEffect(() => {
     const fetchUsername = async () => {
@@ -80,6 +84,8 @@ const ProfilePage: React.FC = () => {
 
   const handleLogout = async () => {
     await clearCredentials();
+    await AsyncStorage.setItem('signedIn', 'false');
+    setIsSignedIn(false);
     router.push("/login");
   };
 
@@ -244,6 +250,7 @@ const ProfilePage: React.FC = () => {
       if (response.success && response.userProfile) {
         setStatistics(response.userProfile.statistics);
         setEmail(response.userProfile.email);
+        setRankPoints(response.userProfile.rankpoints);
       } else {
         console.error('Failed to fetch user statistics: Invalid response structure');
       }
@@ -269,6 +276,10 @@ const ProfilePage: React.FC = () => {
           </TouchableOpacity>
           <Text style={styles.profileName}>{username}</Text>
           <Text style={styles.profileDetails}>Email: {email}</Text>
+          
+          <View style={styles.rankPointsContainer}>
+            <Text style={styles.rankPoints}>🏅 {rankPoints !== null ? rankPoints : 'Loading...'} Rank Points</Text>
+          </View>
           
           <View style={styles.badgesContainer}>
             <Text style={styles.sectionTitle}>Badges</Text>
@@ -616,6 +627,15 @@ const styles = StyleSheet.create({
   },
   defaultImageButtonText: {
     color: '#333',
+  },
+  rankPointsContainer: {
+    alignSelf: 'flex-start',
+    marginBottom: 10,
+  },
+  rankPoints: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#4a5568',
   },
 });
 

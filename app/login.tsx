@@ -8,6 +8,7 @@ import React from "react";
 import { saveCredentials } from "../util/logincache";
 import { usePushNotifications } from "../components/Notifications/usePushNotifications";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from "../util/Context/authcontext";
 
 export default function Login() {
   const { expoPushToken, notification } = usePushNotifications();
@@ -88,11 +89,13 @@ function LoginButton({
   setIsError: (error: boolean) => void;
   className?: string;
 }) {
+  const { setIsSignedIn } = useAuth();
   const mutation = useLogin(
     async (token) => {
       await saveCredentials(username, token);
       console.log("Logged in with token", token);
       await AsyncStorage.setItem('signedIn', 'true');
+      setIsSignedIn(true);
       router.push('/');
     },
     () => {

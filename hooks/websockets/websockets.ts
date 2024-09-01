@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { unzip, WebSocketMessage, zip } from "middle-earth";
 import * as SecureStore from "expo-secure-store";
+import { useAuth } from "../../util/Context/authcontext";
 
 const WEBSOCKET_URL = process.env.EXPO_PUBLIC_WEBSOCKET_URL || "ws://localhost:3000";
 const RECONNECT_INTERVAL_BASE = 1000; // base interval in ms
@@ -9,6 +10,7 @@ const MAX_RECONNECT_ATTEMPTS = 10;
 const WEBSOCKET_PROTOCOL = 'missilewars';
 
 const useWebSocket = () => {
+    const { isSignedIn } = useAuth();
     const [data, setData] = useState<any>(null);
     const [missiledata, setmissileData] = useState<any>(null);
     const [landminedata, setlandmineData] = useState<any>(null);
@@ -147,12 +149,13 @@ const useWebSocket = () => {
     };
 
     useEffect(() => {
-        initializeWebSocket();
-
-        return () => {
+        if (isSignedIn) {
+            initializeWebSocket();
+        } else {
             websocket?.close();
-        };
-    }, []);
+            setWebsocket(null);
+        }
+    }, [isSignedIn]);
 
     const sendWebsocket = async (data: WebSocketMessage) => {
         if (websocket && websocket.readyState === WebSocket.OPEN) {
