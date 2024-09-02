@@ -1,10 +1,11 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, SafeAreaView, Platform, StatusBar } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, SafeAreaView, Platform, StatusBar, Modal } from 'react-native';
 import { useNotifications } from '../components/Notifications/useNotifications';
 import * as SecureStore from "expo-secure-store";
 import { addFriend } from '../api/friends';
 import { Ionicons } from '@expo/vector-icons'; // Make sure to import Ionicons
 import { useRouter } from 'expo-router'; // Import useRouter
+import { MissileLibrary } from '../components/Missile/missile';
 
 interface Notification {
 	id: string;
@@ -82,6 +83,20 @@ const NotificationsPage: React.FC = () => {
 		}
 	}, [deleteNotificationById]);
 
+	const [showMissileLibrary, setShowMissileLibrary] = useState(false);
+	const [selectedPlayer, setSelectedPlayer] = useState("");
+
+	const handleFireBack = useCallback(async (item: Notification) => {
+		try {
+			setShowMissileLibrary(true);
+			setSelectedPlayer(item.sentby);
+
+			setHiddenIds(prev => new Set(prev).add(item.id));
+		} catch (error) {
+			console.error('Failed to fire missile:', error);
+		}
+	}, []);
+
 	const renderNotificationItem = useCallback(({ item }: { item: Notification }) => {
 		if (hiddenIds.has(item.id)) return null;
 
@@ -107,9 +122,33 @@ const NotificationsPage: React.FC = () => {
 						</TouchableOpacity>
 					</View>
 				)}
+				{item.title === 'Friend Request' && (
+					<View style={styles.actionButtons}>
+						<TouchableOpacity style={styles.acceptButton} onPress={() => handleAccept(item)}>
+							<Text style={styles.buttonText}>Accept</Text>
+						</TouchableOpacity>
+						<TouchableOpacity style={styles.declineButton} onPress={() => handleDecline(item)}>
+							<Text style={styles.buttonText}>Decline</Text>
+						</TouchableOpacity>
+					</View>
+				)}
+				{item.title === 'Friend Accepted' && (
+					<View style={styles.actionButtons}>
+						<TouchableOpacity style={styles.acceptButton} onPress={() => router.push('/friends')}>
+							<Text style={styles.buttonText}>View Friends</Text>
+						</TouchableOpacity>
+					</View>
+				)}
+				{item.title === 'Incoming Missile!' && (
+					<View style={styles.actionButtons}>
+						<TouchableOpacity style={styles.fireBackButton} onPress={() => handleFireBack(item)}>
+							<Text style={styles.buttonText}>Fire Back!</Text>
+						</TouchableOpacity>
+					</View>
+				)}
 			</TouchableOpacity>
 		);
-	}, [hiddenIds, markAsRead, handleAccept, handleDecline]);
+	}, [hiddenIds, markAsRead, handleAccept, handleDecline, handleFireBack]);
 
 	return (
 		<SafeAreaView style={styles.safeArea}>
@@ -145,7 +184,36 @@ const NotificationsPage: React.FC = () => {
 					/>
 				)}
 			</View>
+			<Modal
+        animationType="slide"
+        transparent={true}
+        visible={showMissileLibrary}
+        onRequestClose={() => setShowMissileLibrary(false)}
+      >
+        <View className="flex-1 justify-end">
+          <View className="h-[90%] bg-white rounded-t-3xl overflow-hidden">
+            <View className="flex-row justify-between items-center p-4 bg-gray-100">
+              <Text className="text-xl font-bold">Missile Library</Text>
+              <TouchableOpacity
+                className="bg-blue-500 px-4 py-2 rounded-lg"
+                onPress={() => setShowMissileLibrary(false)}
+              >
+                <Text className="text-white font-bold">Done</Text>
+              </TouchableOpacity>
+            </View>
+            <MissileLibrary 
+              playerName={selectedPlayer} 
+              onMissileFired={() => {
+                // Handle missile fired event
+                setShowMissileLibrary(false);
+              }}
+              onClose={() => setShowMissileLibrary(false)}
+            />
+          </View>
+        </View>
+      </Modal>
 		</SafeAreaView>
+		
 	);
 };
 
@@ -249,6 +317,12 @@ const styles = StyleSheet.create({
 	},
 	unreadText: {
 		fontWeight: 'bold',
+	},
+	fireBackButton: {
+		backgroundColor: '#FF9800',
+		padding: 8,
+		borderRadius: 5,
+		marginRight: 10,
 	},
 });
 
