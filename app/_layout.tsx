@@ -170,9 +170,9 @@ function RootLayoutNav() {
   const hideNavBarRoutes = ['/login', '/register', '/add-friends'];
   const { countdownIsActive, stopCountdown } = useCountdown();
   const [unreadCount, setUnreadCount] = useState(0);
+  const { unreadCount: initialUnreadCount } = useNotifications();
 
   useEffect(() => {
-    const { unreadCount: initialUnreadCount } = useNotifications();
     setUnreadCount(initialUnreadCount);
 
     const handleUnreadCountUpdated = (count: number) => {
@@ -184,7 +184,7 @@ function RootLayoutNav() {
     return () => {
       notificationEmitter.off('unreadCountUpdated', handleUnreadCountUpdated);
     };
-  }, []);
+  }, [initialUnreadCount]);
 
   return (
     <SafeAreaProvider>
