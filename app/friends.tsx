@@ -286,20 +286,25 @@ const FriendsPage: React.FC = () => {
         onRequestClose={() => setModalVisible(false)}
       >
         <View className="flex-1 justify-center items-center bg-black bg-opacity-50">
-          <View className="bg-white p-6 rounded-lg w-4/5">
-            <Text className="text-xl mb-4">Remove {selectedFriend}?</Text>
-            <TouchableOpacity
-              className="bg-red-500 p-3 rounded-md mb-2"
-              onPress={() => handleRemoveFriend(selectedFriend)}
-            >
-              <Text className="text-white text-center font-bold">Remove</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              className="bg-gray-300 p-3 rounded-md"
-              onPress={() => setModalVisible(false)}
-            >
-              <Text className="text-center font-bold">Cancel</Text>
-            </TouchableOpacity>
+          <View className="bg-white p-6 rounded-2xl w-4/5 shadow-lg">
+            <Text className="text-2xl font-bold mb-4 text-center">Remove Friend</Text>
+            <Text className="text-lg mb-6 text-center text-gray-600">
+              Are you sure you want to remove {selectedFriend} from your friends list?
+            </Text>
+            <View className="flex-row justify-between">
+              <TouchableOpacity
+                className="bg-gray-200 p-3 rounded-xl flex-1 mr-2"
+                onPress={() => setModalVisible(false)}
+              >
+                <Text className="text-center font-bold text-gray-700">Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                className="bg-red-500 p-3 rounded-xl flex-1 ml-2"
+                onPress={() => handleRemoveFriend(selectedFriend)}
+              >
+                <Text className="text-white text-center font-bold">Remove</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>

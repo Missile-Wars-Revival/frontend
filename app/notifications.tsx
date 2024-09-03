@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
 		fontWeight: 'bold',
 	},
 	fireBackButton: {
-		backgroundColor: '#FF9800',
+		backgroundColor: '#FF0000', // Changed from '#FF9800' to '#FF0000' (red)
 		padding: 8,
 		borderRadius: 5,
 		marginRight: 10,

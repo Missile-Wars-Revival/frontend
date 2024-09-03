@@ -16,6 +16,7 @@ import Purchases from 'react-native-purchases';
 import CountdownTimer from '../components/countdown';
 import { useCountdown } from '../util/Context/countdown';
 import { AuthProvider } from "../util/Context/authcontext";
+import { useNotifications } from "../components/Notifications/useNotifications";
 
 // RootLayout component
 export default function RootLayout() {
@@ -77,7 +78,7 @@ export default function RootLayout() {
   );
 }
 
-function NavBar() {
+function NavBar({ unreadCount }: { unreadCount: number }) {
   const router = useRouter();
   const pathname = usePathname();
   const [selectedTab, setSelectedTab] = useState(pathname); // Initialize with current pathname
@@ -137,6 +138,21 @@ function NavBar() {
               color={selectedTab === tab ? 'blue' : 'black'}
               size={24}
             />
+            {tab === '/friends' && unreadCount > 0 && (
+              <View style={{
+                position: 'absolute',
+                top: -5,
+                right: -5,
+                backgroundColor: 'red',
+                borderRadius: 10,
+                width: 20,
+                height: 20,
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}>
+                <Text style={{ color: 'white', fontSize: 12 }}>{unreadCount}</Text>
+              </View>
+            )}
           </View>
           <Text style={{ color: 'grey', fontSize: 10, marginTop: -4 }}>
             {getDisplayName(tab)}
@@ -153,6 +169,7 @@ function RootLayoutNav() {
   const pathname = usePathname();
   const hideNavBarRoutes = ['/login', '/register', '/add-friends'];
   const { countdownIsActive, stopCountdown } = useCountdown();
+  const { unreadCount } = useNotifications();
 
   return (
     <SafeAreaProvider>
@@ -175,7 +192,7 @@ function RootLayoutNav() {
             <CountdownTimer duration={30} onExpire={stopCountdown} />
           </View>
         )}
-        {!hideNavBarRoutes.includes(pathname) && <NavBar />}
+        {!hideNavBarRoutes.includes(pathname) && <NavBar unreadCount={unreadCount} />}
       </View>
     </SafeAreaProvider>
   );
