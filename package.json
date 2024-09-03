@@ -39,7 +39,7 @@
     "lucide-react-native": "^0.375.0",
     "metro": "~0.80.8",
     "metro-resolver": "~0.80.8",
-    "middle-earth": "github:Missile-Wars-Revival/middle-earth#upd/zip_unzip",
+    "middle-earth": "github:Missile-Wars-Revival/middle-earth",
     "missilewars": "file:",
     "msgpack-lite": "^0.1.26",
     "nativewind": "^2.0.11",

@@ -227,11 +227,11 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                     case 'within-missile':
                         // Send specific notification if within the missile radius
                         if (missile.status === 'Incoming') {
-                            sendNotification("RUN!! Missile Incoming!", `You are within the impact zone! Incoming Missile ETA: ${text}`);
+                            //sendNotification("RUN!! Missile Incoming!", `You are within the impact zone! Incoming Missile ETA: ${text}`);
                             setLastNotified(prev => ({ ...prev, missile: today }));
                         }
                         if (missile.status === 'Hit') {
-                            sendNotification("Danger!", "A Missile has impacted in your proximity! You may start taking damage!");
+                            //sendNotification("Danger!", "A Missile has impacted in your proximity! You may start taking damage!");
                             setLastNotified(prev => ({ ...prev, missile: today }));
                             Alert.alert("Danger!", "A Missile has impacted in your proximity! You may start taking damage!");
 
@@ -245,7 +245,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                             // setLastNotified(prev => ({ ...prev, missile: today }));
                         }
                         if (missile.status === 'Hit') {
-                            sendNotification("Missile Impact Warning!", "Impacted Missile Nearby. Be wary of the fallout!");
+                            //sendNotification("Missile Impact Warning!", "Impacted Missile Nearby. Be wary of the fallout!");
                             setLastNotified(prev => ({ ...prev, missile: today }));
                         }
                         break;
@@ -299,7 +299,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                 switch (proximityStatus) {
                     case 'within-landmine':
                         //inside landmine radius
-                        sendNotification("Danger!", `You just stepped on a Landmine! Damage has been taken.`);
+                        sendNotification("Danger!", `You just stepped on a Landmine! ${landmine.damage} damage has been taken.`);
                         setLastNotified(prev => ({ ...prev, landmine: today }));
 
                         Alert.alert("Danger!", "You have stepped on a Landmine!!");
@@ -307,7 +307,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                         break;
                     case 'near-landmine':
                         // Send warning if near but not within the landmine radius
-                         sendNotification("Landmine Proximity Warning", "A landmine is nearby. Be cautious!");
+                         //sendNotification("Landmine Proximity Warning", "A landmine is nearby. Be cautious!");
                          setLastNotified(prev => ({ ...prev, landmine: today }));
                         break;
                 }

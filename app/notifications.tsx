@@ -96,8 +96,7 @@ const NotificationsPage: React.FC = () => {
 		}
 	}, []);
 
-	const handleWave = useCallback(async (item: Notification) => {
-		console.log('Waved at Friendly Bot:', item);
+	const dismissNotification = useCallback(async (item: Notification) => {
 		try {
 			await deleteNotificationById(item.id);
 			setHiddenIds(prev => new Set(prev).add(item.id));
@@ -138,6 +137,16 @@ const NotificationsPage: React.FC = () => {
 						</TouchableOpacity>
 					</View>
 				)}
+				{item.title === 'Friendly Bot' && (
+					<View style={styles.actionButtons}>
+						<TouchableOpacity style={styles.waveButton} onPress={() => dismissNotification(item)}>
+							<Ionicons name="hand-left" size={24} color="#fff" />
+						</TouchableOpacity>
+						<TouchableOpacity style={styles.fireBackButton} onPress={() => handleFireBack(item)}>
+							<Text style={styles.buttonText}>Fire!</Text>
+						</TouchableOpacity>
+					</View>
+				)}
 				{item.title === 'Incoming Missile!' && (
 					<View style={styles.actionButtons}>
 						<TouchableOpacity style={styles.fireBackButton} onPress={() => handleFireBack(item)}>
@@ -145,19 +154,16 @@ const NotificationsPage: React.FC = () => {
 						</TouchableOpacity>
 					</View>
 				)}
-				{item.title === 'Friendly Bot' && (
+				{['Missile Alert!', 'Landmine Nearby!', 'Loot Nearby!', 'Loot Within Reach!'].includes(item.title) && (
 					<View style={styles.actionButtons}>
-						<TouchableOpacity style={styles.waveButton} onPress={() => handleWave(item)}>
-							<Ionicons name="hand-left" size={24} color="#fff" />
-						</TouchableOpacity>
-						<TouchableOpacity style={styles.fireBackButton} onPress={() => handleFireBack(item)}>
-							<Text style={styles.buttonText}>Fire Back!</Text>
+						<TouchableOpacity style={styles.dismissButton} onPress={() => dismissNotification(item)}>
+							<Text style={styles.buttonText}>Dismiss</Text>
 						</TouchableOpacity>
 					</View>
 				)}
 			</TouchableOpacity>
 		);
-	}, [hiddenIds, markAsRead, handleAccept, handleDecline, handleFireBack, handleWave]);
+	}, [hiddenIds, markAsRead, handleAccept, handleDecline, handleFireBack, dismissNotification]);
 
 	return (
 		<SafeAreaView style={styles.safeArea}>
@@ -229,7 +235,7 @@ const NotificationsPage: React.FC = () => {
 const styles = StyleSheet.create({
 	safeArea: {
 		flex: 1,
-		backgroundColor: '#4a5568', // Match this with your header color
+		backgroundColor: '#4a5568', 
 	},
 	container: {
 		flex: 1,
@@ -328,7 +334,7 @@ const styles = StyleSheet.create({
 		fontWeight: 'bold',
 	},
 	fireBackButton: {
-		backgroundColor: '#FF0000', // Changed from '#FF9800' to '#FF0000' (red)
+		backgroundColor: '#FF0000', 
 		padding: 8,
 		borderRadius: 5,
 		marginRight: 10,
@@ -340,6 +346,12 @@ const styles = StyleSheet.create({
 		marginRight: 10,
 		justifyContent: 'center',
 		alignItems: 'center',
+	},
+	dismissButton: {
+		backgroundColor: '#718096', // A gray color that matches the header
+		padding: 8,
+		borderRadius: 5,
+		marginRight: 10,
 	},
 });
 

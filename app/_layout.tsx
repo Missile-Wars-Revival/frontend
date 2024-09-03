@@ -16,7 +16,7 @@ import Purchases from 'react-native-purchases';
 import CountdownTimer from '../components/countdown';
 import { useCountdown } from '../util/Context/countdown';
 import { AuthProvider } from "../util/Context/authcontext";
-import { useNotifications } from "../components/Notifications/useNotifications";
+import { useNotifications, notificationEmitter } from "../components/Notifications/useNotifications";
 
 // RootLayout component
 export default function RootLayout() {
@@ -169,7 +169,22 @@ function RootLayoutNav() {
   const pathname = usePathname();
   const hideNavBarRoutes = ['/login', '/register', '/add-friends'];
   const { countdownIsActive, stopCountdown } = useCountdown();
-  const { unreadCount } = useNotifications();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    const { unreadCount: initialUnreadCount } = useNotifications();
+    setUnreadCount(initialUnreadCount);
+
+    const handleUnreadCountUpdated = (count: number) => {
+      setUnreadCount(count);
+    };
+
+    notificationEmitter.on('unreadCountUpdated', handleUnreadCountUpdated);
+
+    return () => {
+      notificationEmitter.off('unreadCountUpdated', handleUnreadCountUpdated);
+    };
+  }, []);
 
   return (
     <SafeAreaProvider>
