@@ -91,11 +91,20 @@ const NotificationsPage: React.FC = () => {
 			setShowMissileLibrary(true);
 			setSelectedPlayer(item.sentby);
 
-			setHiddenIds(prev => new Set(prev).add(item.id));
 		} catch (error) {
 			console.error('Failed to fire missile:', error);
 		}
 	}, []);
+
+	const handleWave = useCallback(async (item: Notification) => {
+		console.log('Waved at Friendly Bot:', item);
+		try {
+			await deleteNotificationById(item.id);
+			setHiddenIds(prev => new Set(prev).add(item.id));
+		} catch (error) {
+			console.error('Failed to dismiss notification:', error);
+		}
+	}, [deleteNotificationById]);
 
 	const renderNotificationItem = useCallback(({ item }: { item: Notification }) => {
 		if (hiddenIds.has(item.id)) return null;
@@ -122,16 +131,6 @@ const NotificationsPage: React.FC = () => {
 						</TouchableOpacity>
 					</View>
 				)}
-				{item.title === 'Friend Request' && (
-					<View style={styles.actionButtons}>
-						<TouchableOpacity style={styles.acceptButton} onPress={() => handleAccept(item)}>
-							<Text style={styles.buttonText}>Accept</Text>
-						</TouchableOpacity>
-						<TouchableOpacity style={styles.declineButton} onPress={() => handleDecline(item)}>
-							<Text style={styles.buttonText}>Decline</Text>
-						</TouchableOpacity>
-					</View>
-				)}
 				{item.title === 'Friend Accepted' && (
 					<View style={styles.actionButtons}>
 						<TouchableOpacity style={styles.acceptButton} onPress={() => router.push('/friends')}>
@@ -146,9 +145,19 @@ const NotificationsPage: React.FC = () => {
 						</TouchableOpacity>
 					</View>
 				)}
+				{item.title === 'Friendly Bot' && (
+					<View style={styles.actionButtons}>
+						<TouchableOpacity style={styles.waveButton} onPress={() => handleWave(item)}>
+							<Ionicons name="hand-left" size={24} color="#fff" />
+						</TouchableOpacity>
+						<TouchableOpacity style={styles.fireBackButton} onPress={() => handleFireBack(item)}>
+							<Text style={styles.buttonText}>Fire Back!</Text>
+						</TouchableOpacity>
+					</View>
+				)}
 			</TouchableOpacity>
 		);
-	}, [hiddenIds, markAsRead, handleAccept, handleDecline, handleFireBack]);
+	}, [hiddenIds, markAsRead, handleAccept, handleDecline, handleFireBack, handleWave]);
 
 	return (
 		<SafeAreaView style={styles.safeArea}>
@@ -323,6 +332,14 @@ const styles = StyleSheet.create({
 		padding: 8,
 		borderRadius: 5,
 		marginRight: 10,
+	},
+	waveButton: {
+		backgroundColor: '#4CAF50',
+		padding: 8,
+		borderRadius: 5,
+		marginRight: 10,
+		justifyContent: 'center',
+		alignItems: 'center',
 	},
 });
 
