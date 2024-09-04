@@ -26,92 +26,95 @@ export default function Login() {
 
   return (
     <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-    <SafeAreaView style={{ flex: 1, alignItems: 'center' }}>  
-      <Image
-        source={require("../assets/icons/MissleWarsTitle.png")}
-        style={{
-          width: width * 0.8,
-          height: height * 0.2,
-          marginTop: height * 0.05,
-        }}
-        resizeMode="contain"
-      />
-      <View style={{ width: '90%', marginTop: height * 0.05 }}>
-        <View style={{ marginBottom: height * 0.02 }}>
-          <Input
-            placeholder="Username"
-            autoCorrect={false}    
-            onChangeText={(text) => setUsername(text)}
-            style={{
-              height: height * 0.06,
-              borderRadius: 20,
-            }}
-            icon={<User size={24} color="black" />}
-          />
-        </View>
-        <View>
-          <Input
-            placeholder="Password"
-            onChangeText={(text) => setPassword(text)}
-            secureTextEntry={true}
-            autoCorrect={false}
-            autoCapitalize="none"
-            keyboardType="default"
-            textContentType="newPassword"
-            autoComplete="password"
-            style={{
-              height: height * 0.06,
-              borderRadius: 20,
-            }}
-            icon={
-              <View style={{ marginTop: -1 }}>
-                <LockKeyhole size={24} color="black" />
-              </View>
-            }
-          />
-          {isError && (
-            <Text style={{ color: 'red', fontSize: 12, textAlign: 'center', marginTop: 5 }}>
-              Invalid username or password
-            </Text>
-          )}
-        </View>
-      </View>
-      <LoginButton
-        username={username}
-        password={password}
-        notificationToken={notificationToken}
-        setIsError={setIsError}
-      />
-      <TouchableOpacity 
-        onPress={() => setShowForgotModal(true)}
-        style={{ marginTop: height * 0.02 }}
-      >
-        <Text style={{ color: '#773765', textDecorationLine: 'underline' }}>
-          Forgot Username or Password?
-        </Text>
-      </TouchableOpacity>
-
-      <ForgotCredentialsModal 
-        visible={showForgotModal}
-        onClose={() => setShowForgotModal(false)}
-        email={forgotEmail}
-        setEmail={setForgotEmail}
-        error={forgotError}
-        setError={(error: string | null) => setForgotError(error || '')}
-      />
-      <View style={{ flex: 1, justifyContent: 'flex-end', width: '100%', alignItems: 'center' }}>
+      <SafeAreaView style={{ flex: 1, alignItems: 'center' }}>
         <Image
-          source={require("../assets/icons/cometDivider.png")}
-          resizeMode="stretch"
+          source={require("../assets/icons/MissleWarsTitle.png")}
           style={{
-            width: width * 0.9,
-            height: height * 0.1,
-            marginBottom: height * 0.05,
+            width: width * 1,
+            height: height * 0.2,
+            marginTop: height * 0.04,
+            marginBottom: height * 0.00001,
           }}
+          resizeMode="contain"
         />
-        <SignUpButton />
-      </View>
-    </SafeAreaView>
+        <View style={{ width: '90%', marginTop: height * 0.01 }}>
+          <View style={{ marginBottom: height * 0.02 }}>
+            <Input
+              placeholder="Username"
+              autoCorrect={false}
+              onChangeText={(text) => setUsername(text)}
+              style={{
+                height: height * 0.06,
+                borderRadius: 20,
+              }}
+              icon={<User size={24} color="black" />}
+              className="w-[90vw] h-[5vh] rounded-[20px]"
+            />
+          </View>
+          <View>
+            <Input
+              placeholder="Password"
+              onChangeText={(text) => setPassword(text)}
+              secureTextEntry={true}
+              autoCorrect={false}
+              autoCapitalize="none"
+              keyboardType="default"
+              textContentType="newPassword"
+              autoComplete="password"
+              style={{
+                height: height * 0.06,
+                borderRadius: 20,
+              }}
+              icon={
+                <View style={{ marginTop: -1 }}>
+                  <LockKeyhole size={24} color="black" />
+                </View>
+              }
+              className="w-[90vw] h-[5vh] rounded-[20px]"
+            />
+            {isError && (
+              <Text style={{ color: 'red', fontSize: 12, textAlign: 'center', marginTop: 5 }}>
+                Invalid username or password
+              </Text>
+            )}
+          </View>
+        </View>
+        <LoginButton
+          username={username}
+          password={password}
+          notificationToken={notificationToken}
+          setIsError={setIsError}
+        />
+        <TouchableOpacity
+          onPress={() => setShowForgotModal(true)}
+          style={{ marginTop: height * 0.02 }}
+        >
+          <Text style={{ color: '#773765', textDecorationLine: 'underline' }}>
+            Forgot Username or Password?
+          </Text>
+        </TouchableOpacity>
+
+        <ForgotCredentialsModal
+          visible={showForgotModal}
+          onClose={() => setShowForgotModal(false)}
+          email={forgotEmail}
+          setEmail={setForgotEmail}
+          error={forgotError}
+          setError={(error: string | null) => setForgotError(error || '')}
+        />
+        <View style={{ flex: 1, justifyContent: 'flex-end', width: '100%', alignItems: 'center' }}>
+          <Image
+            source={require("../assets/icons/cometDivider.png")}
+            resizeMode="stretch"
+            style={{
+              width: width * 1,
+              height: height * 0.1,
+              marginBottom: height * 0.01,
+            }}
+          />
+          <SignUpButton />
+        </View>
+      </SafeAreaView>
     </ScrollView>
   );
 }
@@ -183,13 +186,13 @@ function SignUpButton() {
   );
 }
 
-function ForgotCredentialsModal({ 
-  visible, 
-  onClose, 
-  email, 
-  setEmail, 
-  error, 
-  setError 
+function ForgotCredentialsModal({
+  visible,
+  onClose,
+  email,
+  setEmail,
+  error,
+  setError
 }: {
   visible: boolean;
   onClose: () => void;

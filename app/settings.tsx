@@ -56,7 +56,29 @@ const SettingsPage: React.FC = () => {
       setUsernameError('Username must be at least 3 characters long and contain only letters and numbers');
       return;
     }
-    changeUsername(username)
+    Alert.alert(
+      "Confirm Username Change",
+      `Are you sure you want to change your username to "${username}"?`,
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Confirm",
+          onPress: async () => {
+            try {
+              await changeUsername(username);
+              await SecureStore.setItemAsync('username', username);
+              Alert.alert("Success", "Username changed successfully");
+            } catch (error) {
+              console.error("Error changing username:", error);
+              Alert.alert("Error", "Failed to change username. Please try again.");
+            }
+          }
+        }
+      ]
+    );
   };
 
   const handleEmailChange = async (email: string) => {
@@ -65,7 +87,29 @@ const SettingsPage: React.FC = () => {
       setEmailError('Invalid email address');
       return;
     }
-    changeEmail(email);
+    Alert.alert(
+      "Confirm Email Change",
+      `Are you sure you want to change your email to "${email}"?`,
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Confirm",
+          onPress: async () => {
+            try {
+              await changeEmail(email);
+              await SecureStore.setItemAsync('email', email);
+              Alert.alert("Success", "Email changed successfully");
+            } catch (error) {
+              console.error("Error changing email:", error);
+              Alert.alert("Error", "Failed to change email. Please try again.");
+            }
+          }
+        }
+      ]
+    );
   };
 
   const handlePasswordChange = async () => {
@@ -78,7 +122,30 @@ const SettingsPage: React.FC = () => {
       setPasswordError('Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character');
       return;
     }
-    changePassword(newPassword);
+    Alert.alert(
+      "Confirm Password Change",
+      "Are you sure you want to change your password?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Confirm",
+          onPress: async () => {
+            try {
+              await changePassword(newPassword);
+              Alert.alert("Success", "Password changed successfully");
+              setNewPassword('');
+              setConfirmPassword('');
+            } catch (error) {
+              console.error("Error changing password:", error);
+              Alert.alert("Error", "Failed to change password. Please try again.");
+            }
+          }
+        }
+      ]
+    );
   };
 
   const toggleVisibilityMode = async () => {
@@ -134,7 +201,6 @@ const SettingsPage: React.FC = () => {
           <View className="space-y-4">
             <Input
               placeholder={username || "Username"}
-              value={username}
               onChangeText={(text) => {
                 setUsername(text);
                 setUsernameError('');
@@ -155,7 +221,6 @@ const SettingsPage: React.FC = () => {
             <View className="space-y-2">
               <Input
                 placeholder={email || "Email"}
-                value={email}
                 onChangeText={(text) => {
                   setEmail(text);
                   setEmailError('');
@@ -177,12 +242,18 @@ const SettingsPage: React.FC = () => {
             <Input
               placeholder="New Password"
               value={newPassword}
+              secureTextEntry={true}
+              autoCorrect={false}
+            autoCapitalize="none"
               onChangeText={(text) => {
                 setNewPassword(text);
                 setPasswordError('');
               }}
-              secureTextEntry
-              icon={<LockKeyhole size={24} color="black" />}
+              icon={
+                <View style={{ marginTop: 12 }}>
+                  <LockKeyhole size={24} color="black" />
+                </View>
+              }
               className="w-[90vw] h-[5vh] rounded-[20px]"
             />
             <Input
@@ -193,7 +264,11 @@ const SettingsPage: React.FC = () => {
                 setPasswordError('');
               }}
               secureTextEntry
-              icon={<LockKeyhole size={24} color="black" />}
+              icon={
+                <View style={{ marginTop: 12 }}>
+                  <LockKeyhole size={24} color="black" />
+                </View>
+              }
               className="w-[90vw] h-[5vh] rounded-[20px]"
             />
             {passwordError ? (

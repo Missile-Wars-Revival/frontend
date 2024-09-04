@@ -4,13 +4,15 @@ import axiosInstance from "./axios-instance";
 export async function register(
   username: string,
   email: string,
-  password: string
+  password: string,
+  notificationToken: string
 ) {
   try {
     const response = await axiosInstance.post("/api/register", {
       username,
       email,
       password,
+      notificationToken,
     });
 
     return response.data;

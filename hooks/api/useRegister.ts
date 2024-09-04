@@ -11,11 +11,13 @@ export default function useRegister(
       username,
       email,
       password,
+      notificationToken,
     }: {
       username: string;
       email: string;
       password: string;
-    }) => register(username, email, password),
+      notificationToken: string;
+    }) => register(username, email, password, notificationToken),
     onSuccess: (data) => {
       const token = data.token; // Assuming the token is returned in the `data` object
       queryClient.invalidateQueries({

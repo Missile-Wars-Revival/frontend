@@ -25,7 +25,7 @@ export const fetchAndCacheImage = async (username: string): Promise<string> => {
     if (error instanceof FirebaseError && error.code === 'storage/unauthorized') {
       console.log(`No profile image available for ${username}. Using default image.`);
     } else {
-      console.error('Unexpected error when fetching image:', error);
+      //console.error('Unexpected error when fetching image:', error);
     }
     // Return the default image URI for any error
     return Image.resolveAssetSource(DEFAULT_IMAGE).uri;
