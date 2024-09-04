@@ -17,6 +17,9 @@ import CountdownTimer from '../components/countdown';
 import { useCountdown } from '../util/Context/countdown';
 import { AuthProvider } from "../util/Context/authcontext";
 import { useNotifications, notificationEmitter } from "../components/Notifications/useNotifications";
+import { getselfprofile } from "../api/getprofile";
+import { ApiResponse } from "./profile";
+import * as SecureStore from "expo-secure-store";
 
 // RootLayout component
 export default function RootLayout() {
@@ -32,6 +35,19 @@ export default function RootLayout() {
       Purchases.configure({ apiKey: "your_android_api_key" });
     }
   }, []);
+
+  const fetchUserStatistics = async () => {
+    try {
+      const response = await getselfprofile() as ApiResponse;
+      if (response.success && response.userProfile) {
+        await SecureStore.setItem("email", response.userProfile.email);
+      } else {
+        console.error('Failed to fetch user statistics: Invalid response structure');
+      }
+    } catch (error) {
+      console.error('Failed to fetch user statistics', error);
+    }
+  };
 
   const handleSplashFinish = () => {
     setIsSplashVisible(false);

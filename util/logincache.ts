@@ -21,6 +21,7 @@ export async function clearCredentials(): Promise<void> {
     await logout();
     // Clearing credentials stored in SecureStore
     await SecureStore.deleteItemAsync("username");
+    await SecureStore.deleteItemAsync("email");
     await SecureStore.deleteItemAsync("token");
 
     // Clearing additional items stored in AsyncStorage

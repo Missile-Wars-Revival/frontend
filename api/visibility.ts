@@ -1,7 +1,10 @@
 import axiosInstance from './axios-instance';
+import * as SecureStore from "expo-secure-store";
 
-export const updateFriendsOnlyStatus = async (token: string, friendsOnly: boolean) => {
+export const updateFriendsOnlyStatus = async (friendsOnly: boolean) => {
   try {
+    const token = await SecureStore.getItemAsync("token");
+    if (!token) throw new Error("No authentication token found.");
     // Including the token as part of the URL query parameters
     const url = `/api/friendsOnlyStatus?token=${encodeURIComponent(token)}`;
     await axiosInstance.patch(url, {

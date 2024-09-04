@@ -1,4 +1,6 @@
-import { StyleSheet } from "react-native";
+import { StyleSheet, Dimensions } from "react-native";
+
+const { width, height } = Dimensions.get('window');
 
 export const mapstyles = StyleSheet.create({
     container: {
@@ -70,30 +72,36 @@ export const mainmapstyles = StyleSheet.create({
         color: 'black',
         fontWeight: 'bold',
         marginBottom: 10,
+        textAlign: 'center',
+        paddingHorizontal: 20,
     },
     overlaySubText: {
         fontSize: 12,
         fontWeight: 'bold',
         color: 'grey',
+        textAlign: 'center',
+        paddingHorizontal: 20,
     },
     switchContainer: {
         position: 'absolute',
-        top: 50,
-        left: 330,
+        top: height * 0.05, // 5% from the top
+        right: width * 0.05, // 5% from the right
         flexDirection: 'row',
         alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        borderRadius: 20,
+        padding: 5,
     },
     switchText: {
-        marginLeft: -110,
+        marginRight: 10,
         color: 'white',
     },
     relocateButton: {
-        flex: 0,
         position: 'absolute',
         height: 42,  
         width: 42,   
-        right: 10,
-        bottom: 15,
+        right: width * 0.05, // 5% from the right
+        bottom: height * 0.05, // 5% from the bottom
         padding: 10,
         backgroundColor: 'rgba(0, 0, 0, 0.6)', 
         borderRadius: 21, 

@@ -47,7 +47,7 @@ interface SelfProfile {
   statistics: Statistics;
 }
 
-interface ApiResponse {
+export interface ApiResponse {
   success: boolean;
   userProfile: SelfProfile;
 }
@@ -250,6 +250,8 @@ const ProfilePage: React.FC = () => {
       if (response.success && response.userProfile) {
         setStatistics(response.userProfile.statistics);
         setEmail(response.userProfile.email);
+        await SecureStore.setItem("email", response.userProfile.email);
+
         setRankPoints(response.userProfile.rankpoints);
       } else {
         console.error('Failed to fetch user statistics: Invalid response structure');

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Platform, Alert, Image, StyleSheet, TouchableOpacity, Text, Linking } from "react-native";
+import { View, Platform, Alert, Image, StyleSheet, TouchableOpacity, Text, Linking, Dimensions } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
 import axiosInstance from "../api/axios-instance";
@@ -29,7 +29,6 @@ import { MapStyle } from "../types/types";
 import { router } from "expo-router";
 import HealthBar from "../components/healthbar";
 import { getisAlive, setHealth, updateisAlive } from "../api/health";
-import { useCountdown } from "../util/Context/countdown";
 import { playDeathSound } from "../util/sounds/deathsound";
 import { RewardedAd, RewardedAdEventType, TestIds } from "react-native-google-mobile-ads";
 import useFetchHealth from "../hooks/websockets/healthhook";
@@ -39,6 +38,8 @@ const adUnitId =  __DEV__ ? TestIds.REWARDED : 'ca-app-pub-4035842398612787/8310
 const rewarded = RewardedAd.createForAdRequest(adUnitId, {
   keywords: ['games', 'clothing'], //ads category
 });
+
+const { width, height } = Dimensions.get('window');
 
 export default function Map() {
   const [selectedMapStyle, setSelectedMapStyle] = useState<MapStyle[]>(Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle);
@@ -222,14 +223,15 @@ export default function Map() {
     setHealth(token, 100);
     rewarded.show();
   };
-  const { countdownIsActive, stopCountdown } = useCountdown();
 
   return (
-    <View style={{ flex: 1, backgroundColor: 'white' }}>
+    <View style={styles.container}>
       {(isAlive) && (
         <>
-        <MapComp selectedMapStyle={selectedMapStyle} />
-        <HealthBar health={health} />
+          <MapComp selectedMapStyle={selectedMapStyle} />
+          <View style={styles.healthBarContainer}>
+            <HealthBar health={health} />
+          </View>
           {Platform.OS === 'android' && (
             <ThemeSelectButton onPress={showPopup}>Theme</ThemeSelectButton>
           )}
@@ -239,11 +241,13 @@ export default function Map() {
             onClose={closePopup}
             onSelect={selectMapStyle}
           />     
+          <View style={styles.fireSelectorContainer}>
             <FireSelector
               selectedMapStyle={selectedMapStyle}
               getStoredMapStyle={getStoredMapStyle}
               selectMapStyle={selectMapStyle}
             />
+          </View>
         </>
       )}
       {(!isAlive) && (
@@ -255,42 +259,60 @@ export default function Map() {
           >
             <Image source={require('../assets/deathscreen.jpg')} style={styles.bannerdeath} />
           </TouchableOpacity>
-          {/* Button added below the image */}
           <TouchableOpacity
-            onPress={() => console.log('Retry button pressed')}
+            onPress={() => Linking.openURL('https://discord.gg/Gk8jqUnVd3')}
             style={styles.retryButton}
-            activeOpacity={0.7} // Optional: adjust the opacity feedback on touch
+            activeOpacity={0.7}
           >
-            <TouchableOpacity onPress={() => Linking.openURL('https://discord.gg/Gk8jqUnVd3')}>
-              <Text style={styles.retryButtonText}>Contact Support</Text>
-            </TouchableOpacity>
-
+            <Text style={styles.retryButtonText}>Contact Support</Text>
           </TouchableOpacity>
         </View>
       )}
     </View>
   );
 }
+
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: 'white',
+  },
+  healthBarContainer: {
+    position: 'absolute',
+    top: height * 0.05, // 5% from the top
+    left: width * 0.05, // 5% from the left
+    width: width * 0.9, // 90% of screen width
+  },
+  themeButton: {
+    position: 'absolute',
+    top: height * 0.15, // 15% from the top
+    right: width * 0.05, // 5% from the right
+  },
+  fireSelectorContainer: {
+    position: 'absolute',
+    bottom: height * 0.05, // 5% from the bottom
+    left: width * 0.05, // 5% from the left
+  },
   containerdeath: {
-    flex: 3,
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   bannerdeath: {
-    width: 500,
-    height: 500,
+    width: width * 0.9, // 90% of screen width
+    height: height * 0.6, // 60% of screen height
     resizeMode: 'contain',
   },
   retryButton: {
-    backgroundColor: 'red', // Choose any color
+    backgroundColor: 'red',
     padding: 10,
-    marginTop: 20, // Adds space between the image and the button
-    borderRadius: 5, // Rounded corners
+    marginTop: height * 0.02, // 2% of screen height
+    borderRadius: 5,
+    width: width * 0.5, // 50% of screen width
   },
   retryButtonText: {
-    color: 'white', // Text color
-    fontSize: 16, // Adjust text size as needed
-    textAlign: 'center', // Center the text inside the button
+    color: 'white',
+    fontSize: 16,
+    textAlign: 'center',
   },
 });

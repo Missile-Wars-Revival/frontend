@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableHighlight, Switch, ScrollView, Alert, Image } from 'react-native';
+import { View, Text, TouchableHighlight, Switch, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Input } from "../components/ui/input";
 import { User, LockKeyhole, Mail, ChevronLeft } from "lucide-react-native";
 import * as SecureStore from 'expo-secure-store';
-import axiosInstance from '../api/axios-instance';
+import { changeEmail, changePassword, changeUsername } from '../api/changedetails';
+import { updateFriendsOnlyStatus } from '../api/visibility';
 
 const SettingsPage: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -13,6 +14,9 @@ const SettingsPage: React.FC = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [friendsOnly, setFriendsOnly] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [usernameError, setUsernameError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
 
   useEffect(() => {
     loadUserData();
@@ -31,55 +35,54 @@ const SettingsPage: React.FC = () => {
     setFriendsOnly(friendsOnlySetting === 'true');
   };
 
-  const handleUsernameChange = async () => {
-    try {
-      const token = await SecureStore.getItemAsync('token');
-      await axiosInstance.post('/api/change-username', { newUsername: username }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      await SecureStore.setItemAsync('username', username);
-      Alert.alert('Success', 'Username updated successfully');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to update username');
-    }
+  const validateEmail = (email: string) => {
+    return email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
   };
 
-  const handleEmailChange = async () => {
-    try {
-      const token = await SecureStore.getItemAsync('token');
-      await axiosInstance.post('/api/change-email', { newEmail: email }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      await SecureStore.setItemAsync('email', email);
-      Alert.alert('Success', 'Email updated successfully');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to update email');
+  const validateUsername = (username: string) => {
+    return username.length >= 3 && username.match(/^[a-zA-Z0-9]+$/);
+  };
+
+  const validatePassword = (password: string) => {
+    return password.length >= 8 && password.match(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/);
+  };
+
+  const handleUsernameChange = async () => {
+    setUsernameError('');
+    if (!validateUsername(username)) {
+      setUsernameError('Username must be at least 3 characters long and contain only letters and numbers');
+      return;
     }
+    changeUsername(username)
+  };
+
+  const handleEmailChange = async (email: string) => {
+    setEmailError('');
+    if (!validateEmail(email)) {
+      setEmailError('Invalid email address');
+      return;
+    }
+    changeEmail(email);
   };
 
   const handlePasswordChange = async () => {
+    setPasswordError('');
     if (newPassword !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      setPasswordError('Passwords do not match');
       return;
     }
-    try {
-      const token = await SecureStore.getItemAsync('token');
-      await axiosInstance.post('/api/change-password', { newPassword }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setNewPassword('');
-      setConfirmPassword('');
-      Alert.alert('Success', 'Password updated successfully');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to update password');
+    if (!validatePassword(newPassword)) {
+      setPasswordError('Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character');
+      return;
     }
+    changePassword(newPassword);
   };
 
   const toggleFriendsOnly = async () => {
     const newValue = !friendsOnly;
     setFriendsOnly(newValue);
     await SecureStore.setItemAsync('friendsOnly', newValue.toString());
-    // You might want to send this setting to your backend as well
+    updateFriendsOnlyStatus(newValue);
   };
 
   return (
@@ -100,12 +103,18 @@ const SettingsPage: React.FC = () => {
         <View className="w-full px-4 space-y-6">
           <View className="space-y-4">
             <Input
-              placeholder="Username"
+              placeholder={username || "Username"}
               value={username}
-              onChangeText={setUsername}
+              onChangeText={(text) => {
+                setUsername(text);
+                setUsernameError('');
+              }}
               icon={<User size={24} color="black" />}
               className="w-[90vw] h-[5vh] rounded-[20px]"
             />
+            {usernameError ? (
+              <Text className="text-red-500 text-sm">{usernameError}</Text>
+            ) : null}
             <TouchableHighlight 
               onPress={handleUsernameChange}
               className="bg-[#773765] rounded-[20px] w-[90vw] h-[5.3vh] flex items-center justify-center"
@@ -113,24 +122,35 @@ const SettingsPage: React.FC = () => {
               <Text className="text-white font-bold">Change Username</Text>
             </TouchableHighlight>
 
-            <Input
-              placeholder="Email"
-              value={email}
-              onChangeText={setEmail}
-              icon={<Mail size={24} color="black" />}
-              className="w-[90vw] h-[5vh] rounded-[20px]"
-            />
-            <TouchableHighlight 
-              onPress={handleEmailChange}
-              className="bg-[#773765] rounded-[20px] w-[90vw] h-[5.3vh] flex items-center justify-center"
-            >
-              <Text className="text-white font-bold">Change Email</Text>
-            </TouchableHighlight>
+            <View className="space-y-2">
+              <Input
+                placeholder={email || "Email"}
+                value={email}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  setEmailError('');
+                }}
+                icon={<Mail size={24} color="black" />}
+                className="w-[90vw] h-[5vh] rounded-[20px]"
+              />
+              {emailError ? (
+                <Text className="text-red-500 text-sm">{emailError}</Text>
+              ) : null}
+              <TouchableHighlight 
+                onPress={() => handleEmailChange(email)}
+                className="bg-[#773765] rounded-[20px] w-[90vw] h-[5.3vh] flex items-center justify-center"
+              >
+                <Text className="text-white font-bold">Change Email</Text>
+              </TouchableHighlight>
+            </View>
 
             <Input
               placeholder="New Password"
               value={newPassword}
-              onChangeText={setNewPassword}
+              onChangeText={(text) => {
+                setNewPassword(text);
+                setPasswordError('');
+              }}
               secureTextEntry
               icon={<LockKeyhole size={24} color="black" />}
               className="w-[90vw] h-[5vh] rounded-[20px]"
@@ -138,11 +158,17 @@ const SettingsPage: React.FC = () => {
             <Input
               placeholder="Confirm New Password"
               value={confirmPassword}
-              onChangeText={setConfirmPassword}
+              onChangeText={(text) => {
+                setConfirmPassword(text);
+                setPasswordError('');
+              }}
               secureTextEntry
               icon={<LockKeyhole size={24} color="black" />}
               className="w-[90vw] h-[5vh] rounded-[20px]"
             />
+            {passwordError ? (
+              <Text className="text-red-500 text-sm">{passwordError}</Text>
+            ) : null}
             <TouchableHighlight 
               onPress={handlePasswordChange}
               className="bg-[#773765] rounded-[20px] w-[90vw] h-[5.3vh] flex items-center justify-center"

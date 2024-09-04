@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, Switch, Alert, Platform, ActivityIndicator, TouchableOpacity } from "react-native";
+import { View, Text, Switch, Alert, Platform, ActivityIndicator, TouchableOpacity, Dimensions } from "react-native";
 import MapView, { PROVIDER_DEFAULT, PROVIDER_GOOGLE } from "react-native-maps";
 import { AllLootDrops } from "./Loot/map-loot";
 import { AllLandMines } from "./Landmine/map-landmines";
@@ -18,6 +18,8 @@ import useFetchMissiles from "../hooks/websockets/missilehook";
 import useFetchLoot from "../hooks/websockets/loothook";
 import useFetchLandmines from "../hooks/websockets/landminehook";
 import { FontAwesome } from '@expo/vector-icons';
+
+const { width, height } = Dimensions.get('window');
 
 interface MapCompProps {
     selectedMapStyle: any;
@@ -70,7 +72,7 @@ export const MapComp = (props: MapCompProps) => {
                             { text: "OK", onPress: () => console.log("Global button pressed") }
                         ]
                     );
-                    await updateFriendsOnlyStatus(token, false);
+                    await updateFriendsOnlyStatus(false);
 
                     const savedlocation = await loadLastKnownLocation();
                     if (savedlocation == null) {
@@ -190,7 +192,7 @@ export const MapComp = (props: MapCompProps) => {
                         text: "Confirm",
                         onPress: async () => {
                             await AsyncStorage.setItem('visibilitymode', newMode);
-                            await updateFriendsOnlyStatus(token, friendsOnly);
+                            await updateFriendsOnlyStatus(friendsOnly);
                             console.log("FriendsOnly status updated successfully to:", friendsOnly);
                             console.log("Mode changed to:", newMode);
                         }
@@ -199,7 +201,7 @@ export const MapComp = (props: MapCompProps) => {
             );
         } else {
             await AsyncStorage.setItem('visibilitymode', newMode);
-            await updateFriendsOnlyStatus(token, friendsOnly);
+            await updateFriendsOnlyStatus(friendsOnly);
             console.log("FriendsOnly status updated successfully to:", friendsOnly);
         }
 
@@ -277,6 +279,7 @@ export const MapComp = (props: MapCompProps) => {
                 </View>
             )}
             <View style={mainmapstyles.switchContainer}>
+                <Text style={mainmapstyles.switchText}>{visibilitymode === 'global' ? 'Global' : 'Friends'}</Text>
                 <Switch
                     trackColor={{ false: "#767577", true: "#81b0ff" }}
                     thumbColor={visibilitymode === 'global' ? "#f4f3f4" : "#f4f3f4"}
@@ -284,7 +287,6 @@ export const MapComp = (props: MapCompProps) => {
                     onValueChange={toggleMode}
                     value={visibilitymode === 'global'}
                 />
-                <Text style={mainmapstyles.switchText}>{visibilitymode === 'global' ? 'Global' : 'Friends'}</Text>
             </View>
         </View>
     );
