@@ -146,6 +146,19 @@ export const MapComp = (props: MapCompProps) => {
         initializeApp();
     }, []);
 
+    useEffect(() => {
+        const checkVisibilityMode = async () => {
+            const storedMode = await AsyncStorage.getItem('visibilitymode');
+            if (storedMode !== null && storedMode !== visibilitymode) {
+                setMode(storedMode as 'friends' | 'global');
+            }
+        };
+
+        const intervalId = setInterval(checkVisibilityMode, 5000); // Check every 5 seconds
+
+        return () => clearInterval(intervalId); // Cleanup on unmount
+    }, [visibilitymode]);
+
     const dispatchLocation = async () => {
         try {
             const location = await getCurrentLocation();

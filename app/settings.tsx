@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableHighlight, Switch, ScrollView } from 'react-native';
+import { View, Text, TouchableHighlight, Switch, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Input } from "../components/ui/input";
@@ -7,13 +7,14 @@ import { User, LockKeyhole, Mail, ChevronLeft } from "lucide-react-native";
 import * as SecureStore from 'expo-secure-store';
 import { changeEmail, changePassword, changeUsername } from '../api/changedetails';
 import { updateFriendsOnlyStatus } from '../api/visibility';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SettingsPage: React.FC = () => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [friendsOnly, setFriendsOnly] = useState(false);
+  const [visibilityMode, setVisibilityMode] = useState<'friends' | 'global'>('global');
   const [emailError, setEmailError] = useState('');
   const [usernameError, setUsernameError] = useState('');
   const [passwordError, setPasswordError] = useState('');
@@ -31,8 +32,10 @@ const SettingsPage: React.FC = () => {
   };
 
   const loadSettings = async () => {
-    const friendsOnlySetting = await SecureStore.getItemAsync('friendsOnly');
-    setFriendsOnly(friendsOnlySetting === 'true');
+    const storedMode = await AsyncStorage.getItem('visibilitymode');
+    if (storedMode !== null) {
+      setVisibilityMode(storedMode as 'friends' | 'global');
+    }
   };
 
   const validateEmail = (email: string) => {
@@ -78,11 +81,38 @@ const SettingsPage: React.FC = () => {
     changePassword(newPassword);
   };
 
-  const toggleFriendsOnly = async () => {
-    const newValue = !friendsOnly;
-    setFriendsOnly(newValue);
-    await SecureStore.setItemAsync('friendsOnly', newValue.toString());
-    updateFriendsOnlyStatus(newValue);
+  const toggleVisibilityMode = async () => {
+    const newMode = visibilityMode === 'friends' ? 'global' : 'friends';
+    setVisibilityMode(newMode);
+    await AsyncStorage.setItem('visibilitymode', newMode);
+    updateFriendsOnlyStatus(newMode === 'friends');
+
+    if (newMode === 'global') {
+      Alert.alert(
+        "Change to Global Mode",
+        "You are about to change your visibility to global. Everyone will be able to see your location.",
+        [
+          {
+            text: "Cancel",
+            onPress: () => {
+              console.log("Change cancelled");
+              setVisibilityMode('friends');
+            },
+            style: "cancel"
+          },
+          {
+            text: "Confirm",
+            onPress: async () => {
+              await AsyncStorage.setItem('visibilitymode', newMode);
+              await updateFriendsOnlyStatus(newMode === 'global');
+              console.log("Visibility mode changed to:", newMode);
+            }
+          }
+        ]
+      );
+    } else {
+      console.log("Visibility mode changed to:", newMode);
+    }
   };
 
   return (
@@ -178,13 +208,14 @@ const SettingsPage: React.FC = () => {
           </View>
 
           <View className="flex-row justify-between items-center bg-white p-4 rounded-[20px] w-[90vw]">
-            <Text className="text-lg font-bold">Friends Only Mode</Text>
+            <Text className="text-lg font-bold">Visibility Mode</Text>
             <Switch
-              value={friendsOnly}
-              onValueChange={toggleFriendsOnly}
+              value={visibilityMode === 'global'}
+              onValueChange={toggleVisibilityMode}
               trackColor={{ false: "#cbd5e0", true: "#773765" }}
-              thumbColor={friendsOnly ? "#5c2a4f" : "#ffffff"}
+              thumbColor={visibilityMode === 'global' ? "#5c2a4f" : "#ffffff"}
             />
+            <Text>{visibilityMode === 'global' ? 'Global' : 'Friends Only'}</Text>
           </View>
         </View>
       </SafeAreaView>
