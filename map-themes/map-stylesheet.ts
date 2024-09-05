@@ -84,7 +84,7 @@ export const mainmapstyles = StyleSheet.create({
     },
     switchContainer: {
         position: 'absolute',
-        top: height * 0.05, // 5% from the top
+        top: height * 0.07, // 5% from the top
         right: width * 0.05, // 5% from the right
         flexDirection: 'row',
         alignItems: 'center',

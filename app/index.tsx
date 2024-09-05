@@ -290,8 +290,8 @@ const styles = StyleSheet.create({
   },
   fireSelectorContainer: {
     position: 'absolute',
-    bottom: height * 0.05, // 5% from the bottom
-    left: width * 0.05, // 5% from the left
+    bottom: height * 0.0001, 
+    left: width * 0.000001, 
   },
   containerdeath: {
     flex: 1,

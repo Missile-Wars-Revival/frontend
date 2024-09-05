@@ -44,10 +44,10 @@ const HealthBar: React.FC<HealthBarProps> = ({ health }) => {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    top: height * 0.06,
-    left: width * 0.01,
-    width: width * 0.1,
-    height: height * 0.30,
+    top: 40,
+    left: 2,
+    width: 40,
+    height: 250,
     backgroundColor: '#ddd',
     borderRadius: 10,
     overflow: 'hidden',
@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
   levelText: {
     width: 30,
     color: 'black',
-    fontSize: height * 0.015,
+    fontSize: 12,
     textAlign: 'right',
     marginRight: 5,
   },
@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
   },
   healthText: {
     color: 'white',
-    fontSize: height * 0.01,
+    fontSize: 9,
     fontWeight: 'bold',
   },
 });
