@@ -10,6 +10,7 @@ import { MissileLibrary } from "../components/Missile/missile";
 import { searchFriendsAdded } from "../api/getplayerlocations";
 import { fetchAndCacheImage } from "../util/imagecache";
 import { useNotifications, notificationEmitter } from "../components/Notifications/useNotifications";
+import useFetchFriends from "../hooks/websockets/friendshook";
 
 interface Friend {
   username: string;
@@ -17,7 +18,7 @@ interface Friend {
 }
 
 const FriendsPage: React.FC = () => {
-  const [friends, setFriends] = useState<Friend[]>([]);
+  const friends = useFetchFriends() //WS
   const [loading, setLoading] = useState(false);
   const error = null;
   const [modalVisible, setModalVisible] = useState(false);
@@ -56,46 +57,6 @@ const FriendsPage: React.FC = () => {
     console.log(`Firing missile for friend with username: ${username}`);
   };
 
-  const fetchFriends = async () => {
-    setLoading(true);
-    const token = await SecureStore.getItemAsync("token");
-  
-    if (!token) {
-      console.log('Token not found');
-      setLoading(false);
-      return;
-    }
-  
-    try {
-      const response = await axiosInstance.get('/api/friends', {
-        params: { token } 
-      });
-  
-      if (response.data && response.data.friends) {
-        const friendsWithImages = await Promise.all(
-          response.data.friends.map(async (friend: Friend) => ({
-            ...friend,
-            profileImageUrl: await fetchAndCacheImage(friend.username),
-          }))
-        );
-        setFriends(friendsWithImages);
-      } else {
-        console.log('No friends data found');
-      }
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        console.error('Axios error:', error.message);
-      } else {
-        console.error('Error fetching friends:', error);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  useEffect(() => {
-    fetchFriends();
-  }, [userNAME]);
 
   const handleRemoveFriend = async (friendUsername: string) => {
     const token = await SecureStore.getItemAsync("token");
@@ -108,7 +69,6 @@ const FriendsPage: React.FC = () => {
       if (response.message === "Friend removed successfully") {
         Alert.alert("Success", "Friend successfully removed.");
         setModalVisible(false);
-        fetchFriends(); // Refresh the friends list
       } else {
         const result = await response.json();
         Alert.alert("Error", result.message || "Failed to remove friend.");
@@ -121,7 +81,6 @@ const FriendsPage: React.FC = () => {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchFriends();
     setRefreshing(false);
   };
 

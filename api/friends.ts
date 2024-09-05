@@ -1,5 +1,6 @@
 import axiosInstance from "./axios-instance";
 import axios, { isAxiosError } from "axios";
+import * as SecureStore from "expo-secure-store";
 
 interface FriendResponse {
   message: string;

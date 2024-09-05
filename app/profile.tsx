@@ -5,7 +5,6 @@ import { clearCredentials } from '../util/logincache';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import * as SecureStore from "expo-secure-store";
-import axiosInstance from '../api/axios-instance';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import useFetchInventory from '../hooks/websockets/inventoryhook';
@@ -14,6 +13,7 @@ import { Statistics } from './user-profile';
 import firebase from '../util/firebase/config';
 import { fetchAndCacheImage } from '../util/imagecache';
 import { useAuth } from '../util/Context/authcontext';
+import useFetchFriends from '../hooks/websockets/friendshook';
 
 const DEFAULT_IMAGE = require('../assets/mapassets/Female_Avatar_PNG.png');
 
@@ -61,7 +61,7 @@ const ProfilePage: React.FC = () => {
   const [useBackgroundLocation, setUseBackgroundLocation] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [userImageUrl, setUserImageUrl] = useState<string | null>(null);
-  const [friends, setFriends] = useState<Friend[]>([]);
+  const friends = useFetchFriends() //WS
   const inventory = useFetchInventory();
   const [statistics, setStatistics] = useState<Statistics | null>(null);
   const [email, setEmail] = useState<string | null>(null);
@@ -207,26 +207,6 @@ const ProfilePage: React.FC = () => {
     );
   };
 
-  const fetchFriends = async () => {
-    try {
-      const token = await SecureStore.getItemAsync("token");
-      if (!token) throw new Error("No authentication token found.");
-      const response = await axiosInstance.get('/api/friends', { params: { token } });
-      const friendsData = response.data.friends || [];
-      
-      // Fetch and cache friend profile images
-      const images: { [key: string]: string } = {};
-      for (const friend of friendsData) {
-        images[friend.username] = await fetchAndCacheImage(friend.username);
-      }
-      setFriendImages(images);
-      
-      setFriends(friendsData);
-    } catch (error) {
-      console.error('Failed to fetch friends', error);
-    }
-  };
-
   const navigateToUserProfile = (username: string) => {
     router.push({
       pathname: "/user-profile",
@@ -236,7 +216,6 @@ const ProfilePage: React.FC = () => {
 
   useEffect(() => {
     loadProfileImage();
-    fetchFriends();
   }, []);
 
   useEffect(() => {
@@ -260,6 +239,23 @@ const ProfilePage: React.FC = () => {
       console.error('Failed to fetch user statistics', error);
     }
   };
+
+  useEffect(() => {
+    const loadFriendImages = async () => {
+      const imagePromises = friends.map(async (friend) => {
+        const imageUrl = await fetchAndCacheImage(friend.username);
+        return { [friend.username]: imageUrl };
+      });
+      const imageResults = await Promise.all(imagePromises);
+      const newFriendImages = Object.assign({}, ...imageResults);
+      setFriendImages(newFriendImages);
+    };
+
+    if (friends.length > 0) {
+      loadFriendImages();
+    }
+  }, [friends]);
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>

@@ -13,8 +13,11 @@ const LeagueRankingPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<'players' | 'leagues'>('leagues');
   const [isLoading, setIsLoading] = useState(true);
   
-  const scheme = useColorScheme();
-  const styles = scheme === 'dark' ? darkStyles : lightStyles;
+  const scheme = useColorScheme() || 'light';
+  const styles = StyleSheet.create({
+    ...lightStyles,
+    ...(scheme === 'dark' ? darkStyles : {}),
+  });
 
   useEffect(() => {
     const fetchData = async () => {

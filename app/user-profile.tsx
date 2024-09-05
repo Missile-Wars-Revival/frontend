@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { SafeAreaView, StyleSheet, Text, View, Image, ScrollView, TouchableOpacity } from 'react-native';
+import { SafeAreaView, StyleSheet, Text, View, Image, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import * as SecureStore from "expo-secure-store";
 import { getuserprofile } from '../api/getprofile';
 import { fetchAndCacheImage } from '../util/imagecache';
+import useFetchFriends from '../hooks/websockets/friendshook';
+import { addFriend } from '../api/friends';
 
 const DEFAULT_IMAGE = require('../assets/mapassets/Female_Avatar_PNG.png');
 
@@ -33,6 +36,8 @@ const UserProfilePage: React.FC = () => {
   const [userImageUrl, setUserImageUrl] = useState<string | null>(null);
   const [friendImages, setFriendImages] = useState<{ [key: string]: string }>({});
   const router = useRouter();
+  const friends = useFetchFriends(); // Add this line
+  const [isFriend, setIsFriend] = useState(false);
 
   useEffect(() => {
     if (username) {
@@ -46,6 +51,12 @@ const UserProfilePage: React.FC = () => {
       loadFriendImages();
     }
   }, [userProfile]);
+
+  useEffect(() => {
+    if (username && friends) {
+      setIsFriend(friends.some(friend => friend.username === username));
+    }
+  }, [username, friends]);
 
   const fetchUserProfile = async () => {
     try {
@@ -77,6 +88,34 @@ const UserProfilePage: React.FC = () => {
     }
   };
 
+  const handleAddFriend = async () => {
+    const token = await SecureStore.getItemAsync("token");
+    try {
+      if (!token) {
+        console.log('Token not found')
+        return; 
+      }
+      if (!userProfile) {
+        console.log('User profile not found');
+        return;
+      }
+      const result = await addFriend(token, userProfile.username);
+      // Assuming successful addition if no errors thrown and possibly checking a status or message
+      if (result.message === "Friend added successfully") {
+        // Update UI state to reflect the new friend status
+        setIsFriend(true);
+        Alert.alert("Success", "Friend added successfully!");
+      } else {
+        // Handle any other messages or default case
+        Alert.alert("Error", result.message || "Failed to add friend.");
+      }
+    } catch (error) {
+      // Handle any errors thrown from the addFriend function
+      console.warn('Error adding friend:', error);
+      Alert.alert("This player is already your friend!");
+    }
+  };
+
   if (!username) {
     return <Text>No username provided</Text>;
   }
@@ -100,8 +139,15 @@ const UserProfilePage: React.FC = () => {
             style={styles.profileImage}
           />
           <Text style={styles.profileName}>{userProfile.username}</Text>
-          <View style={styles.rankPointsContainer}>
-            <Text style={styles.rankPoints}>🏅 {userProfile.rankpoints} Rank Points</Text>
+          <View style={styles.profileHeader}>
+            <View style={styles.rankPointsContainer}>
+              <Text style={styles.rankPoints}>🏅 {userProfile.rankpoints} Rank Points</Text>
+            </View>
+            {!isFriend && (
+              <TouchableOpacity style={styles.addFriendButton} onPress={handleAddFriend}>
+                <Text style={styles.addFriendButtonText}>Add Friend</Text>
+              </TouchableOpacity>
+            )}
           </View>
           <View style={styles.badgesContainer}>
             <Text style={styles.sectionTitle}>Badges</Text>
@@ -271,6 +317,25 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#4a5568',
+  },
+  addFriendButton: {
+    backgroundColor: '#4CAF50', // Green color
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 20,
+    alignSelf: 'flex-end',
+  },
+  addFriendButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  profileHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 10,
   },
 });
 

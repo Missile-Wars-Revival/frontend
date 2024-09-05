@@ -14,6 +14,7 @@ export interface LandmineLib {
 
 export interface Friend {
   username: string;
+  profileImageUrl: string;
 }
 
 export type MapStyle = {

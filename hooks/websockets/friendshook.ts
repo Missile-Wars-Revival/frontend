@@ -1,32 +1,32 @@
 import { Friend } from "../../types/types";
 import { useWebSocketContext } from "../../util/Context/websocket";
 import { useEffect, useState } from "react";
+import { fetchAndCacheImage } from "../../util/imagecache";
+
+interface FriendData {
+  username: string;
+  // Add other properties if needed
+}
 
 const useFetchFriends = (): Friend[] => {
     const { friendsdata } = useWebSocketContext();
-    const [Friendss, setFriendss] = useState<Friend[]>([]);
+    const [friends, setFriends] = useState<Friend[]>([]);
 
     useEffect(() => {
-        if (friendsdata) {
-            //console.log('Received data:', friendsdata);
-            if (Array.isArray(friendsdata)) {
-                //console.log('Data is an array:', friendsdata);
-                const fetchedFriendss = friendsdata.filter(item => item.itemType === "Friends");
-                if (fetchedFriendss.length > 0) {
-                    setFriendss(fetchedFriendss.map(item => item));
-                }
-            } else if (typeof friendsdata === 'object' && friendsdata.itemType === "Friends") {
-                //console.log('Data is a single Friends object:', friendsdata);
-                setFriendss([friendsdata]);
-            } else {
-                //console.warn('Data is not an array or a Friends object:',friendsdata);
-            }
-        } else {
-            //console.log('Data is undefined or null');
+        const fetchFriendsWithImages = async (friendsData: FriendData[]) => {
+            const updatedFriends = await Promise.all(friendsData.map(async (item) => ({
+                username: item.username,
+                profileImageUrl: await fetchAndCacheImage(item.username)
+            })));
+            setFriends(updatedFriends);
+        };
+
+        if (friendsdata && Array.isArray(friendsdata)) {
+            fetchFriendsWithImages(friendsdata);
         }
     }, [friendsdata]);
 
-    return Friendss;
+    return friends;
 };
 
 export default useFetchFriends;

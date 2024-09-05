@@ -216,6 +216,8 @@ const QuickAddPage: React.FC = () => {
           <TextInput
             className="bg-white border border-gray-300 rounded-lg px-4 py-2 mb-4"
             placeholder="Search for friends..."
+            autoCorrect={false}
+            autoCapitalize="none"
             value={searchTerm}
             onChangeText={handleSearch}
           />
