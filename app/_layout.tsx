@@ -19,7 +19,6 @@ import { AuthProvider } from "../util/Context/authcontext";
 import { useNotifications, notificationEmitter } from "../components/Notifications/useNotifications";
 import { AppState } from 'react-native';
 
-
 const WebSocketProvider = ({ children }: WebSocketProviderProps) => {
   const { data, missiledata, landminedata, lootdata, healthdata, friendsdata, inventorydata, playerlocations, sendWebsocket } = useWebSocket();
 
@@ -55,34 +54,33 @@ export default function RootLayout() {
     try {
       Purchases.setDebugLogsEnabled(true);
       if (Platform.OS === 'ios') {
-        await Purchases.configure({ apiKey: "appl_DhhCcaRAelpsFMqaQCjiKcUWNcR" });
+        await Purchases.configure({ apiKey: process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_APPLE || '' });
       } else if (Platform.OS === 'android') {
-        await Purchases.configure({ apiKey: "your_android_api_key" });
+        await Purchases.configure({ apiKey: process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_GOOGLE || '' });
       }
     } catch (error) {
       console.error('Failed to initialize Purchases:', error);
     }
   }, []);
 
+  const [lastAppState, setLastAppState] = useState<AppStateStatus>(AppState.currentState);
+
+  const handleAppStateChange = (nextAppState: AppStateStatus) => {
+    if (lastAppState.match(/inactive|background/) && nextAppState === 'active') {
+      // App has come to the foreground
+      fetchNotifications();
+    }
+    setLastAppState(nextAppState);
+  };
+
   useEffect(() => {
     configurePurchases();
-
     const subscription = AppState.addEventListener('change', handleAppStateChange);
 
     return () => {
       subscription.remove();
     };
-  }, []);
-
-  const handleAppStateChange = (nextAppState: AppStateStatus) => {
-    if (nextAppState === 'active') {
-      setIsSplashVisible(true);
-      setTimeout(() => {
-        setIsSplashVisible(false);
-        fetchNotifications();
-      }, 2000);
-    }
-  };
+  }, [lastAppState]);
 
   const handleSplashFinish = useCallback(() => {
     setIsSplashVisible(false);

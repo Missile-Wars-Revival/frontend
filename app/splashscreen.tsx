@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, ActivityIndicator, Image, Animated } from 'reac
 import mobileAds from 'react-native-google-mobile-ads';
 import { getlocation } from '../util/locationreq';
 import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
 import { firebaseConfig } from '../util/firebase/config';
 
 mobileAds()

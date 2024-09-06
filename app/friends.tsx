@@ -11,6 +11,7 @@ import { searchFriendsAdded } from "../api/getplayerlocations";
 import { fetchAndCacheImage } from "../util/imagecache";
 import { useNotifications, notificationEmitter } from "../components/Notifications/useNotifications";
 import useFetchFriends from "../hooks/websockets/friendshook";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface Friend {
   username: string;
@@ -33,6 +34,7 @@ const FriendsPage: React.FC = () => {
   const [isSearchActive, setIsSearchActive] = useState(false);
   const { unreadCount: initialUnreadCount } = useNotifications();
   const [localUnreadCount, setLocalUnreadCount] = useState(initialUnreadCount);
+  const [isAlive, setIsAlive] = useState<boolean>(true);
 
   const handleUnreadCountUpdate = useCallback((count: number) => {
     setLocalUnreadCount(count);
@@ -45,6 +47,14 @@ const FriendsPage: React.FC = () => {
       notificationEmitter.off('unreadCountUpdated', handleUnreadCountUpdate);
     };
   }, [handleUnreadCountUpdate]);
+
+  useEffect(() => {
+    const checkAliveStatus = async () => {
+      const isAliveStatusString = await AsyncStorage.getItem('isAlive');
+      setIsAlive(isAliveStatusString === 'true');
+    };
+    checkAliveStatus();
+  }, []);
 
   const handleRemPress = (friendUsername: string) => {
     setSelectedFriend(friendUsername);
@@ -140,12 +150,14 @@ const FriendsPage: React.FC = () => {
         <Text className="flex-1 text-lg font-semibold ml-4">{item.username}</Text>
       </TouchableOpacity>
       <View className="flex-row">
-        <TouchableOpacity
-          className="bg-red-500 w-10 h-10 rounded-full justify-center items-center mr-2"
-          onPress={() => fireMissile(item.username)}
-        >
-          <Text className="text-white text-xl">🚀</Text>
-        </TouchableOpacity>
+        {isAlive && (
+          <TouchableOpacity
+            className="bg-red-500 w-10 h-10 rounded-full justify-center items-center mr-2"
+            onPress={() => fireMissile(item.username)}
+          >
+            <Text className="text-white text-xl">🚀</Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
           className="bg-red-500 w-10 h-10 rounded-full justify-center items-center"
           onPress={() => handleRemPress(item.username)}
@@ -284,14 +296,20 @@ const FriendsPage: React.FC = () => {
                 <Text className="text-white font-bold">Done</Text>
               </TouchableOpacity>
             </View>
-            <MissileLibrary 
-              playerName={selectedPlayer} 
-              onMissileFired={() => {
-                // Handle missile fired event
-                setShowMissileLibrary(false);
-              }}
-              onClose={() => setShowMissileLibrary(false)}
-            />
+            {isAlive ? (
+              <MissileLibrary 
+                playerName={selectedPlayer} 
+                onMissileFired={() => {
+                  // Handle missile fired event
+                  setShowMissileLibrary(false);
+                }}
+                onClose={() => setShowMissileLibrary(false)}
+              />
+            ) : (
+              <View className="flex-1 justify-center items-center">
+                <Text className="text-xl text-gray-600">You cannot fire missiles when eliminated.</Text>
+              </View>
+            )}
           </View>
         </View>
       </Modal>

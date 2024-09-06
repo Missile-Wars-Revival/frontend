@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, SafeAreaView, Platform, StatusBar, Modal } from 'react-native';
 import { useNotifications } from '../components/Notifications/useNotifications';
 import * as SecureStore from "expo-secure-store";
@@ -6,6 +6,7 @@ import { addFriend } from '../api/friends';
 import { Ionicons } from '@expo/vector-icons'; // Make sure to import Ionicons
 import { useRouter } from 'expo-router'; // Import useRouter
 import { MissileLibrary } from '../components/Missile/missile';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface Notification {
 	id: string;
@@ -40,6 +41,15 @@ const NotificationsPage: React.FC = () => {
 	const { notifications, isLoading, error, fetchNotifications, markAsRead, deleteNotificationById } = useNotifications();
 	const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
 	const router = useRouter(); // Initialize useRouter
+	const [isAlive, setIsAlive] = useState<boolean>(true);
+
+	useEffect(() => {
+		const checkAliveStatus = async () => {
+			const isAliveStatusString = await AsyncStorage.getItem('isAlive');
+			setIsAlive(isAliveStatusString === 'true');
+		};
+		checkAliveStatus();
+	}, []);
 
 	const handleAccept = useCallback(async (item: Notification) => {
 		console.log('Accept friend request:', item);
@@ -147,14 +157,29 @@ const NotificationsPage: React.FC = () => {
 						</TouchableOpacity>
 					</View>
 				)}
-				{['Incoming Missile!', 'Eliminated!'].includes(item.title) && (
+				{item.title === 'Eliminated!' && (
+					<View style={styles.actionButtons}>
+						{!isAlive && (
+							<TouchableOpacity style={styles.fireBackButton} onPress={() => handleFireBack(item)}>
+								<Text style={styles.buttonText}>Fire Back!</Text>
+							</TouchableOpacity>
+						)}
+						<TouchableOpacity style={styles.dismissButton} onPress={() => dismissNotification(item)}>
+							<Text style={styles.buttonText}>Dismiss</Text>
+						</TouchableOpacity>
+					</View>
+				)}
+				{['Incoming Missile!'].includes(item.title) && (
 					<View style={styles.actionButtons}>
 						<TouchableOpacity style={styles.fireBackButton} onPress={() => handleFireBack(item)}>
 							<Text style={styles.buttonText}>Fire Back!</Text>
 						</TouchableOpacity>
+						<TouchableOpacity style={styles.dismissButton} onPress={() => dismissNotification(item)}>
+							<Text style={styles.buttonText}>Dismiss</Text>
+						</TouchableOpacity>
 					</View>
 				)}
-				{['Missile Alert!', 'Missile Impact Alert!', 'Landmine Nearby!', 'Loot Nearby!', 'Loot Within Reach!', 'Kill Reward'].includes(item.title) && (
+				{['Missile Alert!', 'Missile Impact Alert!', 'Landmine Nearby!', 'Loot Nearby!', 'Loot Within Reach!', 'Kill Reward', `Damaged!`].includes(item.title) && (
 					<View style={styles.actionButtons}>
 						<TouchableOpacity style={styles.dismissButton} onPress={() => dismissNotification(item)}>
 							<Text style={styles.buttonText}>Dismiss</Text>
@@ -163,7 +188,7 @@ const NotificationsPage: React.FC = () => {
 				)}
 			</TouchableOpacity>
 		);
-	}, [hiddenIds, markAsRead, handleAccept, handleDecline, handleFireBack, dismissNotification]);
+	}, [hiddenIds, markAsRead, handleAccept, handleDecline, handleFireBack, dismissNotification, isAlive]);
 
 	return (
 		<SafeAreaView style={styles.safeArea}>

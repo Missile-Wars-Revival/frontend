@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, FlatList, Text, TouchableOpacity, Image, ImageBackground, ImageSourcePropType } from 'react-native';
+import { View, FlatList, Text, TouchableOpacity, Image, ImageBackground, ImageSourcePropType, SafeAreaView, StyleSheet, useColorScheme, Dimensions, Animated } from 'react-native';
 import Cart from '../components/Store/cart';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { mainstorestyles } from '../components/Store/storestylesheets';
 import axiosInstance from '../api/axios-instance';
 import * as SecureStore from "expo-secure-store";
 import axios from 'axios';
-import Purchases, { PRODUCT_TYPE } from 'react-native-purchases';
+import Purchases from 'react-native-purchases';
 import { addmoney } from '../api/money';
 import { additem } from '../api/add-item';
 
@@ -47,6 +46,8 @@ export const products: Product[] = [
   { id: "20", name: 'LootDrop', price: 400, image: require('../assets/mapassets/Airdropicon.png'), description: 'A Loot Drop', sku: "Loot Drop", type: 'Loot Drops' },
 ];
 
+const { width, height } = Dimensions.get('window');
+
 const StorePage: React.FC = () => {
   const [cart, setCart] = useState<{ product: Product; quantity: number }[]>([]);
   const [isCartVisible, setCartVisible] = useState<boolean>(false);
@@ -54,6 +55,7 @@ const StorePage: React.FC = () => {
   const [currencyAmount, setCurrencyAmount] = useState<number>(0);
   const [isPremiumStore, setIsPremiumStore] = useState<boolean>(false);
   const [premiumProducts, setPremiumProducts] = useState<PremProduct[]>([]);
+  const [cartAnimation] = useState(new Animated.Value(0));
 
   //match items to category 
   const mapProductType = (productid: string) => {
@@ -280,96 +282,277 @@ const StorePage: React.FC = () => {
   };
 
   const filteredProducts = selectedCategory === 'All' ? products : products.filter(p => p.type === selectedCategory);
+  const colorScheme = useColorScheme();
+  const styles = getStyles(colorScheme ?? 'light');
 
   const renderButton = ({ item }: { item: Product }) => (
-    <TouchableOpacity style={mainstorestyles.button} onPress={() => addToCart(item)}>
-      <Text style={mainstorestyles.buttonText}>{item.name}</Text>
-      <Image source={item.image} style={mainstorestyles.buttonImage} />
-      <Text style={mainstorestyles.buttonText}>🪙{item.price}</Text>
+    <TouchableOpacity style={styles.productButton} onPress={() => addToCart(item)}>
+      <Image source={item.image} style={styles.productImage} />
+      <Text style={styles.productName}>{item.name}</Text>
+      <Text style={styles.productPrice}>🪙{item.price}</Text>
     </TouchableOpacity>
   );
 
   const premrenderButton = ({ item }: { item: PremProduct }) => (
-    <TouchableOpacity style={mainstorestyles.button} onPress={() => buyItem(item).then(result => console.log(result))}>
-      <Text style={mainstorestyles.buttonText}>{item.name}</Text>
-      <Image source={item.image} style={mainstorestyles.buttonImage} />
-      <Text style={mainstorestyles.buttonText}>{item.displayprice}</Text>
+    <TouchableOpacity style={styles.productButton} onPress={() => buyItem(item).then(result => console.log(result))}>
+      <Image source={item.image} style={styles.productImage} />
+      <Text style={styles.productName}>{item.name}</Text>
+      <Text style={styles.productPrice}>{item.displayprice}</Text>
     </TouchableOpacity>
   );
 
-  return (
-    <ImageBackground source={require('../assets/store/mapbackdrop.png')} style={mainstorestyles.backgroundImage}>
-      <Image source={require('../assets/MissleWarsTitle.png')} style={mainstorestyles.titleImage} />
-      <Image source={require('../assets/store/SHOP.png')} style={mainstorestyles.shopImage} />
-      <View style={mainstorestyles.headerContainer}>
-        <View style={mainstorestyles.currencyContainer}>
-          <Text style={mainstorestyles.currencyText} numberOfLines={1} ellipsizeMode="tail">
-            🪙{currencyAmount}
+  const renderTabs = () => (
+    <View style={styles.tabContainerMissiles}>
+      {['All', 'Missiles', 'Landmines', 'Loot Drops'].map((category) => (
+        <TouchableOpacity 
+          key={category} 
+          onPress={() => setSelectedCategory(category)} 
+          style={[
+            styles.tabMissiles,
+            selectedCategory === category && styles.selectedTab
+          ]}
+        >
+          <Text style={[
+            styles.missileTabText,
+            selectedCategory === category && styles.selectedTabText
+          ]}>
+            {category}
           </Text>
-        </View>
-        <View style={mainstorestyles.switchContainer}>
-          <TouchableOpacity
-            style={[
-              mainstorestyles.toggleButton,
-              isPremiumStore ? mainstorestyles.coinsButton : mainstorestyles.premiumButton,
-            ]}
-            onPress={() => setIsPremiumStore(!isPremiumStore)} // Add logic to switch out the free store items for the premium items when clicked.
-          >
-            <Text style={mainstorestyles.toggleButtonText}>
-              {isPremiumStore ? 'Premium' : 'Coins'}
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+
+  const showCart = () => {
+    setCartVisible(true);
+    Animated.spring(cartAnimation, {
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const hideCart = () => {
+    Animated.spring(cartAnimation, {
+      toValue: 0,
+      useNativeDriver: true,
+    }).start(() => setCartVisible(false));
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <ImageBackground source={require('../assets/store/mapbackdrop.png')} style={styles.backgroundImage}>
+        <Image source={require('../assets/MissleWarsTitle.png')} style={styles.titleImage} />
+        <Image source={require('../assets/store/SHOP.png')} style={styles.shopImage} />
+        <View style={styles.headerContainer}>
+          <View style={styles.currencyContainer}>
+            <Text style={styles.currencyText} numberOfLines={1} ellipsizeMode="tail">
+              🪙{currencyAmount}
             </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {(!isPremiumStore) && (
-        <><View style={mainstorestyles.tabContainerMissiles}>
-          {['All', 'Missiles', 'Landmines', 'Loot Drops'].map((category) => (
-            <TouchableOpacity key={category} onPress={() => setSelectedCategory(category)} style={mainstorestyles.tabMissiles}>
-              <Text style={mainstorestyles.missileTabText}>{category}</Text>
+          </View>
+          <View style={styles.switchContainer}>
+            <TouchableOpacity
+              style={[
+                styles.toggleButton,
+                isPremiumStore ? styles.coinsButton : styles.premiumButton,
+              ]}
+              onPress={() => setIsPremiumStore(!isPremiumStore)}
+            >
+              <Text style={styles.toggleButtonText}>
+                {isPremiumStore ? 'Premium' : 'Coins'}
+              </Text>
             </TouchableOpacity>
-          ))}
-        </View><View style={mainstorestyles.container}>
-            {isCartVisible ? (
-              <Cart cart={cart} onRemove={handleRemove} />
-            ) : (
-              <>
-                <FlatList
-                  data={filteredProducts}
-                  keyExtractor={(item) => item.id.toString()}
-                  renderItem={renderButton}
-                  numColumns={3}
-                  columnWrapperStyle={mainstorestyles.columnWrapper}
-                  contentContainerStyle={mainstorestyles.contentContainer} />
-                <TouchableOpacity onPress={() => setCartVisible(true)} style={mainstorestyles.cartButton}>
-                  <Text style={mainstorestyles.cartButtonText}>Go to Cart</Text>
-                </TouchableOpacity>
-              </>
-            )}
-            {isCartVisible && (
-              <TouchableOpacity onPress={() => setCartVisible(false)} style={mainstorestyles.cartButton}>
-                <Text style={mainstorestyles.cartButtonText}>Back to Products</Text>
-              </TouchableOpacity>
-            )}
-          </View></>
-      )}
+          </View>
+        </View>
 
-      {(isPremiumStore) && (
-        <View style={mainstorestyles.container}>
+        {!isPremiumStore && (
           <>
+            {renderTabs()}
+            <View style={styles.container}>
+              <FlatList
+                data={filteredProducts}
+                keyExtractor={(item) => item.id.toString()}
+                renderItem={renderButton}
+                numColumns={3}
+                columnWrapperStyle={styles.columnWrapper}
+                contentContainerStyle={styles.contentContainer}
+              />
+              <TouchableOpacity onPress={showCart} style={styles.cartButton}>
+                <Text style={styles.cartButtonText}>Go to Cart</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+
+        {isPremiumStore && (
+          <View style={styles.container}>
             <FlatList
               data={premiumProducts}
               keyExtractor={(item) => item.id.toString()}
               renderItem={premrenderButton}
               numColumns={3}
-              columnWrapperStyle={mainstorestyles.columnWrapper}
-              contentContainerStyle={mainstorestyles.contentContainer}
+              columnWrapperStyle={styles.columnWrapper}
+              contentContainerStyle={styles.contentContainer}
             />
-          </>
-        </View>
-      )}
-    </ImageBackground>
+          </View>
+        )}
+
+        {isCartVisible && (
+          <Animated.View style={[
+            styles.cartContainer,
+            {
+              transform: [{
+                translateY: cartAnimation.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [height, 0],
+                }),
+              }],
+            },
+          ]}>
+            <Cart cart={cart} onRemove={handleRemove} />
+            <TouchableOpacity onPress={hideCart} style={styles.cartButton}>
+              <Text style={styles.cartButtonText}>Back to Products</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        )}
+      </ImageBackground>
+    </SafeAreaView>
   );
 }
+
+const getStyles = (colorScheme: 'light' | 'dark' | null) => StyleSheet.create({
+  container: {
+    flex: 1,
+    //backgroundColor: colorScheme === 'dark' ? '#1a1a1a' : '#f0f2f5',
+  },
+  backgroundImage: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+  titleImage: {
+    width: width * 0.8,
+    height: height * 0.1,
+    resizeMode: 'contain',
+    alignSelf: 'center',
+    marginTop: height * 0.02,
+  },
+  shopImage: {
+    width: width * 0.7,
+    height: height * 0.08,
+    resizeMode: 'stretch',
+    alignSelf: 'center',
+    marginTop: -25,
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 10,
+    marginTop: -15,
+  },
+  currencyContainer: {
+    backgroundColor: colorScheme === 'dark' ? '#333' : '#fff',
+    borderRadius: 20,
+    padding: 10,
+  },
+  currencyText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colorScheme === 'dark' ? '#fff' : '#000',
+  },
+  switchContainer: {
+    // Add any specific styles for the switch container if needed
+  },
+  toggleButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+  },
+  coinsButton: {
+    backgroundColor: '#ffd700',
+  },
+  premiumButton: {
+    backgroundColor: '#4a5568',
+  },
+  toggleButtonText: {
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  tabContainerMissiles: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginVertical: 10,
+  },
+  tabMissiles: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: colorScheme === 'dark' ? '#333' : '#fff',
+  },
+  selectedTab: {
+    backgroundColor: colorScheme === 'dark' ? '#555' : '#e0e0e0',
+  },
+  missileTabText: {
+    fontWeight: 'bold',
+    color: colorScheme === 'dark' ? '#fff' : '#000',
+  },
+  selectedTabText: {
+    color: colorScheme === 'dark' ? '#fff' : '#000',
+  },
+  columnWrapper: {
+    justifyContent: 'space-around',
+  },
+  contentContainer: {
+    paddingBottom: 20,
+  },
+  productButton: {
+    backgroundColor: colorScheme === 'dark' ? '#333' : '#fff',
+    borderRadius: 10,
+    padding: 10,
+    alignItems: 'center',
+    margin: 5,
+    width: width * 0.28,
+  },
+  productImage: {
+    width: width * 0.2,
+    height: width * 0.2,
+    resizeMode: 'contain',
+  },
+  productName: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginTop: 5,
+    color: colorScheme === 'dark' ? '#fff' : '#000',
+  },
+  productPrice: {
+    fontSize: 12,
+    color: colorScheme === 'dark' ? '#ccc' : '#666',
+  },
+  cartButton: {
+    backgroundColor: '#773765',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+    alignSelf: 'center',
+    marginTop: 10,
+  },
+  cartButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  cartContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: colorScheme === 'dark' ? '#1a1a1a' : '#f0f2f5',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    maxHeight: height * 0.8,
+  },
+});
 
 export default StorePage;

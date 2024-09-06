@@ -1,11 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Modal, Text, View, Button, Dimensions, ActivityIndicator, Alert, Platform } from 'react-native';
 import MapView, { Marker, Circle, PROVIDER_DEFAULT, PROVIDER_GOOGLE } from 'react-native-maps';
+import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { useUserName } from "../../util/fetchusernameglobal";
 import { mapstyles } from '../../map-themes/map-stylesheet';
 import { placeLoot } from '../../api/fireentities';
+
+const GOOGLE_PLACES_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 
 export const LootPlacementPopup = ({ visible, onClose, selectedLoot, onLootPlaced }) => {
 
@@ -17,6 +20,7 @@ export const LootPlacementPopup = ({ visible, onClose, selectedLoot, onLootPlace
   const [loading, setLoading] = useState(true);
   const [currentLocation, setCurrentLocation] = useState(null);
   const userName = useUserName();
+  const mapRef = useRef(null);
 
   async function initializeLocation() {
     let { status } = await Location.requestForegroundPermissionsAsync();
@@ -94,6 +98,20 @@ export const LootPlacementPopup = ({ visible, onClose, selectedLoot, onLootPlace
     );
   }
 
+  const handlePlaceSelected = (data, details = null) => {
+    if (details && details.geometry) {
+      const newRegion = {
+        latitude: details.geometry.location.lat,
+        longitude: details.geometry.location.lng,
+        latitudeDelta: 0.002,
+        longitudeDelta: 0.002,
+      };
+      setRegion(newRegion);
+      setMarker(newRegion);
+      mapRef.current?.animateToRegion(newRegion, 1000);
+    }
+  };
+
   // Function to check if the marker is at the player's current location
   const handleLootPlacement = async () => {
     if (marker && currentLocation) {
@@ -119,7 +137,41 @@ export const LootPlacementPopup = ({ visible, onClose, selectedLoot, onLootPlace
     >
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
         <View style={{ backgroundColor: 'white', borderRadius: 10, width: Dimensions.get('window').width - 40, height: Dimensions.get('window').height - 200 }}>
+          <GooglePlacesAutocomplete
+            placeholder='Search'
+            onPress={handlePlaceSelected}
+            fetchDetails={true}
+            query={{
+              key: GOOGLE_PLACES_API_KEY,
+              language: 'en',
+            }}
+            styles={{
+              container: {
+                position: 'absolute',
+                top: 10,
+                left: 10,
+                right: 10,
+                zIndex: 1,
+              },
+              textInputContainer: {
+                backgroundColor: 'rgba(0,0,0,0)',
+                borderTopWidth: 0,
+                borderBottomWidth: 0,
+              },
+              textInput: {
+                marginLeft: 0,
+                marginRight: 0,
+                height: 38,
+                color: '#5d5d5d',
+                fontSize: 16,
+              },
+              predefinedPlacesDescription: {
+                color: '#1faadb',
+              },
+            }}
+          />
           <MapView
+            ref={mapRef}
             style={{ flex: 1 }}
             initialRegion={region}
             provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
