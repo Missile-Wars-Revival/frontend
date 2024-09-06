@@ -20,12 +20,24 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontSize: 12, // Adjust as needed
   },
+  healthBarContainer: {
+    width: 36,
+    height: 4,
+    backgroundColor: '#ddd',
+    borderRadius: 2,
+    marginTop: 2,
+  },
+  healthBar: {
+    height: '100%',
+    borderRadius: 2,
+  },
 });
 
 interface PlayerProps {
   location: { latitude: number; longitude: number };
   player: Players;
   timestamp: string;
+  health: number;
   index: number;
 }
 
@@ -47,6 +59,13 @@ export const PlayerComp = (props: PlayerProps) => {
 
   const fireMissile = (playerName: string) => {
     setShowMissileLibrary(true);
+  };
+
+  const getHealthBarColor = (health: number) => {
+    // Start with a dark green (0, 128, 0) and transition to red (255, 0, 0)
+    const red = Math.round(255 * (100 - health) / 100);
+    const green = Math.round(128 * health / 100);
+    return `rgb(${red}, ${green}, 0)`;
   };
 
   return (
@@ -113,6 +132,19 @@ export const PlayerComp = (props: PlayerProps) => {
               </View>
             </View>
           </Modal>
+
+          {/* Health Bar */}
+          <View style={styles.healthBarContainer}>
+            <View 
+              style={[
+                styles.healthBar, 
+                { 
+                  width: `${props.health}%`,
+                  backgroundColor: getHealthBarColor(props.health)
+                }
+              ]}
+            />
+          </View>
         </View>
       </Marker>
     </View>

@@ -111,6 +111,7 @@ export const MissilePlacementPopup: React.FC<MissilePlacementPopupProps> = ({ vi
     } else if (marker && currentLocation) {
       console.log(`FIRING Missile: Dest coords: ${marker.latitude}, ${marker.longitude}; sentbyUser: ${userName} Missile Type: ${selectedMissile}, current coords: ${currentLocation.latitude}, ${currentLocation.longitude}`);
       firemissileloc(marker.latitude.toString(), marker.longitude.toString(), selectedMissile);
+      onMissileFired();
       onClose();
     }
   };

@@ -18,7 +18,8 @@ const useFetchPlayerlocations = (): Players[] => {
                         longitude: item.longitude,
                         createdAt: item.createdAt,
                         updatedAt: item.updatedAt,
-                        deletedAt: item.deletedAt
+                        deletedAt: item.deletedAt,
+                        health: item.health
                     })));
                 }
             } else {

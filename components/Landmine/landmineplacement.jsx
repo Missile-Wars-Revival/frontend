@@ -7,7 +7,7 @@ import { useUserName } from "../../util/fetchusernameglobal";
 import { mapstyles } from '../../map-themes/map-stylesheet';
 import { placelandmine } from '../../api/fireentities';
 
-export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) => {
+export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine, onLandminePlaced }) => {
 
   const [region, setRegion] = useState(null);
   const [isLocationEnabled, setIsLocationEnabled] = useState(true);
@@ -95,13 +95,18 @@ export const LandminePlacementPopup = ({ visible, onClose, selectedLandmine }) =
   }
 
   // Function to check if the marker is at the player's current location
-  const handleLandminePlacement = () => {
-    if (marker.latitude === currentLocation.latitude && marker.longitude === currentLocation.longitude) {
-      Alert.alert('Warning', 'Placing a landmine at your current location is not recommended!');
-    } else {
-      console.log(`FIRING LANDMINE: Coordinates: ${marker.latitude}, ${marker.longitude}; User: ${userName} Landmine Type: ${selectedLandmine.type}`);
-      placelandmine(marker.latitude, marker.longitude, selectedLandmine.type)
-      onClose();
+  const handleLandminePlacement = async () => {
+    if (marker && currentLocation) {
+      console.log(`PLACING Landmine: Dest coords: ${marker.latitude}, ${marker.longitude}; sentbyUser: ${userName} Landmine Type: ${selectedLandmine.type}, current coords: ${currentLocation.latitude}, ${currentLocation.longitude}`);
+      try {
+        await placelandmine(marker.latitude.toString(), marker.longitude.toString(), selectedLandmine.type);
+        console.log("Landmine placed successfully");
+        onLandminePlaced();
+        onClose(); // Call this to close both popup and library
+      } catch (error) {
+        console.error("Error placing landmine:", error);
+        Alert.alert('Error', 'Failed to place landmine. Please try again.');
+      }
     }
   };
 

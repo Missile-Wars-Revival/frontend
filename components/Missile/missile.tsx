@@ -1,12 +1,12 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Missilelib } from "../../types/types";
 import { Text, View, TouchableOpacity, Image, Dimensions, Modal, ScrollView, StyleSheet } from "react-native";
 import React from "react";
 import { MissilePlacementPopup } from './missileplacement';
-import * as SecureStore from "expo-secure-store";
-import axiosInstance from "../../api/axios-instance";
 import { firemissileplayer } from "../../api/fireentities";
 import { create } from 'twrnc';
+import useFetchInventory from "../../hooks/websockets/inventoryhook";
+import { InventoryItem } from '../../types/types';
 
 const tw = create(require('../../tailwind.config.js'));
 
@@ -27,32 +27,17 @@ const tw = create(require('../../tailwind.config.js'));
 //Missile Library needs to be fetched by backend:
 
 
-const fetchMissileLib = async (): Promise<Missilelib[]> => {
-  try {
-    const token = await SecureStore.getItemAsync("token");
-    if (!token) {
-      throw new Error("No authentication token found.");
-    }
+const useMissileLib = (): Missilelib[] => {
+  const inventory = useFetchInventory();
 
-    const response = await axiosInstance.get('/api/getInventory', {
-      params: { token }
-    });
+  const missileLibrary = inventory
+    .filter((item: InventoryItem) => item.category === "Missiles" && item.quantity > 0)
+    .map((item: InventoryItem) => ({
+      type: item.name,
+      quantity: item.quantity
+    }));
 
-    const inventory = response.data;
-
-    // Filter the inventory to include only items with the category "Missiles"
-    const missileLibraryData = inventory
-      .filter((item: { category: string; quantity: number;}) => item.category === "Missiles" && item.quantity > 0)
-      .map((item: { name: any; quantity: any; }) => ({
-        type: item.name,
-        quantity: item.quantity
-      }));
-
-    return missileLibraryData;
-  } catch (error) {
-    console.error('Failed to fetch missile library', error);
-    throw error;
-  }
+  return missileLibrary;
 };
 
 interface MissileImages {
@@ -91,27 +76,9 @@ const MissileSelector = ({ onSelect, missiles }: { onSelect: (missile: string) =
 );
 
 export const MissileLibrary = ({ playerName, onMissileFired, onClose }: { playerName?: string, onMissileFired: () => void, onClose: () => void }) => {
-  const [missileLibrary, setMissileLibrary] = useState<Missilelib[]>([]);
-  const [loading, setLoading] = useState(true);
+  const missileLibrary = useMissileLib();
   const [selectedMissile, setSelectedMissile] = useState<string | null>(null);
   const [showPopup, setShowPopup] = useState(false);
-  const [noItems, setNoItems] = useState<boolean>(false);
-
-  useEffect(() => {
-    const fetchMissileLibrary = async () => {
-      try {
-        const missileLibraryData = await fetchMissileLib();
-        setMissileLibrary(missileLibraryData);
-        setNoItems(missileLibraryData.length === 0);
-      } catch (error) {
-        console.error('Error fetching missile library:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchMissileLibrary();
-  }, []);
 
   const handleMissileClick = (missileType: string) => {
     setSelectedMissile(missileType);
@@ -124,10 +91,7 @@ export const MissileLibrary = ({ playerName, onMissileFired, onClose }: { player
         if (playerName) {
           await firemissileplayer(playerName, selectedMissile);
         } else {
-          // Handle firing at location (implement this function)
-          // await firemissilelocation(selectedMissile, location);
         }
-        // ... update library, etc.
         onMissileFired();
         onClose();
       } catch (error) {
@@ -139,14 +103,6 @@ export const MissileLibrary = ({ playerName, onMissileFired, onClose }: { player
   const handleCancel = () => {
     setShowPopup(false);
   };
-
-  if (loading) {
-    return (
-      <View>
-        <Text>Loading...</Text>
-      </View>
-    );
-  }
 
   return (
     <View style={tw`bg-white rounded-lg p-4 h-[90%]`}>
@@ -177,25 +133,9 @@ export const MissileLibrary = ({ playerName, onMissileFired, onClose }: { player
 //For when fire button is used without player
 //This is what should be used when using fire-selector button
 export const MissilefireposLibrary = ({ onClose }: { onClose: () => void }) => {
-  const [missileLibrary, setMissileLibrary] = useState<Missilelib[]>([]);
-  const [loading, setLoading] = useState(true);
+  const missileLibrary = useMissileLib();
   const [showPlacementPopup, setShowPlacementPopup] = useState(false);
   const [selectedMissile, setSelectedMissile] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchMissileLibrary = async () => {
-      try {
-        const missileLibraryData = await fetchMissileLib();
-        setMissileLibrary(missileLibraryData);
-      } catch (error) {
-        console.error('Error fetching missile library:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchMissileLibrary();
-  }, []);
 
   const handleMissileClick = (selectedMissile: string) => {
     setSelectedMissile(selectedMissile);
@@ -206,14 +146,6 @@ export const MissilefireposLibrary = ({ onClose }: { onClose: () => void }) => {
     setShowPlacementPopup(false);
     setSelectedMissile(null);
   };
-
-  if (loading) {
-    return (
-      <View style={tw`bg-white rounded-lg p-4 h-[90%]`}>
-        <Text>Loading...</Text>
-      </View>
-    );
-  }
 
   return (
     <View style={tw`bg-white rounded-lg p-4 h-[90%]`}>

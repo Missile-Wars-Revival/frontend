@@ -280,7 +280,7 @@ function RootLayoutNav() {
   const hideNavBarRoutes = ['/login', '/register', '/add-friends', '/user-profile', '/settings', '/notifications'];
   const { countdownIsActive, stopCountdown } = useCountdown();
   const [unreadCount, setUnreadCount] = useState(0);
-  const { unreadCount: initialUnreadCount } = useNotifications();
+  const { unreadCount: initialUnreadCount, fetchNotifications } = useNotifications();
 
   useEffect(() => {
     setUnreadCount(initialUnreadCount);
@@ -291,10 +291,24 @@ function RootLayoutNav() {
 
     notificationEmitter.on('unreadCountUpdated', handleUnreadCountUpdated);
 
+    // Set up interval to check for notifications every 30 seconds
+    const intervalId = setInterval(() => {
+      fetchNotifications();
+    }, 30000); // 30 seconds
+
+    // Check for notifications when the app comes to the foreground
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState === 'active') {
+        fetchNotifications();
+      }
+    });
+
     return () => {
       notificationEmitter.off('unreadCountUpdated', handleUnreadCountUpdated);
+      clearInterval(intervalId);
+      subscription.remove();
     };
-  }, [initialUnreadCount]);
+  }, [initialUnreadCount, fetchNotifications]);
 
   return (
     <SafeAreaProvider>

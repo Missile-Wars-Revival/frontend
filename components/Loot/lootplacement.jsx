@@ -7,7 +7,7 @@ import { useUserName } from "../../util/fetchusernameglobal";
 import { mapstyles } from '../../map-themes/map-stylesheet';
 import { placeLoot } from '../../api/fireentities';
 
-export const LootPlacementPopup = ({ visible, onClose, selectedLoot }) => {
+export const LootPlacementPopup = ({ visible, onClose, selectedLoot, onLootPlaced }) => {
 
   const [region, setRegion] = useState(null);
   const [isLocationEnabled, setIsLocationEnabled] = useState(true);
@@ -95,13 +95,18 @@ export const LootPlacementPopup = ({ visible, onClose, selectedLoot }) => {
   }
 
   // Function to check if the marker is at the player's current location
-  const handleLootPlacement = () => {
-    if (marker.latitude === currentLocation.latitude && marker.longitude === currentLocation.longitude) {
-      Alert.alert('Warning', 'Placing a Loot at your current location is not recommended!');
-    } else {
-      console.log(`FIRING Loot: Coordinates: ${marker.latitude}, ${marker.longitude}; User: ${userName}`);
-      placeLoot(marker.latitude, marker.longitude)
-      onClose();
+  const handleLootPlacement = async () => {
+    if (marker && currentLocation) {
+      console.log(`PLACING Loot: Dest coords: ${marker.latitude}, ${marker.longitude}; sentbyUser: ${userName} Loot Type: ${selectedLoot.type}, current coords: ${currentLocation.latitude}, ${currentLocation.longitude}`);
+      try {
+        await placeLoot(marker.latitude.toString(), marker.longitude.toString(), selectedLoot.type);
+        console.log("Loot placed successfully");
+        onLootPlaced(); // This will close both the popup and the library
+        onClose(); // This will ensure the popup closes
+      } catch (error) {
+        console.error("Error placing loot:", error);
+        Alert.alert('Error', 'Failed to place loot. Please try again.');
+      }
     }
   };
 
@@ -152,7 +157,7 @@ export const LootPlacementPopup = ({ visible, onClose, selectedLoot }) => {
           )}
           <View style={{ flexDirection: 'row', justifyContent: 'space-around', padding: 10 }}>
             <Button title="Cancel" onPress={onClose} />
-            <Button title="Fire" onPress={handleLootPlacement} />
+            <Button title="Place" onPress={handleLootPlacement} />
           </View>
         </View>
       </View>

@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Modal, View, Button, Dimensions, ScrollView, Text, TouchableOpacity, Image } from 'react-native';
+import React, { useState } from 'react';
+import { Modal, View, Button, ScrollView, Text, TouchableOpacity, Image } from 'react-native';
 import { LandminePlacementPopup } from './landmineplacement';
-import * as SecureStore from "expo-secure-store";
-import axiosInstance from '../../api/axios-instance';
 import { create } from 'twrnc';
+import { InventoryItem } from '../../types/types';
+import useFetchInventory from '../../hooks/websockets/inventoryhook';
 
 const tw = create(require('../../tailwind.config.js'));
 
@@ -25,33 +25,17 @@ interface LandmineImages {
   [key: string]: any;
 }
 
-//backend needs to fetch users landmine library
-const fetchLandmineLib = async (): Promise<LandmineType[]> => {
-  try {
-    const token = await SecureStore.getItemAsync("token");
-    if (!token) {
-      throw new Error("No authentication token found.");
-    }
+const useLandmineLib = (): LandmineType[] => {
+  const inventory = useFetchInventory();
 
-    const response = await axiosInstance.get('/api/getInventory', {
-      params: { token }
-    });
+  const landmineLibrary = inventory
+    .filter((item: InventoryItem) => item.category === "Landmines" && item.quantity > 0)
+    .map((item: InventoryItem) => ({
+      type: item.name,
+      quantity: item.quantity
+    }));
 
-    const inventory = response.data;
-
-    // Filter the inventory to include only items with the category "Landmines"
-    const landmineLibraryData = inventory
-      .filter((item: { category: string; quantity: number;}) => item.category === "Landmines" && item.quantity > 0)
-      .map((item: { name: any; quantity: any; }) => ({
-        type: item.name,
-        quantity: item.quantity
-      }));
-
-    return landmineLibraryData;
-  } catch (error) {
-    console.error('Failed to fetch landmine library', error);
-    throw error;
-  }
+  return landmineLibrary;
 };
 
 //landmine images for both map and library
@@ -77,21 +61,9 @@ const LandmineSelector = ({ onSelect, landmines }: { onSelect: (landmine: string
 );
 
 export const LandmineLibraryView: React.FC<LandmineLibraryViewProps> = ({ LandmineModalVisible, landminePlaceHandler }) => {
-  const [landmineLibrary, setLandmineLibrary] = useState<LandmineType[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const landmineLibrary = useLandmineLib();
   const [showplacmentPopup, setShowplacementPopup] = useState<boolean>(false);
   const [selectedLandmine, setSelectedLandmine] = useState<Landmine | null>(null);
-  const [noItems, setNoItems] = useState<boolean>(false);
-
-  useEffect(() => {
-    fetchLandmineLib().then(data => {
-      setLandmineLibrary(data);
-      setLoading(false);
-      setNoItems(data.length === 0);
-    }).catch(error => {
-      console.error('Error fetching Landmine library:', error);
-    });
-  }, []);
 
   const handleLandmineClick = (landmineType: string) => {
     setSelectedLandmine({ type: landmineType });
@@ -103,16 +75,13 @@ export const LandmineLibraryView: React.FC<LandmineLibraryViewProps> = ({ Landmi
   };
 
   const getModalHeight = () => {
-    if (loading || noItems) return 'h-1/3';
     const itemCount = landmineLibrary.length;
     if (itemCount <= 3) return 'h-1/3';
     if (itemCount <= 6) return 'h-1/2';
     return 'h-2/3';
   };
 
-  if (loading) {
-    return <View><Text>Loading...</Text></View>;
-  }
+  const noItems = landmineLibrary.length === 0;
 
   return (
     <Modal
@@ -124,11 +93,7 @@ export const LandmineLibraryView: React.FC<LandmineLibraryViewProps> = ({ Landmi
       <View style={tw`flex-1 justify-center items-center bg-black bg-opacity-50`}>
         <View style={tw`bg-white rounded-lg p-4 w-11/12 ${getModalHeight()} max-h-[90%]`}>
           <Text style={tw`text-xl font-bold mb-2`}>Select your Landmine:</Text>
-          {loading ? (
-            <View style={tw`flex-1 justify-center items-center`}>
-              <Text>Loading...</Text>
-            </View>
-          ) : noItems ? (
+          {noItems ? (
             <Text style={tw`text-center mt-4`}>No items in inventory</Text>
           ) : (
             <LandmineSelector onSelect={handleLandmineClick} landmines={landmineLibrary} />
@@ -141,11 +106,15 @@ export const LandmineLibraryView: React.FC<LandmineLibraryViewProps> = ({ Landmi
           </TouchableOpacity>
         </View>
       </View>
-      {showplacmentPopup && (
+      {showplacmentPopup && selectedLandmine && (
         <LandminePlacementPopup
           visible={showplacmentPopup}
           onClose={handleClosePopup}
           selectedLandmine={selectedLandmine}
+          onLandminePlaced={() => {
+            setShowplacementPopup(false);
+            landminePlaceHandler(); // This should close the entire library
+          }}
         />
       )}
     </Modal>
