@@ -131,3 +131,26 @@ export const lootpickup = async (lootid: number, amount: number) => {
     throw new Error('Failed to update isAlive mode.');
   }
 };
+
+export const initreward = async (itemType: string, type: string, sentby: string) => {
+  const token = await SecureStore.getItemAsync("token");
+  try {
+    if (!token) {
+      console.log('Token not found');
+      return;
+    }
+
+
+
+    const response = await axiosInstance.post("/api/deathreward", {
+      token,
+      itemType,
+      type,
+      sentby,
+    });
+    return response.data
+  } catch (error) {
+    console.error("Failed to update isAlive status:", error);
+    throw new Error('Failed to update isAlive mode.');
+  }
+};

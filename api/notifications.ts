@@ -52,7 +52,7 @@ export const markNotificationAsRead = async (notificationId: string): Promise<vo
 	}
 };
 
-export const deleteNotification = async (notificationId: string): Promise<void> => {
+export const deleteNotification = async (notificationId: string) => {
 	try {
 	  const token = await SecureStore.getItemAsync("token");
 	  if (!token) {
@@ -60,7 +60,7 @@ export const deleteNotification = async (notificationId: string): Promise<void> 
 	  }
   
 	  await axiosInstance.delete("/api/deleteNotification", { 
-		data: { notificationId, token }
+		data: { token, notificationId }
 	  });
 	} catch (error) {
 	  console.error("Failed to delete notification:", error);
