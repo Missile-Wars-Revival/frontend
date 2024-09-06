@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Platform, Alert, Image, StyleSheet, TouchableOpacity, Text, Linking, Dimensions } from "react-native";
+import { View, Platform, Alert, Image, StyleSheet, TouchableOpacity, Text, Linking, Dimensions, useColorScheme } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
 import axiosInstance from "../api/axios-instance";
@@ -49,6 +49,9 @@ export default function Map() {
   const [deathsoundPlayed, setdeathSoundPlayed] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const health = useFetchHealth()//WS hook
+
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark';
 
   // Fetch username from secure storage
   useEffect(() => {
@@ -225,7 +228,7 @@ export default function Map() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, isDarkMode && styles.containerDark]}>
       {(isAlive) && (
         <>
           <MapComp selectedMapStyle={selectedMapStyle} />
@@ -233,7 +236,7 @@ export default function Map() {
             <HealthBar health={health} />
           </View>
           {Platform.OS === 'android' && (
-            <ThemeSelectButton onPress={showPopup}>Theme</ThemeSelectButton>
+            <ThemeSelectButton onPress={selectMapStyle} showPopup={showPopup} />
           )}
           <MapStylePopup
             visible={themePopupVisible}
@@ -251,7 +254,7 @@ export default function Map() {
         </>
       )}
       {(!isAlive) && (
-        <View style={styles.containerdeath}>
+        <View style={[styles.containerdeath, isDarkMode && styles.containerdeathDark]}>
           <TouchableOpacity
             onPress={() => respawn()}
             style={styles.bannerdeath}
@@ -261,10 +264,10 @@ export default function Map() {
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => Linking.openURL('https://discord.gg/Gk8jqUnVd3')}
-            style={styles.retryButton}
+            style={[styles.retryButton, isDarkMode && styles.retryButtonDark]}
             activeOpacity={0.7}
           >
-            <Text style={styles.retryButtonText}>Contact Support</Text>
+            <Text style={[styles.retryButtonText, isDarkMode && styles.retryButtonTextDark]}>Contact Support</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -277,16 +280,19 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'white',
   },
+  containerDark: {
+    backgroundColor: '#1E1E1E',
+  },
   healthBarContainer: {
     position: 'absolute',
-    top: height * 0.05, // 5% from the top
-    left: width * 0.05, // 5% from the left
-    width: width * 0.9, // 90% of screen width
+    top: height * 0.05,
+    left: width * 0.05,
+    width: width * 0.9,
   },
   themeButton: {
     position: 'absolute',
-    top: height * 0.15, // 15% from the top
-    right: width * 0.05, // 5% from the right
+    top: height * 0.15,
+    right: width * 0.05,
   },
   fireSelectorContainer: {
     position: 'absolute',
@@ -297,22 +303,32 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'white',
+  },
+  containerdeathDark: {
+    backgroundColor: '#1E1E1E',
   },
   bannerdeath: {
-    width: width * 0.9, // 90% of screen width
-    height: height * 0.6, // 60% of screen height
+    width: width * 0.9,
+    height: height * 0.6,
     resizeMode: 'contain',
   },
   retryButton: {
     backgroundColor: 'red',
     padding: 10,
-    marginTop: height * 0.02, // 2% of screen height
+    marginTop: height * 0.02,
     borderRadius: 5,
-    width: width * 0.5, // 50% of screen width
+    width: width * 0.5,
+  },
+  retryButtonDark: {
+    backgroundColor: '#FF4136',
   },
   retryButtonText: {
     color: 'white',
     fontSize: 16,
     textAlign: 'center',
+  },
+  retryButtonTextDark: {
+    color: '#FFF',
   },
 });

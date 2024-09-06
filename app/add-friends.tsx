@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { Text, View, FlatList, TouchableOpacity, Alert, RefreshControl, TextInput, Keyboard, TouchableWithoutFeedback, SafeAreaView, Image } from "react-native";
+import { Text, View, FlatList, TouchableOpacity, Alert, RefreshControl, TextInput, Keyboard, TouchableWithoutFeedback, SafeAreaView, Image, useColorScheme, StyleSheet } from "react-native";
 import { NearbyPlayersData, searchOtherPlayersData } from "../api/getplayerlocations";
-import { addFriend, removeFriend } from "../api/friends";
+import { addFriend } from "../api/friends";
 import { router } from "expo-router";
 import { getCurrentLocation, location } from "../util/locationreq";
 import * as SecureStore from "expo-secure-store";
 import { Ionicons } from '@expo/vector-icons';
 import { fetchAndCacheImage } from "../util/imagecache";
+
 interface Filterddata {
   username: string,
   latitude: string,
@@ -14,7 +15,7 @@ interface Filterddata {
   profileImageUrl: string | null;
 }
 
-const resizedplayerimage = require("../assets/mapassets/Female_Avatar_PNG.png");
+const DEFAULT_IMAGE = require("../assets/mapassets/Female_Avatar_PNG.png");
 
 const QuickAddPage: React.FC = () => {
   const [userLocation, setUserLocation] = useState<{
@@ -27,6 +28,9 @@ const QuickAddPage: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [filteredData, setFilteredData] = useState<Filterddata[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark';
 
   useEffect(() => {
     const fetchCredentials = async () => {
@@ -94,28 +98,6 @@ const QuickAddPage: React.FC = () => {
     }
   };
 
-  // const handleRemoveFriend = async (friendUsername: string) => {
-  //   const token = await SecureStore.getItemAsync("token");
-  //   try {
-  //       if (!token) {
-  //           console.log('Token not found');
-  //           return; 
-  //       }
-  //       const response = await removeFriend(token, friendUsername);
-  //       if (response.message === "Friend removed successfully") {
-  //           // Assuming the server sends a response status OK on successful friend removal
-  //           Alert.alert("Success", "Friend successfully removed.");
-  //       } else {
-  //           // If the response is not OK, parse the response for error messages
-  //           const result = await response.json();
-  //           Alert.alert("Error", result.message || "Failed to remove friend.");
-  //       }
-  //   } catch (error) {
-  //       // Catch any other errors here
-  //       console.error('Error removing friend:', error);
-  //       Alert.alert("Error", "An unexpected error occurred while removing the friend.");
-  //   }
-  // };
   const onRefresh = async () => {
     setRefreshing(true);
     if (userLocation) {
@@ -178,95 +160,216 @@ const QuickAddPage: React.FC = () => {
   };
 
   const renderPlayerItem = ({ item }: { item: Filterddata }) => (
-    <View className="flex-row items-center justify-between mb-4 bg-white p-4 rounded-lg shadow">
+    <View style={[styles.playerItem, isDarkMode && styles.playerItemDark]}>
       <TouchableOpacity 
-        className="flex-row flex-1 items-center"
+        style={styles.playerInfo}
         onPress={() => navigateToUserProfile(item.username)}
       >
         <Image
-          source={item.profileImageUrl ? { uri: item.profileImageUrl } : resizedplayerimage}
-          className="w-12 h-12 rounded-full"
+          source={item.profileImageUrl ? { uri: item.profileImageUrl } : DEFAULT_IMAGE}
+          style={styles.playerImage}
         />
-        <Text className="flex-1 text-lg font-semibold ml-4">{item.username}</Text>
+        <Text style={[styles.playerName, isDarkMode && styles.playerNameDark]}>{item.username}</Text>
       </TouchableOpacity>
       <TouchableOpacity
-        className="bg-green-600 p-2 rounded-full w-10 h-10 justify-center items-center"
+        style={[styles.addButton, isDarkMode && styles.addButtonDark]}
         onPress={() => handleAddFriend(item.username)}
       >
-        <Ionicons name="add" size={24} color="white" />
+        <Ionicons name="add" size={24} color={isDarkMode ? "#4CAF50" : "white"} />
       </TouchableOpacity>
     </View>
   );
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <SafeAreaView className="flex-1 bg-gray-100">
-        <View className="flex-1 px-4 pt-6">
-          <View className="flex-row justify-between items-center mb-6">
-            <TouchableOpacity
-              className="bg-blue-500 p-2 rounded-full"
-              onPress={() => router.push("/friends")}
-            >
-              <Ionicons name="arrow-back" size={24} color="white" />
-            </TouchableOpacity>
-            <Text className="text-2xl font-bold text-gray-800">Add Friends</Text>
-            <View className="w-10" /> 
-          </View>
-          
-          <TextInput
-            className="bg-white border border-gray-300 rounded-lg px-4 py-2 mb-4"
-            placeholder="Search for friends..."
-            autoCorrect={false}
-            autoCapitalize="none"
-            value={searchTerm}
-            onChangeText={handleSearch}
-          />
-          
-          {isSearching && (
-            <View className="mb-4">
-              <Text className="text-xl font-semibold mb-2 text-gray-800">Search Results:</Text>
-              <FlatList
-                data={filteredData}
-                renderItem={renderPlayerItem}
-                keyExtractor={item => item.username}
-                ListEmptyComponent={
-                  <Text className="text-center text-gray-600">No players found</Text>
-                }
-              />
-            </View>
-          )}
-          
-          {!isSearching && (
-            <>
-              {loading ? (
-                <Text className="text-lg text-center text-gray-600">Loading...</Text>
-              ) : playersData.length === 0 ? (
-                <Text className="text-lg text-center text-gray-600">
-                  No players found near you
-                </Text>
-              ) : (
-                <>
-                  <Text className="text-xl font-semibold mb-4 text-gray-800">Players Nearby:</Text>
-                  <FlatList
-                    data={playersData}
-                    renderItem={renderPlayerItem}
-                    keyExtractor={(item) => item.username}
-                    refreshControl={
-                      <RefreshControl
-                        refreshing={refreshing}
-                        onRefresh={onRefresh}
-                        colors={["#4A5568"]}
-                      />
-                    }
-                  />
-                </>
-              )}
-            </>
-          )}
+      <SafeAreaView style={[styles.container, isDarkMode && styles.containerDark]}>
+        <View style={[styles.header, isDarkMode && styles.headerDark]}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.push("/friends")}
+          >
+            <Ionicons name="arrow-back" size={24} color={isDarkMode ? "white" : "white"} />
+          </TouchableOpacity>
+          <Text style={[styles.headerText, isDarkMode && styles.headerTextDark]}>Add Friends</Text>
+          <View style={styles.placeholder} />
         </View>
+        
+        <TextInput
+          style={[styles.searchInput, isDarkMode && styles.searchInputDark]}
+          placeholder="Search for friends..."
+          placeholderTextColor={isDarkMode ? "#B0B0B0" : "#666"}
+          autoCorrect={false}
+          autoCapitalize="none"
+          value={searchTerm}
+          onChangeText={handleSearch}
+        />
+        
+        {isSearching && (
+          <View style={styles.searchResults}>
+            <Text style={[styles.sectionTitle, isDarkMode && styles.sectionTitleDark]}>Search Results:</Text>
+            <FlatList
+              data={filteredData}
+              renderItem={renderPlayerItem}
+              keyExtractor={item => item.username}
+              ListEmptyComponent={
+                <Text style={[styles.emptyText, isDarkMode && styles.emptyTextDark]}>No players found</Text>
+              }
+            />
+          </View>
+        )}
+        
+        {!isSearching && (
+          <>
+            {loading ? (
+              <Text style={[styles.loadingText, isDarkMode && styles.loadingTextDark]}>Loading...</Text>
+            ) : playersData.length === 0 ? (
+              <Text style={[styles.emptyText, isDarkMode && styles.emptyTextDark]}>
+                No players found near you
+              </Text>
+            ) : (
+              <>
+                <Text style={[styles.sectionTitle, isDarkMode && styles.sectionTitleDark]}>Players Nearby:</Text>
+                <FlatList
+                  data={playersData}
+                  renderItem={renderPlayerItem}
+                  keyExtractor={(item) => item.username}
+                  refreshControl={
+                    <RefreshControl
+                      refreshing={refreshing}
+                      onRefresh={onRefresh}
+                      colors={[isDarkMode ? "#4CAF50" : "#4A5568"]}
+                      tintColor={isDarkMode ? "#FFF" : "#000"}
+                    />
+                  }
+                />
+              </>
+            )}
+          </>
+        )}
       </SafeAreaView>
     </TouchableWithoutFeedback>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f0f2f5',
+  },
+  containerDark: {
+    backgroundColor: '#1E1E1E',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    paddingTop: 15,
+    paddingBottom: 10,
+    backgroundColor: '#4a5568',
+  },
+  headerDark: {
+    backgroundColor: '#2C2C2C',
+  },
+  headerText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
+  headerTextDark: {
+    color: '#FFF',
+  },
+  backButton: {
+    padding: 10,
+  },
+  backButtonDark: {
+    backgroundColor: 'transparent', // Remove background color in dark mode
+  },
+  placeholder: {
+    width: 44,
+  },
+  searchInput: {
+    backgroundColor: '#ffffff',
+    padding: 15,
+    borderRadius: 8,
+    marginHorizontal: 20,
+    marginVertical: 10,
+  },
+  searchInputDark: {
+    backgroundColor: '#2C2C2C',
+    color: '#FFF',
+  },
+  searchResults: {
+    marginTop: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 1,
+    marginLeft: 20,
+    color: '#2d3748',
+  },
+  sectionTitleDark: {
+    color: '#FFF',
+  },
+  playerItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    padding: 15,
+    marginBottom: 10,
+    borderRadius: 8,
+    marginHorizontal: 20,
+  },
+  playerItemDark: {
+    backgroundColor: '#2C2C2C',
+  },
+  playerInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  playerImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 15,
+  },
+  playerName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2d3748',
+  },
+  playerNameDark: {
+    color: '#FFF',
+  },
+  addButton: {
+    backgroundColor: '#4CAF50',
+    padding: 10,
+    borderRadius: 20,
+  },
+  addButtonDark: {
+    backgroundColor: '#3D3D3D',
+  },
+  loadingText: {
+    fontSize: 18,
+    textAlign: 'center',
+    marginTop: 20,
+    color: '#2d3748',
+  },
+  loadingTextDark: {
+    color: '#B0B0B0',
+  },
+  emptyText: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 20,
+    color: '#2d3748',
+  },
+  emptyTextDark: {
+    color: '#B0B0B0',
+  },
+});
 
 export default QuickAddPage;

@@ -18,6 +18,7 @@ import { useCountdown } from '../util/Context/countdown';
 import { AuthProvider } from "../util/Context/authcontext";
 import { useNotifications, notificationEmitter } from "../components/Notifications/useNotifications";
 import { AppState } from 'react-native';
+import { useColorScheme } from 'react-native';
 
 const WebSocketProvider = ({ children }: WebSocketProviderProps) => {
   const { data, missiledata, landminedata, lootdata, healthdata, friendsdata, inventorydata, playerlocations, sendWebsocket } = useWebSocket();
@@ -106,7 +107,9 @@ export default function RootLayout() {
 function NavBar({ unreadCount }: { unreadCount: number }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [selectedTab, setSelectedTab] = useState(pathname); // Initialize with current pathname
+  const [selectedTab, setSelectedTab] = useState(pathname);
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark';
 
   // Update selectedTab when pathname changes
   useEffect(() => {
@@ -132,30 +135,28 @@ function NavBar({ unreadCount }: { unreadCount: number }) {
   };
 
   return (
-    //switch commenting to hide ranking page
-    <View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-around', backgroundColor: 'rgba(255, 255, 255, 0.0)', height: 90, alignItems: 'center' }}>
+    <View style={[
+      styles.navBar,
+      isDarkMode && styles.navBarDark
+    ]}>
       {[
         '/', 
-      '/store', 
-      //'/league', 
-      '/friends', 
-      '/profile'
-    ].map((tab, index) => (
+        '/store', 
+        '/league', 
+        '/friends', 
+        '/profile'
+      ].map((tab, index) => (
         <TouchableOpacity
           key={index}
           onPress={() => handlePress(tab)}
           disabled={selectedTab === tab}
-          style={{ alignItems: 'center', justifyContent: 'center' }}
+          style={styles.tabButton}
         >
-          <View style={{
-            width: 50,
-            height: 50,
-            borderRadius: 25,
-            backgroundColor: 'rgba(0, 0, 0, 0.1)', 
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: 10  
-          }}>
+          <View style={[
+            styles.iconContainer,
+            isDarkMode && styles.iconContainerDark,
+            selectedTab === tab && (isDarkMode ? styles.selectedIconContainerDark : styles.selectedIconContainer)
+          ]}>
             <FontAwesome
               name={tab === '/' ? 'map' :
                 tab === '/store' ? 'shopping-basket' :
@@ -163,26 +164,20 @@ function NavBar({ unreadCount }: { unreadCount: number }) {
                     tab === '/league' ? 'trophy' :
                       tab === '/profile' ? 'user' :
                         'user'}
-              color={selectedTab === tab ? 'blue' : 'black'}
+              color={selectedTab === tab ? (isDarkMode ? '#4CAF50' : 'blue') : (isDarkMode ? '#B0B0B0' : 'black')}
               size={24}
             />
             {tab === '/friends' && unreadCount > 0 && (
-              <View style={{
-                position: 'absolute',
-                top: -5,
-                right: -5,
-                backgroundColor: 'red',
-                borderRadius: 10,
-                width: 20,
-                height: 20,
-                justifyContent: 'center',
-                alignItems: 'center',
-              }}>
-                <Text style={{ color: 'white', fontSize: 12 }}>{unreadCount}</Text>
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{unreadCount}</Text>
               </View>
             )}
           </View>
-          <Text style={{ color: 'grey', fontSize: 10, marginTop: -4 }}>
+          <Text style={[
+            styles.tabText,
+            isDarkMode && styles.tabTextDark,
+            selectedTab === tab && (isDarkMode ? styles.selectedTabTextDark : styles.selectedTabText)
+          ]}>
             {getDisplayName(tab)}
           </Text>
         </TouchableOpacity>
@@ -255,12 +250,76 @@ function RootLayoutNav() {
 }
 
 const styles = StyleSheet.create({
+  navBar: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    backgroundColor: '#f0f2f5',
+    height: 100,
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+  },
+  navBarDark: {
+    backgroundColor: '#1E1E1E',
+    borderTopColor: '#3D3D3D',
+  },
+  tabButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 5,
+  },
+  iconContainerDark: {
+    backgroundColor: '#2C2C2C',
+  },
+  selectedIconContainer: {
+    backgroundColor: '#e6f7ff',
+  },
+  selectedIconContainerDark: {
+    backgroundColor: '#3D3D3D',
+  },
+  tabText: {
+    color: '#666',
+    fontSize: 12,
+  },
+  tabTextDark: {
+    color: '#B0B0B0',
+  },
+  selectedTabText: {
+    color: 'blue',
+  },
+  selectedTabTextDark: {
+    color: '#4CAF50',
+  },
+  badge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: 'red',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeText: {
+    color: 'white',
+    fontSize: 12,
+  },
   countdownContainer: {
     position: 'absolute',
-    bottom: 90, // Adjust this value based on your navbar height
+    bottom: 90,
     left: 0,
     right: 0,
     alignItems: 'center',
-    zIndex: 1000, // Ensure it's above other components
+    zIndex: 1000,
   },
 });

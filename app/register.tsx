@@ -1,7 +1,7 @@
-import { SafeAreaView, Text, View, Image, TouchableOpacity, ScrollView, Dimensions, StyleSheet } from "react-native";
+import { SafeAreaView, Text, View, Image, TouchableOpacity, ScrollView, Dimensions, StyleSheet, useColorScheme } from "react-native";
 import { router } from "expo-router";
 import { Input } from "../components/ui/input";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import useRegister from "../hooks/api/useRegister";
 import { User, LockKeyhole, Mail } from "lucide-react-native";
 import React from "react";
@@ -23,6 +23,14 @@ export default function Register() {
   const [errorMessage, setErrorMessage] = useState("");
 
   const { setIsSignedIn } = useAuth();
+
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark';
+
+  const styles = useMemo(() => StyleSheet.create({
+    ...lightStyles,
+    ...(isDarkMode ? darkStyles : {}),
+  }), [isDarkMode]);
 
   const mutation = useRegister(
     async (token) => {
@@ -48,113 +56,124 @@ export default function Register() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+    <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+      <SafeAreaView style={[styles.container, isDarkMode && styles.containerDark]}>
         <Image
           source={require("../assets/icons/MissleWarsTitle.png")}
           style={styles.logo}
           resizeMode="contain"
         />
         <View style={styles.inputContainer}>
-          <Input
-            placeholder="Username"
-            autoCorrect={false}
-            onChangeText={setUsername}
-            style={styles.input}
-            icon={
-              <View style={{ marginTop: -14 }}>
-                <User size={24} color="black" />
-              </View>
-            }
-            className="w-[90vw] h-[5vh] rounded-[20px]"
-          />
-          <Input
-            placeholder="Email"
-            autoCorrect={false}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            onChangeText={setEmail}
-            style={styles.input}
-            icon={
-              <View style={{ marginTop: -14 }}>
-                <Mail size={24} color="black" />
-              </View>
-            }
-            className="w-[90vw] h-[5vh] rounded-[20px]"
-          />
-          <Input
-            placeholder="Password"
-            onChangeText={setPassword}
-            secureTextEntry={true}
-            autoCorrect={false}
-            autoCapitalize="none"
-            style={styles.input}
-            icon={
-              <View style={{ marginTop: -14 }}>
-                <LockKeyhole size={24} color="black" />
-              </View>
-            }
-            className="w-[90vw] h-[5vh] rounded-[20px]"
-          />
-          <Input
-            placeholder="Confirm Password"
-            onChangeText={setConfirmPassword}
-            secureTextEntry={true}
-            autoCorrect={false}
-            autoCapitalize="none"
-            style={styles.input}
-            icon={
-              <View style={{ marginTop: -14 }}>
-                <LockKeyhole size={24} color="black" />
-              </View>
-            }
-            className="w-[90vw] h-[5vh] rounded-[20px]"
-          />
+          <View style={styles.inputWrapper}>
+            <Input
+              placeholder="Username"
+              autoCorrect={false}
+              onChangeText={setUsername}
+              style={[styles.input, isDarkMode && styles.inputDark]}
+              icon={
+                <View style={styles.iconContainer}>
+                  <User size={24} color={isDarkMode ? "#FFFFFF" : "#000000"} />
+                </View>
+              }
+              className="w-[90vw] h-[5vh] rounded-[20px]"
+            />
+          </View>
+          <View style={styles.inputWrapper}>
+            <Input
+              placeholder="Email"
+              autoCorrect={false}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              onChangeText={setEmail}
+              style={[styles.input, isDarkMode && styles.inputDark]}
+              icon={
+                <View style={styles.iconContainer}>
+                  <Mail size={24} color={isDarkMode ? "#FFFFFF" : "#000000"} />
+                </View>
+              }
+              className="w-[90vw] h-[5vh] rounded-[20px]"
+            />
+          </View>
+          <View style={styles.inputWrapper}>
+            <Input
+              placeholder="Password"
+              onChangeText={setPassword}
+              secureTextEntry={true}
+              autoCorrect={false}
+              autoCapitalize="none"
+              style={[styles.input, isDarkMode && styles.inputDark]}
+              icon={
+                <View style={styles.iconContainer}>
+                  <LockKeyhole size={24} color={isDarkMode ? "#FFFFFF" : "#000000"} />
+                </View>
+              }
+              className="w-[90vw] h-[5vh] rounded-[20px]"
+            />
+          </View>
+          <View style={styles.inputWrapper}>
+            <Input
+              placeholder="Confirm Password"
+              onChangeText={setConfirmPassword}
+              secureTextEntry={true}
+              autoCorrect={false}
+              autoCapitalize="none"
+              style={[styles.input, isDarkMode && styles.inputDark]}
+              icon={
+                <View style={styles.iconContainer}>
+                  <LockKeyhole size={24} color={isDarkMode ? "#FFFFFF" : "#000000"} />
+                </View>
+              }
+              className="w-[90vw] h-[5vh] rounded-[20px]"
+            />
+          </View>
           {isError && (
             <Text style={styles.errorText}>{errorMessage}</Text>
           )}
         </View>
-        <TouchableOpacity onPress={handleRegister} style={styles.registerButton}>
+        <TouchableOpacity onPress={handleRegister} style={[styles.registerButton, isDarkMode && styles.registerButtonDark]}>
           <Text style={styles.registerButtonText}>Register</Text>
         </TouchableOpacity>
-        <View style={styles.footer}>
-          <Image
-            source={require("../assets/icons/cometDivider.png")}
-            style={styles.cometDivider}
-            resizeMode="stretch"
-          />
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Text style={styles.backButtonText}>Back to Login</Text>
+        <View style={styles.bottomContainer}>
+          {!isDarkMode && (
+            <Image
+              source={require("../assets/icons/cometDivider.png")}
+              style={styles.cometDivider}
+              resizeMode="stretch"
+            />
+          )}
+          <TouchableOpacity onPress={() => router.back()} style={[styles.backButton, isDarkMode && styles.backButtonDark]}>
+            <Text style={[styles.backButtonText, isDarkMode && styles.backButtonTextDark]}>Back to Login</Text>
           </TouchableOpacity>
         </View>
-      </ScrollView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
+const lightStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-  },
-  scrollContent: {
-    flexGrow: 1,
     alignItems: 'center',
-    paddingBottom: 20,
+    backgroundColor: '#f0f2f5',
   },
   logo: {
     width: width * 1,
     height: height * 0.2,
-    marginTop: height * 0.0001,
-    marginBottom: height * 0.00001,
+    marginTop: height * 0.04,
+    marginBottom: height * 0.02,
   },
   inputContainer: {
     width: '90%',
   },
+  inputWrapper: {
+    marginBottom: 5,
+    position: 'relative',
+  },
   input: {
     height: height * 0.06,
     borderRadius: 20,
-    marginBottom: 15,
+    paddingLeft: 45,
+    fontSize: 16,
   },
   errorText: {
     color: 'red',
@@ -166,19 +185,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#773765',
     borderRadius: 20,
     width: '90%',
-    height: 50,
+    height: height * 0.06,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 20,
+    marginTop: height * 0.04,
   },
   registerButtonText: {
     color: 'white',
     fontWeight: 'bold',
   },
-  footer: {
+  bottomContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
     width: '100%',
     alignItems: 'center',
-    marginTop: 'auto',
   },
   cometDivider: {
     width: width * 1,
@@ -188,12 +208,48 @@ const styles = StyleSheet.create({
   backButton: {
     borderRadius: 20,
     width: '90%',
-    height: 50,
+    height: height * 0.06,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
+    marginBottom: height * 0.02,
   },
   backButtonText: {
     fontWeight: 'bold',
+  },
+  iconContainer: {
+    position: 'absolute',
+    left: 10,
+    top: 10,
+    transform: [{ translateY: 2 }],
+    zIndex: 1,
+  },
+});
+
+const darkStyles = StyleSheet.create({
+  containerDark: {
+    backgroundColor: '#1E1E1E',
+  },
+  inputDark: {
+    height: height * 0.06,
+    borderRadius: 20,
+    paddingLeft: 45,
+    fontSize: 16,
+  },
+  registerButtonDark: {
+    backgroundColor: '#4CAF50',
+  },
+  backButtonDark: {
+    borderColor: '#4CAF50',
+  },
+  backButtonTextDark: {
+    color: '#FFFFFF',
+  },
+  iconContainer: {
+    position: 'absolute',
+    left: 10,
+    top: 10,
+    transform: [{ translateY: 2 }],
+    zIndex: 1,
   },
 });

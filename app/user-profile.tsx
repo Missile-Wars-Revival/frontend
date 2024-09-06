@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { SafeAreaView, StyleSheet, Text, View, Image, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { SafeAreaView, StyleSheet, Text, View, Image, ScrollView, TouchableOpacity, Alert, useColorScheme } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as SecureStore from "expo-secure-store";
 import { getuserprofile } from '../api/getprofile';
@@ -36,8 +36,11 @@ const UserProfilePage: React.FC = () => {
   const [userImageUrl, setUserImageUrl] = useState<string | null>(null);
   const [friendImages, setFriendImages] = useState<{ [key: string]: string }>({});
   const router = useRouter();
-  const friends = useFetchFriends(); // Add this line
+  const friends = useFetchFriends();
   const [isFriend, setIsFriend] = useState(false);
+
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark';
 
   useEffect(() => {
     if (username) {
@@ -117,31 +120,31 @@ const UserProfilePage: React.FC = () => {
   };
 
   if (!username) {
-    return <Text>No username provided</Text>;
+    return <Text style={isDarkMode ? styles.textDark : styles.text}>No username provided</Text>;
   }
 
   if (!userProfile) {
-    return <Text>Loading...</Text>;
+    return <Text style={isDarkMode ? styles.textDark : styles.text}>Loading...</Text>;
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, isDarkMode && styles.containerDark]}>
+      <View style={[styles.header, isDarkMode && styles.headerDark]}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.backButton}>← Back</Text>
+          <Text style={[styles.backButton, isDarkMode && styles.backButtonDark]}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.headerText}>{userProfile.username}'s Profile</Text>
+        <Text style={[styles.headerText, isDarkMode && styles.headerTextDark]}>{userProfile.username}'s Profile</Text>
       </View>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.profileContainer}>
+        <View style={[styles.profileContainer, isDarkMode && styles.profileContainerDark]}>
           <Image
             source={{ uri: userImageUrl || Image.resolveAssetSource(DEFAULT_IMAGE).uri }}
             style={styles.profileImage}
           />
-          <Text style={styles.profileName}>{userProfile.username}</Text>
+          <Text style={[styles.profileName, isDarkMode && styles.profileNameDark]}>{userProfile.username}</Text>
           <View style={styles.profileHeader}>
             <View style={styles.rankPointsContainer}>
-              <Text style={styles.rankPoints}>🏅 {userProfile.rankpoints} Rank Points</Text>
+              <Text style={[styles.rankPoints, isDarkMode && styles.rankPointsDark]}>🏅 {userProfile.rankpoints} Rank Points</Text>
             </View>
             {!isFriend && (
               <TouchableOpacity style={styles.addFriendButton} onPress={handleAddFriend}>
@@ -150,32 +153,32 @@ const UserProfilePage: React.FC = () => {
             )}
           </View>
           <View style={styles.badgesContainer}>
-            <Text style={styles.sectionTitle}>Badges</Text>
+            <Text style={[styles.sectionTitle, isDarkMode && styles.sectionTitleDark]}>Badges</Text>
             <View style={styles.badgesList}>
               {userProfile.statistics.badges && userProfile.statistics.badges.length > 0 ? (
                 userProfile.statistics.badges.map((badge, index) => (
-                  <View key={index} style={styles.badge}><Text>{badge}</Text></View>
+                  <View key={index} style={[styles.badge, isDarkMode && styles.badgeDark]}><Text>{badge}</Text></View>
                 ))
               ) : (
-                <Text>No badges yet</Text>
+                <Text style={[styles.text, isDarkMode && styles.textDark]}>No badges yet</Text>
               )}
             </View>
           </View>
         </View>
 
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Statistics</Text>
+        <View style={[styles.sectionContainer, isDarkMode && styles.sectionContainerDark]}>
+          <Text style={[styles.sectionTitle, isDarkMode && styles.sectionTitleDark]}>Statistics</Text>
           <View style={styles.statisticsContainer}>
-              <Text style={styles.statItem}>Deaths: {userProfile.statistics.numDeaths}</Text>
-              <Text style={styles.statItem}>Missiles Fired: {userProfile.statistics.numMissilesPlaced}</Text>
-              <Text style={styles.statItem}>Landmines Placed: {userProfile.statistics.numLandminesPlaced}</Text>
-              <Text style={styles.statItem}>Loot Placed: {userProfile.statistics.numLootPlaced}</Text>
-              <Text style={styles.statItem}>Loot Pickups: {userProfile.statistics.numLootPickups}</Text>
+              <Text style={[styles.statItem, isDarkMode && styles.statItemDark]}>Deaths: {userProfile.statistics.numDeaths}</Text>
+              <Text style={[styles.statItem, isDarkMode && styles.statItemDark]}>Missiles Fired: {userProfile.statistics.numMissilesPlaced}</Text>
+              <Text style={[styles.statItem, isDarkMode && styles.statItemDark]}>Landmines Placed: {userProfile.statistics.numLandminesPlaced}</Text>
+              <Text style={[styles.statItem, isDarkMode && styles.statItemDark]}>Loot Placed: {userProfile.statistics.numLootPlaced}</Text>
+              <Text style={[styles.statItem, isDarkMode && styles.statItemDark]}>Loot Pickups: {userProfile.statistics.numLootPickups}</Text>
           </View>
         </View>
 
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Mutual Friends</Text>
+        <View style={[styles.sectionContainer, isDarkMode && styles.sectionContainerDark]}>
+          <Text style={[styles.sectionTitle, isDarkMode && styles.sectionTitleDark]}>Mutual Friends</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.slider}>
             {userProfile.mutualFriends && userProfile.mutualFriends.length > 0 ? (
               userProfile.mutualFriends.map((friend, index) => (
@@ -184,11 +187,11 @@ const UserProfilePage: React.FC = () => {
                     source={{ uri: friendImages[friend] || Image.resolveAssetSource(DEFAULT_IMAGE).uri }} 
                     style={styles.friendImage} 
                   />
-                  <Text style={styles.friendName}>{friend}</Text>
+                  <Text style={[styles.friendName, isDarkMode && styles.friendNameDark]}>{friend}</Text>
                 </TouchableOpacity>
               ))
             ) : (
-              <Text>No mutual friends</Text>
+              <Text style={[styles.text, isDarkMode && styles.textDark]}>No mutual friends</Text>
             )}
           </ScrollView>
         </View>
@@ -204,6 +207,7 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 20,
+    paddingTop: 20,
     backgroundColor: '#4a5568',
     flexDirection: 'row',
     alignItems: 'center',
@@ -319,7 +323,7 @@ const styles = StyleSheet.create({
     color: '#4a5568',
   },
   addFriendButton: {
-    backgroundColor: '#4CAF50', // Green color
+    backgroundColor: '#4CAF50',
     paddingHorizontal: 15,
     paddingVertical: 8,
     borderRadius: 20,
@@ -336,6 +340,51 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
     marginBottom: 10,
+  },
+  text: {
+    color: '#333',
+  },
+
+  // Dark mode styles
+  containerDark: {
+    backgroundColor: '#1E1E1E',
+  },
+  headerDark: {
+    backgroundColor: '#2C2C2C',
+    paddingTop: 20,
+  },
+  backButtonDark: {
+    color: '#FFF',
+  },
+  headerTextDark: {
+    color: '#FFF',
+  },
+  profileContainerDark: {
+    backgroundColor: '#2C2C2C',
+  },
+  profileNameDark: {
+    color: '#FFF',
+  },
+  sectionContainerDark: {
+    backgroundColor: '#2C2C2C',
+  },
+  sectionTitleDark: {
+    color: '#FFF',
+  },
+  badgeDark: {
+    backgroundColor: '#3D3D3D',
+  },
+  statItemDark: {
+    color: '#FFF',
+  },
+  friendNameDark: {
+    color: '#FFF',
+  },
+  rankPointsDark: {
+    color: '#4CAF50',
+  },
+  textDark: {
+    color: '#B0B0B0',
   },
 });
 

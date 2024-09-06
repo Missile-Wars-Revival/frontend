@@ -1,5 +1,8 @@
 import React, { useState } from "react";
-import { Modal, View, Text, TouchableOpacity } from "react-native";
+import { Modal, View, Text, TouchableOpacity, StyleSheet, useColorScheme, Dimensions } from "react-native";
+import { Ionicons } from '@expo/vector-icons';
+
+const { width, height } = Dimensions.get('window');
 
 interface FireTypeProps {
   landmineFireHandler: () => void;
@@ -9,11 +12,12 @@ interface FireTypeProps {
 
 export const FireType = (props: FireTypeProps) => {
   const [FirepopupVisible, setFirePopupVisible] = useState(false);
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark';
+
   const FireshowPopup = () => {
-    //console.log("Popup button clicked");
     setFirePopupVisible(true);
   };
-
 
   const FireclosePopup = () => {
     setFirePopupVisible(false);
@@ -23,48 +27,45 @@ export const FireType = (props: FireTypeProps) => {
     FireclosePopup();
     switch (style) {
       case "firelandmine":
-        //console.log("place landmine")
-        //place landminecode;
         props.landmineFireHandler();
         break;
       case "firemissile":
-        //console.log("Fire Missile")
         props.missileFireHandler();
-        //Fire missile code;
         break;
       case "lootdrop":
-        //console.log("Fire Missile")
         props.lootrequesthandler();
-        //Fire missile code;
         break;
       default:
         break;
     }
   };
+
   return (
     <View>
       <TouchableOpacity
-        className="absolute bottom-[70px] left-[20px] rounded-[5px] p-[10px] bg-white shadow-md"
+        style={[styles.fireButton, isDarkMode && styles.fireButtonDark]}
         onPress={FireshowPopup}
       >
-        <Text className="text-[16px]">+</Text>
+        <Ionicons name="flame" size={24} color={isDarkMode ? "#FFF" : "#000"} />
       </TouchableOpacity>
 
       <FireTypeStyle
         visible={FirepopupVisible}
         transparent={true}
         onClose={FireclosePopup}
-        onSelect={selectFiretype} />
+        onSelect={selectFiretype}
+        isDarkMode={isDarkMode}
+      />
     </View>
   )
 };
-
 
 interface MapStylePopupProps {
   visible: boolean;
   transparent: boolean;
   onClose: () => void;
   onSelect: (style: string) => void;
+  isDarkMode: boolean;
 }
 
 export const FireTypeStyle = ({
@@ -72,6 +73,7 @@ export const FireTypeStyle = ({
   transparent,
   onClose,
   onSelect,
+  isDarkMode,
 }: MapStylePopupProps) => {
   return (
     <Modal
@@ -81,102 +83,116 @@ export const FireTypeStyle = ({
       onRequestClose={onClose}
     >
       <TouchableOpacity
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-          backgroundColor: "rgba(0, 0, 0, 0.5)", // Semi-transparent black background
-        }}
+        style={[styles.modalOverlay, isDarkMode && styles.modalOverlayDark]}
         activeOpacity={1}
         onPressOut={onClose}
       >
-        <View
-          style={{
-            backgroundColor: "white",
-            borderRadius: 10,
-            padding: 20,
-            alignItems: "center",
-            shadowColor: "#000",
-            shadowOffset: {
-              width: 0,
-              height: 2,
-            },
-            shadowOpacity: 0.25,
-            shadowRadius: 3.84,
-            elevation: 5,
-          }}
-        >
+        <View style={[styles.modalContent, isDarkMode && styles.modalContentDark]}>
+          <Text style={[styles.modalTitle, isDarkMode && styles.modalTitleDark]}>Select Action</Text>
           <TouchableOpacity
             onPress={() => onSelect("firelandmine")}
-            style={{
-              borderRadius: 10,
-              padding: 10,
-              marginBottom: 5,
-              backgroundColor: "#ccc",
-              width: 200,
-              alignItems: "center",
-            }}
+            style={[styles.actionButton, isDarkMode && styles.actionButtonDark]}
           >
-            <Text style={{ fontSize: 16 }}>Place Landmine</Text>
+            <Ionicons name="radio-button-on" size={24} color={isDarkMode ? "#FFF" : "#000"} />
+            <Text style={[styles.actionText, isDarkMode && styles.actionTextDark]}>Place Landmine</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => onSelect("firemissile")}
-            style={{
-              borderRadius: 10,
-              padding: 10,
-              marginBottom: 5,
-              backgroundColor: "#ccc",
-              width: 200,
-              alignItems: "center",
-            }}
+            style={[styles.actionButton, isDarkMode && styles.actionButtonDark]}
           >
-            <Text style={{ fontSize: 16 }}>Fire Missile</Text>
+            <Ionicons name="rocket" size={24} color={isDarkMode ? "#FFF" : "#000"} />
+            <Text style={[styles.actionText, isDarkMode && styles.actionTextDark]}>Fire Missile</Text>
           </TouchableOpacity>
-
-          {/* Room to expand: */}
-
           <TouchableOpacity
             onPress={() => onSelect("lootdrop")}
-            style={{
-              borderRadius: 10,
-              padding: 10,
-              marginBottom: 5,
-              backgroundColor: "#ccc",
-              width: 200,
-              alignItems: "center",
-            }}
+            style={[styles.actionButton, isDarkMode && styles.actionButtonDark]}
           >
-            <Text style={{ fontSize: 16 }}>Request Loot Drop</Text>
+            <Ionicons name="gift" size={24} color={isDarkMode ? "#FFF" : "#000"} />
+            <Text style={[styles.actionText, isDarkMode && styles.actionTextDark]}>Request Loot Drop</Text>
           </TouchableOpacity>
-          {/* <TouchableOpacity
-            onPress={() => onSelect("cyber")}
-            style={{
-              borderRadius: 10,
-              padding: 10,
-              marginBottom: 5,
-              backgroundColor: "#ccc",
-              width: 200,
-              alignItems: "center",
-            }}
-          >
-            <Text style={{ fontSize: 16 }}>CyberPunk</Text>
-          </TouchableOpacity> */}
-          {/* <TouchableOpacity
-            onPress={() => onSelect("colourblind")}
-            style={{
-              borderRadius: 10,
-              padding: 10,
-              marginBottom: 5,
-              backgroundColor: "#ccc",
-              width: 200,
-              alignItems: "center",
-            }}
-          >
-            <Text style={{ fontSize: 16 }}>Colour Blind</Text>
-          </TouchableOpacity> */}
-
         </View>
       </TouchableOpacity>
     </Modal>
   );
 };
+
+const styles = StyleSheet.create({
+  fireButton: {
+    position: 'absolute',
+    bottom: 30,
+    left: width * 0.04,
+    backgroundColor: '#FFF',
+    borderRadius: 30,
+    width: 60,
+    height: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  fireButtonDark: {
+    backgroundColor: '#2C2C2C',
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalOverlayDark: {
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+  },
+  modalContent: {
+    backgroundColor: "white",
+    borderRadius: 20,
+    padding: 35,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    width: '80%',
+  },
+  modalContentDark: {
+    backgroundColor: "#1E1E1E",
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 15,
+    color: "#000",
+  },
+  modalTitleDark: {
+    color: "#FFF",
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: "#F0F0F0",
+    borderRadius: 10,
+    padding: 15,
+    marginVertical: 10,
+    width: '100%',
+  },
+  actionButtonDark: {
+    backgroundColor: "#2C2C2C",
+  },
+  actionText: {
+    marginLeft: 15,
+    fontSize: 16,
+    color: "#000",
+  },
+  actionTextDark: {
+    color: "#FFF",
+  },
+});

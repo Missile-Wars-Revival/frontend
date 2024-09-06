@@ -1,10 +1,8 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { View, Text, TouchableOpacity, FlatList, Modal, Alert, RefreshControl, Image, TextInput } from "react-native";
+import { View, Text, TouchableOpacity, FlatList, Modal, Alert, RefreshControl, Image, TextInput, StyleSheet, useColorScheme } from "react-native";
 import { useRouter } from "expo-router";
 import { useUserName } from "../util/fetchusernameglobal";
 import * as SecureStore from 'expo-secure-store';
-import axios from "axios";
-import axiosInstance from "../api/axios-instance";
 import { removeFriend } from "../api/friends";
 import { MissileLibrary } from "../components/Missile/missile";
 import { searchFriendsAdded } from "../api/getplayerlocations";
@@ -35,6 +33,8 @@ const FriendsPage: React.FC = () => {
   const { unreadCount: initialUnreadCount } = useNotifications();
   const [localUnreadCount, setLocalUnreadCount] = useState(initialUnreadCount);
   const [isAlive, setIsAlive] = useState<boolean>(true);
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark';
 
   const handleUnreadCountUpdate = useCallback((count: number) => {
     setLocalUnreadCount(count);
@@ -138,105 +138,106 @@ const FriendsPage: React.FC = () => {
   };
 
   const renderFriendItem = ({ item }: { item: Friend }) => (
-    <View className="flex-row justify-between items-center bg-white p-4 mb-2 rounded-lg shadow">
+    <View style={[styles.friendItem, isDarkMode && styles.friendItemDark]}>
       <TouchableOpacity 
-        className="flex-row flex-1 items-center"
+        style={styles.friendInfo}
         onPress={() => navigateToUserProfile(item.username)}
       >
         <Image
           source={{ uri: item.profileImageUrl }}
-          className="w-12 h-12 rounded-full"
+          style={styles.friendImage}
         />
-        <Text className="flex-1 text-lg font-semibold ml-4">{item.username}</Text>
+        <Text style={[styles.friendName, isDarkMode && styles.friendNameDark]}>{item.username}</Text>
       </TouchableOpacity>
-      <View className="flex-row">
+      <View style={styles.actionButtons}>
         {isAlive && (
           <TouchableOpacity
-            className="bg-red-500 w-10 h-10 rounded-full justify-center items-center mr-2"
+            style={[styles.actionButton, styles.fireButton]}
             onPress={() => fireMissile(item.username)}
           >
-            <Text className="text-white text-xl">🚀</Text>
+            <Text style={styles.actionButtonText}>🚀</Text>
           </TouchableOpacity>
         )}
         <TouchableOpacity
-          className="bg-red-500 w-10 h-10 rounded-full justify-center items-center"
+          style={[styles.actionButton, styles.removeButton]}
           onPress={() => handleRemPress(item.username)}
         >
-          <Text className="text-white text-xl">X</Text>
+          <Text style={styles.actionButtonText}>X</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 
   const renderSearchResultItem = ({ item }: { item: Friend }) => (
-    <View className="flex-row justify-between items-center bg-white p-4 mb-2 rounded-lg shadow">
+    <View style={[styles.friendItem, isDarkMode && styles.friendItemDark]}>
       <TouchableOpacity 
-        className="flex-row flex-1 items-center"
+        style={styles.friendInfo}
         onPress={() => navigateToUserProfile(item.username)}
       >
         <Image
           source={{ uri: item.profileImageUrl }}
-          className="w-12 h-12 rounded-full"
+          style={styles.friendImage}
         />
-        <Text className="flex-1 text-lg font-semibold ml-4">{item.username}</Text>
+        <Text style={[styles.friendName, isDarkMode && styles.friendNameDark]}>{item.username}</Text>
       </TouchableOpacity>
-      <View className="flex-row">
+      <View style={styles.actionButtons}>
         <TouchableOpacity
-          className="bg-red-500 w-10 h-10 rounded-full justify-center items-center"
+          style={[styles.actionButton, styles.removeButton]}
           onPress={() => handleRemPress(item.username)}
         >
-          <Text className="text-white text-xl">X</Text>
+          <Text style={styles.actionButtonText}>X</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 
   return (
-    <View className="flex-1 bg-gray-100 p-4 pt-12">
-      <View className="flex-row justify-between items-center mb-4">
+    <View style={[styles.container, isDarkMode && styles.containerDark]}>
+      <View style={[styles.header, isDarkMode && styles.headerDark]}>
         <TouchableOpacity
-          className="w-10 h-10 bg-blue-500 rounded-full justify-center items-center"
+          style={[styles.addButton, isDarkMode && styles.addButtonDark]}
           onPress={() => router.push("/add-friends")}
         >
-          <Text className="text-white text-xl">+</Text>
+          <Text style={styles.addButtonText}>+</Text>
         </TouchableOpacity>
-        <Text className="text-2xl font-bold text-gray-800">Friends</Text>
+        <Text style={[styles.headerText, isDarkMode && styles.headerTextDark]}>Friends</Text>
         <TouchableOpacity
-          className="w-10 h-10 bg-gray-400 rounded-full justify-center items-center"
+          style={[styles.notificationButton, isDarkMode && styles.notificationButtonDark]}
           onPress={() => router.push("/notifications")}
         >
-          <Text className="text-white text-xl">🔔</Text>
+          <Text style={styles.notificationButtonText}>🔔</Text>
           {localUnreadCount > 0 && (
-            <View className="absolute -top-1 -right-1 bg-red-500 rounded-full w-5 h-5 justify-center items-center">
-              <Text className="text-white text-xs font-bold">{localUnreadCount}</Text>
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{localUnreadCount}</Text>
             </View>
           )}
         </TouchableOpacity>
       </View>
       <TextInput
-        className="bg-white p-2 rounded-lg mb-4"
+        style={[styles.searchInput, isDarkMode && styles.searchInputDark]}
         placeholder="Search friends..."
+        placeholderTextColor={isDarkMode ? "#B0B0B0" : "#666"}
         value={searchTerm}
         onChangeText={handleSearch}
       />
 
       {loading ? (
-        <Text className="text-center text-gray-600">Loading...</Text>
+        <Text style={[styles.centerText, isDarkMode && styles.centerTextDark]}>Loading...</Text>
       ) : error ? (
-        <Text className="text-center text-red-500">{error}</Text>
+        <Text style={[styles.centerText, isDarkMode && styles.centerTextDark, styles.errorText]}>{error}</Text>
       ) : isSearchActive ? (
         <FlatList
           data={filteredFriends}
           keyExtractor={(item) => item.username}
           renderItem={renderSearchResultItem}
           ListEmptyComponent={
-            <Text className="text-center text-gray-600">
+            <Text style={[styles.centerText, isDarkMode && styles.centerTextDark]}>
               {searchTerm.trim() ? "No friends found" : "Type to search friends"}
             </Text>
           }
         />
       ) : friends.length === 0 ? (
-        <Text className="text-center text-gray-600">No friends found</Text>
+        <Text style={[styles.centerText, isDarkMode && styles.centerTextDark]}>No friends found</Text>
       ) : (
         <FlatList
           data={friends}
@@ -247,6 +248,7 @@ const FriendsPage: React.FC = () => {
               refreshing={refreshing}
               onRefresh={onRefresh}
               colors={["#9Bd35A", "#689F38"]}
+              tintColor={isDarkMode ? "#FFF" : "#000"}
             />
           }
         />
@@ -256,24 +258,24 @@ const FriendsPage: React.FC = () => {
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
-        <View className="flex-1 justify-center items-center bg-black bg-opacity-50">
-          <View className="bg-white p-6 rounded-2xl w-4/5 shadow-lg">
-            <Text className="text-2xl font-bold mb-4 text-center">Remove Friend</Text>
-            <Text className="text-lg mb-6 text-center text-gray-600">
+        <View style={styles.modalContainer}>
+          <View style={[styles.modalContent, isDarkMode && styles.modalContentDark]}>
+            <Text style={[styles.modalTitle, isDarkMode && styles.modalTitleDark]}>Remove Friend</Text>
+            <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>
               Are you sure you want to remove {selectedFriend} from your friends list?
             </Text>
-            <View className="flex-row justify-between">
+            <View style={styles.modalButtons}>
               <TouchableOpacity
-                className="bg-gray-200 p-3 rounded-xl flex-1 mr-2"
+                style={[styles.modalButton, styles.cancelButton, isDarkMode && styles.cancelButtonDark]}
                 onPress={() => setModalVisible(false)}
               >
-                <Text className="text-center font-bold text-gray-700">Cancel</Text>
+                <Text style={styles.modalButtonText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                className="bg-red-500 p-3 rounded-xl flex-1 ml-2"
+                style={[styles.modalButton, styles.removeButtonModal]}
                 onPress={() => handleRemoveFriend(selectedFriend)}
               >
-                <Text className="text-white text-center font-bold">Remove</Text>
+                <Text style={styles.modalButtonText}>Remove</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -285,36 +287,280 @@ const FriendsPage: React.FC = () => {
         visible={showMissileLibrary}
         onRequestClose={() => setShowMissileLibrary(false)}
       >
-        <View className="flex-1 justify-end">
-          <View className="h-[90%] bg-white rounded-t-3xl overflow-hidden">
-            <View className="flex-row justify-between items-center p-4 bg-gray-100">
-              <Text className="text-xl font-bold">Missile Library</Text>
-              <TouchableOpacity
-                className="bg-blue-500 px-4 py-2 rounded-lg"
-                onPress={() => setShowMissileLibrary(false)}
-              >
-                <Text className="text-white font-bold">Done</Text>
-              </TouchableOpacity>
-            </View>
-            {isAlive ? (
-              <MissileLibrary 
-                playerName={selectedPlayer} 
-                onMissileFired={() => {
-                  // Handle missile fired event
-                  setShowMissileLibrary(false);
-                }}
-                onClose={() => setShowMissileLibrary(false)}
-              />
-            ) : (
-              <View className="flex-1 justify-center items-center">
-                <Text className="text-xl text-gray-600">You cannot fire missiles when eliminated.</Text>
-              </View>
-            )}
+        <View style={[styles.missileLibraryContainer, isDarkMode && styles.missileLibraryContainerDark]}>
+          <View style={[styles.missileLibraryHeader, isDarkMode && styles.missileLibraryHeaderDark]}>
+            <Text style={[styles.missileLibraryTitle, isDarkMode && styles.missileLibraryTitleDark]}>Missile Library</Text>
+            <TouchableOpacity
+              style={styles.doneButton}
+              onPress={() => setShowMissileLibrary(false)}
+            >
+              <Text style={styles.doneButtonText}>Done</Text>
+            </TouchableOpacity>
           </View>
+          {isAlive ? (
+            <MissileLibrary 
+              playerName={selectedPlayer} 
+              onMissileFired={() => {
+                // Handle missile fired event
+                setShowMissileLibrary(false);
+              }}
+              onClose={() => setShowMissileLibrary(false)}
+            />
+          ) : (
+            <View style={styles.centerText}>
+              <Text style={[styles.centerText, isDarkMode && styles.centerTextDark]}>You cannot fire missiles when eliminated.</Text>
+            </View>
+          )}
         </View>
       </Modal>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f0f2f5',
+  },
+  containerDark: {
+    backgroundColor: '#1E1E1E',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    paddingTop: 60,
+    backgroundColor: '#4a5568',
+  },
+  headerDark: {
+    backgroundColor: '#2C2C2C',
+  },
+  headerText: {
+    fontSize: 24,
+    color: '#ffffff',
+    fontWeight: 'bold',
+  },
+  headerTextDark: {
+    color: '#FFF',
+  },
+  addButton: {
+    width: 40,
+    height: 40,
+    backgroundColor: '#4CAF50',
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addButtonDark: {
+    backgroundColor: '#3D3D3D',
+  },
+  addButtonText: {
+    color: '#ffffff',
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  notificationButton: {
+    width: 40,
+    height: 40,
+    backgroundColor: '#718096',
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  notificationButtonDark: {
+    backgroundColor: '#3D3D3D',
+  },
+  notificationButtonText: {
+    color: '#ffffff',
+    fontSize: 20,
+  },
+  badge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: '#e53e3e',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  searchInput: {
+    backgroundColor: '#ffffff',
+    padding: 10,
+    borderRadius: 8,
+    marginHorizontal: 20,
+    marginVertical: 10,
+  },
+  searchInputDark: {
+    backgroundColor: '#2C2C2C',
+    color: '#FFF',
+  },
+  centerText: {
+    textAlign: 'center',
+    marginTop: 20,
+    fontSize: 16,
+    color: '#666',
+  },
+  centerTextDark: {
+    color: '#B0B0B0',
+  },
+  errorText: {
+    color: '#e53e3e',
+  },
+  friendItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    padding: 15,
+    marginBottom: 10,
+    borderRadius: 8,
+    marginHorizontal: 20,
+  },
+  friendItemDark: {
+    backgroundColor: '#2C2C2C',
+  },
+  friendInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  friendImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 15,
+  },
+  friendName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2d3748',
+  },
+  friendNameDark: {
+    color: '#FFF',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+  },
+  actionButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 10,
+  },
+  fireButton: {
+    backgroundColor: '#e53e3e',
+  },
+  removeButton: {
+    backgroundColor: '#718096',
+  },
+  actionButtonText: {
+    color: '#ffffff',
+    fontSize: 18,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    backgroundColor: '#ffffff',
+    borderRadius: 8,
+    padding: 20,
+    width: '80%',
+  },
+  modalContentDark: {
+    backgroundColor: '#2C2C2C',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    textAlign: 'center',
+    color: '#2d3748',
+  },
+  modalTitleDark: {
+    color: '#FFF',
+  },
+  modalText: {
+    fontSize: 16,
+    marginBottom: 20,
+    textAlign: 'center',
+    color: '#4a5568',
+  },
+  modalTextDark: {
+    color: '#B0B0B0',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  modalButton: {
+    flex: 1,
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#cbd5e0',
+    marginRight: 10,
+  },
+  cancelButtonDark: {
+    backgroundColor: '#3D3D3D',
+  },
+  removeButtonModal: {
+    backgroundColor: '#e53e3e',
+    marginLeft: 10,
+  },
+  modalButtonText: {
+    color: '#ffffff',
+    fontWeight: 'bold',
+  },
+  missileLibraryContainer: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+  },
+  missileLibraryContainerDark: {
+    backgroundColor: '#1E1E1E',
+  },
+  missileLibraryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 15,
+    backgroundColor: '#f7fafc',
+  },
+  missileLibraryHeaderDark: {
+    backgroundColor: '#2C2C2C',
+  },
+  missileLibraryTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2d3748',
+  },
+  missileLibraryTitleDark: {
+    color: '#FFF',
+  },
+  doneButton: {
+    backgroundColor: '#4299e1',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 5,
+  },
+  doneButtonText: {
+    color: '#ffffff',
+    fontWeight: 'bold',
+  },
+});
 
 export default FriendsPage;

@@ -283,21 +283,22 @@ const StorePage: React.FC = () => {
 
   const filteredProducts = selectedCategory === 'All' ? products : products.filter(p => p.type === selectedCategory);
   const colorScheme = useColorScheme();
-  const styles = getStyles(colorScheme ?? 'light');
+  const isDarkMode = colorScheme === 'dark';
+  const styles = getStyles(isDarkMode ? 'dark' : 'light');
 
   const renderButton = ({ item }: { item: Product }) => (
     <TouchableOpacity style={styles.productButton} onPress={() => addToCart(item)}>
       <Image source={item.image} style={styles.productImage} />
-      <Text style={styles.productName}>{item.name}</Text>
-      <Text style={styles.productPrice}>🪙{item.price}</Text>
+      <Text style={[styles.productName, isDarkMode && styles.productNameDark]}>{item.name}</Text>
+      <Text style={[styles.productPrice, isDarkMode && styles.productPriceDark]}>🪙{item.price}</Text>
     </TouchableOpacity>
   );
 
   const premrenderButton = ({ item }: { item: PremProduct }) => (
     <TouchableOpacity style={styles.productButton} onPress={() => buyItem(item).then(result => console.log(result))}>
       <Image source={item.image} style={styles.productImage} />
-      <Text style={styles.productName}>{item.name}</Text>
-      <Text style={styles.productPrice}>{item.displayprice}</Text>
+      <Text style={[styles.productName, isDarkMode && styles.productNameDark]}>{item.name}</Text>
+      <Text style={[styles.productPrice, isDarkMode && styles.productPriceDark]}>{item.displayprice}</Text>
     </TouchableOpacity>
   );
 
@@ -339,90 +340,172 @@ const StorePage: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ImageBackground source={require('../assets/store/mapbackdrop.png')} style={styles.backgroundImage}>
-        <Image source={require('../assets/MissleWarsTitle.png')} style={styles.titleImage} />
-        <Image source={require('../assets/store/SHOP.png')} style={styles.shopImage} />
-        <View style={styles.headerContainer}>
-          <View style={styles.currencyContainer}>
-            <Text style={styles.currencyText} numberOfLines={1} ellipsizeMode="tail">
-              🪙{currencyAmount}
-            </Text>
-          </View>
-          <View style={styles.switchContainer}>
-            <TouchableOpacity
-              style={[
-                styles.toggleButton,
-                isPremiumStore ? styles.coinsButton : styles.premiumButton,
-              ]}
-              onPress={() => setIsPremiumStore(!isPremiumStore)}
-            >
-              <Text style={styles.toggleButtonText}>
-                {isPremiumStore ? 'Premium' : 'Coins'}
+    <SafeAreaView style={[styles.container, isDarkMode && styles.containerDark]}>
+      {!isDarkMode && (
+        <ImageBackground source={require('../assets/store/mapbackdrop.png')} style={styles.backgroundImage}>
+          <Image source={require('../assets/MissleWarsTitle.png')} style={styles.titleImage} />
+          <Image source={require('../assets/store/SHOP.png')} style={styles.shopImage} />
+          <View style={styles.headerContainer}>
+            <View style={styles.currencyContainer}>
+              <Text style={[styles.currencyText, isDarkMode && styles.currencyTextDark]}>
+                🪙{currencyAmount}
               </Text>
-            </TouchableOpacity>
+            </View>
+            <View style={styles.switchContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.toggleButton,
+                  isPremiumStore ? styles.coinsButton : styles.premiumButton,
+                ]}
+                onPress={() => setIsPremiumStore(!isPremiumStore)}
+              >
+                <Text style={styles.toggleButtonText}>
+                  {isPremiumStore ? 'Premium' : 'Coins'}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
 
-        {!isPremiumStore && (
-          <>
-            {renderTabs()}
+          {!isPremiumStore && (
+            <>
+              {renderTabs()}
+              <View style={styles.container}>
+                <FlatList
+                  data={filteredProducts}
+                  keyExtractor={(item) => item.id.toString()}
+                  renderItem={renderButton}
+                  numColumns={3}
+                  columnWrapperStyle={styles.columnWrapper}
+                  contentContainerStyle={styles.contentContainer}
+                />
+                <TouchableOpacity onPress={showCart} style={styles.cartButton}>
+                  <Text style={styles.cartButtonText}>Go to Cart</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+
+          {isPremiumStore && (
             <View style={styles.container}>
               <FlatList
-                data={filteredProducts}
+                data={premiumProducts}
                 keyExtractor={(item) => item.id.toString()}
-                renderItem={renderButton}
+                renderItem={premrenderButton}
                 numColumns={3}
                 columnWrapperStyle={styles.columnWrapper}
                 contentContainerStyle={styles.contentContainer}
               />
-              <TouchableOpacity onPress={showCart} style={styles.cartButton}>
-                <Text style={styles.cartButtonText}>Go to Cart</Text>
+            </View>
+          )}
+
+          {isCartVisible && (
+            <Animated.View style={[
+              styles.cartContainer,
+              {
+                transform: [{
+                  translateY: cartAnimation.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [height, 0],
+                  }),
+                }],
+              },
+            ]}>
+              <Cart cart={cart} onRemove={handleRemove} />
+              <TouchableOpacity onPress={hideCart} style={styles.cartButton}>
+                <Text style={styles.cartButtonText}>Back to Products</Text>
+              </TouchableOpacity>
+            </Animated.View>
+          )}
+        </ImageBackground>
+      )}
+      {isDarkMode && (
+        <View style={styles.containerDark}>
+          <Image source={require('../assets/MissleWarsTitle.png')} style={styles.titleImage} />
+          <Image source={require('../assets/store/SHOP.png')} style={styles.shopImage} />
+          <View style={styles.headerContainer}>
+            <View style={styles.currencyContainer}>
+              <Text style={[styles.currencyText, isDarkMode && styles.currencyTextDark]}>
+                🪙{currencyAmount}
+              </Text>
+            </View>
+            <View style={styles.switchContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.toggleButton,
+                  isPremiumStore ? styles.coinsButton : styles.premiumButton,
+                ]}
+                onPress={() => setIsPremiumStore(!isPremiumStore)}
+              >
+                <Text style={styles.toggleButtonText}>
+                  {isPremiumStore ? 'Premium' : 'Coins'}
+                </Text>
               </TouchableOpacity>
             </View>
-          </>
-        )}
-
-        {isPremiumStore && (
-          <View style={styles.container}>
-            <FlatList
-              data={premiumProducts}
-              keyExtractor={(item) => item.id.toString()}
-              renderItem={premrenderButton}
-              numColumns={3}
-              columnWrapperStyle={styles.columnWrapper}
-              contentContainerStyle={styles.contentContainer}
-            />
           </View>
-        )}
 
-        {isCartVisible && (
-          <Animated.View style={[
-            styles.cartContainer,
-            {
-              transform: [{
-                translateY: cartAnimation.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [height, 0],
-                }),
-              }],
-            },
-          ]}>
-            <Cart cart={cart} onRemove={handleRemove} />
-            <TouchableOpacity onPress={hideCart} style={styles.cartButton}>
-              <Text style={styles.cartButtonText}>Back to Products</Text>
-            </TouchableOpacity>
-          </Animated.View>
-        )}
-      </ImageBackground>
+          {!isPremiumStore && (
+            <>
+              {renderTabs()}
+              <View style={styles.container}>
+                <FlatList
+                  data={filteredProducts}
+                  keyExtractor={(item) => item.id.toString()}
+                  renderItem={renderButton}
+                  numColumns={3}
+                  columnWrapperStyle={styles.columnWrapper}
+                  contentContainerStyle={styles.contentContainer}
+                />
+                <TouchableOpacity onPress={showCart} style={styles.cartButton}>
+                  <Text style={styles.cartButtonText}>Go to Cart</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+
+          {isPremiumStore && (
+            <View style={styles.container}>
+              <FlatList
+                data={premiumProducts}
+                keyExtractor={(item) => item.id.toString()}
+                renderItem={premrenderButton}
+                numColumns={3}
+                columnWrapperStyle={styles.columnWrapper}
+                contentContainerStyle={styles.contentContainer}
+              />
+            </View>
+          )}
+
+          {isCartVisible && (
+            <Animated.View style={[
+              styles.cartContainer,
+              {
+                transform: [{
+                  translateY: cartAnimation.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [height, 0],
+                  }),
+                }],
+              },
+            ]}>
+              <Cart cart={cart} onRemove={handleRemove} />
+              <TouchableOpacity onPress={hideCart} style={styles.cartButton}>
+                <Text style={styles.cartButtonText}>Back to Products</Text>
+              </TouchableOpacity>
+            </Animated.View>
+          )}
+        </View>
+      )}
     </SafeAreaView>
   );
 }
 
-const getStyles = (colorScheme: 'light' | 'dark' | null) => StyleSheet.create({
+const getStyles = (colorScheme: 'light' | 'dark') => StyleSheet.create({
   container: {
     flex: 1,
-    //backgroundColor: colorScheme === 'dark' ? '#1a1a1a' : '#f0f2f5',
+  },
+  containerDark: {
+    flex: 1,
+    backgroundColor: '#1E1E1E',
   },
   backgroundImage: {
     flex: 1,
@@ -449,16 +532,20 @@ const getStyles = (colorScheme: 'light' | 'dark' | null) => StyleSheet.create({
     alignItems: 'center',
     padding: 10,
     marginTop: -15,
+    backgroundColor: `transparent`,
   },
   currencyContainer: {
-    backgroundColor: colorScheme === 'dark' ? '#333' : '#fff',
+    backgroundColor: colorScheme === 'dark' ? '#3D3D3D' : '#fff',
     borderRadius: 20,
     padding: 10,
   },
   currencyText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: colorScheme === 'dark' ? '#fff' : '#000',
+    color: colorScheme === 'dark' ? '#FFF' : '#000',
+  },
+  currencyTextDark: {
+    color: '#FFF',
   },
   switchContainer: {
     // Add any specific styles for the switch container if needed
@@ -487,17 +574,17 @@ const getStyles = (colorScheme: 'light' | 'dark' | null) => StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 20,
-    backgroundColor: colorScheme === 'dark' ? '#333' : '#fff',
+    backgroundColor: colorScheme === 'dark' ? '#3D3D3D' : '#fff',
   },
   selectedTab: {
-    backgroundColor: colorScheme === 'dark' ? '#555' : '#e0e0e0',
+    backgroundColor: colorScheme === 'dark' ? '#4CAF50' : '#e0e0e0',
   },
   missileTabText: {
     fontWeight: 'bold',
-    color: colorScheme === 'dark' ? '#fff' : '#000',
+    color: colorScheme === 'dark' ? '#FFF' : '#000',
   },
   selectedTabText: {
-    color: colorScheme === 'dark' ? '#fff' : '#000',
+    color: colorScheme === 'dark' ? '#FFF' : '#000',
   },
   columnWrapper: {
     justifyContent: 'space-around',
@@ -506,7 +593,7 @@ const getStyles = (colorScheme: 'light' | 'dark' | null) => StyleSheet.create({
     paddingBottom: 20,
   },
   productButton: {
-    backgroundColor: colorScheme === 'dark' ? '#333' : '#fff',
+    backgroundColor: colorScheme === 'dark' ? '#2C2C2C' : '#fff',
     borderRadius: 10,
     padding: 10,
     alignItems: 'center',
@@ -523,14 +610,20 @@ const getStyles = (colorScheme: 'light' | 'dark' | null) => StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     marginTop: 5,
-    color: colorScheme === 'dark' ? '#fff' : '#000',
+    color: colorScheme === 'dark' ? '#FFF' : '#000',
+  },
+  productNameDark: {
+    color: '#FFF',
   },
   productPrice: {
     fontSize: 12,
-    color: colorScheme === 'dark' ? '#ccc' : '#666',
+    color: colorScheme === 'dark' ? '#B0B0B0' : '#666',
+  },
+  productPriceDark: {
+    color: '#B0B0B0',
   },
   cartButton: {
-    backgroundColor: '#773765',
+    backgroundColor: '#4CAF50',
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 5,
@@ -547,7 +640,7 @@ const getStyles = (colorScheme: 'light' | 'dark' | null) => StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: colorScheme === 'dark' ? '#1a1a1a' : '#f0f2f5',
+    backgroundColor: colorScheme === 'dark' ? '#2C2C2C' : '#f0f2f5',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,

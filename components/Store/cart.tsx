@@ -1,6 +1,5 @@
 import React from 'react';
-import { View, Text, FlatList, TouchableOpacity, GestureResponderEvent, Alert } from 'react-native'; // make sure to install axios or use fetch
-import { storepagestyles } from './storestylesheets';
+import { View, Text, FlatList, TouchableOpacity, GestureResponderEvent, Alert, StyleSheet, useColorScheme } from 'react-native'; // make sure to install axios or use fetch
 import axiosInstance from '../../api/axios-instance';
 import * as SecureStore from "expo-secure-store";
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -18,16 +17,21 @@ interface CartProps {
 }
 
 const Cart: React.FC<CartProps> = ({ cart, onRemove }) => {
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark';
+
   const totalPrice = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
 
+  const styles = getStyles(isDarkMode);
+
   const renderItem = ({ item }: { item: CartItem }) => (
-    <View style={storepagestyles.cartItem}>
-      <Text style={storepagestyles.productName}>{item.product.name}</Text>
-      <Text style={storepagestyles.productPrice}>
+    <View style={styles.cartItem}>
+      <Text style={styles.productName}>{item.product.name}</Text>
+      <Text style={styles.productPrice}>
         {item.quantity} x 🪙{item.product.price.toFixed(2)}
       </Text>
-      <TouchableOpacity onPress={() => onRemove(item.product.id)} style={storepagestyles.removeButton}>
-        <Text style={storepagestyles.removeButtonText}>Remove</Text>
+      <TouchableOpacity onPress={() => onRemove(item.product.id)} style={styles.removeButton}>
+        <Text style={styles.removeButtonText}>Remove</Text>
       </TouchableOpacity>
     </View>
   );
@@ -73,20 +77,72 @@ const Cart: React.FC<CartProps> = ({ cart, onRemove }) => {
       });
   }
 
-
   return (
-    <View style={storepagestyles.cartContainer}>
+    <View style={styles.cartContainer}>
       <FlatList
         data={cart}
         keyExtractor={(item) => item.product.id.toString()}
         renderItem={renderItem}
       />
-      <Text style={storepagestyles.totalPrice}>Total: {totalPrice} Coins</Text>
-      <TouchableOpacity onPress={checkout} style={storepagestyles.checkoutButton}>
-        <Text style={storepagestyles.checkoutButtonText}>Checkout All Items</Text>
+      <Text style={styles.totalPrice}>Total: {totalPrice} Coins</Text>
+      <TouchableOpacity onPress={checkout} style={styles.checkoutButton}>
+        <Text style={styles.checkoutButtonText}>Checkout All Items</Text>
       </TouchableOpacity>
     </View>
   );
 };
+
+const getStyles = (isDarkMode: boolean) => StyleSheet.create({
+  cartContainer: {
+    flex: 1,
+    backgroundColor: isDarkMode ? '#1E1E1E' : '#FFFFFF',
+  },
+  cartItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: isDarkMode ? '#3D3D3D' : '#E0E0E0',
+  },
+  productName: {
+    flex: 1,
+    fontSize: 16,
+    color: isDarkMode ? '#FFFFFF' : '#000000',
+  },
+  productPrice: {
+    fontSize: 14,
+    color: isDarkMode ? '#B0B0B0' : '#666666',
+    marginRight: 10,
+  },
+  removeButton: {
+    backgroundColor: '#FF6B6B',
+    padding: 5,
+    borderRadius: 5,
+  },
+  removeButtonText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+  },
+  totalPrice: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'right',
+    padding: 10,
+    color: isDarkMode ? '#FFFFFF' : '#000000',
+  },
+  checkoutButton: {
+    backgroundColor: '#4CAF50',
+    padding: 15,
+    borderRadius: 5,
+    margin: 10,
+  },
+  checkoutButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+});
 
 export default Cart;

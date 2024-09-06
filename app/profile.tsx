@@ -14,6 +14,7 @@ import firebase from '../util/firebase/config';
 import { fetchAndCacheImage } from '../util/imagecache';
 import { useAuth } from '../util/Context/authcontext';
 import useFetchFriends from '../hooks/websockets/friendshook';
+import { useColorScheme } from 'react-native';
 
 const DEFAULT_IMAGE = require('../assets/mapassets/Female_Avatar_PNG.png');
 
@@ -58,6 +59,9 @@ interface Friend {
 }
 
 const ProfilePage: React.FC = () => {
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark';
+
   const [useBackgroundLocation, setUseBackgroundLocation] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [userImageUrl, setUserImageUrl] = useState<string | null>(null);
@@ -257,43 +261,43 @@ const ProfilePage: React.FC = () => {
   }, [friends]);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerText}>Profile</Text>
+    <SafeAreaView style={[styles.container, isDarkMode && styles.containerDark]}>
+      <View style={[styles.header, isDarkMode && styles.headerDark]}>
+        <Text style={[styles.headerText, isDarkMode && styles.headerTextDark]}>Profile</Text>
         <TouchableOpacity style={styles.settingsButton} onPress={openSettings}>
-          <Ionicons name="settings" size={24} color="white" />
+          <Ionicons name="settings" size={24} color={isDarkMode ? "white" : "black"} />
         </TouchableOpacity>
       </View>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.profileContainer}>
+        <View style={[styles.profileContainer, isDarkMode && styles.profileContainerDark]}>
           <TouchableOpacity onPress={openImagePicker}>
             <Image
               source={{ uri: userImageUrl || Image.resolveAssetSource(DEFAULT_IMAGE).uri }}
               style={styles.profileImage}
             />
           </TouchableOpacity>
-          <Text style={styles.profileName}>{username}</Text>
-          <Text style={styles.profileDetails}>Email: {email}</Text>
+          <Text style={[styles.profileName, isDarkMode && styles.profileNameDark]}>{username}</Text>
+          <Text style={[styles.profileDetails, isDarkMode && styles.profileDetailsDark]}>Email: {email}</Text>
           
           <View style={styles.rankPointsContainer}>
-            <Text style={styles.rankPoints}>🏅 {rankPoints !== null ? rankPoints : 'Loading...'} Rank Points</Text>
+            <Text style={[styles.rankPoints, isDarkMode && styles.rankPointsDark]}>🏅 {rankPoints !== null ? rankPoints : 'Loading...'} Rank Points</Text>
           </View>
           
           <View style={styles.badgesContainer}>
-            <Text style={styles.sectionTitle}>Badges</Text>
+            <Text style={[styles.sectionTitle, isDarkMode && styles.sectionTitleDark]}>Badges</Text>
             <View style={styles.badgesList}>
               {statistics && statistics.badges && statistics.badges.length > 0 ? (
                 statistics.badges.map((badge, index) => (
-                  <View key={index} style={styles.badge}><Text>{badge}</Text></View>
+                  <View key={index} style={[styles.badge, isDarkMode && styles.badgeDark]}><Text>{badge}</Text></View>
                 ))
               ) : (
-                <Text>No badges yet</Text>
+                <Text style={[styles.emptyInventoryText, isDarkMode && styles.emptyInventoryTextDark]}>No badges yet</Text>
               )}
             </View>
           </View>
 
           <View style={styles.settingContainer}>
-            <Text style={styles.settingText}>
+            <Text style={[styles.settingText, isDarkMode && styles.settingTextDark]}>
               {useBackgroundLocation ? 'Background Location Access is enabled.' : 'Foreground Location Access'}
             </Text>
             <Switch onValueChange={toggleSwitch} value={useBackgroundLocation} />
@@ -304,23 +308,23 @@ const ProfilePage: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Statistics</Text>
+        <View style={[styles.sectionContainer, isDarkMode && styles.sectionContainerDark]}>
+          <Text style={[styles.sectionTitle, isDarkMode && styles.sectionTitleDark]}>Statistics</Text>
           {statistics ? (
             <View style={styles.statisticsContainer}>
-              <Text style={styles.statItem}>Deaths: {statistics.numDeaths}</Text>
-              <Text style={styles.statItem}>Missiles Fired: {statistics.numMissilesPlaced}</Text>
-              <Text style={styles.statItem}>Landmines Placed: {statistics.numLandminesPlaced}</Text>
-              <Text style={styles.statItem}>Loot Placed: {statistics.numLootPlaced}</Text>
-              <Text style={styles.statItem}>Loot Pickups: {statistics.numLootPickups}</Text>
+              <Text style={[styles.statItem, isDarkMode && styles.statItemDark]}>Deaths: {statistics.numDeaths}</Text>
+              <Text style={[styles.statItem, isDarkMode && styles.statItemDark]}>Missiles Fired: {statistics.numMissilesPlaced}</Text>
+              <Text style={[styles.statItem, isDarkMode && styles.statItemDark]}>Landmines Placed: {statistics.numLandminesPlaced}</Text>
+              <Text style={[styles.statItem, isDarkMode && styles.statItemDark]}>Loot Placed: {statistics.numLootPlaced}</Text>
+              <Text style={[styles.statItem, isDarkMode && styles.statItemDark]}>Loot Pickups: {statistics.numLootPickups}</Text>
             </View>
           ) : (
-            <Text>Loading statistics...</Text>
+            <Text style={[styles.emptyInventoryText, isDarkMode && styles.emptyInventoryTextDark]}>Loading statistics...</Text>
           )}
         </View>
 
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Inventory</Text>
+        <View style={[styles.sectionContainer, isDarkMode && styles.sectionContainerDark]}>
+          <Text style={[styles.sectionTitle, isDarkMode && styles.sectionTitleDark]}>Inventory</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.slider}>
             {filteredInventory.map(item => (
               <TouchableOpacity key={item.id} onPress={() => setModalVisible(true)} style={styles.sliderItem}>
@@ -328,15 +332,15 @@ const ProfilePage: React.FC = () => {
                   source={itemimages[item.name]}
                   style={styles.itemImage}
                 />
-                <Text style={styles.itemName}>{item.name}</Text>
-                <Text style={styles.itemQuantity}>x{item.quantity}</Text>
+                <Text style={[styles.itemName, isDarkMode && styles.itemNameDark]}>{item.name}</Text>
+                <Text style={[styles.itemQuantity, isDarkMode && styles.itemQuantityDark]}>x{item.quantity}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
         </View>
 
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Friends</Text>
+        <View style={[styles.sectionContainer, isDarkMode && styles.sectionContainerDark]}>
+          <Text style={[styles.sectionTitle, isDarkMode && styles.sectionTitleDark]}>Friends</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.slider}>
             {friends.map((friend, index) => (
               <TouchableOpacity 
@@ -348,7 +352,7 @@ const ProfilePage: React.FC = () => {
                   source={{ uri: friendImages[friend.username] || Image.resolveAssetSource(DEFAULT_IMAGE).uri }}
                   style={styles.friendImage}
                 />
-                <Text style={styles.friendName}>{friend.username}</Text>
+                <Text style={[styles.friendName, isDarkMode && styles.friendNameDark]}>{friend.username}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -356,11 +360,11 @@ const ProfilePage: React.FC = () => {
       </ScrollView>
 
       <Modal visible={modalVisible} animationType="slide" onRequestClose={() => setModalVisible(false)}>
-        <SafeAreaView style={styles.modalSafeArea}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Your Inventory</Text>
+        <SafeAreaView style={[styles.modalSafeArea, isDarkMode && styles.modalSafeAreaDark]}>
+          <View style={[styles.modalHeader, isDarkMode && styles.modalHeaderDark]}>
+            <Text style={[styles.modalTitle, isDarkMode && styles.modalTitleDark]}>Your Inventory</Text>
             <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
-              <Text style={styles.closeButtonText}>Close</Text>
+              <Text style={[styles.closeButtonText, isDarkMode && styles.closeButtonTextDark]}>Close</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.fullModalView}>
@@ -369,14 +373,14 @@ const ProfilePage: React.FC = () => {
                 data={filteredInventory}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => (
-                  <View style={styles.inventoryItem}>
+                  <View style={[styles.inventoryItem, isDarkMode && styles.inventoryItemDark]}>
                     <Image
                       source={itemimages[item.name]}
                       style={styles.inventoryItemImage}
                     />
                     <View style={styles.inventoryItemDetails}>
-                      <Text style={styles.inventoryItemName}>{item.name}</Text>
-                      <Text style={styles.inventoryItemQuantity}>Quantity: {item.quantity}</Text>
+                      <Text style={[styles.inventoryItemName, isDarkMode && styles.inventoryItemNameDark]}>{item.name}</Text>
+                      <Text style={[styles.inventoryItemQuantity, isDarkMode && styles.inventoryItemQuantityDark]}>Quantity: {item.quantity}</Text>
                     </View>
                   </View>
                 )}
@@ -385,7 +389,7 @@ const ProfilePage: React.FC = () => {
                 contentContainerStyle={styles.inventoryContentContainer}
               />
             ) : (
-              <Text style={styles.emptyInventoryText}>Your inventory is empty.</Text>
+              <Text style={[styles.emptyInventoryText, isDarkMode && styles.emptyInventoryTextDark]}>Your inventory is empty.</Text>
             )}
           </View>
         </SafeAreaView>
@@ -634,6 +638,78 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#4a5568',
+  },
+
+  // Dark mode styles
+  containerDark: {
+    backgroundColor: '#1E1E1E',
+  },
+  headerDark: {
+    backgroundColor: '#2C2C2C',
+  },
+  headerTextDark: {
+    color: '#FFF',
+  },
+  profileContainerDark: {
+    backgroundColor: '#2C2C2C',
+  },
+  profileNameDark: {
+    color: '#FFF',
+  },
+  profileDetailsDark: {
+    color: '#B0B0B0',
+  },
+  badgeDark: {
+    backgroundColor: '#3D3D3D',
+  },
+  settingTextDark: {
+    color: '#FFF',
+  },
+  sectionContainerDark: {
+    backgroundColor: '#2C2C2C',
+  },
+  sectionTitleDark: {
+    color: '#FFF',
+  },
+  itemNameDark: {
+    color: '#FFF',
+  },
+  itemQuantityDark: {
+    color: '#B0B0B0',
+  },
+  friendNameDark: {
+    color: '#FFF',
+  },
+  modalSafeAreaDark: {
+    backgroundColor: '#1E1E1E',
+  },
+  modalHeaderDark: {
+    backgroundColor: '#2C2C2C',
+    borderBottomColor: '#3D3D3D',
+  },
+  modalTitleDark: {
+    color: '#FFF',
+  },
+  closeButtonTextDark: {
+    color: '#4CAF50',
+  },
+  inventoryItemDark: {
+    backgroundColor: '#2C2C2C',
+  },
+  inventoryItemNameDark: {
+    color: '#FFF',
+  },
+  inventoryItemQuantityDark: {
+    color: '#B0B0B0',
+  },
+  statItemDark: {
+    color: '#FFF',
+  },
+  emptyInventoryTextDark: {
+    color: '#B0B0B0',
+  },
+  rankPointsDark: {
+    color: '#4CAF50',
   },
 });
 
