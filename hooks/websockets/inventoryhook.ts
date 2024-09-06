@@ -7,22 +7,33 @@ const useFetchInventory = (): InventoryItem[] => {
     const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
 
     useEffect(() => {
-        //console.log('Received data:', inventorydata);
-        // First check if data is indeed an array
-        if (Array.isArray(inventorydata)) {
-            // Process the array data
-            setInventoryItems(inventorydata.map((item, index) => ({
-                category: item.category,
-                name: item.name,
-                quantity: item.quantity,
-                id: item.id || `id-${item.name}-${index}`,
-            })));
-        } else {
-            // Log a warning and handle non-array data appropriately
-            console.warn('Expected inventory data to be an array, but received:', typeof inventorydata);
-            // Optionally handle unexpected data formats or errors
-            // setInventoryItems([]); // Clearing or setting default data
+        if (!inventorydata) {
+            // WebSocket not connected yet or no data received
+            return;
         }
+
+        if (typeof inventorydata !== 'object' || inventorydata === null) {
+            console.warn('Unexpected inventory data format:', typeof inventorydata);
+            return;
+        }
+
+        let dataToProcess: any[] = [];
+
+        if (Array.isArray(inventorydata)) {
+            dataToProcess = inventorydata;
+        } else {
+            // If it's an object, convert it to an array
+            dataToProcess = Object.values(inventorydata);
+        }
+
+        const processedItems = dataToProcess.map((item, index) => ({
+            category: item.category || '',
+            name: item.name || '',
+            quantity: item.quantity || 0,
+            id: item.id || `id-${item.name}-${index}`,
+        }));
+
+        setInventoryItems(processedItems);
     }, [inventorydata]);
 
     return inventoryItems;

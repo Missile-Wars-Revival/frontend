@@ -1,9 +1,9 @@
 import { Stack } from "expo-router";
 import 'react-native-reanimated';
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, AppStateStatus } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import SplashScreen from './splashscreen';
 import { FontAwesome } from '@expo/vector-icons';
@@ -17,170 +17,8 @@ import CountdownTimer from '../components/countdown';
 import { useCountdown } from '../util/Context/countdown';
 import { AuthProvider } from "../util/Context/authcontext";
 import { useNotifications, notificationEmitter } from "../components/Notifications/useNotifications";
-import { getselfprofile } from "../api/getprofile";
-import { ApiResponse } from "./profile";
-import * as SecureStore from "expo-secure-store";
-import { AppState, AppStateStatus } from 'react-native';
+import { AppState } from 'react-native';
 
-const NavBarItem = React.memo(({ tab, selectedTab, unreadCount, onPress }: {
-  tab: string;
-  selectedTab: string;
-  unreadCount: number;
-  onPress: () => void;
-}) => {
-  const getDisplayName = useCallback((route: string) => {
-    switch (route) {
-      case '/': return 'Map';
-      case '/store': return 'Store';
-      case '/league': return 'League';
-      case '/friends': return 'Friends';
-      case '/profile': return 'Profile';
-      default: return '';
-    }
-  }, []);
-
-  const iconName = useMemo(() => {
-    switch (tab) {
-      case '/': return 'map';
-      case '/store': return 'shopping-basket';
-      case '/league': return 'trophy';
-      case '/friends': return 'users';
-      case '/profile': return 'user';
-      default: return 'user';
-    }
-  }, [tab]);
-
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      disabled={selectedTab === tab}
-      style={styles.navItem}
-    >
-      <View style={styles.iconContainer}>
-        <FontAwesome
-          name={iconName}
-          color={selectedTab === tab ? 'blue' : 'black'}
-          size={24}
-        />
-        {tab === '/friends' && unreadCount > 0 && (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{unreadCount}</Text>
-          </View>
-        )}
-      </View>
-      <Text style={styles.navText}>
-        {getDisplayName(tab)}
-      </Text>
-    </TouchableOpacity>
-  );
-});
-
-function NavBar({ unreadCount }: { unreadCount: number }) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const [selectedTab, setSelectedTab] = useState(pathname);
-
-  useEffect(() => {
-    setSelectedTab(pathname);
-    fetchUserStatistics();
-  }, [pathname]);
-
-  const handlePress = useCallback((tab: string) => {
-    if (selectedTab !== tab) {
-      setSelectedTab(tab);
-      router.push(tab);
-    }
-  }, [selectedTab, router]);
-
-  const fetchUserStatistics = useCallback(async () => {
-    try {
-      const token = await SecureStore.getItemAsync("token");
-      if (!token) throw new Error("Not signed in");
-      const response = await getselfprofile() as ApiResponse;
-      if (response.success && response.userProfile) {
-        await SecureStore.setItem("email", response.userProfile.email);
-      } else {
-        console.error('Failed to fetch user statistics: Invalid response structure');
-      }
-    } catch (error) {
-      console.error('Failed to fetch user statistics', error);
-    }
-  }, []);
-
-  const tabs = useMemo(() => [
-    '/', 
-    '/store', 
-    //'/league', 
-    '/friends', 
-    '/profile'], []);
-
-  return (
-    <View style={styles.navContainer}>
-      {tabs.map((tab) => (
-        <NavBarItem
-          key={tab}
-          tab={tab}
-          selectedTab={selectedTab}
-          unreadCount={unreadCount}
-          onPress={() => handlePress(tab)}
-        />
-      ))}
-      <ProximityCheckNotif />
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  navContainer: {
-    width: '100%',
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: 'rgba(255, 255, 255, 0.0)',
-    height: 90,
-    alignItems: 'center',
-  },
-  navItem: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 10,
-  },
-  badge: {
-    position: 'absolute',
-    top: -5,
-    right: -5,
-    backgroundColor: 'red',
-    borderRadius: 10,
-    width: 20,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  badgeText: {
-    color: 'white',
-    fontSize: 12,
-  },
-  navText: {
-    color: 'grey',
-    fontSize: 10,
-    marginTop: -4,
-  },
-  countdownContainer: {
-    position: 'absolute',
-    bottom: 90,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    zIndex: 1000,
-  },
-});
 
 const WebSocketProvider = ({ children }: WebSocketProviderProps) => {
   const { data, missiledata, landminedata, lootdata, healthdata, friendsdata, inventorydata, playerlocations, sendWebsocket } = useWebSocket();
@@ -205,58 +43,50 @@ const CountdownProvider: React.FC<CountdownProviderProps> = ({ children }) => {
   );
 };
 
+// RootLayout component
 export default function RootLayout() {
   const queryClient = new QueryClient();
   const [isSplashVisible, setIsSplashVisible] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
+  const { fetchNotifications } = useNotifications();
+
+  const configurePurchases = useCallback(async () => {
+    try {
+      Purchases.setDebugLogsEnabled(true);
+      if (Platform.OS === 'ios') {
+        await Purchases.configure({ apiKey: "appl_DhhCcaRAelpsFMqaQCjiKcUWNcR" });
+      } else if (Platform.OS === 'android') {
+        await Purchases.configure({ apiKey: "your_android_api_key" });
+      }
+    } catch (error) {
+      console.error('Failed to initialize Purchases:', error);
+    }
+  }, []);
 
   useEffect(() => {
-    Purchases.setDebugLogsEnabled(true);
-    if (Platform.OS === 'ios') {
-      Purchases.configure({ apiKey: "appl_DhhCcaRAelpsFMqaQCjiKcUWNcR" });
-    } else {
-      Purchases.configure({ apiKey: "your_android_api_key" });
-    }
+    configurePurchases();
 
-    let appStateTimeout: NodeJS.Timeout | null = null;
-
-    const handleAppStateChange = (nextAppState: AppStateStatus) => {
-      if (nextAppState === 'active') {
-        // Clear any existing timeout
-        if (appStateTimeout) {
-          clearTimeout(appStateTimeout);
-        }
-
-        // Set a new timeout
-        appStateTimeout = setTimeout(() => {
-          // Invalidate all queries
-          queryClient.invalidateQueries();
-
-          // Force a re-render of the current route
-          if (pathname) {
-            router.replace(pathname);
-          }
-
-          // Optionally, you can add a full app reload here if the above doesn't solve the issue
-          // DevSettings.reload();
-        }, 100); // Small delay to ensure the app is fully active
-      }
-    };
-
-    const appStateSubscription = AppState.addEventListener('change', handleAppStateChange);
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
 
     return () => {
-      appStateSubscription.remove();
-      if (appStateTimeout) {
-        clearTimeout(appStateTimeout);
-      }
+      subscription.remove();
     };
-  }, [queryClient, router, pathname]);
+  }, []);
 
-  const handleSplashFinish = () => {
-    setIsSplashVisible(false);
+  const handleAppStateChange = (nextAppState: AppStateStatus) => {
+    if (nextAppState === 'active') {
+      setIsSplashVisible(true);
+      setTimeout(() => {
+        setIsSplashVisible(false);
+        fetchNotifications();
+      }, 2000);
+    }
   };
+
+  const handleSplashFinish = useCallback(() => {
+    setIsSplashVisible(false);
+  }, []);
 
   if (isSplashVisible) {
     return <SplashScreen onFinish={handleSplashFinish} />;
@@ -275,9 +105,98 @@ export default function RootLayout() {
   );
 }
 
+function NavBar({ unreadCount }: { unreadCount: number }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [selectedTab, setSelectedTab] = useState(pathname); // Initialize with current pathname
+
+  // Update selectedTab when pathname changes
+  useEffect(() => {
+    setSelectedTab(pathname);
+  }, [pathname]);
+
+  const handlePress = (tab: string) => {
+    if (selectedTab !== tab) {
+      setSelectedTab(tab);
+      router.push(tab);
+    }
+  };
+
+  const getDisplayName = (route: any) => {
+    switch (route) {
+      case '/': return 'Map';
+      case '/store': return 'Store';
+      case '/league': return 'Ranking';
+      case '/friends': return 'Friends';
+      case '/profile': return 'Profile';
+      default: return '';
+    }
+  };
+
+  return (
+    //switch commenting to hide ranking page
+    <View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-around', backgroundColor: 'rgba(255, 255, 255, 0.0)', height: 90, alignItems: 'center' }}>
+      {[
+        '/', 
+      '/store', 
+      //'/league', 
+      '/friends', 
+      '/profile'
+    ].map((tab, index) => (
+        <TouchableOpacity
+          key={index}
+          onPress={() => handlePress(tab)}
+          disabled={selectedTab === tab}
+          style={{ alignItems: 'center', justifyContent: 'center' }}
+        >
+          <View style={{
+            width: 50,
+            height: 50,
+            borderRadius: 25,
+            backgroundColor: 'rgba(0, 0, 0, 0.1)', 
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: 10  
+          }}>
+            <FontAwesome
+              name={tab === '/' ? 'map' :
+                tab === '/store' ? 'shopping-basket' :
+                  tab === '/friends' ? 'users' :
+                    tab === '/league' ? 'trophy' :
+                      tab === '/profile' ? 'user' :
+                        'user'}
+              color={selectedTab === tab ? 'blue' : 'black'}
+              size={24}
+            />
+            {tab === '/friends' && unreadCount > 0 && (
+              <View style={{
+                position: 'absolute',
+                top: -5,
+                right: -5,
+                backgroundColor: 'red',
+                borderRadius: 10,
+                width: 20,
+                height: 20,
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}>
+                <Text style={{ color: 'white', fontSize: 12 }}>{unreadCount}</Text>
+              </View>
+            )}
+          </View>
+          <Text style={{ color: 'grey', fontSize: 10, marginTop: -4 }}>
+            {getDisplayName(tab)}
+          </Text>
+        </TouchableOpacity>
+      ))}
+      <ProximityCheckNotif />
+    </View>
+  );
+}
+
 function RootLayoutNav() {
   const pathname = usePathname();
-  const hideNavBarRoutes = ['/login', '/register', '/add-friends', '/user-profile', '/settings', '/notifications'];
+  const hideNavBarRoutes = ['/login', '/register', '/add-friends'];
   const { countdownIsActive, stopCountdown } = useCountdown();
   const [unreadCount, setUnreadCount] = useState(0);
   const { unreadCount: initialUnreadCount, fetchNotifications } = useNotifications();
@@ -336,3 +255,14 @@ function RootLayoutNav() {
     </SafeAreaProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  countdownContainer: {
+    position: 'absolute',
+    bottom: 90, // Adjust this value based on your navbar height
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 1000, // Ensure it's above other components
+  },
+});

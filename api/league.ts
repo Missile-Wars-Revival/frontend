@@ -19,7 +19,7 @@ export interface League {
     };
 }
 
-export async function fetchTopLeagues(): Promise<League[]> {
+export async function fetchTopLeagues() {
     try {
         const token = await SecureStore.getItemAsync("token");
         if (!token) throw new Error("No authentication token found.");
@@ -37,7 +37,7 @@ export async function fetchTopLeagues(): Promise<League[]> {
     }
 }
 
-export async function fetchCurrentLeague(): Promise<League | null> {
+export async function fetchCurrentLeague() {
     try {
         const token = await SecureStore.getItemAsync("token");
         if (!token) throw new Error("No authentication token found.");
@@ -55,7 +55,7 @@ export async function fetchCurrentLeague(): Promise<League | null> {
     }
 }
 
-export async function fetchLeaguePlayers(): Promise<Player[]> {
+export async function fetchLeaguePlayers() {
     try {
         const token = await SecureStore.getItemAsync("token");
         if (!token) throw new Error("No authentication token found.");
