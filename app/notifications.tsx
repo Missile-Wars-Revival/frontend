@@ -11,7 +11,7 @@ interface Notification {
 	id: string;
 	title: string;
 	body: string;
-  sentby: string;
+	sentby: string;
 	timestamp: string;
 	isRead: boolean;
 	userId: string;
@@ -49,17 +49,17 @@ const NotificationsPage: React.FC = () => {
 				console.error('No token found');
 				return;
 			}
-			
+
 			const response = await addFriend(token, item.sentby);
 			console.log('Friend request accepted:', response.message);
-			
+
 			// Remove the notification instead of marking it as read
 			await deleteNotificationById(item.id);
 			setHiddenIds(prev => new Set(prev).add(item.id));
 		} catch (error) {
 			console.error('Failed to accept friend request:', error);
 			// Optionally, show an error message to the user
-      setHiddenIds(prev => {
+			setHiddenIds(prev => {
 				const newSet = new Set(prev);
 				newSet.delete(item.id);
 				return newSet;
@@ -109,7 +109,7 @@ const NotificationsPage: React.FC = () => {
 		if (hiddenIds.has(item.id)) return null;
 
 		return (
-			<TouchableOpacity 
+			<TouchableOpacity
 				style={[styles.notificationItem, !item.isRead && styles.unreadNotification]}
 				onPress={() => markAsRead(item.id)}
 			>
@@ -147,7 +147,7 @@ const NotificationsPage: React.FC = () => {
 						</TouchableOpacity>
 					</View>
 				)}
-				{item.title === 'Incoming Missile!' && (
+				{['Incoming Missile!', 'Eliminated!'].includes(item.title) && (
 					<View style={styles.actionButtons}>
 						<TouchableOpacity style={styles.fireBackButton} onPress={() => handleFireBack(item)}>
 							<Text style={styles.buttonText}>Fire Back!</Text>
@@ -200,42 +200,42 @@ const NotificationsPage: React.FC = () => {
 				)}
 			</View>
 			<Modal
-        animationType="slide"
-        transparent={true}
-        visible={showMissileLibrary}
-        onRequestClose={() => setShowMissileLibrary(false)}
-      >
-        <View className="flex-1 justify-end">
-          <View className="h-[90%] bg-white rounded-t-3xl overflow-hidden">
-            <View className="flex-row justify-between items-center p-4 bg-gray-100">
-              <Text className="text-xl font-bold">Missile Library</Text>
-              <TouchableOpacity
-                className="bg-blue-500 px-4 py-2 rounded-lg"
-                onPress={() => setShowMissileLibrary(false)}
-              >
-                <Text className="text-white font-bold">Done</Text>
-              </TouchableOpacity>
-            </View>
-            <MissileLibrary 
-              playerName={selectedPlayer} 
-              onMissileFired={() => {
-                // Handle missile fired event
-                setShowMissileLibrary(false);
-              }}
-              onClose={() => setShowMissileLibrary(false)}
-            />
-          </View>
-        </View>
-      </Modal>
+				animationType="slide"
+				transparent={true}
+				visible={showMissileLibrary}
+				onRequestClose={() => setShowMissileLibrary(false)}
+			>
+				<View className="flex-1 justify-end">
+					<View className="h-[90%] bg-white rounded-t-3xl overflow-hidden">
+						<View className="flex-row justify-between items-center p-4 bg-gray-100">
+							<Text className="text-xl font-bold">Missile Library</Text>
+							<TouchableOpacity
+								className="bg-blue-500 px-4 py-2 rounded-lg"
+								onPress={() => setShowMissileLibrary(false)}
+							>
+								<Text className="text-white font-bold">Done</Text>
+							</TouchableOpacity>
+						</View>
+						<MissileLibrary
+							playerName={selectedPlayer}
+							onMissileFired={() => {
+								// Handle missile fired event
+								setShowMissileLibrary(false);
+							}}
+							onClose={() => setShowMissileLibrary(false)}
+						/>
+					</View>
+				</View>
+			</Modal>
 		</SafeAreaView>
-		
+
 	);
 };
 
 const styles = StyleSheet.create({
 	safeArea: {
 		flex: 1,
-		backgroundColor: '#4a5568', 
+		backgroundColor: '#4a5568',
 	},
 	container: {
 		flex: 1,
@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
 		fontWeight: 'bold',
 	},
 	fireBackButton: {
-		backgroundColor: '#FF0000', 
+		backgroundColor: '#FF0000',
 		padding: 8,
 		borderRadius: 5,
 		marginRight: 10,

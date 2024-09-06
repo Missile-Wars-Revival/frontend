@@ -233,7 +233,7 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                         if (missile.status === 'Hit') {
                             //sendNotification("Danger!", "A Missile has impacted in your proximity! You may start taking damage!");
                             setLastNotified(prev => ({ ...prev, missile: today }));
-                            Alert.alert("Danger!", "A Missile has impacted in your proximity! You may start taking damage!");
+                            //Alert.alert("Danger!", "A Missile has impacted in your proximity! You may start taking damage!");
 
                             applyMissileDamage(missile.type, missile.damage, missile.sentbyusername); 
                         }
@@ -270,17 +270,17 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
             const applyDamage = async () => {
                 startCountdown();  // Start countdown right before applying damage
                 setTimeout(async () => {  // Wait 30 seconds before applying damage
-                    healthNumber -= missileDamage;
+                    //healthNumber -= missileDamage;
                     await AsyncStorage.setItem('health', healthNumber.toString());
-                    removeHealth(token, missileDamage) //remove db health
+                    //removeHealth(token, missileDamage) //remove db health
         
                     if (healthNumber <= 0) {
                         stopCountdown();
-                        Alert.alert("Dead", `You have been killed by a ${missiletype} missile sent by user: ${sentBy}`);
+                        //Alert.alert("Dead", `You have been killed by a ${missiletype} missile sent by user: ${sentBy}`);
                         console.log('User health has reached zero or below.');
                         await AsyncStorage.setItem(`isAlive`, `false`)
                         updateisAlive(token, false);
-                        initreward("missile", missiletype, sentBy)
+                        //initreward("missile", missiletype, sentBy)
                         await AsyncStorage.setItem('health', '0'); // Set health to zero in storage
                         setHealth(token, 0) //set health 0 in DB
                     } else {
@@ -300,10 +300,10 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                 switch (proximityStatus) {
                     case 'within-landmine':
                         //inside landmine radius
-                        sendNotification("Danger!", `You just stepped on a Landmine! ${landmine.damage} damage has been taken.`);
-                        setLastNotified(prev => ({ ...prev, landmine: today }));
+                        //sendNotification("Danger!", `You just stepped on a Landmine! ${landmine.damage} damage has been taken.`);
+                        //setLastNotified(prev => ({ ...prev, landmine: today }));
 
-                        Alert.alert("Danger!", "You have stepped on a Landmine!!");
+                        //Alert.alert("Danger!", "You have stepped on a Landmine!!");
                         applyLandmineDamage(landmine.id ,landmine.placedby, landmine.damage, landmine.type)
                         break;
                     case 'near-landmine':
@@ -341,9 +341,9 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                 }
 
                 if (healthNumber <= 0) {
-                    Alert.alert("Dead", `You have been killed by a Landmine placed by user: ${sentBy}`);
-                    initreward("landmine", landminetype, sentBy)
-                    console.log('User health has reached zero or below.');
+                    //Alert.alert("Dead", `You have been killed by a Landmine placed by user: ${sentBy}`);
+                    //initreward("landmine", landminetype, sentBy)
+                    //console.log('User health has reached zero or below.');
                     await AsyncStorage.setItem(`isAlive`, `false`);
                     updateisAlive(token, false);
                     await AsyncStorage.setItem('health', '0'); // Set health to zero in storage
