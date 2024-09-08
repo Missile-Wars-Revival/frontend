@@ -48,8 +48,6 @@ export default function RootLayout() {
   const [isSplashVisible, setIsSplashVisible] = useState(true);
   const [lastActiveTime, setLastActiveTime] = useState(Date.now());
   const BACKGROUND_THRESHOLD = 2 * 60 * 1000; // 5 minutes in milliseconds
-  const router = useRouter();
-  const pathname = usePathname();
   const { fetchNotifications } = useNotifications();
 
   const configurePurchases = useCallback(async () => {
