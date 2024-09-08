@@ -62,7 +62,7 @@ export const missileImages: MissileImages = {
   // Add other missile images here
 };
 
-const MissileSelector = ({ onSelect, missiles }: { onSelect: (missile: string) => void, missiles: Missilelib[] }) => {
+const MissileSelector = ({ onSelect, missiles, onClose }: { onSelect: (missile: string) => void, missiles: Missilelib[], onClose: () => void }) => {
   const isDarkMode = useColorScheme() === 'dark';
 
   if (missiles.length === 0) {
@@ -72,7 +72,10 @@ const MissileSelector = ({ onSelect, missiles }: { onSelect: (missile: string) =
           No missiles available.
         </Text>
         <TouchableOpacity 
-          onPress={() => router.push('/shop')}
+          onPress={() => {
+            onClose(); 
+            router.push('/store'); 
+          }}
           style={tw`bg-blue-500 px-6 py-3 rounded-lg`}
         >
           <Text style={tw`text-white font-bold`}>Go to Shop</Text>
@@ -132,7 +135,7 @@ export const MissileLibrary = ({ playerName, onMissileFired, onClose }: { player
   return (
     <View style={tw`${isDarkMode ? 'bg-black' : 'bg-white'} rounded-lg p-4 h-[90%]`}>
       <Text style={tw`text-xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Select Missile to Fire at {playerName}</Text>
-      <MissileSelector onSelect={handleMissileClick} missiles={missileLibrary} />
+      <MissileSelector onSelect={handleMissileClick} missiles={missileLibrary} onClose={onClose} />
       <Modal visible={showPopup} animationType="fade" transparent={true}>
         <View style={tw`flex-1 justify-center items-center bg-black bg-opacity-50`}>
           <View style={tw`${isDarkMode ? 'bg-gray-900' : 'bg-white'} rounded-lg p-4 w-11/12 max-h-[90%]`}>
@@ -176,7 +179,7 @@ export const MissilefireposLibrary = ({ onClose }: { onClose: () => void }) => {
   return (
     <View style={tw`${isDarkMode ? 'bg-black' : 'bg-white'} rounded-lg p-4 h-[90%]`}>
       <Text style={tw`text-xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Select Missile to Fire at Location</Text>
-      <MissileSelector onSelect={handleMissileClick} missiles={missileLibrary} />
+      <MissileSelector onSelect={handleMissileClick} missiles={missileLibrary} onClose={onClose} />
       {showPlacementPopup && selectedMissile && (
         <MissilePlacementPopup
           visible={showPlacementPopup}

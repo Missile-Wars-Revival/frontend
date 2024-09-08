@@ -47,7 +47,7 @@ export default function RootLayout() {
   const queryClient = new QueryClient();
   const [isSplashVisible, setIsSplashVisible] = useState(true);
   const [lastActiveTime, setLastActiveTime] = useState(Date.now());
-  const BACKGROUND_THRESHOLD = 5 * 60 * 1000; // 5 minutes in milliseconds
+  const BACKGROUND_THRESHOLD = 2 * 60 * 1000; // 5 minutes in milliseconds
   const router = useRouter();
   const pathname = usePathname();
   const { fetchNotifications } = useNotifications();
@@ -169,7 +169,7 @@ function NavBar({ unreadCount }: { unreadCount: number }) {
       {[
         '/', 
         '/store', 
-        //'/league', 
+        '/league', 
         '/friends',
         //'/msg', 
         '/profile'

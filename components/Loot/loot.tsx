@@ -5,6 +5,7 @@ import { create } from 'twrnc';
 import { InventoryItem } from '../../types/types';
 import useFetchInventory from '../../hooks/websockets/inventoryhook';
 import { useColorScheme } from 'react-native';
+import { router } from 'expo-router';
 
 const tw = create(require('../../tailwind.config.js'));
 
@@ -100,7 +101,18 @@ export const LootLibraryView: React.FC<LootLibraryViewProps> = ({ LootModalVisib
         <View style={tw`${isDarkMode ? 'bg-black' : 'bg-white'} rounded-lg p-4 w-11/12 ${getModalHeight()} max-h-[90%]`}>
           <Text style={tw`text-xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Select your Loot:</Text>
           {noItems ? (
-            <Text style={tw`text-center mt-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>No items in inventory</Text>
+            <View style={tw`flex-1 justify-center items-center`}>
+              <Text style={tw`text-center mb-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>No items in inventory</Text>
+              <TouchableOpacity 
+                onPress={() => {
+                  LootPlaceHandler(); // Close the loot modal
+                  router.push('/store'); // Navigate to the store
+                }}
+                style={tw`bg-blue-500 px-6 py-3 rounded-lg`}
+              >
+                <Text style={tw`text-white font-bold`}>Go to Shop</Text>
+              </TouchableOpacity>
+            </View>
           ) : (
             <LootSelector onSelect={handleLootClick} loots={LootLibrary} />
           )}
