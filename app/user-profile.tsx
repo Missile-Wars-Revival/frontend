@@ -16,6 +16,7 @@ export interface Statistics {
   numLandminesPlaced: number;
   numMissilesPlaced: number;
   numLootPickups: number;
+  league: string; 
 }
 
 interface UserProfile {
@@ -120,11 +121,19 @@ const UserProfilePage: React.FC = () => {
   };
 
   if (!username) {
-    return <Text style={isDarkMode ? styles.textDark : styles.text}>No username provided</Text>;
+    return (
+      <View style={[styles.loadingContainer, isDarkMode && styles.loadingContainerDark]}>
+        <Text style={isDarkMode ? styles.textDark : styles.text}>No username provided</Text>
+      </View>
+    );
   }
 
   if (!userProfile) {
-    return <Text style={isDarkMode ? styles.textDark : styles.text}>Loading...</Text>;
+    return (
+      <View style={[styles.loadingContainer, isDarkMode && styles.loadingContainerDark]}>
+        <Text style={isDarkMode ? styles.textDark : styles.text}>Loading...</Text>
+      </View>
+    );
   }
 
   return (
@@ -142,15 +151,18 @@ const UserProfilePage: React.FC = () => {
             style={styles.profileImage}
           />
           <Text style={[styles.profileName, isDarkMode && styles.profileNameDark]}>{userProfile.username}</Text>
-          <View style={styles.profileHeader}>
-            <View style={styles.rankPointsContainer}>
-              <Text style={[styles.rankPoints, isDarkMode && styles.rankPointsDark]}>🏅 {userProfile.rankpoints} Rank Points</Text>
-            </View>
-            {!isFriend && (
-              <TouchableOpacity style={styles.addFriendButton} onPress={handleAddFriend}>
-                <Text style={styles.addFriendButtonText}>Add Friend</Text>
-              </TouchableOpacity>
-            )}
+          {!isFriend && (
+            <TouchableOpacity style={styles.addFriendButton} onPress={handleAddFriend}>
+              <Text style={styles.addFriendButtonText}>Add Friend</Text>
+            </TouchableOpacity>
+          )}
+          <View style={styles.rankPointsContainer}>
+            <Text style={[styles.rankPoints, isDarkMode && styles.rankPointsDark]}>
+              🏅 {userProfile.rankpoints} Rank Points
+              {userProfile.statistics.league && (
+                <Text style={[styles.leagueText, isDarkMode && styles.leagueTextDark]}> • {userProfile.statistics.league}</Text>
+              )}
+            </Text>
           </View>
           <View style={styles.badgesContainer}>
             <Text style={[styles.sectionTitle, isDarkMode && styles.sectionTitleDark]}>Badges</Text>
@@ -314,32 +326,30 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   rankPointsContainer: {
-    alignSelf: 'flex-start',
+    alignSelf: 'center',
     marginBottom: 10,
   },
   rankPoints: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#4a5568',
+    textAlign: 'center',
+  },
+  leagueText: {
+    fontSize: 16,
+    color: '#718096',
   },
   addFriendButton: {
     backgroundColor: '#4CAF50',
     paddingHorizontal: 15,
     paddingVertical: 8,
     borderRadius: 20,
-    alignSelf: 'flex-end',
+    marginBottom: 10,
   },
   addFriendButtonText: {
     color: '#ffffff',
     fontSize: 14,
     fontWeight: 'bold',
-  },
-  profileHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    width: '100%',
-    marginBottom: 10,
   },
   text: {
     color: '#333',
@@ -383,8 +393,20 @@ const styles = StyleSheet.create({
   rankPointsDark: {
     color: '#4CAF50',
   },
+  leagueTextDark: {
+    color: '#B0B0B0',
+  },
   textDark: {
     color: '#B0B0B0',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f0f2f5', // Light mode background
+  },
+  loadingContainerDark: {
+    backgroundColor: '#1E1E1E', // Dark mode background
   },
 });
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableHighlight, Switch, ScrollView, Alert } from 'react-native';
+import { View, Text, TouchableHighlight, Switch, ScrollView, Alert, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Input } from "../components/ui/input";
@@ -8,6 +8,7 @@ import * as SecureStore from 'expo-secure-store';
 import { changeEmail, changePassword, changeUsername } from '../api/changedetails';
 import { updateFriendsOnlyStatus } from '../api/visibility';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useColorScheme } from 'react-native';
 
 const SettingsPage: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -18,6 +19,8 @@ const SettingsPage: React.FC = () => {
   const [emailError, setEmailError] = useState('');
   const [usernameError, setUsernameError] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark';
 
   useEffect(() => {
     loadUserData();
@@ -183,59 +186,72 @@ const SettingsPage: React.FC = () => {
   };
 
   return (
-    <ScrollView>
-      <SafeAreaView className="flex-1 items-center bg-gray-100">
+    <ScrollView style={[styles.container, isDarkMode && styles.containerDark]}>
+      <SafeAreaView style={[styles.safeArea, isDarkMode && styles.safeAreaDark]}>
         <TouchableHighlight 
           onPress={() => router.back()} 
-          className="self-start ml-4 mt-4"
+          style={styles.backButton}
+          underlayColor={isDarkMode ? '#3D3D3D' : '#E5E5E5'}
         >
-          <View className="flex-row items-center">
-            <ChevronLeft size={24} color="#007AFF" />
-            <Text className="text-lg text-blue-500 ml-1">Back</Text>
+          <View style={styles.backButtonContent}>
+            <ChevronLeft size={24} color={isDarkMode ? "#4CAF50" : "#007AFF"} />
+            <Text style={[styles.backButtonText, isDarkMode && styles.backButtonTextDark]}>Back</Text>
           </View>
         </TouchableHighlight>
         
-        <Text className="text-3xl font-bold mb-8 mt-4">Settings</Text>
+        <Text style={[styles.title, isDarkMode && styles.titleDark]}>Settings</Text>
 
-        <View className="w-full px-4 space-y-6">
-          <View className="space-y-4">
+        <View style={styles.settingsContainer}>
+          <View style={styles.settingGroup}>
             <Input
               placeholder={username || "Username"}
               onChangeText={(text) => {
                 setUsername(text);
                 setUsernameError('');
               }}
-              icon={<User size={24} color="black" />}
+              icon={
+                <View style={styles.iconContainer}>
+                  <User size={24} color={isDarkMode ? "white" : "black"} />
+                </View>
+              }
+              style={[styles.input, isDarkMode && styles.inputDark]}
               className="w-[90vw] h-[5vh] rounded-[20px]"
             />
             {usernameError ? (
-              <Text className="text-red-500 text-sm">{usernameError}</Text>
+              <Text style={styles.errorText}>{usernameError}</Text>
             ) : null}
             <TouchableHighlight 
               onPress={handleUsernameChange}
-              className="bg-[#773765] rounded-[20px] w-[90vw] h-[5.3vh] flex items-center justify-center"
+              style={[styles.button, isDarkMode && styles.buttonDark]}
+              underlayColor={isDarkMode ? '#5c2a4f' : '#662d60'}
             >
-              <Text className="text-white font-bold">Change Username</Text>
+              <Text style={styles.buttonText}>Change Username</Text>
             </TouchableHighlight>
 
-            <View className="space-y-2">
+            <View style={styles.settingGroup}>
               <Input
                 placeholder={email || "Email"}
                 onChangeText={(text) => {
                   setEmail(text);
                   setEmailError('');
                 }}
-                icon={<Mail size={24} color="black" />}
+                icon={
+                  <View style={styles.iconContainer}>
+                    <Mail size={24} color={isDarkMode ? "white" : "black"} />
+                  </View>
+                }
+                style={[styles.input, isDarkMode && styles.inputDark]}
                 className="w-[90vw] h-[5vh] rounded-[20px]"
               />
               {emailError ? (
-                <Text className="text-red-500 text-sm">{emailError}</Text>
+                <Text style={styles.errorText}>{emailError}</Text>
               ) : null}
               <TouchableHighlight 
                 onPress={() => handleEmailChange(email)}
-                className="bg-[#773765] rounded-[20px] w-[90vw] h-[5.3vh] flex items-center justify-center"
+                style={[styles.button, isDarkMode && styles.buttonDark]}
+                underlayColor={isDarkMode ? '#5c2a4f' : '#662d60'}
               >
-                <Text className="text-white font-bold">Change Email</Text>
+                <Text style={styles.buttonText}>Change Email</Text>
               </TouchableHighlight>
             </View>
 
@@ -244,16 +260,17 @@ const SettingsPage: React.FC = () => {
               value={newPassword}
               secureTextEntry={true}
               autoCorrect={false}
-            autoCapitalize="none"
+              autoCapitalize="none"
               onChangeText={(text) => {
                 setNewPassword(text);
                 setPasswordError('');
               }}
               icon={
-                <View style={{ marginTop: 12 }}>
-                  <LockKeyhole size={24} color="black" />
+                <View style={styles.iconContainer}>
+                  <LockKeyhole size={24} color={isDarkMode ? "white" : "black"} />
                 </View>
               }
+              style={[styles.input, isDarkMode && styles.inputDark]}
               className="w-[90vw] h-[5vh] rounded-[20px]"
             />
             <Input
@@ -265,37 +282,162 @@ const SettingsPage: React.FC = () => {
               }}
               secureTextEntry
               icon={
-                <View style={{ marginTop: 12 }}>
-                  <LockKeyhole size={24} color="black" />
+                <View style={styles.iconContainer}>
+                  <LockKeyhole size={24} color={isDarkMode ? "white" : "black"} />
                 </View>
               }
+              style={[styles.input, isDarkMode && styles.inputDark]}
               className="w-[90vw] h-[5vh] rounded-[20px]"
             />
             {passwordError ? (
-              <Text className="text-red-500 text-sm">{passwordError}</Text>
+              <Text style={styles.errorText}>{passwordError}</Text>
             ) : null}
             <TouchableHighlight 
               onPress={handlePasswordChange}
-              className="bg-[#773765] rounded-[20px] w-[90vw] h-[5.3vh] flex items-center justify-center"
+              style={[styles.button, isDarkMode && styles.buttonDark]}
+              underlayColor={isDarkMode ? '#5c2a4f' : '#662d60'}
             >
-              <Text className="text-white font-bold">Change Password</Text>
+              <Text style={styles.buttonText}>Change Password</Text>
             </TouchableHighlight>
           </View>
 
-          <View className="flex-row justify-between items-center bg-white p-4 rounded-[20px] w-[90vw]">
-            <Text className="text-lg font-bold">Visibility Mode</Text>
+          <View style={[styles.visibilityContainer, isDarkMode && styles.visibilityContainerDark]}>
+            <Text style={[styles.visibilityText, isDarkMode && styles.visibilityTextDark]}>Visibility Mode</Text>
             <Switch
               value={visibilityMode === 'global'}
               onValueChange={toggleVisibilityMode}
               trackColor={{ false: "#cbd5e0", true: "#773765" }}
               thumbColor={visibilityMode === 'global' ? "#5c2a4f" : "#ffffff"}
             />
-            <Text>{visibilityMode === 'global' ? 'Global' : 'Friends Only'}</Text>
+            <Text style={[styles.visibilityModeText, isDarkMode && styles.visibilityModeTextDark]}>
+              {visibilityMode === 'global' ? 'Global' : 'Friends Only'}
+            </Text>
           </View>
         </View>
       </SafeAreaView>
     </ScrollView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f0f2f5',
+  },
+  containerDark: {
+    backgroundColor: '#1E1E1E',
+  },
+  safeArea: {
+    flex: 1,
+    alignItems: 'center',
+    backgroundColor: '#f0f2f5',
+  },
+  safeAreaDark: {
+    backgroundColor: '#1E1E1E',
+  },
+  backButton: {
+    alignSelf: 'flex-start',
+    marginLeft: 20,
+    marginTop: 20,
+    padding: 10,
+    borderRadius: 20,
+  },
+  backButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  backButtonText: {
+    fontSize: 18,
+    color: '#007AFF',
+    marginLeft: 5,
+  },
+  backButtonTextDark: {
+    color: '#4CAF50',
+  },
+  iconContainer: {
+    position: 'absolute',
+    left: 1,
+    top: 10,
+    transform: [{ translateY: 2 }],
+    zIndex: 1,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    marginTop: 10,
+    color: '#2d3748',
+  },
+  titleDark: {
+    color: '#FFF',
+  },
+  settingsContainer: {
+    width: '90%',
+    alignItems: 'center',
+  },
+  settingGroup: {
+    width: '100%',
+    marginBottom: 20,
+  },
+  input: {
+    width: '100%',
+    height: 50,
+    paddingLeft: 40,
+    borderRadius: 10,
+    marginBottom: 10,
+    paddingHorizontal: 15,
+  },
+  inputDark: {
+    color: '#FFF',
+    paddingLeft: 40,
+  },
+  errorText: {
+    color: '#e53e3e',
+    marginBottom: 10,
+  },
+  button: {
+    backgroundColor: '#773765',
+    borderRadius: 10,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  buttonDark: {
+    backgroundColor: '#5c2a4f',
+  },
+  buttonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  visibilityContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    padding: 15,
+    borderRadius: 10,
+    width: '100%',
+  },
+  visibilityContainerDark: {
+    backgroundColor: '#2C2C2C',
+  },
+  visibilityText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2d3748',
+  },
+  visibilityTextDark: {
+    color: '#FFF',
+  },
+  visibilityModeText: {
+    fontSize: 16,
+    color: '#4a5568',
+  },
+  visibilityModeTextDark: {
+    color: '#B0B0B0',
+  },
+});
 
 export default SettingsPage;

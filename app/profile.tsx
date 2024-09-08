@@ -5,7 +5,7 @@ import { clearCredentials } from '../util/logincache';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import * as SecureStore from "expo-secure-store";
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import useFetchInventory from '../hooks/websockets/inventoryhook';
 import { getselfprofile } from '../api/getprofile';
@@ -107,6 +107,10 @@ const ProfilePage: React.FC = () => {
 
   const openSettings = () => {
     router.push("/settings");
+  };
+
+  const navigateToLeagues = () => {
+    router.push("/league");
   };
 
   const loadProfileImage = async () => {
@@ -264,9 +268,15 @@ const ProfilePage: React.FC = () => {
     <SafeAreaView style={[styles.container, isDarkMode && styles.containerDark]}>
       <View style={[styles.header, isDarkMode && styles.headerDark]}>
         <Text style={[styles.headerText, isDarkMode && styles.headerTextDark]}>Profile</Text>
-        <TouchableOpacity style={styles.settingsButton} onPress={openSettings}>
-          <Ionicons name="settings" size={24} color={isDarkMode ? "white" : "black"} />
-        </TouchableOpacity>
+        <View style={styles.headerButtons}>
+          {/* Leagues: */}
+          {/* <TouchableOpacity style={styles.headerButton} onPress={navigateToLeagues}>
+            <MaterialCommunityIcons name="trophy" size={24} color={isDarkMode ? "white" : "white"} />
+          </TouchableOpacity> */}
+          <TouchableOpacity style={styles.headerButton} onPress={openSettings}>
+            <Ionicons name="settings" size={24} color={isDarkMode ? "white" : "white"} />
+          </TouchableOpacity>
+        </View>
       </View>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={[styles.profileContainer, isDarkMode && styles.profileContainerDark]}>
@@ -280,7 +290,12 @@ const ProfilePage: React.FC = () => {
           <Text style={[styles.profileDetails, isDarkMode && styles.profileDetailsDark]}>Email: {email}</Text>
           
           <View style={styles.rankPointsContainer}>
-            <Text style={[styles.rankPoints, isDarkMode && styles.rankPointsDark]}>🏅 {rankPoints !== null ? rankPoints : 'Loading...'} Rank Points</Text>
+            <Text style={[styles.rankPoints, isDarkMode && styles.rankPointsDark]}>
+              🏅 {rankPoints !== null ? rankPoints : 'Loading...'} Rank Points
+              {statistics && statistics.league && (
+                <Text style={[styles.leagueText, isDarkMode && styles.leagueTextDark]}> • {statistics.league}</Text>
+              )}
+            </Text>
           </View>
           
           <View style={styles.badgesContainer}>
@@ -415,8 +430,12 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontWeight: 'bold',
   },
-  settingsButton: {
+  headerButtons: {
+    flexDirection: 'row',
+  },
+  headerButton: {
     padding: 10,
+    marginLeft: 10,
   },
   scrollContent: {
     flexGrow: 1,
@@ -639,6 +658,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#4a5568',
   },
+  leagueText: {
+    fontSize: 16,
+    color: '#718096',
+  },
 
   // Dark mode styles
   containerDark: {
@@ -710,6 +733,9 @@ const styles = StyleSheet.create({
   },
   rankPointsDark: {
     color: '#4CAF50',
+  },
+  leagueTextDark: {
+    color: '#B0B0B0',
   },
 });
 

@@ -2,13 +2,12 @@ import axiosInstance from "./axios-instance";
 import { isAxiosError } from "axios";
 import * as SecureStore from "expo-secure-store";
 
-export interface Player {
+interface Player {
     id: string;
     username: string;
     points: number;
-    profilePicture: string;
-    isCurrentUser?: boolean;
-}
+    isCurrentUser: boolean;
+  }
 
 export interface League {
     id: string;
@@ -26,6 +25,7 @@ export async function fetchTopLeagues() {
         const response = await axiosInstance.get('/api/topleagues', {
             params: { token },
         });
+        //console.log("Top leagues:", response.data);
         return response.data;
     } catch (error) {
         if (isAxiosError(error)) {
@@ -44,6 +44,7 @@ export async function fetchCurrentLeague() {
         const response = await axiosInstance.get('/api/leagues/current', {
             params: { token },
         });
+        //console.log("Current league:", response.data);
         return response.data;
     } catch (error) {
         if (isAxiosError(error)) {
@@ -62,12 +63,32 @@ export async function fetchLeaguePlayers() {
         const response = await axiosInstance.get('/api/leagues/players', {
             params: { token },
         });
+        //console.log("League players:", response.data);
         return response.data;
     } catch (error) {
         if (isAxiosError(error)) {
             console.error("Error fetching league players:", error.response?.data || error.message);
         } else {
             console.error("Error fetching league players:", error);
+        }
+        return [];
+    }
+}
+
+export async function top100Players() {
+    try {
+        const token = await SecureStore.getItemAsync("token");
+        if (!token) throw new Error("No authentication token found.");
+        const response = await axiosInstance.get('/api/top100players', {
+            params: { token },
+        });
+        //console.log("Top 100 players:", response.data);
+        return response.data;
+    } catch (error) {
+        if (isAxiosError(error)) {
+            console.error("Error fetching 100 players:", error.response?.data || error.message);
+        } else {
+            console.error("Error fetching 100 players:", error);
         }
         return [];
     }

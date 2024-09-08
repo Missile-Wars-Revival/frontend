@@ -1,17 +1,44 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text, ScrollView, TouchableOpacity, Image, SafeAreaView, useColorScheme } from 'react-native';
+import { View, StyleSheet, Text, ScrollView, TouchableOpacity, Image, SafeAreaView, useColorScheme, ImageSourcePropType } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { fetchTopLeagues, fetchCurrentLeague, fetchLeaguePlayers, League, Player } from '../api/league';
+import { fetchTopLeagues, fetchCurrentLeague, fetchLeaguePlayers, top100Players } from '../api/league';
+import { fetchAndCacheImage } from '../util/imagecache'; 
 
 const DEFAULT_IMAGE = require('../assets/mapassets/Female_Avatar_PNG.png');
+
+const LEAGUE_IMAGES: { [key: string]: ImageSourcePropType } = {
+  'Bronze': require('../assets/leagues/bronze.png'),
+  'Silver': require('../assets/leagues/silver.png'),
+  'Gold': require('../assets/leagues/gold.png'),
+  'Diamond': require('../assets/leagues/diamond.png'),
+  'Legend': require('../assets/leagues/legend.png'),
+};
+
+interface Player {
+  id: string;
+  username: string;
+  points: number;
+  isCurrentUser: boolean;
+  profileImageUrl?: string;
+}
+
+interface LeaguePlayersResponse {
+  players: Player[];
+}
+
+interface League {
+  name: string;
+  playerCount: number;
+}
 
 const LeagueRankingPage: React.FC = () => {
   const [topLeagues, setTopLeagues] = useState<League[]>([]);
   const [leaguePlayers, setLeaguePlayers] = useState<Player[]>([]);
-  const [currentLeague, setCurrentLeague] = useState<League | null>(null);
+  const [currentLeague, setCurrentLeague] = useState<{ division: string; league: string } | null>(null);
   const [viewMode, setViewMode] = useState<'players' | 'leagues'>('leagues');
   const [isLoading, setIsLoading] = useState(true);
+  const [top100, setTop100] = useState<Player[]>([]);
   
   const scheme = useColorScheme() || 'light';
   const styles = StyleSheet.create({
@@ -19,18 +46,46 @@ const LeagueRankingPage: React.FC = () => {
     ...(scheme === 'dark' ? darkStyles : {}),
   });
 
+  const getLeagueImage = (leagueName: string): ImageSourcePropType => {
+    return LEAGUE_IMAGES[leagueName] || require('../assets/leagues/default.png');
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
-      const [topLeaguesData, currentLeagueData, leaguePlayersData] = await Promise.all([
-        fetchTopLeagues(),
-        fetchCurrentLeague(),
-        fetchLeaguePlayers()
-      ]);
-      setTopLeagues(topLeaguesData);
-      setCurrentLeague(currentLeagueData);
-      setLeaguePlayers(leaguePlayersData);
-      setIsLoading(false);
+      try {
+        const [topLeaguesData, currentLeagueData, leaguePlayersResponse, top100Data] = await Promise.all([
+          fetchTopLeagues(),
+          fetchCurrentLeague(),
+          fetchLeaguePlayers(),
+          top100Players()
+        ]);
+
+        // Fetch and cache profile images for league players
+        const leaguePlayersWithImages = await Promise.all(
+          leaguePlayersResponse.players.map(async (player: { username: string; }) => ({
+            ...player,
+            profileImageUrl: await fetchAndCacheImage(player.username),
+          }))
+        );
+
+        // Fetch and cache profile images for top 100 players
+        const top100WithImages = await Promise.all(
+          top100Data.players.map(async (player: { username: string; }) => ({
+            ...player,
+            profileImageUrl: await fetchAndCacheImage(player.username),
+          }))
+        );
+
+        setTopLeagues(topLeaguesData.leagues);
+        setCurrentLeague(currentLeagueData);
+        setLeaguePlayers(leaguePlayersWithImages);
+        setTop100(top100WithImages);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     fetchData();
@@ -46,6 +101,24 @@ const LeagueRankingPage: React.FC = () => {
   const toggleViewMode = () => {
     setViewMode(viewMode === 'players' ? 'leagues' : 'players');
   };
+
+  const renderPlayerRow = (player: Player, index: number) => (
+    <TouchableOpacity
+      key={player.id}
+      style={[styles.row, player.isCurrentUser && styles.currentUserRow]}
+      onPress={() => navigateToProfile(player.username)}
+    >
+      <Text style={styles.rankNumber}>{index + 1}</Text>
+      <Image 
+        source={player.profileImageUrl ? { uri: player.profileImageUrl } : DEFAULT_IMAGE}
+        style={styles.profilePic}
+      />
+      <Text style={[styles.username, player.isCurrentUser && styles.currentUserText]}>
+        {player.username} {player.isCurrentUser && '(You)'}
+      </Text>
+      <Text style={styles.points}>{player.points} pts</Text>
+    </TouchableOpacity>
+  );
 
   if (isLoading) {
     return (
@@ -71,21 +144,42 @@ const LeagueRankingPage: React.FC = () => {
       <ScrollView style={styles.content}>
         {viewMode === 'leagues' ? (
           <>
+            {currentLeague && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Your Current League</Text>
+                <View style={styles.currentLeagueContainer}>
+                  <Image
+                    source={getLeagueImage(currentLeague.league)}
+                    style={styles.leagueImage}
+                  />
+                  <View style={styles.leagueInfo}>
+                    <Text style={styles.currentLeagueName}>{currentLeague.league}</Text>
+                    <Text style={styles.currentLeagueDivision}>Division {currentLeague.division}</Text>
+                  </View>
+                </View>
+              </View>
+            )}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Players in Your League</Text>
+              {leaguePlayers.length > 0 ? (
+                leaguePlayers
+                  .sort((a, b) => b.points - a.points)
+                  .map((player, index) => renderPlayerRow(player, index))
+              ) : (
+                <Text style={styles.noDataText}>No players available</Text>
+              )}
+            </View>
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Top Leagues</Text>
               {Array.isArray(topLeagues) && topLeagues.length > 0 ? (
                 topLeagues.map((league, index) => (
-                  <View key={league.id} style={styles.row}>
+                  <View key={index} style={styles.row}>
                     <Text style={styles.rankNumber}>{index + 1}</Text>
                     <View style={styles.leagueInfo}>
                       <Text style={styles.leagueName}>{league.name}</Text>
-                      {league.topPlayer ? (
-                        <Text style={styles.leagueTopPlayer}>
-                          Top Player: {league.topPlayer.username} ({league.topPlayer.points} pts)
-                        </Text>
-                      ) : (
-                        <Text style={styles.leagueTopPlayer}>No top player data</Text>
-                      )}
+                      <Text style={styles.leagueTopPlayer}>
+                        Players: {league.playerCount}
+                      </Text>
                     </View>
                   </View>
                 ))
@@ -93,69 +187,12 @@ const LeagueRankingPage: React.FC = () => {
                 <Text style={styles.noDataText}>No leagues available</Text>
               )}
             </View>
-            {currentLeague && (
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Your Current League</Text>
-                <View style={styles.row}>
-                  <View style={styles.leagueInfo}>
-                    <Text style={styles.leagueName}>{currentLeague.name}</Text>
-                    {currentLeague.topPlayer ? (
-                      <Text style={styles.leagueTopPlayer}>
-                        Top Player: {currentLeague.topPlayer.username} ({currentLeague.topPlayer.points} pts)
-                      </Text>
-                    ) : (
-                      <Text style={styles.leagueTopPlayer}>No top player data</Text>
-                    )}
-                  </View>
-                </View>
-              </View>
-            )}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Players in Your League</Text>
-              {Array.isArray(leaguePlayers) && leaguePlayers.length > 0 ? (
-                leaguePlayers.map((player, index) => (
-                  <TouchableOpacity
-                    key={player.id}
-                    style={[styles.row, player.isCurrentUser && styles.currentUserRow]}
-                    onPress={() => navigateToProfile(player.username)}
-                  >
-                    <Text style={styles.rankNumber}>{index + 1}</Text>
-                    <Image 
-                      source={DEFAULT_IMAGE}
-                      style={styles.profilePic}
-                    />
-                    <Text style={[styles.username, player.isCurrentUser && styles.currentUserText]}>
-                      {player.username} {player.isCurrentUser && '(You)'}
-                    </Text>
-                    <Text style={styles.points}>{player.points} pts</Text>
-                  </TouchableOpacity>
-                ))
-              ) : (
-                <Text style={styles.noDataText}>No players available</Text>
-              )}
-            </View>
           </>
         ) : (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Top Players</Text>
-            {Array.isArray(leaguePlayers) && leaguePlayers.length > 0 ? (
-              leaguePlayers.map((player, index) => (
-                <TouchableOpacity
-                  key={player.id}
-                  style={[styles.row, player.isCurrentUser && styles.currentUserRow]}
-                  onPress={() => navigateToProfile(player.username)}
-                >
-                  <Text style={styles.rankNumber}>{index + 1}</Text>
-                  <Image 
-                    source={DEFAULT_IMAGE}
-                    style={styles.profilePic}
-                  />
-                  <Text style={[styles.username, player.isCurrentUser && styles.currentUserText]}>
-                    {player.username} {player.isCurrentUser && '(You)'}
-                  </Text>
-                  <Text style={styles.points}>{player.points} pts</Text>
-                </TouchableOpacity>
-              ))
+            <Text style={styles.sectionTitle}>Top 100 Players</Text>
+            {Array.isArray(top100) && top100.length > 0 ? (
+              top100.map((player, index) => renderPlayerRow(player, index))
             ) : (
               <Text style={styles.noDataText}>No players available</Text>
             )}
@@ -260,6 +297,11 @@ const lightStyles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
   },
+  leagueDivision: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 5,
+  },
   loadingText: {
     fontSize: 18,
     color: '#333',
@@ -271,6 +313,29 @@ const lightStyles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
     marginTop: 10,
+  },
+  currentLeagueContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+    borderRadius: 10,
+    padding: 15,
+    marginTop: 10,
+  },
+  leagueImage: {
+    width: 80,
+    height: 80,
+    marginRight: 15,
+  },
+  currentLeagueName: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  currentLeagueDivision: {
+    fontSize: 18,
+    color: '#666',
+    marginTop: 5,
   },
 });
 
@@ -363,6 +428,11 @@ const darkStyles = StyleSheet.create({
     fontSize: 14,
     color: '#B0B0B0',
   },
+  leagueDivision: {
+    fontSize: 14,
+    color: '#B0B0B0',
+    marginTop: 5,
+  },
   loadingText: {
     fontSize: 18,
     color: '#FFF',
@@ -374,6 +444,29 @@ const darkStyles = StyleSheet.create({
     color: '#B0B0B0',
     textAlign: 'center',
     marginTop: 10,
+  },
+  currentLeagueContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#3D3D3D',
+    borderRadius: 10,
+    padding: 15,
+    marginTop: 10,
+  },
+  leagueImage: {
+    width: 80,
+    height: 80,
+    marginRight: 15,
+  },
+  currentLeagueName: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFF',
+  },
+  currentLeagueDivision: {
+    fontSize: 18,
+    color: '#B0B0B0',
+    marginTop: 5,
   },
 });
 

@@ -49,12 +49,24 @@ const FriendsPage: React.FC = () => {
   }, [handleUnreadCountUpdate]);
 
   useEffect(() => {
-    const checkAliveStatus = async () => {
-      const isAliveStatusString = await AsyncStorage.getItem('isAlive');
-      setIsAlive(isAliveStatusString === 'true');
-    };
-    checkAliveStatus();
-  }, []);
+		const initializeApp = async () => {
+		  try {
+			const isAliveStatusString = await AsyncStorage.getItem('isAlive');
+			if (isAliveStatusString) {
+			  const isAliveStatus = JSON.parse(isAliveStatusString);
+	
+			  setIsAlive(isAliveStatus.isAlive);
+			} else {
+				setIsAlive(true); // Default to true if no status is found
+			}
+		  } catch (error) {
+			console.error('Error initializing app:', error);
+		  }
+		};
+
+		initializeApp();
+
+	  }, []);
 
   const handleRemPress = (friendUsername: string) => {
     setSelectedFriend(friendUsername);
@@ -529,9 +541,11 @@ const styles = StyleSheet.create({
   missileLibraryContainer: {
     flex: 1,
     backgroundColor: '#ffffff',
+    paddingTop: 60,
   },
   missileLibraryContainerDark: {
     backgroundColor: '#1E1E1E',
+    paddingTop: 60,
   },
   missileLibraryHeader: {
     flexDirection: 'row',

@@ -3,7 +3,7 @@ import 'react-native-reanimated';
 import React, { useEffect, useState, useCallback } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
-import { View, Text, TouchableOpacity, StyleSheet, AppStateStatus } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, AppStateStatus, AppState } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import SplashScreen from './splashscreen';
 import { FontAwesome } from '@expo/vector-icons';
@@ -17,7 +17,6 @@ import CountdownTimer from '../components/countdown';
 import { useCountdown } from '../util/Context/countdown';
 import { AuthProvider } from "../util/Context/authcontext";
 import { useNotifications, notificationEmitter } from "../components/Notifications/useNotifications";
-import { AppState } from 'react-native';
 import { useColorScheme } from 'react-native';
 
 const WebSocketProvider = ({ children }: WebSocketProviderProps) => {
@@ -64,15 +63,15 @@ export default function RootLayout() {
     }
   }, []);
 
-  const [lastAppState, setLastAppState] = useState<AppStateStatus>(AppState.currentState);
+  const [appState, setAppState] = useState(AppState.currentState);
 
-  const handleAppStateChange = (nextAppState: AppStateStatus) => {
-    if (lastAppState.match(/inactive|background/) && nextAppState === 'active') {
+  const handleAppStateChange = useCallback((nextAppState: AppStateStatus) => {
+    if (appState.match(/inactive|background/) && nextAppState === 'active') {
       // App has come to the foreground
       fetchNotifications();
     }
-    setLastAppState(nextAppState);
-  };
+    setAppState(nextAppState);
+  }, [appState, fetchNotifications]);
 
   useEffect(() => {
     configurePurchases();
@@ -81,7 +80,7 @@ export default function RootLayout() {
     return () => {
       subscription.remove();
     };
-  }, [lastAppState]);
+  }, [appState]);
 
   const handleSplashFinish = useCallback(() => {
     setIsSplashVisible(false);
@@ -116,6 +115,23 @@ function NavBar({ unreadCount }: { unreadCount: number }) {
     setSelectedTab(pathname);
   }, [pathname]);
 
+  useEffect(() => {
+    if (pathname === '/notifications' || pathname === '/add-friends') {
+      setSelectedTab('/friends');
+    } else {
+      setSelectedTab(pathname);
+    }
+  }, [pathname]);
+
+  useEffect(() => {
+    //if (pathname === '/league' || pathname === '/settings') {
+    if (pathname === '/league' || pathname === '/settings') {
+      setSelectedTab('/profile');
+    } else {
+      setSelectedTab(pathname);
+    }
+  }, [pathname]);
+
   const handlePress = (tab: string) => {
     if (selectedTab !== tab) {
       setSelectedTab(tab);
@@ -128,6 +144,7 @@ function NavBar({ unreadCount }: { unreadCount: number }) {
       case '/': return 'Map';
       case '/store': return 'Store';
       case '/league': return 'Ranking';
+      case '/msg': return 'Messages';
       case '/friends': return 'Friends';
       case '/profile': return 'Profile';
       default: return '';
@@ -143,7 +160,8 @@ function NavBar({ unreadCount }: { unreadCount: number }) {
         '/', 
         '/store', 
         '/league', 
-        '/friends', 
+        '/friends',
+        //'/msg', 
         '/profile'
       ].map((tab, index) => (
         <TouchableOpacity
@@ -163,6 +181,7 @@ function NavBar({ unreadCount }: { unreadCount: number }) {
                   tab === '/friends' ? 'users' :
                     tab === '/league' ? 'trophy' :
                       tab === '/profile' ? 'user' :
+                        tab === '/msg' ? 'envelope' :
                         'user'}
               color={selectedTab === tab ? (isDarkMode ? '#4CAF50' : 'blue') : (isDarkMode ? '#B0B0B0' : 'black')}
               size={24}
@@ -193,6 +212,9 @@ function RootLayoutNav() {
   const { countdownIsActive, stopCountdown } = useCountdown();
   const [unreadCount, setUnreadCount] = useState(0);
   const { unreadCount: initialUnreadCount, fetchNotifications } = useNotifications();
+  const colorScheme = useColorScheme();
+
+  const backgroundColor = colorScheme === 'dark' ? '#1E1E1E' : '#FFFFFF';
 
   useEffect(() => {
     setUnreadCount(initialUnreadCount);
@@ -224,12 +246,13 @@ function RootLayoutNav() {
 
   return (
     <SafeAreaProvider>
-      <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor }}>
         <Stack>
         <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="login" options={{ headerShown: false, gestureEnabled: false, animation: 'slide_from_bottom' }} />
           <Stack.Screen name="register" options={{ headerShown: false, gestureEnabled: true }} />
           <Stack.Screen name="league" options={{ headerShown: false, gestureEnabled: false }} />
+          {/* <Stack.Screen name="msg" options={{ headerShown: false }} /> */}
           <Stack.Screen name="store" options={{ headerShown: false, gestureEnabled: false }} />
           <Stack.Screen name="friends" options={{ headerShown: false }} />
           <Stack.Screen name="notifications" options={{ headerShown: false }} />

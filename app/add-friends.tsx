@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   backButtonDark: {
-    backgroundColor: 'transparent', // Remove background color in dark mode
+    backgroundColor: 'transparent', 
   },
   placeholder: {
     width: 44,

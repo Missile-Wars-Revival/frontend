@@ -235,6 +235,7 @@ const darkStyles = StyleSheet.create({
     borderRadius: 20,
     paddingLeft: 45,
     fontSize: 16,
+    color: '#FFF',
   },
   registerButtonDark: {
     backgroundColor: '#4CAF50',

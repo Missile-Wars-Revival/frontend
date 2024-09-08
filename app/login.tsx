@@ -382,6 +382,7 @@ const darkStyles = StyleSheet.create({
       height: height * 0.06,
       borderRadius: 20,
       paddingLeft: 45,
+      color: '#FFF',
   },
   forgotTextDark: {
     color: '#4CAF50',

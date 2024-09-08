@@ -49,12 +49,24 @@ const NotificationsPage: React.FC = () => {
 	const isDarkMode = colorScheme === 'dark';
 
 	useEffect(() => {
-		const checkAliveStatus = async () => {
+		const initializeApp = async () => {
+		  try {
 			const isAliveStatusString = await AsyncStorage.getItem('isAlive');
-			setIsAlive(isAliveStatusString === 'true');
+			if (isAliveStatusString) {
+			  const isAliveStatus = JSON.parse(isAliveStatusString);
+	
+			  setIsAlive(isAliveStatus.isAlive);
+			} else {
+				setIsAlive(true); // Default to true if no status is found
+			}
+		  } catch (error) {
+			console.error('Error initializing app:', error);
+		  }
 		};
-		checkAliveStatus();
-	}, []);
+
+		initializeApp();
+
+	  }, []);
 
 	const handleAccept = useCallback(async (item: Notification) => {
 		console.log('Accept friend request:', item);
@@ -121,7 +133,8 @@ const NotificationsPage: React.FC = () => {
 				style={[
 					styles.notificationItem,
 					!item.isRead && styles.unreadNotification,
-					isDarkMode && styles.notificationItemDark
+					isDarkMode && styles.notificationItemDark,
+					!item.isRead && isDarkMode && styles.unreadNotificationDark
 				]}
 				onPress={() => markAsRead(item.id)}
 			>
@@ -132,7 +145,7 @@ const NotificationsPage: React.FC = () => {
 						isDarkMode && styles.notificationTitleDark
 					]}>{item.title}</Text>
 					<Text style={[
-						styles.notificationBody,
+						styles.notificationBody, 
 						!item.isRead && styles.unreadText,
 						isDarkMode && styles.notificationBodyDark
 					]}>{item.body}</Text>
@@ -172,7 +185,7 @@ const NotificationsPage: React.FC = () => {
 				)}
 				{item.title === 'Eliminated!' && (
 					<View style={styles.actionButtons}>
-						{!isAlive && (
+						{isAlive && (
 							<TouchableOpacity style={[styles.fireBackButton, isDarkMode && styles.fireBackButtonDark]} onPress={() => handleFireBack(item)}>
 								<Text style={[styles.buttonText, isDarkMode && styles.buttonTextDark]}>Fire Back!</Text>
 							</TouchableOpacity>
@@ -425,6 +438,9 @@ const styles = StyleSheet.create({
 	},
 	unreadNotification: {
 		backgroundColor: '#e6f7ff',
+	},
+	unreadNotificationDark: {
+		backgroundColor: '#1a3d2a', // Dark green for unread notifications in dark mode
 	},
 	unreadText: {
 		fontWeight: 'bold',
