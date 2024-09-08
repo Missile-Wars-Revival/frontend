@@ -46,6 +46,8 @@ const CountdownProvider: React.FC<CountdownProviderProps> = ({ children }) => {
 export default function RootLayout() {
   const queryClient = new QueryClient();
   const [isSplashVisible, setIsSplashVisible] = useState(true);
+  const [lastActiveTime, setLastActiveTime] = useState(Date.now());
+  const BACKGROUND_THRESHOLD = 5 * 60 * 1000; // 5 minutes in milliseconds
   const router = useRouter();
   const pathname = usePathname();
   const { fetchNotifications } = useNotifications();
@@ -66,12 +68,20 @@ export default function RootLayout() {
   const [appState, setAppState] = useState(AppState.currentState);
 
   const handleAppStateChange = useCallback((nextAppState: AppStateStatus) => {
-    if (appState.match(/inactive|background/) && nextAppState === 'active') {
+    const now = Date.now();
+    if (nextAppState === 'active') {
       // App has come to the foreground
+      if (now - lastActiveTime > BACKGROUND_THRESHOLD) {
+        setIsSplashVisible(true); // Show splash screen if inactive for more than threshold
+      }
       fetchNotifications();
+      setLastActiveTime(now);
+    } else if (nextAppState === 'background') {
+      // App is going to the background
+      setLastActiveTime(now);
     }
     setAppState(nextAppState);
-  }, [appState, fetchNotifications]);
+  }, [appState, fetchNotifications, lastActiveTime]);
 
   useEffect(() => {
     configurePurchases();
@@ -125,7 +135,7 @@ function NavBar({ unreadCount }: { unreadCount: number }) {
 
   useEffect(() => {
     //if (pathname === '/league' || pathname === '/settings') {
-    if (pathname === '/league' || pathname === '/settings') {
+    if (pathname === '/settings') {
       setSelectedTab('/profile');
     } else {
       setSelectedTab(pathname);
@@ -159,7 +169,7 @@ function NavBar({ unreadCount }: { unreadCount: number }) {
       {[
         '/', 
         '/store', 
-        '/league', 
+        //'/league', 
         '/friends',
         //'/msg', 
         '/profile'
