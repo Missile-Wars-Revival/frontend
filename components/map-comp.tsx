@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, Switch, Alert, Platform, ActivityIndicator, TouchableOpacity } from "react-native";
+import { View, Text, Switch, Alert, Platform, ActivityIndicator, TouchableOpacity, useColorScheme } from "react-native";
 import MapView, { PROVIDER_DEFAULT, PROVIDER_GOOGLE } from "react-native-maps";
 import { AllLootDrops } from "./Loot/map-loot";
 import { AllLandMines } from "./Landmine/map-landmines";
@@ -10,7 +10,7 @@ import { getLocationPermission, getlocation } from "../util/locationreq";
 import { dispatch } from "../api/dispatch";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCurrentLocation } from "../util/locationreq";
-import { mainmapstyles } from "../map-themes/map-stylesheet";
+import { getMainMapStyles } from "../map-themes/map-stylesheet";
 import { DefRegLocationTask } from "../util/backgroundtasks";
 import * as SecureStore from "expo-secure-store";
 import { updateFriendsOnlyStatus } from "../api/visibility";
@@ -36,6 +36,10 @@ export const MapComp = (props: MapCompProps) => {
     const [isAlive, setisAlive] = useState<boolean>(true);
     const [firstLoad, setFirstLoad] = useState<boolean>();
     const [visibilitymode, setMode] = useState<'friends' | 'global'>('global');
+
+    const colorScheme = useColorScheme();
+    const isDarkMode = colorScheme === 'dark';
+    const mainmapstyles = getMainMapStyles(isDarkMode);
 
     const [region, setRegion] = useState({
         latitude: 0,

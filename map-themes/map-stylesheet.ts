@@ -43,7 +43,9 @@ export const mapstyles = StyleSheet.create({
         color: 'white',
     },
 });
-export const mainmapstyles = StyleSheet.create({
+
+
+const createStyles = (isDarkMode: boolean) => StyleSheet.create({
     container: {
         flex: 1,
     },
@@ -54,8 +56,8 @@ export const mainmapstyles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#FFF' // You can adjust the background color as needed
-    },
+        backgroundColor: isDarkMode ? '#121212' : '#FFF'
+      },
     overlay: {
         position: 'absolute',
         top: 0,
@@ -69,12 +71,12 @@ export const mainmapstyles = StyleSheet.create({
     },
     overlayText: {
         fontSize: 16,
-        color: 'black',
+        color: isDarkMode ? '#E0E0E0' : 'black',
         fontWeight: 'bold',
         marginBottom: 10,
         textAlign: 'center',
         paddingHorizontal: 20,
-    },
+      },
     overlaySubText: {
         fontSize: 12,
         fontWeight: 'bold',
@@ -109,3 +111,5 @@ export const mainmapstyles = StyleSheet.create({
         justifyContent: 'center', 
     },
 });
+
+export const getMainMapStyles = (isDarkMode: boolean) => createStyles(isDarkMode);

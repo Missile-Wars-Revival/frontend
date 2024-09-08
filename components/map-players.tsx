@@ -9,6 +9,7 @@ export interface Players {
   longitude?: number;
   updatedAt: string;
   health: number;
+  transportStatus: string;
 }
 
 export const AllPlayers = () => {
@@ -29,7 +30,8 @@ export const AllPlayers = () => {
 
           return (
             <React.Fragment key={index}>
-              <PlayerComp index={index} player={player} location={location} timestamp={text} health={player.health}></PlayerComp>
+              <PlayerComp index={index} player={player} location={location} timestamp={text} health={player.health} ></PlayerComp> 
+              {/* transportStatus={player.transportStatus} */}
             </React.Fragment>
           );
         })}

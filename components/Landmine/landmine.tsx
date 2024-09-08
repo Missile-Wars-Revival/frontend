@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Modal, View, Button, ScrollView, Text, TouchableOpacity, Image } from 'react-native';
+import { Modal, View, TouchableOpacity, FlatList, Text, Image } from 'react-native';
 import { LandminePlacementPopup } from './landmineplacement';
 import { create } from 'twrnc';
 import { InventoryItem } from '../../types/types';
 import useFetchInventory from '../../hooks/websockets/inventoryhook';
+import { useColorScheme } from 'react-native';
 
 const tw = create(require('../../tailwind.config.js'));
 
@@ -46,24 +47,36 @@ export const LandmineImages: LandmineImages = {
   // ... other landmine images
 };
 
-const LandmineSelector = ({ onSelect, landmines }: { onSelect: (landmine: string) => void, landmines: LandmineType[] }) => (
-  <ScrollView style={tw`flex-1`}>
-    {landmines.map((landmine, index) => (
-      <TouchableOpacity key={index} onPress={() => onSelect(landmine.type)} style={tw`flex-row items-center bg-white p-2 mb-1 rounded-lg shadow`}>
-        <Image source={LandmineImages[landmine.type]} style={tw`w-8 h-8 mr-2`} />
-        <View style={tw`flex-1`}>
-          <Text style={tw`text-sm font-semibold`}>{landmine.type}</Text>
-          <Text style={tw`text-xs text-gray-500`}>Quantity: {landmine.quantity}</Text>
-        </View>
-      </TouchableOpacity>
-    ))}
-  </ScrollView>
-);
+const LandmineSelector = ({ onSelect, landmines }: { onSelect: (landmine: string) => void, landmines: LandmineType[] }) => {
+  const isDarkMode = useColorScheme() === 'dark';
+
+  return (
+    <FlatList
+      data={landmines}
+      keyExtractor={(item, index) => `${item.type}-${index}`}
+      renderItem={({ item: landmine }) => (
+        <TouchableOpacity 
+          onPress={() => onSelect(landmine.type)} 
+          style={tw`flex-row items-center ${isDarkMode ? 'bg-gray-900' : 'bg-white'} p-2 mb-1 rounded-lg shadow`}
+        >
+          <Image source={LandmineImages[landmine.type]} style={tw`w-8 h-8 mr-2`} />
+          <View style={tw`flex-1`}>
+            <Text style={tw`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>{landmine.type}</Text>
+            <Text style={tw`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Quantity: {landmine.quantity}</Text>
+          </View>
+        </TouchableOpacity>
+      )}
+      style={tw`flex-1 ${isDarkMode ? 'bg-black' : 'bg-white'}`}
+      contentContainerStyle={tw`p-2`}
+    />
+  );
+};
 
 export const LandmineLibraryView: React.FC<LandmineLibraryViewProps> = ({ LandmineModalVisible, landminePlaceHandler }) => {
   const landmineLibrary = useLandmineLib();
   const [showplacmentPopup, setShowplacementPopup] = useState<boolean>(false);
   const [selectedLandmine, setSelectedLandmine] = useState<Landmine | null>(null);
+  const isDarkMode = useColorScheme() === 'dark';
 
   const handleLandmineClick = (landmineType: string) => {
     setSelectedLandmine({ type: landmineType });
@@ -91,15 +104,15 @@ export const LandmineLibraryView: React.FC<LandmineLibraryViewProps> = ({ Landmi
       onRequestClose={landminePlaceHandler}
     >
       <View style={tw`flex-1 justify-center items-center bg-black bg-opacity-50`}>
-        <View style={tw`bg-white rounded-lg p-4 w-11/12 ${getModalHeight()} max-h-[90%]`}>
-          <Text style={tw`text-xl font-bold mb-2`}>Select your Landmine:</Text>
+        <View style={tw`${isDarkMode ? 'bg-black' : 'bg-white'} rounded-lg p-4 w-11/12 ${getModalHeight()} max-h-[90%]`}>
+          <Text style={tw`text-xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Select your Landmine:</Text>
           {noItems ? (
-            <Text style={tw`text-center mt-4`}>No items in inventory</Text>
+            <Text style={tw`text-center mt-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>No items in inventory</Text>
           ) : (
             <LandmineSelector onSelect={handleLandmineClick} landmines={landmineLibrary} />
           )}
           <TouchableOpacity
-            style={tw`bg-blue-500 px-6 py-2 rounded-lg mt-4 self-end`}
+            style={tw`bg-red-500 px-6 py-2 rounded-lg mt-4 self-end`}
             onPress={landminePlaceHandler}
           >
             <Text style={tw`text-white font-bold`}>Done</Text>

@@ -1,21 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Modal, Text, View, Button, Dimensions, ActivityIndicator, Alert, Platform, StyleSheet, TouchableOpacity } from 'react-native';
+import { Modal, Text, View, Dimensions, ActivityIndicator, Alert, Platform, StyleSheet, TouchableOpacity } from 'react-native';
 import MapView, { Marker, Circle, PROVIDER_DEFAULT, PROVIDER_GOOGLE } from 'react-native-maps';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { useUserName } from "../../util/fetchusernameglobal";
 import { mapstyles } from '../../map-themes/map-stylesheet';
-import { firemissileloc } from '../../api/fireentities';
+import { placeLoot } from '../../api/fireentities';
 import { useColorScheme } from 'react-native';
 
 const GOOGLE_PLACES_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 
-interface MissilePlacementPopupProps {
+interface LootPlacementPopupProps {
   visible: boolean;
   onClose: () => void;
-  selectedMissile: string;
-  onMissileFired: () => void;
+  selectedLoot: { type: string };
+  onLootPlaced: () => void;
 }
 
 interface Region {
@@ -25,26 +25,25 @@ interface Region {
   longitudeDelta: number;
 }
 
-export const MissilePlacementPopup: React.FC<MissilePlacementPopupProps> = ({ visible, onClose, selectedMissile, onMissileFired }) => {
+export const LootPlacementPopup: React.FC<LootPlacementPopupProps> = ({ visible, onClose, selectedLoot, onLootPlaced }) => {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
 
   const [region, setRegion] = useState<Region | null>(null);
-  const [marker, setMarker] = useState<Region | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [currentLocation, setCurrentLocation] = useState<Region | null>(null);
   const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(true);
   const [hasDbConnection, setDbConnection] = useState<boolean>(false);
   const [isAlive, setisAlive] = useState<boolean>(true);
+  const [marker, setMarker] = useState<Region | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [currentLocation, setCurrentLocation] = useState<Region | null>(null);
   const userName = useUserName();
   const mapRef = useRef<MapView>(null);
 
-  // Function to handle location permission and fetch current location
   async function initializeLocation() {
     let { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission Denied', 'Location permission is required.');
-      setIsLocationEnabled(false)
+      setIsLocationEnabled(false);
       setLoading(false);
       return;
     }
@@ -53,16 +52,15 @@ export const MissilePlacementPopup: React.FC<MissilePlacementPopupProps> = ({ vi
     const initialRegion = {
       latitude: location.coords.latitude,
       longitude: location.coords.longitude,
-      latitudeDelta: 0.003, // Smaller value for increased zoom
-      longitudeDelta: 0.003 // Smaller value for increased zoom
+      latitudeDelta: 0.002,
+      longitudeDelta: 0.002
     };
     setRegion(initialRegion);
-    setMarker(initialRegion); // Set initial marker position to current location
+    setMarker(initialRegion);
     setCurrentLocation(initialRegion);
     setLoading(false);
   }
 
-  // Load last known location from cache or request current location on modal open
   useEffect(() => {
     if (visible) {
       initializeLocation();
@@ -73,38 +71,24 @@ export const MissilePlacementPopup: React.FC<MissilePlacementPopupProps> = ({ vi
     const initializeApp = async () => {
       try {
         const isDBConnection = await AsyncStorage.getItem('dbconnection');
-        if (isDBConnection === "false") {
-          setDbConnection(false)
-        }
-        if (isDBConnection === "true") {
-          setDbConnection(true)
-        } else {
-          setDbConnection(false);
-        }
-      } catch (error) {
-        console.error('Error initializing map:', error);
-      }
-      try {
+        setDbConnection(isDBConnection === "true");
+        
         const isAliveStatus = await AsyncStorage.getItem('isAlive');
         if (isAliveStatus !== null) {
-          const isAliveData = JSON.parse(isAliveStatus); // Converts the string to an object
-          if (typeof isAliveData === 'object' && isAliveData.hasOwnProperty('isAlive')) {
-            const isAlive = isAliveData.isAlive; // Extract the boolean value from the object
-            setisAlive(isAlive);
-          } else {
-            setisAlive(false);
-          }
+          const isAliveData = JSON.parse(isAliveStatus);
+          setisAlive(isAliveData.isAlive ?? false);
         } else {
           setisAlive(false);
         }
       } catch (error) {
+        console.error('Error initializing map:', error);
+        setDbConnection(false);
         setisAlive(false);
       }
     };
 
     initializeApp();
-  },
-  );
+  }, []);
 
   if (loading) {
     return (
@@ -113,14 +97,19 @@ export const MissilePlacementPopup: React.FC<MissilePlacementPopupProps> = ({ vi
       </View>
     );
   }
-  const handleMissilePlacement = () => {
-    if (marker && currentLocation && marker.latitude === currentLocation.latitude && marker.longitude === currentLocation.longitude) {
-      Alert.alert('Warning', 'Firing a Missile at your current location is not recommended!');
-    } else if (marker && currentLocation) {
-      console.log(`FIRING Missile: Dest coords: ${marker.latitude}, ${marker.longitude}; sentbyUser: ${userName} Missile Type: ${selectedMissile}, current coords: ${currentLocation.latitude}, ${currentLocation.longitude}`);
-      firemissileloc(marker.latitude.toString(), marker.longitude.toString(), selectedMissile);
-      onMissileFired();
-      onClose();
+
+  const handleLootPlacement = async () => {
+    if (marker && currentLocation) {
+      console.log(`PLACING Loot: Dest coords: ${marker.latitude}, ${marker.longitude}; sentbyUser: ${userName} Loot Type: ${selectedLoot.type}, current coords: ${currentLocation.latitude}, ${currentLocation.longitude}`);
+      try {
+        await placeLoot(marker.latitude.toString(), marker.longitude.toString());
+        console.log("Loot placed successfully");
+        onLootPlaced();
+        onClose();
+      } catch (error) {
+        console.error("Error placing loot:", error);
+        Alert.alert('Error', 'Failed to place loot. Please try again.');
+      }
     }
   };
 
@@ -129,8 +118,8 @@ export const MissilePlacementPopup: React.FC<MissilePlacementPopupProps> = ({ vi
       const newRegion = {
         latitude: details.geometry.location.lat,
         longitude: details.geometry.location.lng,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
+        latitudeDelta: 0.002,
+        longitudeDelta: 0.002,
       };
       setRegion(newRegion);
       setMarker(newRegion);
@@ -213,39 +202,36 @@ export const MissilePlacementPopup: React.FC<MissilePlacementPopupProps> = ({ vi
           <MapView
             ref={mapRef}
             style={styles.map}
-            initialRegion={region ?? {
-              latitude: 0,
-              longitude: 0,
-              latitudeDelta: 0.01,
-              longitudeDelta: 0.01
-            }}
-            showsUserLocation={true}
+            initialRegion={region ?? undefined}
             provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
+            showsUserLocation={true}
             showsMyLocationButton={true}
             onPress={(e) => setMarker({
               latitude: e.nativeEvent.coordinate.latitude,
               longitude: e.nativeEvent.coordinate.longitude,
-              latitudeDelta: 0.01,
-              longitudeDelta: 0.01
+              latitudeDelta: 0.001,
+              longitudeDelta: 0.001
             })}
           >
             {marker && (
               <Circle
                 center={marker}
-                radius={40}
-                fillColor="rgba(255, 0, 0, 0.2)"
-                strokeColor="rgba(255, 0, 0, 0.8)"
+                radius={20}
+                fillColor="rgba(0, 0, 255, 0.2)"
+                strokeColor="rgba(0, 0, 255, 0.8)"
               />
             )}
-            <Marker
-              coordinate={marker || { latitude: 0, longitude: 0 }}
-              draggable
-              onDragEnd={(e) => setMarker({
-                ...e.nativeEvent.coordinate,
-                latitudeDelta: 0.01,
-                longitudeDelta: 0.01
-              })}
-            />
+            {marker && (
+              <Marker
+                coordinate={marker}
+                draggable
+                onDragEnd={(e) => setMarker(prevMarker => ({
+                  ...e.nativeEvent.coordinate,
+                  latitudeDelta: prevMarker?.latitudeDelta || 0.001,
+                  longitudeDelta: prevMarker?.longitudeDelta || 0.001
+                }))}
+              />
+            )}
           </MapView>
           {(!isLocationEnabled || !hasDbConnection) && (
             <View style={[styles.overlay, isDarkMode && styles.overlayDark]}>
@@ -263,8 +249,8 @@ export const MissilePlacementPopup: React.FC<MissilePlacementPopupProps> = ({ vi
             <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={onClose}>
               <Text style={styles.buttonText}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.button, styles.fireButton]} onPress={handleMissilePlacement}>
-              <Text style={styles.buttonText}>Fire</Text>
+            <TouchableOpacity style={[styles.button, styles.placeButton]} onPress={handleLootPlacement}>
+              <Text style={styles.buttonText}>Place</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -338,7 +324,7 @@ const styles = StyleSheet.create({
   cancelButton: {
     backgroundColor: '#e53e3e',
   },
-  fireButton: {
+  placeButton: {
     backgroundColor: '#4CAF50',
   },
   buttonText: {

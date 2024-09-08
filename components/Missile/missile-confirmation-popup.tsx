@@ -1,6 +1,10 @@
-import { Dimensions, Modal, Button, StyleSheet, View, Text, TouchableOpacity } from "react-native";
+import { Dimensions, Modal, StyleSheet, View, Text, TouchableOpacity, Image } from "react-native";
 import React from "react";
 import { MissilefireposLibrary } from "./missile";
+import { useColorScheme } from 'react-native';
+import { create } from 'twrnc';
+
+const tw = create(require('../../tailwind.config.js'));
 
 interface MissileFireProps {
   MissilefireposModalVisible: boolean;
@@ -13,46 +17,9 @@ interface MissileLibView {
   selectedPlayerUsername: string;
 }
 
-const styles = StyleSheet.create({
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    width: Dimensions.get('window').width - 40,
-    maxHeight: Dimensions.get('window').height - 200,
-    padding: 20,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: 20,
-  },
-  button: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-    marginLeft: 10,
-  },
-  buttonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-});
-
 export const MissileLibraryView = (props: MissileLibView) => {
+  const isDarkMode = useColorScheme() === 'dark';
+
   return (
     <Modal
       animationType="slide"
@@ -60,17 +27,15 @@ export const MissileLibraryView = (props: MissileLibView) => {
       visible={props.MissileModalVisible}
       onRequestClose={props.MissileModalHandler}
     >
-      <View style={styles.modalContainer}>
-        <View style={styles.modalContent}>
+      <View style={tw`flex-1 justify-center items-center bg-black bg-opacity-50`}>
+        <View style={tw`${isDarkMode ? 'bg-black' : 'bg-white'} rounded-lg p-4 w-11/12 h-[90%]`}>
           <MissilefireposLibrary onClose={props.MissileModalHandler} />
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              style={[styles.button, { backgroundColor: '#4A5568' }]}
-              onPress={props.MissileModalHandler}
-            >
-              <Text style={styles.buttonText}>Done</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={tw`bg-red-500 px-6 py-2 rounded-lg mt-4 self-end`}
+            onPress={props.MissileModalHandler}
+          >
+            <Text style={tw`text-white font-bold`}>Done</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </Modal>
@@ -78,6 +43,8 @@ export const MissileLibraryView = (props: MissileLibView) => {
 }
 
 export const MissileFireConfirmationPopup = (props: MissileFireProps) => {
+  const isDarkMode = useColorScheme() === 'dark';
+
   return (
     <Modal
       animationType="slide"
@@ -85,9 +52,15 @@ export const MissileFireConfirmationPopup = (props: MissileFireProps) => {
       visible={props.MissilefireposModalVisible}
       onRequestClose={props.exitHandler}
     >
-      <View style={styles.modalContainer}>
-        <View style={styles.modalContent}>
+      <View style={tw`flex-1 justify-center items-center bg-black bg-opacity-50`}>
+        <View style={tw`${isDarkMode ? 'bg-black' : 'bg-white'} rounded-lg p-4 w-11/12 h-[90%]`}>
           <MissilefireposLibrary onClose={props.exitHandler} />
+          <TouchableOpacity
+            style={tw`bg-red-500 px-6 py-2 rounded-lg mt-4 self-end`}
+            onPress={props.exitHandler}
+          >
+            <Text style={tw`text-white font-bold`}>Done</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </Modal>

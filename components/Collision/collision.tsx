@@ -267,31 +267,31 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                 return;
             }
         
-            const applyDamage = async () => {
-                startCountdown();  // Start countdown right before applying damage
-                setTimeout(async () => {  // Wait 30 seconds before applying damage
-                    //healthNumber -= missileDamage;
-                    await AsyncStorage.setItem('health', healthNumber.toString());
-                    //removeHealth(token, missileDamage) //remove db health
+            // const applyDamage = async () => {
+            //     startCountdown();  // Start countdown right before applying damage
+            //     setTimeout(async () => {  // Wait 30 seconds before applying damage
+            //         //healthNumber -= missileDamage;
+            //         await AsyncStorage.setItem('health', healthNumber.toString());
+            //         //removeHealth(token, missileDamage) //remove db health
         
-                    if (healthNumber <= 0) {
-                        stopCountdown();
-                        //Alert.alert("Dead", `You have been killed by a ${missiletype} missile sent by user: ${sentBy}`);
-                        console.log('User health has reached zero or below.');
-                        await AsyncStorage.setItem(`isAlive`, `false`)
-                        updateisAlive(token, false);
-                        //initreward("missile", missiletype, sentBy)
-                        await AsyncStorage.setItem('health', '0'); // Set health to zero in storage
-                        setHealth(token, 0) //set health 0 in DB
-                    } else {
-                        console.log(`User Health: ${healthNumber}`); // Only log if user is still alive
-                        Alert.alert("Damaged", `You have taken ${missileDamage} damage`)
-                        setTimeout(applyDamage, 30000); // Schedule next damage application 30 seconds later
-                    }
-                }, 30000);
-            };
-            startCountdown();
-            applyDamage();  // Start the cycle immediately
+            //         if (healthNumber <= 0) {
+            //             stopCountdown();
+            //             //Alert.alert("Dead", `You have been killed by a ${missiletype} missile sent by user: ${sentBy}`);
+            //             console.log('User health has reached zero or below.');
+            //             await AsyncStorage.setItem(`isAlive`, `false`)
+            //             updateisAlive(token, false);
+            //             //initreward("missile", missiletype, sentBy)
+            //             await AsyncStorage.setItem('health', '0'); // Set health to zero in storage
+            //             setHealth(token, 0) //set health 0 in DB
+            //         } else {
+            //             console.log(`User Health: ${healthNumber}`); // Only log if user is still alive
+            //             Alert.alert("Damaged", `You have taken ${missileDamage} damage`)
+            //             setTimeout(applyDamage, 30000); // Schedule next damage application 30 seconds later
+            //         }
+            //     }, 30000);
+            // };
+            // startCountdown();
+            // applyDamage();  // Start the cycle immediately
         }        
 
         landmineData.forEach(landmine => {
@@ -334,26 +334,26 @@ export const ProximityCheckNotif: React.FC<{}> = () => {
                 return;
             }
 
-            async function applyDamage() {
-                if (token === null) {
-                    console.error('Token is null. Cannot proceed with applyDamage.');
-                    return; // Exit the function if token is null
-                }
+            // async function applyDamage() {
+            //     if (token === null) {
+            //         console.error('Token is null. Cannot proceed with applyDamage.');
+            //         return; // Exit the function if token is null
+            //     }
 
-                if (healthNumber <= 0) {
-                    //Alert.alert("Dead", `You have been killed by a Landmine placed by user: ${sentBy}`);
-                    //initreward("landmine", landminetype, sentBy)
-                    //console.log('User health has reached zero or below.');
-                    await AsyncStorage.setItem(`isAlive`, `false`);
-                    updateisAlive(token, false);
-                    await AsyncStorage.setItem('health', '0'); // Set health to zero in storage
-                    setHealth(token, 0); // set health 0 in DB
-                } else {
-                    console.log(`User Health: ${healthNumber}`); // Only log if user is still alive
-                }
-            }
+            //     if (healthNumber <= 0) {
+            //         //Alert.alert("Dead", `You have been killed by a Landmine placed by user: ${sentBy}`);
+            //         //initreward("landmine", landminetype, sentBy)
+            //         //console.log('User health has reached zero or below.');
+            //         await AsyncStorage.setItem(`isAlive`, `false`);
+            //         updateisAlive(token, false);
+            //         await AsyncStorage.setItem('health', '0'); // Set health to zero in storage
+            //         setHealth(token, 0); // set health 0 in DB
+            //     } else {
+            //         console.log(`User Health: ${healthNumber}`); // Only log if user is still alive
+            //     }
+            // }
 
-            applyDamage();  // Execute the function once
+            // applyDamage();  // Execute the function once
         }
 
         }
