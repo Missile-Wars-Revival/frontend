@@ -7,7 +7,6 @@ import { View, Text, TouchableOpacity, StyleSheet, AppStateStatus, AppState } fr
 import { useRouter, usePathname } from 'expo-router';
 import SplashScreen from './splashscreen';
 import { FontAwesome } from '@expo/vector-icons';
-import { ProximityCheckNotif } from "../components/Collision/collision";
 import useWebSocket, { } from "../hooks/websockets/websockets"; 
 import { WebSocketContext, WebSocketProviderProps } from "../util/Context/websocket";
 import { CountdownContext, CountdownProviderProps } from "../util/Context/countdown";
@@ -238,7 +237,6 @@ function NavBar({ unreadCount }: { unreadCount: number }) {
           </Text>
         </TouchableOpacity>
       ))}
-      <ProximityCheckNotif />
     </View>
   );
 }
