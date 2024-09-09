@@ -222,7 +222,6 @@ const StorePage: React.FC = () => {
     }
 
     try {
-      // First, retrieve the product details from RevenueCat
       const offerings = await Purchases.getOfferings();
       if (offerings.current) {
         const storeProduct = offerings.current.availablePackages.find(p => p.product.identifier === product.sku);
@@ -232,7 +231,6 @@ const StorePage: React.FC = () => {
           return { status: 'store_product_not_found' };
         }
 
-        // Handle the purchase with the store product
         const { customerInfo } = await Purchases.purchaseStoreProduct(storeProduct.product);
         if (customerInfo.entitlements.active[product.type]) {
           console.log('Product purchased and entitlement active');
@@ -243,20 +241,19 @@ const StorePage: React.FC = () => {
               if (!isNaN(amount)) {
                 await addmoney(token, amount);
                 console.log(`Added ${amount} coins to user's account.`);
+                return { status: 'success', message: `Added ${amount} coins to your account.` };
               } else {
                 console.log('Invalid coin amount.');
                 return { status: 'invalid_coin_amount' };
               }
-              break;
             case 'Missiles':
               await additem(token, product.name, product.type);
               console.log(`Added a missile (${product.name}) to inventory.`);
-              break;
+              return { status: 'success', message: `Added ${product.name} to your inventory.` };
             default:
               console.log('Unknown product type.');
               return { status: 'unknown_product_type' };
           }
-          return { status: 'success' };
         } else {
           console.log('Entitlement not active');
           return { status: 'entitlement_inactive' };
@@ -266,7 +263,6 @@ const StorePage: React.FC = () => {
         return { status: 'offerings_not_found' };
       }
     } catch (e) {
-      // Properly type-check the error before handling it
       if (e instanceof Error) {
         console.error('RevenueCat purchase error:', e.message);
         if (e.message === "User cancelled") {
@@ -274,7 +270,6 @@ const StorePage: React.FC = () => {
         }
         return { status: 'purchase_error', error: e.message };
       } else {
-        // Handle cases where the error is not an instance of Error
         console.error('An unexpected error occurred');
         return { status: 'unexpected_error', error: 'An unexpected error occurred' };
       }
@@ -295,7 +290,16 @@ const StorePage: React.FC = () => {
   );
 
   const premrenderButton = ({ item }: { item: PremProduct }) => (
-    <TouchableOpacity style={styles.productButton} onPress={() => buyItem(item).then(result => console.log(result))}>
+    <TouchableOpacity 
+      style={styles.productButton} 
+      onPress={() => buyItem(item).then(result => {
+        if (result.status === 'success') {
+          alert(result.message);
+        } else {
+          alert(`Purchase failed: ${result.status}`);
+        }
+      })}
+    >
       <Image source={item.image} style={styles.productImage} />
       <Text style={[styles.productName, isDarkMode && styles.productNameDark]}>{item.name}</Text>
       <Text style={[styles.productPrice, isDarkMode && styles.productPriceDark]}>{item.displayprice}</Text>

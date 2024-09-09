@@ -1,6 +1,6 @@
 import { Stack } from "expo-router";
 import 'react-native-reanimated';
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import { View, Text, TouchableOpacity, StyleSheet, AppStateStatus, AppState } from 'react-native';
@@ -52,14 +52,44 @@ export default function RootLayout() {
 
   const configurePurchases = useCallback(async () => {
     try {
+      console.log('Configuring RevenueCat...');
       Purchases.setDebugLogsEnabled(true);
+      
+      let apiKey;
       if (Platform.OS === 'ios') {
-        await Purchases.configure({ apiKey: process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_APPLE || '' });
+        apiKey = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_APPLE;
+        console.log('Using iOS API Key:', apiKey);
       } else if (Platform.OS === 'android') {
-        await Purchases.configure({ apiKey: process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_GOOGLE || '' });
+        apiKey = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_GOOGLE;
+        console.log('Using Android API Key:', apiKey);
       }
+
+      if (!apiKey) {
+        throw new Error('RevenueCat API key is not set');
+      }
+
+      await Purchases.configure({ apiKey });
+      console.log('RevenueCat configured successfully');
+
+      const customerInfo = await Purchases.getCustomerInfo();
+      //console.log('Customer Info:', customerInfo);
+
     } catch (error) {
       console.error('Failed to initialize Purchases:', error);
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+      }
+    }
+  }, []);
+
+  const isConfigured = useRef(false);
+
+  useEffect(() => {
+    if (!isConfigured.current) {
+      console.log('Calling configurePurchases...');
+      configurePurchases();
+      isConfigured.current = true;
     }
   }, []);
 
@@ -82,7 +112,6 @@ export default function RootLayout() {
   }, [appState, fetchNotifications, lastActiveTime]);
 
   useEffect(() => {
-    configurePurchases();
     const subscription = AppState.addEventListener('change', handleAppStateChange);
 
     return () => {
