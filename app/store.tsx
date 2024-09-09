@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, FlatList, Text, TouchableOpacity, Image, ImageBackground, ImageSourcePropType, SafeAreaView, StyleSheet, useColorScheme, Dimensions, Animated, Modal, ActivityIndicator, Alert } from 'react-native';
+import { View, FlatList, Text, TouchableOpacity, Image, ImageBackground, ImageSourcePropType, SafeAreaView, StyleSheet, useColorScheme, Dimensions, Animated, Modal, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import Cart from '../components/Store/cart';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axiosInstance from '../api/axios-instance';
@@ -8,7 +8,8 @@ import axios from 'axios';
 import Purchases from 'react-native-purchases';
 import { addmoney } from '../api/money';
 import { additem } from '../api/add-item';
-import { getWeaponTypes, PremProduct, Product } from '../api/store';
+import { getWeaponTypes, mapProductType, PremProduct, Product, shopimages } from '../api/store';
+import { getShopStyles } from '../map-themes/stylesheet';
 
 
 export const products: Product[] = [
@@ -16,40 +17,6 @@ export const products: Product[] = [
 ];
 
 const { width, height } = Dimensions.get('window');
-
-// Add this function at the top level of your file
-const mapProductType = (productid: string) => {
-  switch (productid) {
-    case "Amplifier":
-      return "Missiles";
-    case "Ballista":
-      return "Missiles";
-    case "BigBertha":
-      return "Landmine";
-    case "BunkerBlocker":
-      return "Landmine";
-    case "Buzzard":
-      return "Missiles";
-    case "ClusterBomb":
-      return "Missiles";
-    case "CorporateRaider":
-      return "Missiles";
-    case "GutShot":
-      return "Missiles";
-    case "Yokozuna":
-      return "Missiles";
-    case "Zippy":
-      return "Missiles";
-    case "Coins500_":
-      return "Coins";
-    case "Coins1000_":
-      return "Coins";
-    case "Coins2000_":
-      return "Coins";
-    default:
-      return "Other";
-  }
-};
 
 const StorePage: React.FC = () => {
   const [cart, setCart] = useState<{ product: Product; quantity: number }[]>([]);
@@ -66,27 +33,8 @@ const StorePage: React.FC = () => {
   const [isLoadingPremium, setIsLoadingPremium] = useState<boolean>(true);
   const [isPurchasing, setIsPurchasing] = useState<boolean>(false);
 
-  const images: any = {
-    Amplifier: require('../assets/missiles/Amplifier.png'),
-    Ballista: require('../assets/missiles/Ballista.png'),
-    BigBertha: require('../assets/missiles/BigBertha.png'),
-    Bombabom: require('../assets/missiles/Bombabom.png'),
-    BunkerBlocker: require('../assets/missiles/BunkerBlocker.png'),
-    Buzzard: require('../assets/missiles/Buzzard.png'),
-    ClusterBomb: require('../assets/missiles/ClusterBomb.png'),
-    CorporateRaider: require('../assets/missiles/CorporateRaider.png'),
-    GutShot: require('../assets/missiles/GutShot.png'),
-    TheNuke: require('../assets/missiles/TheNuke.png'),
-    Yokozuna: require('../assets/missiles/Yokozuna.png'),
-    Zippy: require('../assets/missiles/Zippy.png'),
-    Coins500_: require('../assets/store/500coins.png'),
-    Coins1000_: require('../assets/store/1000coins.png'),
-    Coins2000_: require('../assets/store/1000coins.png'),
-    default: require('../assets/logo.png'), // Default image if identifier not found
-  };
-
   const getImageForProduct = (identifier: string): ImageSourcePropType => {
-    return images[identifier] || images.default;
+    return shopimages[identifier] || shopimages.default;
   };
 
   useEffect(() => {
@@ -318,7 +266,7 @@ const StorePage: React.FC = () => {
 
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
-  const styles = getStyles(isDarkMode ? 'dark' : 'light');
+  const styles = getShopStyles(isDarkMode ? 'dark' : 'light');
 
   const getCategoryEmoji = (category: string) => {
     switch (category) {
@@ -361,7 +309,7 @@ const StorePage: React.FC = () => {
     if (!selectedWeapon) return null;
 
     return (
-      <View style={[styles.modalContainer, isDarkMode && styles.modalContainerDark]}>
+      <ScrollView style={[styles.modalContainer, isDarkMode && styles.modalContainerDark]}>
         <View style={styles.modalHeader}>
           <Image source={selectedWeapon.image} style={styles.modalImage} />
           <View style={styles.modalTitleContainer}>
@@ -377,15 +325,23 @@ const StorePage: React.FC = () => {
                 <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>Speed: {selectedWeapon.speed} m/s</Text>
                 <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>Radius: {selectedWeapon.radius} m</Text>
                 <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>Fallout: {selectedWeapon.fallout} mins</Text>
+                <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>Damage: {selectedWeapon.damage} per 30 seconds</Text>
               </>
             )}
             {selectedWeapon.type === 'Landmines' && (
+              <>
               <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>Duration: {selectedWeapon.duration} mins</Text>
+              <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>Damage: {selectedWeapon.damage}</Text>
+              </>
             )}
-            <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>Damage: {selectedWeapon.damage} per 30 seconds</Text>
+            {selectedWeapon.type === 'Loot Drops' && (
+              <>
+               <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>Just a Pesky Loot Drop!</Text>
+              </>
+            )}
           </View>
         </View>
-      </View>
+      </ScrollView>
     );
   };
 
@@ -704,238 +660,5 @@ const StorePage: React.FC = () => {
     </SafeAreaView>
   );
 }
-
-const getStyles = (colorScheme: 'light' | 'dark') => StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  containerDark: {
-    flex: 1,
-    backgroundColor: '#1E1E1E',
-  },
-  backgroundImage: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
-  },
-  titleImage: {
-    width: width * 0.8,
-    height: height * 0.1,
-    resizeMode: 'contain',
-    alignSelf: 'center',
-    marginTop: height * 0.02,
-  },
-  shopImage: {
-    width: width * 0.7,
-    height: height * 0.08,
-    resizeMode: 'stretch',
-    alignSelf: 'center',
-    marginTop: -25,
-  },
-  headerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 10,
-    marginTop: -15,
-    backgroundColor: `transparent`,
-  },
-  currencyContainer: {
-    backgroundColor: colorScheme === 'dark' ? '#3D3D3D' : '#fff',
-    borderRadius: 20,
-    padding: 10,
-  },
-  currencyText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colorScheme === 'dark' ? '#FFF' : '#000',
-  },
-  currencyTextDark: {
-    color: '#FFF',
-  },
-  switchContainer: {
-    // Add any specific styles for the switch container if needed
-  },
-  toggleButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-  },
-  coinsButton: {
-    backgroundColor: '#ffd700',
-  },
-  premiumButton: {
-    backgroundColor: '#4a5568',
-  },
-  toggleButtonText: {
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  tabContainerMissiles: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginVertical: 10,
-  },
-  tabMissiles: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    backgroundColor: colorScheme === 'dark' ? '#3D3D3D' : '#fff',
-  },
-  selectedTab: {
-    backgroundColor: colorScheme === 'dark' ? '#4CAF50' : '#e0e0e0',
-  },
-  missileTabText: {
-    fontWeight: 'bold',
-    color: colorScheme === 'dark' ? '#FFF' : '#000',
-  },
-  selectedTabText: {
-    color: colorScheme === 'dark' ? '#FFF' : '#000',
-  },
-  columnWrapper: {
-    justifyContent: 'space-around',
-  },
-  contentContainer: {
-    paddingBottom: 20,
-  },
-  productButton: {
-    backgroundColor: colorScheme === 'dark' ? '#2C2C2C' : '#fff',
-    borderRadius: 10,
-    padding: 10,
-    alignItems: 'center',
-    margin: 5,
-    width: width * 0.28,
-    height: width * 0.4,
-    justifyContent: 'space-between',
-  },
-  productImage: {
-    width: width * 0.2,
-    height: width * 0.2,
-    resizeMode: 'contain',
-  },
-  productName: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginTop: 5,
-    color: colorScheme === 'dark' ? '#FFF' : '#000',
-  },
-  productNameDark: {
-    color: '#FFF',
-  },
-  productPrice: {
-    fontSize: 12,
-    color: colorScheme === 'dark' ? '#B0B0B0' : '#666',
-  },
-  productPriceDark: {
-    color: '#B0B0B0',
-  },
-  cartButton: {
-    backgroundColor: '#4CAF50',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-    alignSelf: 'center',
-    marginTop: 10,
-  },
-  cartButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  cartContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: colorScheme === 'dark' ? '#2C2C2C' : '#f0f2f5',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    maxHeight: height * 0.8,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContainer: {
-    backgroundColor: 'white',
-    borderRadius: 20,
-    width: '90%',
-    maxHeight: '80%',
-    overflow: 'hidden',
-  },
-  modalContainerDark: {
-    backgroundColor: '#2C2C2C',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: colorScheme === 'dark' ? '#444' : '#e0e0e0',
-  },
-  modalImage: {
-    width: 80,
-    height: 80,
-    marginRight: 15,
-  },
-  modalTitleContainer: {
-    flex: 1,
-  },
-  modalTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#000',
-    marginBottom: 5,
-  },
-  modalTitleDark: {
-    color: '#FFF',
-  },
-  modalPrice: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#4CAF50',
-  },
-  modalPriceDark: {
-    color: '#81C784',
-  },
-  modalContent: {
-    padding: 20,
-  },
-  modalDescription: {
-    fontSize: 16,
-    color: '#333',
-    marginBottom: 15,
-  },
-  modalDescriptionDark: {
-    color: '#B0B0B0',
-  },
-  modalStatsContainer: {
-    backgroundColor: colorScheme === 'dark' ? '#3D3D3D' : '#f5f5f5',
-    borderRadius: 10,
-    padding: 15,
-  },
-  modalText: {
-    fontSize: 16,
-    marginBottom: 10,
-    color: '#333',
-  },
-  modalTextDark: {
-    color: '#E0E0E0',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: colorScheme === 'dark' ? '#FFF' : '#000',
-  },
-});
 
 export default StorePage;

@@ -10,7 +10,7 @@ import { getLocationPermission, getlocation } from "../util/locationreq";
 import { dispatch } from "../api/dispatch";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCurrentLocation } from "../util/locationreq";
-import { getMainMapStyles } from "../map-themes/map-stylesheet";
+import { getMainMapStyles } from "../map-themes/stylesheet";
 import { DefRegLocationTask } from "../util/backgroundtasks";
 import * as SecureStore from "expo-secure-store";
 import { updateFriendsOnlyStatus } from "../api/visibility";

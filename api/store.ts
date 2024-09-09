@@ -32,6 +32,59 @@ export interface Product {
     sku?: string;
   }
 
+  // Add this function at the top level of your file
+export const mapProductType = (productid: string) => {
+    switch (productid) {
+      case "Amplifier":
+        return "Missiles";
+      case "Ballista":
+        return "Missiles";
+      case "BigBertha":
+        return "Landmine";
+      case "BunkerBlocker":
+        return "Landmine";
+      case "Buzzard":
+        return "Missiles";
+      case "ClusterBomb":
+        return "Missiles";
+      case "CorporateRaider":
+        return "Missiles";
+      case "GutShot":
+        return "Missiles";
+      case "Yokozuna":
+        return "Missiles";
+      case "Zippy":
+        return "Missiles";
+      case "Coins500_":
+        return "Coins";
+      case "Coins1000_":
+        return "Coins";
+      case "Coins2000_":
+        return "Coins";
+      default:
+        return "Other";
+    }
+  };
+
+  export const shopimages: any = {
+    Amplifier: require('../assets/missiles/Amplifier.png'),
+    Ballista: require('../assets/missiles/Ballista.png'),
+    BigBertha: require('../assets/missiles/BigBertha.png'),
+    Bombabom: require('../assets/missiles/Bombabom.png'),
+    BunkerBlocker: require('../assets/missiles/BunkerBlocker.png'),
+    Buzzard: require('../assets/missiles/Buzzard.png'),
+    ClusterBomb: require('../assets/missiles/ClusterBomb.png'),
+    CorporateRaider: require('../assets/missiles/CorporateRaider.png'),
+    GutShot: require('../assets/missiles/GutShot.png'),
+    TheNuke: require('../assets/missiles/TheNuke.png'),
+    Yokozuna: require('../assets/missiles/Yokozuna.png'),
+    Zippy: require('../assets/missiles/Zippy.png'),
+    Coins500_: require('../assets/store/500coins.png'),
+    Coins1000_: require('../assets/store/1000coins.png'),
+    Coins2000_: require('../assets/store/1000coins.png'),
+    default: require('../assets/logo.png'), // Default image if identifier not found
+  };
+
 export async function getWeaponTypes(): Promise<WeaponTypesResponse> {
   try {
     const token = await SecureStore.getItemAsync("token");

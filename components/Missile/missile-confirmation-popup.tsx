@@ -28,7 +28,7 @@ export const MissileLibraryView = (props: MissileLibView) => {
       onRequestClose={props.MissileModalHandler}
     >
       <View style={tw`flex-1 justify-center items-center bg-black bg-opacity-50`}>
-        <View style={tw`${isDarkMode ? 'bg-black' : 'bg-white'} rounded-lg p-4 w-11/12 h-[90%]`}>
+        <View style={tw`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg p-4 w-11/12 h-[90%]`}>
           <MissilefireposLibrary onClose={props.MissileModalHandler} />
           <TouchableOpacity
             style={tw`bg-red-500 px-6 py-2 rounded-lg mt-4 self-end`}
@@ -53,7 +53,7 @@ export const MissileFireConfirmationPopup = (props: MissileFireProps) => {
       onRequestClose={props.exitHandler}
     >
       <View style={tw`flex-1 justify-center items-center bg-black bg-opacity-50`}>
-        <View style={tw`${isDarkMode ? 'bg-black' : 'bg-white'} rounded-lg p-4 w-11/12 h-[90%]`}>
+      <View style={tw`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg p-4 w-11/12 h-[90%]`}>
           <MissilefireposLibrary onClose={props.exitHandler} />
           <TouchableOpacity
             style={tw`bg-red-500 px-6 py-2 rounded-lg mt-4 self-end`}

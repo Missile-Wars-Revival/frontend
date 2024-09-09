@@ -5,7 +5,7 @@ import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplet
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { useUserName } from "../../util/fetchusernameglobal";
-import { mapstyles } from '../../map-themes/map-stylesheet';
+import { mapstyles } from '../../map-themes/stylesheet';
 import { firemissileloc } from '../../api/fireentities';
 import { useColorScheme } from 'react-native';
 
