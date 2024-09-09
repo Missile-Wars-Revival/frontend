@@ -205,7 +205,7 @@ const NotificationsPage: React.FC = () => {
 						</TouchableOpacity>
 					</View>
 				)}
-				{['Missile Alert!', 'Missile Impact Alert!', 'Landmine Nearby!', 'Loot Nearby!', 'Loot Within Reach!', 'Kill Reward', `Damaged!`].includes(item.title) && (
+				{['Missile Alert!', 'Missile Impact Alert!', 'Landmine Nearby!', 'Loot Nearby!', 'Loot Collected!', 'Loot Within Reach!', 'Kill Reward', `Damaged!`].includes(item.title) && (
 					<View style={styles.actionButtons}>
 						<TouchableOpacity style={[styles.dismissButton, isDarkMode && styles.dismissButtonDark]} onPress={() => dismissNotification(item)}>
 							<Text style={[styles.buttonText, isDarkMode && styles.dismissTextDark]}>Dismiss</Text>
