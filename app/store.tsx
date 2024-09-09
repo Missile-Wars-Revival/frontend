@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, FlatList, Text, TouchableOpacity, Image, ImageBackground, ImageSourcePropType, SafeAreaView, StyleSheet, useColorScheme, Dimensions, Animated } from 'react-native';
+import { View, FlatList, Text, TouchableOpacity, Image, ImageBackground, ImageSourcePropType, SafeAreaView, StyleSheet, useColorScheme, Dimensions, Animated, Modal, ActivityIndicator, Alert } from 'react-native';
 import Cart from '../components/Store/cart';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axiosInstance from '../api/axios-instance';
@@ -8,45 +8,48 @@ import axios from 'axios';
 import Purchases from 'react-native-purchases';
 import { addmoney } from '../api/money';
 import { additem } from '../api/add-item';
+import { getWeaponTypes, PremProduct, Product } from '../api/store';
 
-export interface Product {
-  id: string;
-  name: string;
-  type: string;
-  price: number;
-  image: any;
-  description: string;
-  sku?: string;
-}
-
-export interface PremProduct {
-  id: string;
-  name: string;
-  type: string;
-  price: number;
-  displayprice: string;
-  image: any;
-  description: string;
-  sku?: string;
-}
 
 export const products: Product[] = [
-  { id: "1", name: 'Amplifier', price: 250, image: require('../assets/missiles/Amplifier.png'), description: 'High impact missile', sku: "Amplifier", type: 'Missiles' },
-  { id: "2", name: 'Ballista', price: 500, image: require('../assets/missiles/Ballista.png'), description: 'Long-range missile', sku: "Ballista", type: 'Missiles' },
-  { id: "3", name: 'BigBertha', price: 500, image: require('../assets/missiles/BigBertha.png'), description: 'Large warhead missile', sku: "Big Bertha", type: 'Landmines' },
-  { id: "4", name: 'Bombabom', price: 400, image: require('../assets/missiles/Bombabom.png'), description: 'Cluster bomb missile', sku: "Bombabom", type: 'Landmines' },
-  { id: "4", name: 'BunkerBlocker', price: 2000, image: require('../assets/missiles/BunkerBlocker.png'), description: 'Bunker Blocker', sku: "BunkerBlocker", type: 'Landmines' },
-  { id: "6", name: 'Buzzard', price: 3000, image: require('../assets/missiles/Buzzard.png'), description: 'Medium-range missile', sku: "Buzzard", type: 'Missiles' },
-  { id: "7", name: 'ClusterBomb', price: 4500, image: require('../assets/missiles/ClusterBomb.png'), description: 'ClusterBomb missile', sku: "ClusterBomb", type: 'Missiles' },
-  { id: "8", name: 'CorporateRaider', price: 2000, image: require('../assets/missiles/CorporateRaider.png'), description: 'CorporateRaider missile', sku: "CorporateRaider", type: 'Missiles' },
-  { id: "9", name: 'GutShot', price: 500, image: require('../assets/missiles/GutShot.png'), description: 'GutShot missile', sku: "GutShot", type: 'Missiles' },
-  { id: "10", name: 'TheNuke', price: 10000, image: require('../assets/missiles/TheNuke.png'), description: 'Nuclear missile', sku: "The_Nuke", type: 'Missiles' },
-  { id: "11", name: 'Yokozuna', price: 3000, image: require('../assets/missiles/Yokozuna.png'), description: 'Yokozuna missile', sku: "Yokozuna", type: 'Missiles' },
-  { id: "13", name: 'Zippy', price: 250, image: require('../assets/missiles/Zippy.png'), description: 'Zippy', sku: "Zippy", type: 'Missiles' },
-  { id: "20", name: 'LootDrop', price: 400, image: require('../assets/mapassets/Airdropicon.png'), description: 'A Loot Drop', sku: "Loot Drop", type: 'Loot Drops' },
+  { id: "20", name: 'LootDrop', price: 400, image: require('../assets/mapassets/Airdropicon.png'), description: 'A Loot Drop', type: 'Loot Drops' },
 ];
 
 const { width, height } = Dimensions.get('window');
+
+// Add this function at the top level of your file
+const mapProductType = (productid: string) => {
+  switch (productid) {
+    case "Amplifier":
+      return "Missiles";
+    case "Ballista":
+      return "Missiles";
+    case "BigBertha":
+      return "Landmine";
+    case "BunkerBlocker":
+      return "Landmine";
+    case "Buzzard":
+      return "Missiles";
+    case "ClusterBomb":
+      return "Missiles";
+    case "CorporateRaider":
+      return "Missiles";
+    case "GutShot":
+      return "Missiles";
+    case "Yokozuna":
+      return "Missiles";
+    case "Zippy":
+      return "Missiles";
+    case "Coins500_":
+      return "Coins";
+    case "Coins1000_":
+      return "Coins";
+    case "Coins2000_":
+      return "Coins";
+    default:
+      return "Other";
+  }
+};
 
 const StorePage: React.FC = () => {
   const [cart, setCart] = useState<{ product: Product; quantity: number }[]>([]);
@@ -56,40 +59,12 @@ const StorePage: React.FC = () => {
   const [isPremiumStore, setIsPremiumStore] = useState<boolean>(false);
   const [premiumProducts, setPremiumProducts] = useState<PremProduct[]>([]);
   const [cartAnimation] = useState(new Animated.Value(0));
-
-  //match items to category 
-  const mapProductType = (productid: string) => {
-    switch (productid) {
-      case "Amplifier":
-        return "Missiles";
-      case "Ballista":
-        return "Missiles";
-      case "BigBertha":
-        return "Landmine";
-      case "BunkerBlocker":
-        return "Landmine";
-      case "Buzzard":
-        return "Missiles";
-      case "ClusterBomb":
-        return "Missiles";
-      case "CorporateRaider":
-        return "Missiles";
-      case "GutShot":
-        return "Missiles";
-      case "Yokozuna":
-        return "Missiles";
-      case "Zippy":
-        return "Missiles";
-      case "Coins500_":
-        return "Coins";
-      case "Coins1000_":
-        return "Coins";
-      case "Coins2000_":
-        return "Coins";
-      default:
-        return "Other";
-    }
-  };
+  const [weapons, setWeapons] = useState<Product[]>([]);
+  const [selectedWeapon, setSelectedWeapon] = useState<Product | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [animation] = useState(new Animated.Value(0));
+  const [isLoadingPremium, setIsLoadingPremium] = useState<boolean>(true);
+  const [isPurchasing, setIsPurchasing] = useState<boolean>(false);
 
   const images: any = {
     Amplifier: require('../assets/missiles/Amplifier.png'),
@@ -113,9 +88,51 @@ const StorePage: React.FC = () => {
   const getImageForProduct = (identifier: string): ImageSourcePropType => {
     return images[identifier] || images.default;
   };
-// fetch items in store
+
+  useEffect(() => {
+    const fetchWeapons = async () => {
+      try {
+        const response = await getWeaponTypes();
+        const { landmineTypes, missileTypes } = response;
+
+        const mappedLandmines = landmineTypes.map((landmine: any) => ({
+          id: landmine.name,
+          name: landmine.name,
+          type: 'Landmines',
+          price: landmine.price,
+          image: getImageForProduct(landmine.name),
+          description: landmine.description,
+          damage: landmine.damage,
+          duration: landmine.duration,
+        }));
+
+        const mappedMissiles = missileTypes.map((missile: any) => ({
+          id: missile.name,
+          name: missile.name,
+          type: 'Missiles',
+          price: missile.price,
+          image: getImageForProduct(missile.name),
+          description: missile.description,
+          speed: missile.speed,
+          radius: missile.radius,
+          damage: missile.damage,
+          fallout: missile.fallout,
+        }));
+
+        setWeapons([...mappedMissiles, ...mappedLandmines, ...products]);
+      } catch (error) {
+        console.error('Error fetching weapons:', error);
+        setWeapons([...products]); // Fallback to just the hard-coded products
+      }
+    };
+
+    fetchWeapons();
+  }, []);
+
+  // fetch items in store
   useEffect(() => {
     const fetchProducts = async () => {
+      setIsLoadingPremium(true);
       try {
         const offerings = await Purchases.getOfferings();
         if (offerings.current) {
@@ -130,12 +147,13 @@ const StorePage: React.FC = () => {
             sku: pkg.product.identifier,
           }));
           setPremiumProducts(mappedProducts);
-          //console.log(mappedProducts)
         } else {
           console.log('No offerings available');
         }
       } catch (error) {
         console.error('Failed to fetch offerings:', error);
+      } finally {
+        setIsLoadingPremium(false);
       }
     };
 
@@ -210,14 +228,17 @@ const StorePage: React.FC = () => {
 
   //buys item - SET API TOKENS IN _LAYOUT.TSX
   const buyItem = async (product: PremProduct) => {
+    setIsPurchasing(true);
     const token = await SecureStore.getItemAsync("token");
     if (!token) {
       console.log('Token not found');
+      setIsPurchasing(false);
       return { status: 'token_not_found' };
     }
 
     if (!product.sku) {
       console.log('Product SKU not found');
+      setIsPurchasing(false);
       return { status: 'sku_not_found' };
     }
 
@@ -228,12 +249,21 @@ const StorePage: React.FC = () => {
 
         if (!storeProduct) {
           console.log('Store product not found');
+          setIsPurchasing(false);
           return { status: 'store_product_not_found' };
         }
 
-        const { customerInfo } = await Purchases.purchaseStoreProduct(storeProduct.product);
+        console.log('Attempting to purchase product:', product.name);
+        const { customerInfo, productIdentifier } = await Purchases.purchaseStoreProduct(storeProduct.product);
+        console.log('Purchase completed. Product Identifier:', productIdentifier);
+
+        // Wait for a short time to allow entitlements to update
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        console.log('Checking entitlement for product type:', product.type);
+
         if (customerInfo.entitlements.active[product.type]) {
-          console.log('Product purchased and entitlement active');
+          console.log('Entitlement active for:', product.type);
 
           switch (product.type) {
             case 'Coins':
@@ -241,50 +271,135 @@ const StorePage: React.FC = () => {
               if (!isNaN(amount)) {
                 await addmoney(token, amount);
                 console.log(`Added ${amount} coins to user's account.`);
+                setIsPurchasing(false);
                 return { status: 'success', message: `Added ${amount} coins to your account.` };
               } else {
                 console.log('Invalid coin amount.');
+                setIsPurchasing(false);
                 return { status: 'invalid_coin_amount' };
               }
             case 'Missiles':
               await additem(token, product.name, product.type);
               console.log(`Added a missile (${product.name}) to inventory.`);
+              setIsPurchasing(false);
               return { status: 'success', message: `Added ${product.name} to your inventory.` };
             default:
-              console.log('Unknown product type.');
+              console.log('Unknown product type:', product.type);
+              setIsPurchasing(false);
               return { status: 'unknown_product_type' };
           }
         } else {
-          console.log('Entitlement not active');
+          console.log('Entitlement not active for:', product.type);
+          console.log('Active entitlements:', JSON.stringify(customerInfo.entitlements.active, null, 2));
+          setIsPurchasing(false);
           return { status: 'entitlement_inactive' };
         }
       } else {
         console.log('No offerings available');
+        setIsPurchasing(false);
         return { status: 'offerings_not_found' };
       }
     } catch (e) {
       if (e instanceof Error) {
         console.error('RevenueCat purchase error:', e.message);
         if (e.message === "User cancelled") {
+          setIsPurchasing(false);
           return { status: 'user_cancelled' };
         }
+        setIsPurchasing(false);
         return { status: 'purchase_error', error: e.message };
       } else {
         console.error('An unexpected error occurred');
+        setIsPurchasing(false);
         return { status: 'unexpected_error', error: 'An unexpected error occurred' };
       }
     }
   };
 
-  const filteredProducts = selectedCategory === 'All' ? products : products.filter(p => p.type === selectedCategory);
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
   const styles = getStyles(isDarkMode ? 'dark' : 'light');
 
+  const getCategoryEmoji = (category: string) => {
+    switch (category) {
+      case 'Missiles':
+        return '🚀';
+      case 'Landmines':
+        return '💣';
+      case 'Loot Drops':
+        return '📦';
+      default:
+        return '🎮';
+    }
+  };
+
+  const handlePress = (weapon: Product) => {
+    addToCart(weapon);
+  };
+
+  const handleLongPress = (weapon: Product) => {
+    setSelectedWeapon(weapon);
+    setModalVisible(true);
+    Animated.spring(animation, {
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const closeModal = () => {
+    Animated.timing(animation, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      setModalVisible(false);
+      setSelectedWeapon(null);
+    });
+  };
+
+  const renderWeaponDetails = () => {
+    if (!selectedWeapon) return null;
+
+    return (
+      <View style={[styles.modalContainer, isDarkMode && styles.modalContainerDark]}>
+        <View style={styles.modalHeader}>
+          <Image source={selectedWeapon.image} style={styles.modalImage} />
+          <View style={styles.modalTitleContainer}>
+            <Text style={[styles.modalTitle, isDarkMode && styles.modalTitleDark]}>{selectedWeapon.name}</Text>
+            <Text style={[styles.modalPrice, isDarkMode && styles.modalPriceDark]}>🪙{selectedWeapon.price}</Text>
+          </View>
+        </View>
+        <View style={styles.modalContent}>
+          <Text style={[styles.modalDescription, isDarkMode && styles.modalDescriptionDark]}>{selectedWeapon.description}</Text>
+          <View style={styles.modalStatsContainer}>
+            {selectedWeapon.type === 'Missiles' && (
+              <>
+                <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>Speed: {selectedWeapon.speed} m/s</Text>
+                <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>Radius: {selectedWeapon.radius} m</Text>
+                <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>Fallout: {selectedWeapon.fallout} mins</Text>
+              </>
+            )}
+            {selectedWeapon.type === 'Landmines' && (
+              <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>Duration: {selectedWeapon.duration} mins</Text>
+            )}
+            <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>Damage: {selectedWeapon.damage} per 30 seconds</Text>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
   const renderButton = ({ item }: { item: Product }) => (
-    <TouchableOpacity style={styles.productButton} onPress={() => addToCart(item)}>
+    <TouchableOpacity
+      style={styles.productButton}
+      onPress={() => handlePress(item)}
+      onLongPress={() => handleLongPress(item)}
+      delayLongPress={500}
+    >
       <Image source={item.image} style={styles.productImage} />
-      <Text style={[styles.productName, isDarkMode && styles.productNameDark]}>{item.name}</Text>
+      <Text style={[styles.productName, isDarkMode && styles.productNameDark]}>
+        {getCategoryEmoji(item.type)} {item.name}
+      </Text>
       <Text style={[styles.productPrice, isDarkMode && styles.productPriceDark]}>🪙{item.price}</Text>
     </TouchableOpacity>
   );
@@ -292,17 +407,28 @@ const StorePage: React.FC = () => {
   const premrenderButton = ({ item }: { item: PremProduct }) => (
     <TouchableOpacity 
       style={styles.productButton} 
-      onPress={() => buyItem(item).then(result => {
-        if (result.status === 'success') {
-          alert(result.message);
-        } else {
-          alert(`Purchase failed: ${result.status}`);
+      onPress={() => {
+        if (!isPurchasing) {
+          buyItem(item).then(result => {
+            if (result.status === 'success') {
+              Alert.alert('Success', result.message);
+            } else {
+              Alert.alert('Purchase Failed', `${result.status}. ${result.error || ''}`);
+            }
+          });
         }
-      })}
+      }}
+      disabled={isPurchasing}
     >
-      <Image source={item.image} style={styles.productImage} />
-      <Text style={[styles.productName, isDarkMode && styles.productNameDark]}>{item.name}</Text>
-      <Text style={[styles.productPrice, isDarkMode && styles.productPriceDark]}>{item.displayprice}</Text>
+      {isPurchasing ? (
+        <ActivityIndicator size="small" color="#4CAF50" />
+      ) : (
+        <>
+          <Image source={item.image} style={styles.productImage} />
+          <Text style={[styles.productName, isDarkMode && styles.productNameDark]}>{item.name}</Text>
+          <Text style={[styles.productPrice, isDarkMode && styles.productPriceDark]}>{item.displayprice}</Text>
+        </>
+      )}
     </TouchableOpacity>
   );
 
@@ -371,34 +497,41 @@ const StorePage: React.FC = () => {
           </View>
 
           {!isPremiumStore && (
-            <>
-              {renderTabs()}
-              <View style={styles.container}>
+        <>
+          {renderTabs()}
+          <View style={styles.container}>
+            <FlatList
+              data={selectedCategory === 'All' ? weapons : weapons.filter(p => p.type === selectedCategory)}
+              keyExtractor={(item) => item.id.toString()}
+              renderItem={renderButton}
+              numColumns={3}
+              columnWrapperStyle={styles.columnWrapper}
+              contentContainerStyle={styles.contentContainer}
+            />
+            <TouchableOpacity onPress={showCart} style={styles.cartButton}>
+              <Text style={styles.cartButtonText}>Go to Cart</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
+
+          {isPremiumStore && (
+            <View style={styles.container}>
+              {isLoadingPremium ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color="#4CAF50" />
+                  <Text style={styles.loadingText}>Loading premium products...</Text>
+                </View>
+              ) : (
                 <FlatList
-                  data={filteredProducts}
+                  data={premiumProducts}
                   keyExtractor={(item) => item.id.toString()}
-                  renderItem={renderButton}
+                  renderItem={premrenderButton}
                   numColumns={3}
                   columnWrapperStyle={styles.columnWrapper}
                   contentContainerStyle={styles.contentContainer}
                 />
-                <TouchableOpacity onPress={showCart} style={styles.cartButton}>
-                  <Text style={styles.cartButtonText}>Go to Cart</Text>
-                </TouchableOpacity>
-              </View>
-            </>
-          )}
-
-          {isPremiumStore && (
-            <View style={styles.container}>
-              <FlatList
-                data={premiumProducts}
-                keyExtractor={(item) => item.id.toString()}
-                renderItem={premrenderButton}
-                numColumns={3}
-                columnWrapperStyle={styles.columnWrapper}
-                contentContainerStyle={styles.contentContainer}
-              />
+              )}
             </View>
           )}
 
@@ -420,6 +553,37 @@ const StorePage: React.FC = () => {
               </TouchableOpacity>
             </Animated.View>
           )}
+
+          <Modal
+            visible={modalVisible}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={closeModal}
+          >
+            <TouchableOpacity
+              style={styles.modalOverlay}
+              activeOpacity={1}
+              onPress={closeModal}
+            >
+              <Animated.View
+                style={[
+                  {
+                    transform: [
+                      {
+                        scale: animation.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0.8, 1],
+                        }),
+                      },
+                    ],
+                    opacity: animation,
+                  },
+                ]}
+              >
+                {renderWeaponDetails()}
+              </Animated.View>
+            </TouchableOpacity>
+          </Modal>
         </ImageBackground>
       )}
       {isDarkMode && (
@@ -452,7 +616,7 @@ const StorePage: React.FC = () => {
               {renderTabs()}
               <View style={styles.container}>
                 <FlatList
-                  data={filteredProducts}
+                  data={selectedCategory === 'All' ? weapons : weapons.filter(p => p.type === selectedCategory)}
                   keyExtractor={(item) => item.id.toString()}
                   renderItem={renderButton}
                   numColumns={3}
@@ -468,14 +632,21 @@ const StorePage: React.FC = () => {
 
           {isPremiumStore && (
             <View style={styles.container}>
-              <FlatList
-                data={premiumProducts}
-                keyExtractor={(item) => item.id.toString()}
-                renderItem={premrenderButton}
-                numColumns={3}
-                columnWrapperStyle={styles.columnWrapper}
-                contentContainerStyle={styles.contentContainer}
-              />
+              {isLoadingPremium ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color="#4CAF50" />
+                  <Text style={styles.loadingText}>Loading premium products...</Text>
+                </View>
+              ) : (
+                <FlatList
+                  data={premiumProducts}
+                  keyExtractor={(item) => item.id.toString()}
+                  renderItem={premrenderButton}
+                  numColumns={3}
+                  columnWrapperStyle={styles.columnWrapper}
+                  contentContainerStyle={styles.contentContainer}
+                />
+              )}
             </View>
           )}
 
@@ -497,6 +668,37 @@ const StorePage: React.FC = () => {
               </TouchableOpacity>
             </Animated.View>
           )}
+
+          <Modal
+            visible={modalVisible}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={closeModal}
+          >
+            <TouchableOpacity
+              style={styles.modalOverlay}
+              activeOpacity={1}
+              onPress={closeModal}
+            >
+              <Animated.View
+                style={[
+                  {
+                    transform: [
+                      {
+                        scale: animation.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0.8, 1],
+                        }),
+                      },
+                    ],
+                    opacity: animation,
+                  },
+                ]}
+              >
+                {renderWeaponDetails()}
+              </Animated.View>
+            </TouchableOpacity>
+          </Modal>
         </View>
       )}
     </SafeAreaView>
@@ -603,6 +805,8 @@ const getStyles = (colorScheme: 'light' | 'dark') => StyleSheet.create({
     alignItems: 'center',
     margin: 5,
     width: width * 0.28,
+    height: width * 0.4,
+    justifyContent: 'space-between',
   },
   productImage: {
     width: width * 0.2,
@@ -649,6 +853,88 @@ const getStyles = (colorScheme: 'light' | 'dark') => StyleSheet.create({
     borderTopRightRadius: 20,
     padding: 20,
     maxHeight: height * 0.8,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    backgroundColor: 'white',
+    borderRadius: 20,
+    width: '90%',
+    maxHeight: '80%',
+    overflow: 'hidden',
+  },
+  modalContainerDark: {
+    backgroundColor: '#2C2C2C',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: colorScheme === 'dark' ? '#444' : '#e0e0e0',
+  },
+  modalImage: {
+    width: 80,
+    height: 80,
+    marginRight: 15,
+  },
+  modalTitleContainer: {
+    flex: 1,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#000',
+    marginBottom: 5,
+  },
+  modalTitleDark: {
+    color: '#FFF',
+  },
+  modalPrice: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+  },
+  modalPriceDark: {
+    color: '#81C784',
+  },
+  modalContent: {
+    padding: 20,
+  },
+  modalDescription: {
+    fontSize: 16,
+    color: '#333',
+    marginBottom: 15,
+  },
+  modalDescriptionDark: {
+    color: '#B0B0B0',
+  },
+  modalStatsContainer: {
+    backgroundColor: colorScheme === 'dark' ? '#3D3D3D' : '#f5f5f5',
+    borderRadius: 10,
+    padding: 15,
+  },
+  modalText: {
+    fontSize: 16,
+    marginBottom: 10,
+    color: '#333',
+  },
+  modalTextDark: {
+    color: '#E0E0E0',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: colorScheme === 'dark' ? '#FFF' : '#000',
   },
 });
 
