@@ -74,7 +74,7 @@ const MissileSelector = ({ onSelect, missiles, onClose }: { onSelect: (missile: 
         <TouchableOpacity 
           onPress={() => {
             onClose(); 
-            router.push('/store'); 
+            router.navigate('/store'); 
           }}
           style={tw`bg-blue-500 px-6 py-3 rounded-lg`}
         >

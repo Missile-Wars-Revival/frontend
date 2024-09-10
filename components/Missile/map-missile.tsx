@@ -79,13 +79,17 @@ export const MapMissile = (missileProps: MissileProps) => {
     const resizedmissileicon = { width: 50, height: 50 }; // Custom size for image
 
     // Convert timestamp to a future time in a readable format
-    const { text } = convertimestampfuturemissile(missileProps.etatimetoimpact);
 
     // Determine the description based on the missile status
     let description = `${missileProps.status}`;
     if (missileProps.status === "Incoming") {
+        const { text } = convertimestampfuturemissile(missileProps.etatimetoimpact);
         description += ` ETA: ${text}`;
     }
+    // if (missileProps.status === "Hit") {
+    //     const { text } = convertimestampfuturemissile(missileProps.etatimetoimpact);
+    //     description += ` Fallout: ${text}`;
+    // }
 
     return (
         <View>

@@ -18,6 +18,8 @@ import useFetchMissiles from "../hooks/websockets/missilehook";
 import useFetchLoot from "../hooks/websockets/loothook";
 import useFetchLandmines from "../hooks/websockets/landminehook";
 import { FontAwesome } from '@expo/vector-icons';
+import useFetchOther from "../hooks/websockets/otherhook";
+import { AllOther } from "./Other/map-other";
 
 interface MapCompProps {
     selectedMapStyle: any;
@@ -28,6 +30,7 @@ export const MapComp = (props: MapCompProps) => {
     //WS hooks
     const missileData = useFetchMissiles()
     const lootData = useFetchLoot()
+    const otherData = useFetchOther()
     const LandmineData = useFetchLandmines()
 
     const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(false);
@@ -274,6 +277,7 @@ export const MapComp = (props: MapCompProps) => {
                 showsMyLocationButton={true}
                 customMapStyle={props.selectedMapStyle}>
                 <AllLootDrops lootLocations={lootData} />
+                <AllOther OtherLocations={otherData} />
                 <AllLandMines landminedata={LandmineData} />
                 <AllMissiles missileData={missileData} />
                 <AllPlayers />

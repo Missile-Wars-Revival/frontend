@@ -153,7 +153,7 @@ const QuickAddPage: React.FC = () => {
   };
 
   const navigateToUserProfile = (username: string) => {
-    router.push({
+    router.navigate({
       pathname: "/user-profile",
       params: { username }
     });
@@ -186,7 +186,7 @@ const QuickAddPage: React.FC = () => {
         <View style={[styles.header, isDarkMode && styles.headerDark]}>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => router.push("/friends")}
+            onPress={() => router.navigate("/friends")}
           >
             <Ionicons name="arrow-back" size={24} color={isDarkMode ? "white" : "white"} />
           </TouchableOpacity>

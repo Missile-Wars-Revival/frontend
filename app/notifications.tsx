@@ -168,7 +168,7 @@ const NotificationsPage: React.FC = () => {
 				)}
 				{item.title === 'Friend Accepted' && (
 					<View style={styles.actionButtons}>
-						<TouchableOpacity style={[styles.acceptButton, isDarkMode && styles.acceptButtonDark]} onPress={() => router.push('/friends')}>
+						<TouchableOpacity style={[styles.acceptButton, isDarkMode && styles.acceptButtonDark]} onPress={() => router.navigate('/friends')}>
 							<Text style={[styles.buttonText, isDarkMode && styles.buttonTextDark]}>View Friends</Text>
 						</TouchableOpacity>
 					</View>
@@ -220,7 +220,7 @@ const NotificationsPage: React.FC = () => {
 		<SafeAreaView style={[styles.safeArea, isDarkMode && styles.safeAreaDark]}>
 			<View style={[styles.container, isDarkMode && styles.containerDark]}>
 				<View style={[styles.header, isDarkMode && styles.headerDark]}>
-					<TouchableOpacity onPress={() => router.push('/friends')} style={styles.backButton}>
+					<TouchableOpacity onPress={() => router.navigate('/friends')} style={styles.backButton}>
 						<Ionicons name="arrow-back" size={24} color={isDarkMode ? "white" : "white"} />
 					</TouchableOpacity>
 					<Text style={[styles.headerText, isDarkMode && styles.headerTextDark]}>Notifications</Text>

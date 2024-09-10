@@ -38,7 +38,7 @@ export default function Register() {
       console.log("Registered and logged in with token", token);
       await AsyncStorage.setItem('signedIn', 'true');
       setIsSignedIn(true);
-      router.push('/');
+      router.navigate('/');
     },
     () => {
       setIsError(true);
@@ -141,7 +141,7 @@ export default function Register() {
               resizeMode="stretch"
             />
           )}
-          <TouchableOpacity onPress={() => router.back()} style={[styles.backButton, isDarkMode && styles.backButtonDark]}>
+          <TouchableOpacity onPress={() => router.navigate('/login')} style={[styles.backButton, isDarkMode && styles.backButtonDark]}>
             <Text style={[styles.backButtonText, isDarkMode && styles.backButtonTextDark]}>Back to Login</Text>
           </TouchableOpacity>
         </View>

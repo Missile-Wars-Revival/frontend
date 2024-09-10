@@ -154,3 +154,24 @@ export const initreward = async (itemType: string, type: string, sentby: string)
     throw new Error('Failed to update isAlive mode.');
   }
 };
+
+export const placeOther = async (loclat: string, loclong: string, type: string) => {
+  const token = await SecureStore.getItemAsync("token");
+  try {
+    if (!token) {
+      console.log('Token not found');
+      return;
+    }
+    const response = await axiosInstance.post("/api/placeshield", {
+      token,
+      type,
+      loclat,
+      loclong,
+    });
+    return response.data
+
+  } catch (error) {
+    console.error("Failed to update isAlive status:", error);
+    throw new Error('Failed to update isAlive mode.');
+  }
+};

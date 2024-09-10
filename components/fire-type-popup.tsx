@@ -8,6 +8,7 @@ interface FireTypeProps {
   landmineFireHandler: () => void;
   missileFireHandler: () => void;
   lootrequesthandler: () => void;
+  otherrequesthandler: () => void;
 }
 
 export const FireType = (props: FireTypeProps) => {
@@ -34,6 +35,9 @@ export const FireType = (props: FireTypeProps) => {
         break;
       case "lootdrop":
         props.lootrequesthandler();
+        break;
+      case "other":
+        props.otherrequesthandler();
         break;
       default:
         break;
@@ -109,6 +113,13 @@ export const FireTypeStyle = ({
           >
             <Ionicons name="gift" size={24} color={isDarkMode ? "#FFF" : "#000"} />
             <Text style={[styles.actionText, isDarkMode && styles.actionTextDark]}>Request Loot Drop</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => onSelect("other")}
+            style={[styles.actionButton, isDarkMode && styles.actionButtonDark]}
+          >
+            <Ionicons name="sparkles-outline" size={24} color={isDarkMode ? "#FFF" : "#000"} />
+            <Text style={[styles.actionText, isDarkMode && styles.actionTextDark]}>Place Special Items</Text>
           </TouchableOpacity>
         </View>
       </TouchableOpacity>

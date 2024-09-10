@@ -14,6 +14,8 @@ import { getShopStyles } from '../map-themes/stylesheet';
 
 export const products: Product[] = [
   { id: "20", name: 'LootDrop', price: 400, image: require('../assets/mapassets/Airdropicon.png'), description: 'A Loot Drop', type: 'Loot Drops' },
+  { id: "21", name: 'Shield', price: 2000, image: require('../assets/mapassets/shield.png'), description: 'A Standard Shield', type: 'Other' },
+  { id: "22", name: 'UltraShield', price: 5000, image: require('../assets/mapassets/shield.png'), description: 'A Ultra Shield', type: 'Other' },
 ];
 
 const { width, height } = Dimensions.get('window');
@@ -339,6 +341,16 @@ const StorePage: React.FC = () => {
                <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>Just a Pesky Loot Drop!</Text>
               </>
             )}
+            {selectedWeapon.name === 'Shield' && (
+              <>
+               <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>A shield will defend you against attacks for 1 hour.</Text>
+              </>
+            )}
+            {selectedWeapon.name === 'UltraShield' && (
+              <>
+               <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>AA shield will defend you against attacks for 12 hours.</Text>
+              </>
+            )}
           </View>
         </View>
       </ScrollView>
@@ -390,7 +402,7 @@ const StorePage: React.FC = () => {
 
   const renderTabs = () => (
     <View style={styles.tabContainerMissiles}>
-      {['All', 'Missiles', 'Landmines', 'Loot Drops'].map((category) => (
+      {['All', 'Missiles', 'Landmines', 'Other'].map((category) => (
         <TouchableOpacity 
           key={category} 
           onPress={() => setSelectedCategory(category)} 
@@ -457,7 +469,9 @@ const StorePage: React.FC = () => {
           {renderTabs()}
           <View style={styles.container}>
             <FlatList
-              data={selectedCategory === 'All' ? weapons : weapons.filter(p => p.type === selectedCategory)}
+              data={selectedCategory === 'All' 
+                ? weapons 
+                : weapons.filter(p => p.type === selectedCategory || (selectedCategory === 'Other' && (p.type === 'Other' || p.type === 'Loot Drops')))}
               keyExtractor={(item) => item.id.toString()}
               renderItem={renderButton}
               numColumns={3}
@@ -572,7 +586,7 @@ const StorePage: React.FC = () => {
               {renderTabs()}
               <View style={styles.container}>
                 <FlatList
-                  data={selectedCategory === 'All' ? weapons : weapons.filter(p => p.type === selectedCategory)}
+                  data={selectedCategory === 'All' ? weapons : weapons.filter(p => p.type === selectedCategory || (selectedCategory === 'Other' && (p.type === 'Other' || p.type === 'Loot Drops')))}
                   keyExtractor={(item) => item.id.toString()}
                   renderItem={renderButton}
                   numColumns={3}

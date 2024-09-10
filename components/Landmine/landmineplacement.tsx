@@ -90,14 +90,6 @@ export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ 
     initializeApp();
   }, []);
 
-  if (loading) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
-  }
-
   const handleLandminePlacement = async () => {
     if (marker && currentLocation) {
       console.log(`PLACING Landmine: Dest coords: ${marker.latitude}, ${marker.longitude}; sentbyUser: ${userName} Landmine Type: ${selectedLandmine.type}, current coords: ${currentLocation.latitude}, ${currentLocation.longitude}`);

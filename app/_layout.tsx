@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback, useRef } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import { View, Text, TouchableOpacity, StyleSheet, AppStateStatus, AppState } from 'react-native';
-import { useRouter, usePathname } from 'expo-router';
+import { useRouter, usePathname, useRootNavigationState } from 'expo-router';
 import SplashScreen from './splashscreen';
 import { FontAwesome } from '@expo/vector-icons';
 import useWebSocket, { } from "../hooks/websockets/websockets"; 
@@ -19,10 +19,10 @@ import { useNotifications, notificationEmitter } from "../components/Notificatio
 import { useColorScheme } from 'react-native';
 
 const WebSocketProvider = ({ children }: WebSocketProviderProps) => {
-  const { data, missiledata, landminedata, lootdata, healthdata, friendsdata, inventorydata, playerlocations, sendWebsocket } = useWebSocket();
+  const { data, missiledata, landminedata, lootdata, otherdata, healthdata, friendsdata, inventorydata, playerlocations, sendWebsocket } = useWebSocket();
 
   return (
-    <WebSocketContext.Provider value={{ data, missiledata, landminedata, lootdata, healthdata, friendsdata, inventorydata, playerlocations, sendWebsocket }}>
+    <WebSocketContext.Provider value={{ data, missiledata, landminedata, lootdata, otherdata, healthdata, friendsdata, inventorydata, playerlocations, sendWebsocket }}>
       {children}
     </WebSocketContext.Provider>
   );
@@ -171,7 +171,7 @@ function NavBar({ unreadCount }: { unreadCount: number }) {
   const handlePress = (tab: string) => {
     if (selectedTab !== tab) {
       setSelectedTab(tab);
-      router.push(tab);
+      router.navigate(tab);
     }
   };
 
@@ -241,6 +241,7 @@ function NavBar({ unreadCount }: { unreadCount: number }) {
   );
 }
 
+
 function RootLayoutNav() {
   const pathname = usePathname();
   const hideNavBarRoutes = ['/login', '/register', '/add-friends'];
@@ -248,30 +249,31 @@ function RootLayoutNav() {
   const [unreadCount, setUnreadCount] = useState(0);
   const { unreadCount: initialUnreadCount, fetchNotifications } = useNotifications();
   const colorScheme = useColorScheme();
+  const navigationState = useRootNavigationState();
 
   const backgroundColor = colorScheme === 'dark' ? '#1E1E1E' : '#FFFFFF';
 
   useEffect(() => {
     setUnreadCount(initialUnreadCount);
-
+  
     const handleUnreadCountUpdated = (count: number) => {
       setUnreadCount(count);
     };
-
+  
     notificationEmitter.on('unreadCountUpdated', handleUnreadCountUpdated);
-
+  
     // Set up interval to check for notifications every 30 seconds
     const intervalId = setInterval(() => {
       fetchNotifications();
     }, 30000); // 30 seconds
-
+  
     // Check for notifications when the app comes to the foreground
     const subscription = AppState.addEventListener('change', (nextAppState) => {
       if (nextAppState === 'active') {
         fetchNotifications();
       }
     });
-
+  
     return () => {
       notificationEmitter.off('unreadCountUpdated', handleUnreadCountUpdated);
       clearInterval(intervalId);
@@ -281,14 +283,32 @@ function RootLayoutNav() {
 
   return (
     <SafeAreaProvider>
-    <View style={{ flex: 1, backgroundColor }}>
-        <Stack>
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-          <Stack.Screen name="login" options={{ headerShown: false, gestureEnabled: false, animation: 'slide_from_bottom' }} />
+      <View style={{ flex: 1, backgroundColor }}>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            gestureEnabled: false,
+            animationTypeForReplace: 'push',
+            customAnimationOnGesture: true,
+            gestureDirection: 'horizontal',
+          }}
+        >
+          <Stack.Screen 
+            name="index" 
+            options={{
+              animation: navigationState?.routes[navigationState?.index ?? 0 - 1]?.name === 'store' || 'league' || 'friends' || 'notificaitons' || 'add-friends' || 'profile' || 'user-profile' || 'settings'
+                ? 'slide_from_left' 
+                : 'slide_from_right',
+            }} 
+          />
+          <Stack.Screen 
+            name="login" 
+            options={{ headerShown: false, gestureEnabled: false, animation: 'slide_from_bottom' }} 
+          />
           <Stack.Screen name="register" options={{ headerShown: false, gestureEnabled: true }} />
-          <Stack.Screen name="league" options={{ headerShown: false, gestureEnabled: false }} />
           {/* <Stack.Screen name="msg" options={{ headerShown: false }} /> */}
-          <Stack.Screen name="store" options={{ headerShown: false, gestureEnabled: false }} />
+          <Stack.Screen name="store" options={{ headerShown: false }} />
+          <Stack.Screen name="league" options={{ headerShown: false }} />
           <Stack.Screen name="friends" options={{ headerShown: false }} />
           <Stack.Screen name="notifications" options={{ headerShown: false }} />
           <Stack.Screen name="add-friends" options={{ headerShown: false }} />
@@ -306,7 +326,6 @@ function RootLayoutNav() {
     </SafeAreaProvider>
   );
 }
-
 const styles = StyleSheet.create({
   navBar: {
     width: '100%',

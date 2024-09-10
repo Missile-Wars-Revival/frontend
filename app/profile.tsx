@@ -90,7 +90,7 @@ const ProfilePage: React.FC = () => {
     await clearCredentials();
     await AsyncStorage.setItem('signedIn', 'false');
     setIsSignedIn(false);
-    router.push("/login");
+    router.navigate("/login");
   };
 
   const loadPreference = async () => {
@@ -106,11 +106,11 @@ const ProfilePage: React.FC = () => {
   };
 
   const openSettings = () => {
-    router.push("/settings");
+    router.navigate("/settings");
   };
 
   const navigateToLeagues = () => {
-    router.push("/league");
+    router.navigate("/league");
   };
 
   const loadProfileImage = async () => {
@@ -216,7 +216,7 @@ const ProfilePage: React.FC = () => {
   };
 
   const navigateToUserProfile = (username: string) => {
-    router.push({
+    router.navigate({
       pathname: "/user-profile",
       params: { username }
     });

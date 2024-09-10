@@ -107,7 +107,7 @@ const FriendsPage: React.FC = () => {
   };
 
   const navigateToUserProfile = (username: string) => {
-    router.push({
+    router.navigate({
       pathname: "/user-profile",
       params: { username }
     });
@@ -208,14 +208,14 @@ const FriendsPage: React.FC = () => {
       <View style={[styles.header, isDarkMode && styles.headerDark]}>
         <TouchableOpacity
           style={[styles.addButton, isDarkMode && styles.addButtonDark]}
-          onPress={() => router.push("/add-friends")}
+          onPress={() => router.navigate("/add-friends")}
         >
           <Text style={styles.addButtonText}>+</Text>
         </TouchableOpacity>
         <Text style={[styles.headerText, isDarkMode && styles.headerTextDark]}>Friends</Text>
         <TouchableOpacity
           style={[styles.notificationButton, isDarkMode && styles.notificationButtonDark]}
-          onPress={() => router.push("/notifications")}
+          onPress={() => router.navigate("/notifications")}
         >
           <Text style={styles.notificationButtonText}>🔔</Text>
           {localUnreadCount > 0 && (

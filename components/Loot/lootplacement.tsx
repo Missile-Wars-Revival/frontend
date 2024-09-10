@@ -90,14 +90,6 @@ export const LootPlacementPopup: React.FC<LootPlacementPopupProps> = ({ visible,
     initializeApp();
   }, []);
 
-  if (loading) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
-  }
-
   const handleLootPlacement = async () => {
     if (marker && currentLocation) {
       console.log(`PLACING Loot: Dest coords: ${marker.latitude}, ${marker.longitude}; sentbyUser: ${userName} Loot Type: ${selectedLoot.type}, current coords: ${currentLocation.latitude}, ${currentLocation.longitude}`);

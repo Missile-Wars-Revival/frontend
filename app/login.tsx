@@ -143,7 +143,7 @@ function LoginButton({
       console.log("Logged in with token", token);
       await AsyncStorage.setItem('signedIn', 'true');
       setIsSignedIn(true);
-      router.push('/');
+      router.navigate('/');
     },
     () => {
       setIsError(true);

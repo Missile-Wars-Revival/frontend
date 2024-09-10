@@ -192,7 +192,7 @@
 // };
 
 import React, { useState, useEffect } from "react";
-import { Button, View, Image, Text, Modal, Dimensions, StyleSheet } from "react-native";
+import { Button, View, Image, Text, Modal, Dimensions, StyleSheet, TouchableOpacity, useColorScheme } from "react-native";
 import { Circle, Marker } from "react-native-maps";
 import { MissileLibrary } from "./Missile/missile";
 import { Players } from "./map-players";
@@ -205,13 +205,13 @@ const styles = StyleSheet.create({
   profileImage: {
     width: 36,
     height: 36,
-    borderRadius: 18, // Half of width/height to make it circular
-    overflow: 'hidden', // Ensures the image doesn't spill outside the rounded borders
+    borderRadius: 18,
+    overflow: 'hidden',
   },
   username: {
     color: 'grey',
     marginTop: 2,
-    fontSize: 12, // Adjust as needed
+    fontSize: 12,
   },
   healthBarContainer: {
     width: 36,
@@ -223,6 +223,58 @@ const styles = StyleSheet.create({
   healthBar: {
     height: '100%',
     borderRadius: 2,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalOverlayDark: {
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 10,
+    width: Dimensions.get('window').width - 40,
+    maxHeight: Dimensions.get('window').height - 200,
+  },
+  modalContentDark: {
+    backgroundColor: '#1E1E1E',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 15,
+    backgroundColor: '#f7fafc',
+  },
+  modalHeaderDark: {
+    backgroundColor: '#2C2C2C',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2d3748',
+  },
+  modalTitleDark: {
+    color: '#FFF',
+  },
+  doneButton: {
+    backgroundColor: '#4299e1',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 5,
+  },
+  doneButtonDark: {
+    backgroundColor: '#3D3D3D',
+  },
+  doneButtonText: {
+    color: '#ffffff',
+    fontWeight: 'bold',
+  },
+  doneButtonTextDark: {
+    color: '#4CAF50',
   },
 });
 
@@ -240,6 +292,8 @@ export const PlayerComp = (props: PlayerProps) => {
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
 
   const userName = useUserName();
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark';
 
   useEffect(() => {
     const loadProfileImage = async () => {
@@ -255,7 +309,6 @@ export const PlayerComp = (props: PlayerProps) => {
   };
 
   const getHealthBarColor = (health: number) => {
-    // Start with a dark green (0, 128, 0) and transition to red (255, 0, 0)
     const red = Math.round(255 * (100 - health) / 100);
     const green = Math.round(128 * health / 100);
     return `rgb(${red}, ${green}, 0)`;
@@ -312,21 +365,26 @@ export const PlayerComp = (props: PlayerProps) => {
             visible={showMissileLibrary}
             onRequestClose={() => setShowMissileLibrary(false)}
           >
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
-              <View style={{ backgroundColor: 'white', borderRadius: 10, width: Dimensions.get('window').width - 40, maxHeight: Dimensions.get('window').height - 200 }}>
+            <View style={[styles.modalOverlay, isDarkMode && styles.modalOverlayDark]}>
+              <View style={[styles.modalContent, isDarkMode && styles.modalContentDark]}>
+                <View style={[styles.modalHeader, isDarkMode && styles.modalHeaderDark]}>
+                  <Text style={[styles.modalTitle, isDarkMode && styles.modalTitleDark]}>Missile Library</Text>
+                  <TouchableOpacity
+                    style={[styles.doneButton, isDarkMode && styles.doneButtonDark]}
+                    onPress={() => setShowMissileLibrary(false)}
+                  >
+                    <Text style={[styles.doneButtonText, isDarkMode && styles.doneButtonTextDark]}>Done</Text>
+                  </TouchableOpacity>
+                </View>
                 <MissileLibrary 
                   playerName={props.player.username} 
                   onMissileFired={() => setShowMissileLibrary(false)}
                   onClose={() => setShowMissileLibrary(false)}
                 />
-                <View style={{ alignSelf: 'flex-end', padding: 10 }}>
-                  <Button title="Done" onPress={() => setShowMissileLibrary(false)} />
-                </View>
               </View>
             </View>
           </Modal>
 
-          {/* Health Bar */}
           <View style={styles.healthBarContainer}>
             <View 
               style={[

@@ -15,6 +15,7 @@ const useWebSocket = () => {
     const [missiledata, setmissileData] = useState<any>(null);
     const [landminedata, setlandmineData] = useState<any>(null);
     const [lootdata, setlootData] = useState<any>(null);
+    const [otherdata, setotherData] = useState<any>(null);
     const [healthdata, sethealthData] = useState<any>(null);
     const [friendsdata, setfriendsData] = useState<any>(null);
     const [inventorydata, setinventoryData] = useState<any>(null);
@@ -101,6 +102,10 @@ const useWebSocket = () => {
                                 //console.log("Received Loot:", msg.data);
                                 setlootData(msg.data);
                                 break;
+                            case "other":
+                                //console.log("Received Loot:", msg.data);
+                                setotherData(msg.data);
+                                break;
                             case "health":
                                 //console.log("Received health:", msg.data);
                                 sethealthData(msg.data);
@@ -171,7 +176,7 @@ const useWebSocket = () => {
         }
     };
 
-    return { data, missiledata, landminedata, lootdata, healthdata, friendsdata, inventorydata, playerlocations, sendWebsocket };
+    return { data, missiledata, landminedata, lootdata, otherdata, healthdata, friendsdata, inventorydata, playerlocations, sendWebsocket };
 };
 
 export default useWebSocket;

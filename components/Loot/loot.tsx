@@ -106,7 +106,7 @@ export const LootLibraryView: React.FC<LootLibraryViewProps> = ({ LootModalVisib
               <TouchableOpacity 
                 onPress={() => {
                   LootPlaceHandler(); // Close the loot modal
-                  router.push('/store'); // Navigate to the store
+                  router.navigate('/store'); // Navigate to the store
                 }}
                 style={tw`bg-blue-500 px-6 py-3 rounded-lg`}
               >
