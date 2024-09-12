@@ -8,6 +8,7 @@ import { useUserName } from "../../util/fetchusernameglobal";
 import { mapstyles } from '../../map-themes/stylesheet';
 import { placeLoot } from '../../api/fireentities';
 import { useColorScheme } from 'react-native';
+import { loadLastKnownLocation, saveLocation } from '../../util/mapstore';
 
 const GOOGLE_PLACES_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 
@@ -40,6 +41,17 @@ export const LootPlacementPopup: React.FC<LootPlacementPopupProps> = ({ visible,
   const mapRef = useRef<MapView>(null);
 
   async function initializeLocation() {
+    setLoading(true);
+    
+    // First, try to load the last known location
+    const lastKnownLocation = await loadLastKnownLocation();
+    if (lastKnownLocation) {
+      setRegion(lastKnownLocation);
+      setMarker(lastKnownLocation);
+      setCurrentLocation(lastKnownLocation);
+    }
+
+    // Then, check for permission and get current location
     let { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission Denied', 'Location permission is required.');
@@ -48,16 +60,28 @@ export const LootPlacementPopup: React.FC<LootPlacementPopupProps> = ({ visible,
       return;
     }
 
-    let location = await Location.getCurrentPositionAsync({});
-    const initialRegion = {
-      latitude: location.coords.latitude,
-      longitude: location.coords.longitude,
-      latitudeDelta: 0.002,
-      longitudeDelta: 0.002
-    };
-    setRegion(initialRegion);
-    setMarker(initialRegion);
-    setCurrentLocation(initialRegion);
+    try {
+      let location = await Location.getCurrentPositionAsync({});
+      const currentRegion = {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        latitudeDelta: 0.004,
+        longitudeDelta: 0.003,
+      };
+      setRegion(currentRegion);
+      setMarker(currentRegion);
+      setCurrentLocation(currentRegion);
+
+      // Save the current location for future use
+      await saveLocation(currentRegion);
+    } catch (error) {
+      console.error('Error getting current location:', error);
+      // If we couldn't get the current location, we'll use the last known location if available
+      if (!lastKnownLocation) {
+        setIsLocationEnabled(false);
+      }
+    }
+
     setLoading(false);
   }
 
