@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, Switch, Alert, Platform, ActivityIndicator, TouchableOpacity, useColorScheme } from "react-native";
+import { View, Text, Switch, Alert, Platform, ActivityIndicator, TouchableOpacity, useColorScheme, StyleSheet } from "react-native";
 import MapView, { PROVIDER_DEFAULT, PROVIDER_GOOGLE } from "react-native-maps";
 import { AllLootDrops } from "./Loot/map-loot";
 import { AllLandMines } from "./Landmine/map-landmines";
@@ -20,6 +20,7 @@ import useFetchLandmines from "../hooks/websockets/landminehook";
 import { FontAwesome } from '@expo/vector-icons';
 import useFetchOther from "../hooks/websockets/otherhook";
 import { AllOther } from "./Other/map-other";
+import { getlocActive } from "../api/locActive";
 
 interface MapCompProps {
     selectedMapStyle: any;
@@ -39,10 +40,14 @@ export const MapComp = (props: MapCompProps) => {
     const [isAlive, setisAlive] = useState<boolean>(true);
     const [firstLoad, setFirstLoad] = useState<boolean>();
     const [visibilitymode, setMode] = useState<'friends' | 'global'>('global');
+    const [locActive, setLocActive] = useState<boolean>(true);
+    const [isMapDisabled, setIsMapDisabled] = useState(false);
 
     const colorScheme = useColorScheme();
     const isDarkMode = colorScheme === 'dark';
-    const mainmapstyles = getMainMapStyles(isDarkMode);
+    const mainmapstyles = StyleSheet.create({
+        ...getMainMapStyles(isDarkMode),
+    });
 
     const [region, setRegion] = useState({
         latitude: 0,
@@ -164,6 +169,23 @@ export const MapComp = (props: MapCompProps) => {
         return () => clearInterval(intervalId); // Cleanup on unmount
     }, [visibilitymode]);
 
+    useEffect(() => {
+        checkLocActiveStatus();
+    }, []);
+
+    useEffect(() => {
+        const checkMapStatus = async () => {
+            const status = await AsyncStorage.getItem('mapDisabled');
+            setIsMapDisabled(status === 'true');
+        };
+        checkMapStatus();
+    }, []);
+
+    const checkLocActiveStatus = async () => {
+        const status = await getlocActive();
+        setLocActive(status);
+    };
+
     const dispatchLocation = async () => {
         try {
             const location = await getCurrentLocation();
@@ -268,7 +290,7 @@ export const MapComp = (props: MapCompProps) => {
     return (
         <View style={mainmapstyles.container}>
             <MapView
-                style={mainmapstyles.map}
+                style={[mainmapstyles.map, isMapDisabled && mainmapstyles.disabledMap]}
                 provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
                 region={region}
                 showsCompass={false}
@@ -297,6 +319,17 @@ export const MapComp = (props: MapCompProps) => {
                 <View style={mainmapstyles.overlay}>
                     <Text style={mainmapstyles.overlayText}>Map is disabled due to location/database issues.</Text>
                     <Text style={mainmapstyles.overlaySubText}>Please check your settings or try again later.</Text>
+                </View>
+            )}
+            {!locActive && (
+                <View style={mainmapstyles.overlay}>
+                    <Text style={mainmapstyles.overlayText}>Map is disabled due to location being turned off.</Text>
+                    <Text style={mainmapstyles.overlaySubText}>Please enable location in settings to use the map.</Text>
+                </View>
+            )}
+            {isMapDisabled && (
+                <View style={mainmapstyles.overlay}>
+                    <Text style={mainmapstyles.overlayText}>Map is currently disabled</Text>
                 </View>
             )}
             <View style={mainmapstyles.switchContainer}>

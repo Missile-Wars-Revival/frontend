@@ -108,6 +108,27 @@ export const useNotifications = () => {
 		}
 	};
 
+	const clearAllNotifications = useCallback(async () => {
+		try {
+			setIsLoading(true);
+			setError(null);
+			
+			// Delete notifications one by one
+			for (const notification of notifications) {
+				await deleteNotification(notification.id);
+			}
+			
+			setNotifications([]);
+			updateUnreadCount([]);
+			notificationEmitter.emit('notificationsCleared');
+		} catch (error) {
+			console.error('Failed to clear all notifications:', error);
+			setError('Failed to clear notifications. Please try again.');
+		} finally {
+			setIsLoading(false);
+		}
+	}, [notifications]);
+
 	return {
 		notifications,
 		unreadCount,
@@ -115,6 +136,7 @@ export const useNotifications = () => {
 		error,
 		fetchNotifications,
 		markAsRead,
-		deleteNotificationById, // Add this to the returned object
+		deleteNotificationById,
+		clearAllNotifications,
 	};
 };

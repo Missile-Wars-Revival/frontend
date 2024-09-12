@@ -7,6 +7,15 @@ import * as Location from 'expo-location';
 import { useUserName } from "../../util/fetchusernameglobal";
 import { placeOther } from '../../api/fireentities';
 import { useColorScheme } from 'react-native';
+import { AllOther } from '../Other/map-other';
+import { AllLandMines } from '../Landmine/map-landmines';
+import { AllMissiles } from '../Missile/map-missile';
+import { AllPlayers } from '../map-players';
+import useFetchMissiles from '../../hooks/websockets/missilehook';
+import useFetchLoot from '../../hooks/websockets/loothook';
+import useFetchOther from '../../hooks/websockets/otherhook';
+import useFetchLandmines from '../../hooks/websockets/landminehook';
+import { AllLootDrops } from '../Loot/map-loot';
 
 const GOOGLE_PLACES_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 
@@ -126,6 +135,12 @@ export const OtherPlacementPopup: React.FC<OtherPlacementPopupProps> = ({ visibl
     }
   };
 
+      //WS hooks
+      const missileData = useFetchMissiles()
+      const lootData = useFetchLoot()
+      const otherData = useFetchOther()
+      const LandmineData = useFetchLandmines()
+
   return (
     <Modal
       animationType="slide"
@@ -231,6 +246,11 @@ export const OtherPlacementPopup: React.FC<OtherPlacementPopupProps> = ({ visibl
                 }))}
               />
             )}
+            <AllLootDrops lootLocations={lootData} />
+            <AllOther OtherLocations={otherData} />
+            <AllLandMines landminedata={LandmineData} />
+            <AllMissiles missileData={missileData} />
+            <AllPlayers />
           </MapView>
           {(!isLocationEnabled || !hasDbConnection) && (
             <View style={[styles.overlay, isDarkMode && styles.overlayDark]}>

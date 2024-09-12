@@ -71,11 +71,11 @@ const createStyles = (isDarkMode: boolean) => StyleSheet.create({
     },
     overlayText: {
         fontSize: 16,
-        color: isDarkMode ? '#E0E0E0' : 'black',
-        fontWeight: 'bold',
         marginBottom: 10,
         textAlign: 'center',
         paddingHorizontal: 20,
+        color: 'black',
+        fontWeight: 'bold',
       },
     overlaySubText: {
         fontSize: 12,
@@ -97,6 +97,9 @@ const createStyles = (isDarkMode: boolean) => StyleSheet.create({
     switchText: {
         marginRight: 10,
         color: 'white',
+    },
+    disabledMap: {
+      opacity: 0.5,
     },
     relocateButton: {
         position: 'absolute',

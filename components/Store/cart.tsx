@@ -4,7 +4,7 @@ import axiosInstance from '../../api/axios-instance';
 import * as SecureStore from "expo-secure-store";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from "expo-router";
-import { Product } from '../../app/store';
+import { Product } from '../../api/store';
 
 interface CartItem {
   product: Product;

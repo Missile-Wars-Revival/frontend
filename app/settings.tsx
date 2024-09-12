@@ -9,6 +9,7 @@ import { changeEmail, changePassword, changeUsername } from '../api/changedetail
 import { updateFriendsOnlyStatus } from '../api/visibility';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColorScheme } from 'react-native';
+import { updatelocActive, getlocActive } from '../api/locActive';
 
 const SettingsPage: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -21,10 +22,12 @@ const SettingsPage: React.FC = () => {
   const [passwordError, setPasswordError] = useState('');
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
+  const [locActive, setLocActive] = useState<boolean>(true);
 
   useEffect(() => {
     loadUserData();
     loadSettings();
+    loadLocActiveStatus();
   }, []);
 
   const loadUserData = async () => {
@@ -39,6 +42,11 @@ const SettingsPage: React.FC = () => {
     if (storedMode !== null) {
       setVisibilityMode(storedMode as 'friends' | 'global');
     }
+  };
+
+  const loadLocActiveStatus = async () => {
+    const status = await getlocActive();
+    setLocActive(status);
   };
 
   const validateEmail = (email: string) => {
@@ -185,6 +193,25 @@ const SettingsPage: React.FC = () => {
     }
   };
 
+  const toggleLocActive = async () => {
+    const newStatus = !locActive;
+    setLocActive(newStatus);
+    await updatelocActive(newStatus);
+    if (newStatus) {
+      Alert.alert(
+        "Location Activated",
+        "Your location will now be shared and map functionality will be fully enabled.",
+        [{ text: "OK" }]
+      );
+    } else {
+      Alert.alert(
+        "Location Deactivated",
+        "Your location will no longer be shared, and map functionality will be limited.",
+        [{ text: "OK" }]
+      );
+    }
+  };
+
   return (
     <ScrollView style={[styles.container, isDarkMode && styles.containerDark]}>
       <SafeAreaView style={[styles.safeArea, isDarkMode && styles.safeAreaDark]}>
@@ -313,6 +340,19 @@ const SettingsPage: React.FC = () => {
               {visibilityMode === 'global' ? 'Global' : 'Friends Only'}
             </Text>
           </View>
+
+          <View style={[styles.visibilityContainer, isDarkMode && styles.visibilityContainerDark]}>
+            <Text style={[styles.visibilityText, isDarkMode && styles.visibilityTextDark]}>Location Active</Text>
+            <Switch
+              value={locActive}
+              onValueChange={toggleLocActive}
+              trackColor={{ false: "#cbd5e0", true: "#773765" }}
+              thumbColor={locActive ? "#5c2a4f" : "#ffffff"}
+            />
+            <Text style={[styles.visibilityModeText, isDarkMode && styles.visibilityModeTextDark]}>
+              {locActive ? 'On' : 'Off'}
+            </Text>
+          </View>
         </View>
       </SafeAreaView>
     </ScrollView>
@@ -419,6 +459,7 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 10,
     width: '100%',
+    marginBottom: 15,
   },
   visibilityContainerDark: {
     backgroundColor: '#2C2C2C',

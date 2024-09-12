@@ -4,6 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
 import axiosInstance from "../api/axios-instance";
 import axios from "axios";
+import * as Location from 'expo-location';
 
 // Android Themes
 import { androidDefaultMapStyle } from "../map-themes/Android-themes/defaultMapStyle";
@@ -49,9 +50,29 @@ export default function Map() {
   const [deathsoundPlayed, setdeathSoundPlayed] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const health = useFetchHealth()//WS hook
+  const [locationPermission, setLocationPermission] = useState(false);
 
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
+
+  useEffect(() => {
+    const requestLocationPermission = async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          "Permission Denied",
+          "Please allow location access to use the map features.",
+          [
+            { text: "OK", onPress: () => console.log("OK Pressed") },
+            { text: "Open Settings", onPress: () => Linking.openSettings() }
+          ]
+        );
+      }
+      setLocationPermission(status === 'granted');
+    };
+
+    requestLocationPermission();
+  }, []);
 
   // Fetch username from secure storage
   useEffect(() => {
@@ -229,7 +250,7 @@ export default function Map() {
 
   return (
     <View style={[styles.container, isDarkMode && styles.containerDark]}>
-      {(isAlive) && (
+      {(isAlive && locationPermission) && (
         <>
           <MapComp selectedMapStyle={selectedMapStyle} />
           <View style={styles.healthBarContainer}>
@@ -268,6 +289,19 @@ export default function Map() {
             activeOpacity={0.7}
           >
             <Text style={[styles.retryButtonText, isDarkMode && styles.retryButtonTextDark]}>Contact Support</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+      {(isAlive && !locationPermission) && (
+        <View style={[styles.container, isDarkMode && styles.containerDark]}>
+          <Text style={[styles.permissionText, isDarkMode && styles.permissionTextDark]}>
+            Location permission is required to use the map.
+          </Text>
+          <TouchableOpacity
+            style={[styles.permissionButton, isDarkMode && styles.permissionButtonDark]}
+            onPress={() => Linking.openSettings()}
+          >
+            <Text style={styles.permissionButtonText}>Open Settings</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -330,5 +364,26 @@ const styles = StyleSheet.create({
   },
   retryButtonTextDark: {
     color: '#FFF',
+  },
+  permissionText: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  permissionTextDark: {
+    color: '#FFF',
+  },
+  permissionButton: {
+    backgroundColor: '#007AFF',
+    padding: 10,
+    borderRadius: 5,
+  },
+  permissionButtonDark: {
+    backgroundColor: '#0A84FF',
+  },
+  permissionButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    textAlign: 'center',
   },
 });

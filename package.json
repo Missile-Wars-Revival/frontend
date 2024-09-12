@@ -31,6 +31,7 @@
     "expo-router": "~3.5.23",
     "expo-secure-store": "~13.0.2",
     "expo-status-bar": "~1.12.1",
+    "expo-system-ui": "^3.0.7",
     "expo-task-manager": "^11.8.2",
     "expo-updates": "~0.25.24",
     "firebase": "^10.13.1",

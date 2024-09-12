@@ -34,6 +34,7 @@ const StorePage: React.FC = () => {
   const [animation] = useState(new Animated.Value(0));
   const [isLoadingPremium, setIsLoadingPremium] = useState<boolean>(true);
   const [isPurchasing, setIsPurchasing] = useState<boolean>(false);
+  const [cartTotal, setCartTotal] = useState<number>(0);
 
   const getImageForProduct = (identifier: string): ImageSourcePropType => {
     return shopimages[identifier] || shopimages.default;
@@ -113,12 +114,16 @@ const StorePage: React.FC = () => {
   useEffect(() => {
     const loadCart = async () => {
       const storedCart = await AsyncStorage.getItem('cartitems');
-      if (storedCart) setCart(JSON.parse(storedCart));
+      if (storedCart) {
+        const parsedCart = JSON.parse(storedCart);
+        setCart(parsedCart);
+        updateCartTotal(parsedCart);
+      }
     };
 
     loadCart();
-
   }, []);
+
   useEffect(() => {
     const fetchCurrencyAmount = async () => {
       const token = await SecureStore.getItemAsync("token");
@@ -131,8 +136,9 @@ const StorePage: React.FC = () => {
         const response = await axiosInstance.get('/api/getMoney', {
           params: { token }
         });
-        setCurrencyAmount(response.data.money);
-        const moneyAsString = String(response.data.money);
+        const totalMoney = response.data.money - cartTotal;
+        setCurrencyAmount(totalMoney);
+        const moneyAsString = String(totalMoney);
         await AsyncStorage.setItem("Money", moneyAsString);
       } catch (error: any) {
         if (axios.isAxiosError(error)) {
@@ -144,26 +150,29 @@ const StorePage: React.FC = () => {
     };
 
     fetchCurrencyAmount();
-  }, []);
+  }, [cartTotal]);
+
+  const updateCartTotal = (currentCart: { product: Product; quantity: number }[]) => {
+    const total = currentCart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+    setCartTotal(total);
+  };
 
   const addToCart = (product: Product) => {
-    // Check if the user has enough currency to "purchase" the product
     if (currencyAmount >= product.price) {
       setCart((prevCart) => {
         const cartItem = prevCart.find((item) => item.product.id === product.id);
+        let newCart;
         if (cartItem) {
-          const newCart = prevCart.map((item) =>
+          newCart = prevCart.map((item) =>
             item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
           );
-          AsyncStorage.setItem('cartitems', JSON.stringify(newCart));
-          return newCart;
         } else {
-          const newCart = [...prevCart, { product, quantity: 1 }];
-          AsyncStorage.setItem('cartitems', JSON.stringify(newCart));
-          return newCart;
+          newCart = [...prevCart, { product, quantity: 1 }];
         }
+        AsyncStorage.setItem('cartitems', JSON.stringify(newCart));
+        updateCartTotal(newCart);
+        return newCart;
       });
-      // Deduct the price from the currency amount
       setCurrencyAmount(prevAmount => prevAmount - product.price);
     } else {
       alert('Not enough currency!');
@@ -171,9 +180,12 @@ const StorePage: React.FC = () => {
   };
 
   const handleRemove = (productId: string) => {
-    const updatedCart = cart.filter(item => item.product.id !== productId);
-    AsyncStorage.setItem('cartitems', JSON.stringify(updatedCart));
-    setCart(updatedCart);
+    setCart((prevCart) => {
+      const updatedCart = prevCart.filter(item => item.product.id !== productId);
+      AsyncStorage.setItem('cartitems', JSON.stringify(updatedCart));
+      updateCartTotal(updatedCart);
+      return updatedCart;
+    });
   };
 
   //buys item - SET API TOKENS IN _LAYOUT.TSX

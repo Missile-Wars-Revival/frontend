@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, SafeAreaView, Platform, StatusBar, Modal, useColorScheme } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, SafeAreaView, Platform, StatusBar, Modal, useColorScheme, Alert } from 'react-native';
 import { useNotifications } from '../components/Notifications/useNotifications';
 import * as SecureStore from "expo-secure-store";
 import { addFriend } from '../api/friends';
@@ -38,7 +38,7 @@ const getTimeDifference = (timestamp: string): string => {
 };
 
 const NotificationsPage: React.FC = () => {
-	const { notifications, isLoading, error, fetchNotifications, markAsRead, deleteNotificationById } = useNotifications();
+	const { notifications, isLoading, error, fetchNotifications, markAsRead, deleteNotificationById, clearAllNotifications } = useNotifications();
 	const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
 	const router = useRouter();
 	const [isAlive, setIsAlive] = useState<boolean>(true);
@@ -124,6 +124,30 @@ const NotificationsPage: React.FC = () => {
 			console.error('Failed to dismiss notification:', error);
 		}
 	}, [deleteNotificationById]);
+
+	const handleClearAll = useCallback(async () => {
+		Alert.alert(
+		  "Clear All Notifications",
+		  "Are you sure you want to clear all notifications?",
+		  [
+			{
+			  text: "Cancel",
+			  style: "cancel"
+			},
+			{
+			  text: "Clear",
+			  onPress: async () => {
+				try {
+				  await clearAllNotifications();
+				  setHiddenIds(new Set(notifications.map(n => n.id)));
+				} catch (error) {
+				  console.error('Failed to clear all notifications:', error);
+				}
+			  }
+			}
+		  ]
+		);
+	  }, [notifications, clearAllNotifications]);
 
 	const renderNotificationItem = useCallback(({ item }: { item: Notification }) => {
 		if (hiddenIds.has(item.id)) return null;
@@ -224,6 +248,9 @@ const NotificationsPage: React.FC = () => {
 						<Ionicons name="arrow-back" size={24} color={isDarkMode ? "white" : "white"} />
 					</TouchableOpacity>
 					<Text style={[styles.headerText, isDarkMode && styles.headerTextDark]}>Notifications</Text>
+					<TouchableOpacity onPress={handleClearAll} style={styles.clearAllButton}>
+						<Text style={[styles.clearAllText, isDarkMode && styles.clearAllTextDark]}>Clear All</Text>
+					</TouchableOpacity>
 				</View>
 				{isLoading ? (
 					<View style={styles.centerContainer}>
@@ -299,6 +326,7 @@ const styles = StyleSheet.create({
 	header: {
 		flexDirection: 'row',
 		alignItems: 'center',
+		justifyContent: 'space-between',
 		padding: 16,
 		backgroundColor: '#4a5568',
 		paddingTop: 20,
@@ -526,6 +554,16 @@ const styles = StyleSheet.create({
 		fontWeight: 'bold',
 	},
 	modalCloseButtonTextDark: {
+		color: '#4CAF50',
+	},
+	clearAllButton: {
+		padding: 8,
+	},
+	clearAllText: {
+		color: '#ffffff',
+		fontWeight: 'bold',
+	},
+	clearAllTextDark: {
 		color: '#4CAF50',
 	},
 });
