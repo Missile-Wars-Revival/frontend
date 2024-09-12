@@ -29,8 +29,10 @@ export async function getlocActive() {
         const token = await SecureStore.getItemAsync("token");
         if (!token) throw new Error("No authentication token found.");
         
-        const response = await axiosInstance.post("/api/getlocActive", { token });
+        const response = await axiosInstance.get(`/api/getlocActive?token=${encodeURIComponent(token)}`);
         const locActive = response.data.locActive;
+        
+        console.log("Received locActive status:", locActive);
         
         await AsyncStorage.setItem('locActive', JSON.stringify(locActive));
         return locActive;
@@ -39,6 +41,6 @@ export async function getlocActive() {
         if (isAxiosError(error)) {
             console.error("Response data:", error.response?.data);
         }
-        return false; // or handle the error as appropriate for your app
+        throw error; // Propagate the error to be handled by the caller
     }
 }

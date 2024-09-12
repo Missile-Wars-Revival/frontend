@@ -23,11 +23,12 @@ const SettingsPage: React.FC = () => {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
   const [locActive, setLocActive] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     loadUserData();
     loadSettings();
-    loadLocActiveStatus();
+    fetchLocActiveStatus();
   }, []);
 
   const loadUserData = async () => {
@@ -44,9 +45,17 @@ const SettingsPage: React.FC = () => {
     }
   };
 
-  const loadLocActiveStatus = async () => {
-    const status = await getlocActive();
-    setLocActive(status);
+  const fetchLocActiveStatus = async () => {
+    setIsLoading(true);
+    try {
+      const status = await getlocActive();
+      setLocActive(status);
+    } catch (error) {
+      console.error("Failed to fetch locActive status:", error);
+      Alert.alert("Error", "Failed to fetch location status. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const validateEmail = (email: string) => {

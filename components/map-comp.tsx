@@ -170,7 +170,7 @@ export const MapComp = (props: MapCompProps) => {
     }, [visibilitymode]);
 
     useEffect(() => {
-        checkLocActiveStatus();
+        fetchLocActiveStatus();
     }, []);
 
     useEffect(() => {
@@ -181,10 +181,18 @@ export const MapComp = (props: MapCompProps) => {
         checkMapStatus();
     }, []);
 
-    const checkLocActiveStatus = async () => {
-        const status = await getlocActive();
-        setLocActive(status);
-    };
+    const fetchLocActiveStatus = async () => {
+        setIsLoading(true);
+        try {
+          const status = await getlocActive();
+          setLocActive(status);
+        } catch (error) {
+          console.error("Failed to fetch locActive status:", error);
+          Alert.alert("Error", "Failed to fetch location status. Please try again.");
+        } finally {
+          setIsLoading(false);
+        }
+      };
 
     const dispatchLocation = async () => {
         try {
