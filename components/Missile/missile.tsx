@@ -114,16 +114,20 @@ export const MissileLibrary = ({ playerName, onMissileFired, onClose }: { player
     setShowPopup(true);
   };
 
-  const handleFire = async () => {
+  const handleFire = () => {
     if (selectedMissile) {
-      try {
-        if (playerName) {
-          await firemissileplayer(playerName, selectedMissile);
-        }
-        onMissileFired();
-        onClose();
-      } catch (error) {
-        console.error("Error firing missile:", error);
+      // Close the popup and trigger callbacks immediately
+      onMissileFired();
+      onClose();
+      setShowPopup(false);
+
+      // Fire the missile in the background
+      if (playerName) {
+        firemissileplayer(playerName, selectedMissile)
+          .catch(error => {
+            console.error("Error firing missile:", error);
+            // Optionally, you can show an error message to the user here
+          });
       }
     }
   };

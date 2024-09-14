@@ -33,6 +33,7 @@ import { getisAlive, setHealth, updateisAlive } from "../api/health";
 import { playDeathSound } from "../util/sounds/deathsound";
 import { RewardedAd, RewardedAdEventType, TestIds } from "react-native-google-mobile-ads";
 import useFetchHealth from "../hooks/websockets/healthhook";
+import { getlocActive } from "../api/locActive";
 
 const adUnitId =  __DEV__ ? TestIds.REWARDED : 'ca-app-pub-4035842398612787/8310612855';
 
@@ -51,14 +52,16 @@ export default function Map() {
   const [loaded, setLoaded] = useState(false);
   const health = useFetchHealth()//WS hook
   const [locationPermission, setLocationPermission] = useState(false);
+  const [locActive, setLocActive] = useState<boolean>(true);
 
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
 
   useEffect(() => {
     const requestLocationPermission = async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
+      let foregroundStatus = await Location.requestForegroundPermissionsAsync();
+      
+      if (foregroundStatus.status !== 'granted') {
         Alert.alert(
           "Permission Denied",
           "Please allow location access to use the map features.",
@@ -67,8 +70,19 @@ export default function Map() {
             { text: "Open Settings", onPress: () => Linking.openSettings() }
           ]
         );
+        setLocationPermission(false);
+        return;
       }
-      setLocationPermission(status === 'granted');
+
+      if (Platform.OS === 'android' && Platform.Version >= 29) {
+        let backgroundStatus = await Location.requestBackgroundPermissionsAsync();
+        if (backgroundStatus.status !== 'granted') {
+          // Optionally alert the user that background location is not enabled
+          console.log('Background location permission not granted');
+        }
+      }
+
+      setLocationPermission(true);
     };
 
     requestLocationPermission();
@@ -200,6 +214,20 @@ export default function Map() {
       };
     }, []);
 
+    useEffect(() => {
+      fetchLocActiveStatus();
+  }, []);
+
+    const fetchLocActiveStatus = async () => {
+      try {
+        const status = await getlocActive();
+        setLocActive(status);
+      } catch (error) {
+        console.error("Failed to fetch locActive status:", error);
+      } finally {
+      }
+    };
+
   const showPopup = () => {
     setThemePopupVisible(true);
   };
@@ -264,7 +292,8 @@ export default function Map() {
             transparent={true}
             onClose={closePopup}
             onSelect={selectMapStyle}
-          />     
+          />
+          {locActive && (
           <View style={styles.fireSelectorContainer}>
             <FireSelector
               selectedMapStyle={selectedMapStyle}
@@ -272,6 +301,7 @@ export default function Map() {
               selectMapStyle={selectMapStyle}
             />
           </View>
+          )}
         </>
       )}
       {(!isAlive) && (

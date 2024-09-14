@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Modal, Text, View, Dimensions, ActivityIndicator, Alert, Platform, StyleSheet, TouchableOpacity } from 'react-native';
-import MapView, { Marker, Circle, PROVIDER_DEFAULT, PROVIDER_GOOGLE } from 'react-native-maps';
+import { Modal, Text, View, Dimensions, Alert, StyleSheet, TouchableOpacity } from 'react-native';
+import MapView, { Marker, Circle } from 'react-native-maps';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
@@ -122,18 +122,22 @@ export const LootPlacementPopup: React.FC<LootPlacementPopupProps> = ({ visible,
     initializeApp();
   }, []);
 
-  const handleLootPlacement = async () => {
+  const handleLootPlacement = () => {
     if (marker && currentLocation) {
+      // Close the popup and trigger callback immediately
+      onLootPlaced();
+      onClose();
+
+      // Place the Loot in the background
       console.log(`PLACING Loot: Dest coords: ${marker.latitude}, ${marker.longitude}; sentbyUser: ${userName} Loot Type: ${selectedLoot.type}, current coords: ${currentLocation.latitude}, ${currentLocation.longitude}`);
-      try {
-        await placeLoot(marker.latitude.toString(), marker.longitude.toString());
-        console.log("Loot placed successfully");
-        onLootPlaced();
-        onClose();
-      } catch (error) {
-        console.error("Error placing loot:", error);
-        Alert.alert('Error', 'Failed to place loot. Please try again.');
-      }
+      placeLoot(marker.latitude.toString(), marker.longitude.toString())
+        .then(() => {
+          console.log("Loot placed successfully");
+        })
+        .catch(error => {
+          console.error("Error placing loot:", error);
+          // Optionally, you can show an error message to the user here
+        });
     }
   };
 
@@ -233,7 +237,6 @@ export const LootPlacementPopup: React.FC<LootPlacementPopupProps> = ({ visible,
             ref={mapRef}
             style={styles.map}
             initialRegion={region ?? undefined}
-            provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
             showsUserLocation={true}
             showsMyLocationButton={true}
             onPress={(e) => setMarker({

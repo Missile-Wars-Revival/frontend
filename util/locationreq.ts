@@ -1,6 +1,7 @@
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { saveLocation } from './mapstore';
+import { Platform } from 'react-native';
 
 export interface location {
     latitude: number; 
@@ -20,30 +21,29 @@ export async function getCurrentLocation(): Promise<location> {
     }
 
     let useBackground = await AsyncStorage.getItem('useBackgroundLocation');
-    let permissionStatus;
+    let foregroundStatus, backgroundStatus;
 
-    // Attempt to request background permissions if enabled
-    if (useBackground === 'true') {
-        ({ status: permissionStatus } = await Location.requestBackgroundPermissionsAsync());
+    // Request foreground permissions first
+    ({ status: foregroundStatus } = await Location.requestForegroundPermissionsAsync());
 
-        // If permission is denied, switch to foreground permissions
-        if (permissionStatus !== 'granted') {
-            await AsyncStorage.setItem('useBackgroundLocation', 'false');
-            ({ status: permissionStatus } = await Location.requestForegroundPermissionsAsync());
-        }
-    } else {
-        ({ status: permissionStatus } = await Location.requestForegroundPermissionsAsync());
+    if (foregroundStatus !== 'granted') {
+        throw new Error('Foreground location access permission was denied');
     }
 
-    // Check if permission was granted after either attempt
-    if (permissionStatus !== 'granted') {
-        throw new Error('Location access permission was denied');
+    // Attempt to request background permissions if enabled and on Android 10+
+    if (useBackground === 'true' && Platform.OS === 'android' && Platform.Version >= 29) {
+        ({ status: backgroundStatus } = await Location.requestBackgroundPermissionsAsync());
+
+        if (backgroundStatus !== 'granted') {
+            console.log('Background location permission not granted');
+            await AsyncStorage.setItem('useBackgroundLocation', 'false');
+        }
     }
 
     // Update the permission status in AsyncStorage
-    await AsyncStorage.setItem('locationPermissionStatus', permissionStatus);
+    await AsyncStorage.setItem('locationPermissionStatus', foregroundStatus);
 
-    // Fetch the current location using the appropriate permissions
+    // Fetch the current location
     const location = await Location.getCurrentPositionAsync({});
     return {
         latitude: location.coords.latitude,
@@ -52,13 +52,20 @@ export async function getCurrentLocation(): Promise<location> {
 }
 
 export const getLocationPermission = async () => {
-        let { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-            //Alert.alert('Permission Denied', 'Location permission is required to use this feature.');
-            return;
+    let foregroundStatus = await Location.requestForegroundPermissionsAsync();
+    if (foregroundStatus.status !== 'granted') {
+        return foregroundStatus.status;
+    }
+
+    if (Platform.OS === 'android' && Platform.Version >= 29) {
+        let backgroundStatus = await Location.requestBackgroundPermissionsAsync();
+        if (backgroundStatus.status !== 'granted') {
+            console.log('Background location permission not granted');
         }
-        return status;
-    };
+    }
+
+    return foregroundStatus.status;
+};
 
 export const getlocation = async () => {
     try {

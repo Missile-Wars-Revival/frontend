@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Modal, Text, View, Dimensions, ActivityIndicator, Alert, Platform, StyleSheet, TouchableOpacity } from 'react-native';
-import MapView, { Marker, Circle, PROVIDER_DEFAULT, PROVIDER_GOOGLE } from 'react-native-maps';
+import { Modal, Text, View, Dimensions, Alert, StyleSheet, TouchableOpacity } from 'react-native';
+import MapView, { Marker, Circle } from 'react-native-maps';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
@@ -123,18 +123,22 @@ export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ 
     initializeApp();
   }, []);
 
-  const handleLandminePlacement = async () => {
+  const handleLandminePlacement = () => {
     if (marker && currentLocation) {
+      // Close the popup and trigger callback immediately
+      onLandminePlaced();
+      onClose();
+
+      // Place the Landmine in the background
       console.log(`PLACING Landmine: Dest coords: ${marker.latitude}, ${marker.longitude}; sentbyUser: ${userName} Landmine Type: ${selectedLandmine.type}, current coords: ${currentLocation.latitude}, ${currentLocation.longitude}`);
-      try {
-        await placelandmine(marker.latitude.toString(), marker.longitude.toString(), selectedLandmine.type);
-        console.log("Landmine placed successfully");
-        onLandminePlaced();
-        onClose();
-      } catch (error) {
-        console.error("Error placing landmine:", error);
-        Alert.alert('Error', 'Failed to place landmine. Please try again.');
-      }
+      placelandmine(marker.latitude.toString(), marker.longitude.toString(), selectedLandmine.type)
+        .then(() => {
+          console.log("Landmine placed successfully");
+        })
+        .catch(error => {
+          console.error("Error placing landmine:", error);
+          // Optionally, you can show an error message to the user here
+        });
     }
   };
 
@@ -234,7 +238,6 @@ export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ 
             ref={mapRef}
             style={styles.map}
             initialRegion={region ?? undefined}
-            provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
             showsUserLocation={true}
             showsMyLocationButton={true}
             onPress={(e) => setMarker({

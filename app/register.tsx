@@ -1,7 +1,7 @@
 import { SafeAreaView, Text, View, Image, TouchableOpacity, ScrollView, Dimensions, StyleSheet, useColorScheme } from "react-native";
 import { router } from "expo-router";
 import { Input } from "../components/ui/input";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import useRegister from "../hooks/api/useRegister";
 import { User, LockKeyhole, Mail } from "lucide-react-native";
 import React from "react";
@@ -21,6 +21,12 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isError, setIsError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [errors, setErrors] = useState({
+    username: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
 
   const { setIsSignedIn } = useAuth();
 
@@ -46,14 +52,53 @@ export default function Register() {
     }
   );
 
-  const handleRegister = () => {
-    if (password !== confirmPassword) {
-      setIsError(true);
-      setErrorMessage("Passwords do not match");
-      return;
+  const validateForm = useCallback(() => {
+    let isValid = true;
+    const newErrors = {
+      username: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+    };
+
+    // Username validation
+    if (username.length < 3) {
+      newErrors.username = "Username must be at least 3 characters long";
+      isValid = false;
     }
-    mutation.mutate({ username, email, password, notificationToken });
-  };
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      newErrors.email = "Please enter a valid email address";
+      isValid = false;
+    }
+
+    // Password validation
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/;
+    if (!passwordRegex.test(password)) {
+      newErrors.password = "Password must be at least 8 characters long and include at least one letter, one number, and one special character";
+      isValid = false;
+    }
+
+    // Confirm password validation
+    if (password !== confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  }, [username, email, password, confirmPassword]);
+
+  const handleRegister = useCallback(() => {
+    if (validateForm()) {
+      mutation.mutate({ username, email, password, notificationToken });
+    } else {
+      setIsError(true);
+      setErrorMessage("Please correct the errors in the form.");
+    }
+  }, [validateForm, mutation, username, email, password, notificationToken]);
 
   return (
     <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
@@ -77,6 +122,7 @@ export default function Register() {
               }
               className="w-[90vw] h-[5vh] rounded-[20px]"
             />
+            {errors.username && <Text style={styles.errorText}>{errors.username}</Text>}
           </View>
           <View style={styles.inputWrapper}>
             <Input
@@ -93,6 +139,7 @@ export default function Register() {
               }
               className="w-[90vw] h-[5vh] rounded-[20px]"
             />
+            {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
           </View>
           <View style={styles.inputWrapper}>
             <Input
@@ -109,6 +156,7 @@ export default function Register() {
               }
               className="w-[90vw] h-[5vh] rounded-[20px]"
             />
+            {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
           </View>
           <View style={styles.inputWrapper}>
             <Input
@@ -125,6 +173,7 @@ export default function Register() {
               }
               className="w-[90vw] h-[5vh] rounded-[20px]"
             />
+            {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
           </View>
           {isError && (
             <Text style={styles.errorText}>{errorMessage}</Text>
@@ -178,8 +227,8 @@ const lightStyles = StyleSheet.create({
   errorText: {
     color: 'red',
     fontSize: 12,
-    textAlign: 'center',
-    marginTop: 5,
+    marginTop: 2,
+    marginLeft: 10,
   },
   registerButton: {
     backgroundColor: '#773765',
@@ -252,5 +301,11 @@ const darkStyles = StyleSheet.create({
     top: 10,
     transform: [{ translateY: 2 }],
     zIndex: 1,
+  },
+  errorText: {
+    color: '#FF6B6B',
+    fontSize: 12,
+    marginTop: 2,
+    marginLeft: 10,
   },
 });

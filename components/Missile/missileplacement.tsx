@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Modal, Text, View, Button, Dimensions, ActivityIndicator, Alert, Platform, StyleSheet, TouchableOpacity } from 'react-native';
-import MapView, { Marker, Circle, PROVIDER_DEFAULT, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, Circle } from 'react-native-maps';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
@@ -150,10 +150,17 @@ export const MissilePlacementPopup: React.FC<MissilePlacementPopupProps> = ({ vi
     if (marker && currentLocation && marker.latitude === currentLocation.latitude && marker.longitude === currentLocation.longitude) {
       Alert.alert('Warning', 'Firing a Missile at your current location is not recommended!');
     } else if (marker && currentLocation) {
-      console.log(`FIRING Missile: Dest coords: ${marker.latitude}, ${marker.longitude}; sentbyUser: ${userName} Missile Type: ${selectedMissile}, current coords: ${currentLocation.latitude}, ${currentLocation.longitude}`);
-      firemissileloc(marker.latitude.toString(), marker.longitude.toString(), selectedMissile);
+      // Close the popup and trigger the onMissileFired callback immediately
       onMissileFired();
       onClose();
+
+      // Fire the missile in the background
+      console.log(`FIRING Missile: Dest coords: ${marker.latitude}, ${marker.longitude}; sentbyUser: ${userName} Missile Type: ${selectedMissile}, current coords: ${currentLocation.latitude}, ${currentLocation.longitude}`);
+      firemissileloc(marker.latitude.toString(), marker.longitude.toString(), selectedMissile)
+        .catch(error => {
+          console.error('Error firing missile:', error);
+          // Optionally, you can show an error message to the user here
+        });
     }
   };
 
@@ -254,7 +261,6 @@ export const MissilePlacementPopup: React.FC<MissilePlacementPopupProps> = ({ vi
             style={styles.map}
             initialRegion={region ?? undefined}
             showsUserLocation={true}
-            provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
             showsMyLocationButton={true}
             onPress={(e) => setMarker({
               latitude: e.nativeEvent.coordinate.latitude,

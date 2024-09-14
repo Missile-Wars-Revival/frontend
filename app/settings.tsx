@@ -52,7 +52,6 @@ const SettingsPage: React.FC = () => {
       setLocActive(status);
     } catch (error) {
       console.error("Failed to fetch locActive status:", error);
-      Alert.alert("Error", "Failed to fetch location status. Please try again.");
     } finally {
       setIsLoading(false);
     }

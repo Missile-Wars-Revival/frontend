@@ -77,8 +77,9 @@ export const OtherLibraryView: React.FC<OtherLibraryViewProps> = ({ OtherModalVi
   };
 
   const handleOtherPlaced = () => {
+    // Close the popup immediately
     setShowplacementPopup(false);
-    OtherPlaceHandler(); // This should close the entire library
+    OtherPlaceHandler(); // This closes the entire library
   };
 
   const getModalHeight = () => {

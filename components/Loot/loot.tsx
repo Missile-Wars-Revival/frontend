@@ -77,8 +77,9 @@ export const LootLibraryView: React.FC<LootLibraryViewProps> = ({ LootModalVisib
   };
 
   const handleLootPlaced = () => {
+    // Close the popup immediately
     setShowplacementPopup(false);
-    LootPlaceHandler(); // This should close the entire library
+    LootPlaceHandler(); // This closes the entire library
   };
 
   const getModalHeight = () => {

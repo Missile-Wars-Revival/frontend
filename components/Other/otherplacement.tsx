@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Modal, Text, View, Dimensions, ActivityIndicator, Alert, Platform, StyleSheet, TouchableOpacity } from 'react-native';
-import MapView, { Marker, Circle, PROVIDER_DEFAULT, PROVIDER_GOOGLE } from 'react-native-maps';
+import { Modal, Text, View, Dimensions, Alert, StyleSheet, TouchableOpacity } from 'react-native';
+import MapView, { Marker, Circle } from 'react-native-maps';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
@@ -106,18 +106,19 @@ export const OtherPlacementPopup: React.FC<OtherPlacementPopupProps> = ({ visibl
   //   );
   // }
 
-  const handleOtherPlacement = async () => {
+  const handleOtherPlacement = () => {
     if (marker && currentLocation) {
+      // Close the popup and trigger callback immediately
+      onOtherPlaced();
+      onClose();
+
+      // Place the Other in the background
       console.log(`PLACING Other: Dest coords: ${marker.latitude}, ${marker.longitude}; sentbyUser: ${userName} Other Type: ${selectedOther.type}, current coords: ${currentLocation.latitude}, ${currentLocation.longitude}`);
-      try {
-        await placeOther(marker.latitude.toString(), marker.longitude.toString(), selectedOther.type);
-        console.log("Other placed successfully");
-        onOtherPlaced();
-        onClose();
-      } catch (error) {
-        console.error("Error placing Other:", error);
-        Alert.alert('Error', 'Failed to place Other. Please try again.');
-      }
+      placeOther(marker.latitude.toString(), marker.longitude.toString(), selectedOther.type)
+        .catch(error => {
+          console.error("Error placing Other:", error);
+          // Optionally, you can show an error message to the user here
+        });
     }
   };
 
@@ -217,7 +218,6 @@ export const OtherPlacementPopup: React.FC<OtherPlacementPopupProps> = ({ visibl
             ref={mapRef}
             style={styles.map}
             initialRegion={region ?? undefined}
-            provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
             showsUserLocation={true}
             showsMyLocationButton={true}
             onPress={(e) => setMarker({

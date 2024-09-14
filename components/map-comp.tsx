@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, Switch, Alert, Platform, ActivityIndicator, TouchableOpacity, useColorScheme, StyleSheet } from "react-native";
-import MapView, { PROVIDER_DEFAULT, PROVIDER_GOOGLE } from "react-native-maps";
+import MapView from "react-native-maps";
 import { AllLootDrops } from "./Loot/map-loot";
 import { AllLandMines } from "./Landmine/map-landmines";
 import { AllMissiles } from "./Missile/map-missile";
@@ -188,7 +188,6 @@ export const MapComp = (props: MapCompProps) => {
           setLocActive(status);
         } catch (error) {
           console.error("Failed to fetch locActive status:", error);
-          Alert.alert("Error", "Failed to fetch location status. Please try again.");
         } finally {
           setIsLoading(false);
         }
@@ -299,7 +298,6 @@ export const MapComp = (props: MapCompProps) => {
         <View style={mainmapstyles.container}>
             <MapView
                 style={[mainmapstyles.map, isMapDisabled && mainmapstyles.disabledMap]}
-                provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
                 region={region}
                 showsCompass={false}
                 showsTraffic={false}
