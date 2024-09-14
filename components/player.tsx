@@ -404,7 +404,7 @@ export const PlayerComp = (props: PlayerProps) => {
               style={[
                 styles.healthBar, 
                 { 
-                  width: `${props.health}%`,
+                  width: `${Math.max(0, Math.min(100, props.health))}%`,
                   backgroundColor: getHealthBarColor(props.health)
                 }
               ]}

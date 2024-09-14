@@ -21,6 +21,7 @@ import { FontAwesome } from '@expo/vector-icons';
 import useFetchOther from "../hooks/websockets/otherhook";
 import { AllOther } from "./Other/map-other";
 import { getlocActive } from "../api/locActive";
+import ErrorBoundary from './ErrorBoundary';
 
 interface MapCompProps {
     selectedMapStyle: any;
@@ -301,63 +302,67 @@ export const MapComp = (props: MapCompProps) => {
 
     // Render map and other components once initialization is complete
     return (
-        <View style={mainmapstyles.container}>
-            <MapView
-                style={[mainmapstyles.map, isMapDisabled && mainmapstyles.disabledMap]}
-                region={region}
-                showsCompass={false}
-                showsTraffic={false}
-                showsUserLocation={true}
-                showsMyLocationButton={Platform.OS === 'android'}
-                pitchEnabled={true}
-                rotateEnabled={true}
-                scrollEnabled={true}
-                zoomEnabled={true}
-                customMapStyle={props.selectedMapStyle}>
-                <AllLootDrops lootLocations={lootData} />
-                <AllOther OtherLocations={otherData} />
-                <AllLandMines landminedata={LandmineData} />
-                <AllMissiles missileData={missileData} />
-                <AllPlayers />
-            </MapView>
-            <TouchableOpacity
-                style={mainmapstyles.relocateButton}
-                onPress={() => relocate(setRegion)}>
-                <FontAwesome name="location-arrow" size={24} color="#ffffff" />
-            </TouchableOpacity>
-            {(!isAlive) && (
-                <View style={mainmapstyles.overlay}>
-                    <Text style={mainmapstyles.overlayText}>Map is disabled due to your death</Text>
-                    <Text style={mainmapstyles.overlaySubText}>Please check wait the designated time or watch an advert!</Text>
+        <ErrorBoundary>
+            <View style={mainmapstyles.container}>
+                <View style={{ width: '100%', height: '100%' }}>
+                    <MapView
+                        style={[mainmapstyles.map, isMapDisabled && mainmapstyles.disabledMap]}
+                        region={region}
+                        showsCompass={false}
+                        showsTraffic={false}
+                        showsUserLocation={true}
+                        showsMyLocationButton={Platform.OS === 'android'}
+                        pitchEnabled={true}
+                        rotateEnabled={true}
+                        scrollEnabled={true}
+                        zoomEnabled={true}
+                        customMapStyle={props.selectedMapStyle}>
+                        <AllLootDrops lootLocations={lootData} />
+                        <AllOther OtherLocations={otherData} />
+                        <AllLandMines landminedata={LandmineData} />
+                        <AllMissiles missileData={missileData} />
+                        <AllPlayers />
+                    </MapView>
                 </View>
-            )}
-            {(!isLocationEnabled || !hasDbConnection) && (
-                <View style={mainmapstyles.overlay}>
-                    <Text style={mainmapstyles.overlayText}>Map is disabled due to location/database issues.</Text>
-                    <Text style={mainmapstyles.overlaySubText}>Please check your settings or try again later.</Text>
+                <TouchableOpacity
+                    style={mainmapstyles.relocateButton}
+                    onPress={() => relocate(setRegion)}>
+                    <FontAwesome name="location-arrow" size={24} color="#ffffff" />
+                </TouchableOpacity>
+                {(!isAlive) && (
+                    <View style={mainmapstyles.overlay}>
+                        <Text style={mainmapstyles.overlayText}>Map is disabled due to your death</Text>
+                        <Text style={mainmapstyles.overlaySubText}>Please check wait the designated time or watch an advert!</Text>
+                    </View>
+                )}
+                {(!isLocationEnabled || !hasDbConnection) && (
+                    <View style={mainmapstyles.overlay}>
+                        <Text style={mainmapstyles.overlayText}>Map is disabled due to location/database issues.</Text>
+                        <Text style={mainmapstyles.overlaySubText}>Please check your settings or try again later.</Text>
+                    </View>
+                )}
+                {!locActive && (
+                    <View style={mainmapstyles.overlay}>
+                        <Text style={mainmapstyles.overlayText}>Map is disabled due to location being turned off.</Text>
+                        <Text style={mainmapstyles.overlaySubText}>Please enable location in settings to use the map.</Text>
+                    </View>
+                )}
+                {isMapDisabled && (
+                    <View style={mainmapstyles.overlay}>
+                        <Text style={mainmapstyles.overlayText}>Map is currently disabled</Text>
+                    </View>
+                )}
+                <View style={mainmapstyles.switchContainer}>
+                    <Text style={mainmapstyles.switchText}>{visibilitymode === 'global' ? 'Global' : 'Friends'}</Text>
+                    <Switch
+                        trackColor={{ false: "#767577", true: "#81b0ff" }}
+                        thumbColor={visibilitymode === 'global' ? "#f4f3f4" : "#f4f3f4"}
+                        ios_backgroundColor="#3e3e3e"
+                        onValueChange={toggleMode}
+                        value={visibilitymode === 'global'}
+                    />
                 </View>
-            )}
-            {!locActive && (
-                <View style={mainmapstyles.overlay}>
-                    <Text style={mainmapstyles.overlayText}>Map is disabled due to location being turned off.</Text>
-                    <Text style={mainmapstyles.overlaySubText}>Please enable location in settings to use the map.</Text>
-                </View>
-            )}
-            {isMapDisabled && (
-                <View style={mainmapstyles.overlay}>
-                    <Text style={mainmapstyles.overlayText}>Map is currently disabled</Text>
-                </View>
-            )}
-            <View style={mainmapstyles.switchContainer}>
-                <Text style={mainmapstyles.switchText}>{visibilitymode === 'global' ? 'Global' : 'Friends'}</Text>
-                <Switch
-                    trackColor={{ false: "#767577", true: "#81b0ff" }}
-                    thumbColor={visibilitymode === 'global' ? "#f4f3f4" : "#f4f3f4"}
-                    ios_backgroundColor="#3e3e3e"
-                    onValueChange={toggleMode}
-                    value={visibilitymode === 'global'}
-                />
             </View>
-        </View>
+        </ErrorBoundary>
     );
 };
