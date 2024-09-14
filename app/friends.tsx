@@ -194,7 +194,7 @@ const FriendsPage: React.FC = () => {
         <Text style={[styles.friendName, isDarkMode && styles.friendNameDark]}>{item.username}</Text>
       </TouchableOpacity>
       <View style={styles.actionButtons}>
-        {isAlive && (
+        {isAlive || locActive && (
           <TouchableOpacity
             style={[styles.actionButton, styles.fireButton]}
             onPress={() => fireMissile(item.username)}
