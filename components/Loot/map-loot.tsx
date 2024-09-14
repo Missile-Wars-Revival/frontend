@@ -36,7 +36,10 @@ export const LootDrop = (props: LootProps) => {
         <View>
             {/* Render Circle */}
             <Circle
-                center={props.location}
+                center={{
+                    latitude: Number(props.location.latitude),
+                    longitude: Number(props.location.longitude)
+                }}
                 radius={20} //actual radius size
                 fillColor="rgba(0, 0, 255, 0.2)"
                 strokeColor="rgba(0, 0, 255, 0.8)"

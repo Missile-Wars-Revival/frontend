@@ -35,18 +35,19 @@ export const OtherDrop = (props: OtherProps) => {
     const { text } = convertimestampfuture(props.expiretime);
     return (
         <View>
-            {/* Render Circle */}
             <Circle
-                center={props.location}
-                radius={props.radius} //actual radius size
+                center={{
+                    latitude: Number(props.location.latitude),
+                    longitude: Number(props.location.longitude)
+                }}
+                radius={Number(props.radius)}
                 fillColor="rgba(0, 0, 255, 0.2)"
                 strokeColor="rgba(0, 0, 255, 0.8)"
             />
-            {/* Render Marker */}
             <Marker
                 coordinate={{
-                    latitude: props.location.latitude,
-                    longitude: props.location.longitude,
+                    latitude: Number(props.location.latitude),
+                    longitude: Number(props.location.longitude)
                 }}
                 title={`${props.type}`}
                 description={`${text}`}

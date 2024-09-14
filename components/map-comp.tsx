@@ -49,10 +49,6 @@ export const MapComp = (props: MapCompProps) => {
     const isDarkMode = colorScheme === 'dark';
     const mainmapstyles = StyleSheet.create({
         ...getMainMapStyles(isDarkMode),
-        relocateButton: {
-            ...getMainMapStyles(isDarkMode).relocateButton,
-            width: typeof width === 'number' ? width : 50, // Add a default value
-        },
     });
 
     const [region, setRegion] = useState({

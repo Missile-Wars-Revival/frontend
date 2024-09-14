@@ -102,17 +102,17 @@ const createStyles = (isDarkMode: boolean) => StyleSheet.create({
       opacity: 0.5,
     },
     relocateButton: {
-        position: 'absolute',
-        height: 42,  
-        width: 42,   
-        right: width * 0.05, // 5% from the right
-        bottom: height * 0.05, // 5% from the bottom
-        padding: 10,
-        backgroundColor: 'rgba(0, 0, 0, 0.6)', 
-        borderRadius: 21, 
-        alignItems: 'center', 
-        justifyContent: 'center', 
-    },
+      position: 'absolute',
+      height: 42,  
+      width: 42,   
+      right: width * 0.05, // 5% from the right
+      bottom: height * 0.05, // 5% from the bottom
+      padding: 10,
+      backgroundColor: 'rgba(0, 0, 0, 0.6)', 
+      borderRadius: 21, 
+      alignItems: 'center', 
+      justifyContent: 'center', 
+  },
 });
 
 export const getShopStyles = (colorScheme: 'light' | 'dark') => StyleSheet.create({

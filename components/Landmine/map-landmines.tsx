@@ -36,20 +36,25 @@ interface LandmineProps {
 
 export const MapLandmine = (landmineProps: LandmineProps) => {
     const resizedlandmineimage = LandmineImages[landmineProps.type];
-    const resizedlandmineicon = { width: 50, height: 50 }; // Custom size for image
+    const resizedlandmineicon = { width: 50, height: 50 };
 
     const { text } = convertimestampfuture(landmineProps.etaexpiretime);
     return(
         <View>
-            {/* Render Circle at destination coords */}
             <Circle
-                center={landmineProps.location}
+                center={{
+                    latitude: Number(landmineProps.location.latitude),
+                    longitude: Number(landmineProps.location.longitude)
+                }}
                 radius={10}
                 fillColor="rgba(128, 128, 128, 0.3)"
                 strokeColor="rgba(128, 128, 128, 0.8)" 
-                />
+            />
             <Marker
-                coordinate={landmineProps.location}
+                coordinate={{
+                    latitude: Number(landmineProps.location.latitude),
+                    longitude: Number(landmineProps.location.longitude)
+                }}
                 title={`Landmine: ${landmineProps.type}`}
                 description={`${text}`}
             >
