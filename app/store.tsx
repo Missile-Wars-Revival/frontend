@@ -20,6 +20,11 @@ export const products: Product[] = [
 
 const { width, height } = Dimensions.get('window');
 
+export const getImageForProduct = (identifier: string): ImageSourcePropType => {
+  return shopimages[identifier] || shopimages.default;
+};
+
+
 const StorePage: React.FC = () => {
   const [cart, setCart] = useState<{ product: Product; quantity: number }[]>([]);
   const [isCartVisible, setCartVisible] = useState<boolean>(false);
@@ -35,10 +40,6 @@ const StorePage: React.FC = () => {
   const [isLoadingPremium, setIsLoadingPremium] = useState<boolean>(true);
   const [isPurchasing, setIsPurchasing] = useState<boolean>(false);
   const [cartTotal, setCartTotal] = useState<number>(0);
-
-  const getImageForProduct = (identifier: string): ImageSourcePropType => {
-    return shopimages[identifier] || shopimages.default;
-  };
 
   useEffect(() => {
     const fetchWeapons = async () => {
@@ -344,7 +345,7 @@ const StorePage: React.FC = () => {
             )}
             {selectedWeapon.type === 'Landmines' && (
               <>
-              <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>Duration: {selectedWeapon.duration} mins</Text>
+              <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>Duration: {selectedWeapon.duration} hours</Text>
               <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>Damage: {selectedWeapon.damage}</Text>
               </>
             )}

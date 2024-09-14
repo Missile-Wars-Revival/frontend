@@ -346,6 +346,40 @@ export const getShopStyles = (colorScheme: 'light' | 'dark') => StyleSheet.creat
       fontSize: 16,
       color: colorScheme === 'dark' ? '#FFF' : '#000',
     },
+    centeredView: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginTop: 22,
+    },
+    modalView: {
+      margin: 20,
+      backgroundColor: 'white',
+      borderRadius: 20,
+      padding: 35,
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 4,
+      elevation: 5,
+    },
+    modalViewDark: {
+      backgroundColor: '#333',
+    },
+    button: {
+      borderRadius: 20,
+      padding: 10,
+      elevation: 2,
+    },
+    buttonClose: {
+      backgroundColor: '#2196F3',
+    },
+    textStyle: {
+      color: 'white',
+      fontWeight: 'bold',
+      textAlign: 'center',
+    },
   });
 
 export const getMainMapStyles = (isDarkMode: boolean) => createStyles(isDarkMode);

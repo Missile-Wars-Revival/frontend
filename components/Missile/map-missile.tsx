@@ -1,9 +1,12 @@
-import React from "react";
-import { View, Image, Platform } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, Image, Platform, ScrollView, Text, useColorScheme, Modal, TouchableOpacity } from "react-native";
 import { Circle, Marker, Polyline } from "react-native-maps";
 import { missileImages } from "./missile";
 import { GeoLocation, Missile } from "middle-earth";
 import { convertimestampfuturemissile } from "../../util/get-time-difference";
+import { getWeaponTypes, Product } from "../../api/store";
+import { getImageForProduct } from "../../app/store";
+import { getShopStyles } from "../../map-themes/stylesheet";
 
 interface AllMissilesProps {
     missileData: Missile[];
@@ -18,6 +21,7 @@ interface MissileProps {
     destination: GeoLocation;
     currentLocation: GeoLocation;
     trajectoryCoordinates: TrajectCalc[];
+    sentbyusername: string;
     radius: number;
     type: string;
     status: string;
@@ -25,9 +29,10 @@ interface MissileProps {
 }
 
 export const AllMissiles = (props: AllMissilesProps) => {
+
     return (
         <>
-            {props.missileData.map(({ destination, currentLocation, radius, type, status, etatimetoimpact }, index) => {
+            {props.missileData.map(({ destination, currentLocation, radius, type, status, etatimetoimpact, sentbyusername }, index) => {
 
                 // Define a mapping of image paths with an index signature (paths found in components)
 
@@ -42,6 +47,7 @@ export const AllMissiles = (props: AllMissilesProps) => {
                         <MapMissile destination={destination}
                             currentLocation={currentLocation}
                             trajectoryCoordinates={trajectoryCoordinates}
+                            sentbyusername={sentbyusername}
                             radius={radius}
                             type={type}
                             status={status}
@@ -55,6 +61,39 @@ export const AllMissiles = (props: AllMissilesProps) => {
 
 
 export const MapMissile = (missileProps: MissileProps) => {
+
+    const [weapons, setWeapons] = useState<Product[]>([]);
+    const [selectedMissile, setSelectedMissile] = useState<MissileProps | null>(null);
+    const [missileDetails, setMissileDetails] = useState<Product | null>(null);
+    const [modalVisible, setModalVisible] = useState(false);
+
+    useEffect(() => {
+        const fetchWeapons = async () => {
+          try {
+            const response = await getWeaponTypes();
+            const { missileTypes } = response;
+    
+            const mappedMissiles = missileTypes.map((missile: any) => ({
+              id: missile.name,
+              name: missile.name,
+              type: 'Missiles',
+              price: missile.price,
+              image: getImageForProduct(missile.name),
+              description: missile.description,
+              speed: missile.speed,
+              radius: missile.radius,
+              damage: missile.damage,
+              fallout: missile.fallout,
+            }));
+    
+            setWeapons([...mappedMissiles]);
+          } catch (error) {
+            console.error('Error fetching weapons:', error);
+          }
+        };
+    
+        fetchWeapons();
+      }, []);
 
     const geolib = require('geolib');
 
@@ -82,7 +121,7 @@ export const MapMissile = (missileProps: MissileProps) => {
 
     // Determine the description based on the missile status
     let description = `${missileProps.status}`;
-    if (missileProps.status === "Incoming") {
+    if (missileProps.status === `Incoming. Sent by: ${missileProps.sentbyusername}`) {
         const { text } = convertimestampfuturemissile(missileProps.etatimetoimpact);
         description += ` ETA: ${text}`;
     }
@@ -92,6 +131,49 @@ export const MapMissile = (missileProps: MissileProps) => {
     // }
 
     const isAndroid = Platform.OS === 'android';
+
+    const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark';
+  const styles = getShopStyles(isDarkMode ? 'dark' : 'light');
+
+    const handleMarkerPress = () => {
+        setSelectedMissile(missileProps);
+        const missileProduct = weapons.find(weapon => weapon.name === missileProps.type);
+        setMissileDetails(missileProduct || null);
+        setModalVisible(true);
+    };
+
+    const renderMissileDetails = () => {
+        if (!selectedMissile || !missileDetails) return null;
+
+        return (
+            <ScrollView style={[styles.modalContainer, isDarkMode && styles.modalContainerDark]}>
+                <View style={styles.modalHeader}>
+                    <Image source={missileImages[selectedMissile.type]} style={styles.modalImage} />
+                    <View style={styles.modalTitleContainer}>
+                        <Text style={[styles.modalTitle, isDarkMode && styles.modalTitleDark]}>{selectedMissile.type}</Text>
+                        <Text style={[styles.modalPrice, isDarkMode && styles.modalPriceDark]}>🪙{missileDetails.price}</Text>
+                    </View>
+                </View>
+                <View style={styles.modalContent}>
+                    <Text style={[styles.modalDescription, isDarkMode && styles.modalDescriptionDark]}>
+                        {missileDetails.description}
+                    </Text>
+                    <View style={styles.modalStatsContainer}>
+                        <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>Speed: {missileDetails.speed} m/s</Text>
+                        <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>Radius: {selectedMissile.radius} m</Text>
+                        <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>Fallout: {missileDetails.fallout} mins</Text>
+                        <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>Damage: {missileDetails.damage} per 30 seconds</Text>
+                        <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>Status: {selectedMissile.status}</Text>
+                        <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>Sent by: {selectedMissile.sentbyusername}</Text>
+                        <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>
+                            ETA: {convertimestampfuturemissile(selectedMissile.etatimetoimpact).text}
+                        </Text>
+                    </View>
+                </View>
+            </ScrollView>
+        );
+    };
 
     return (
         <View>
@@ -112,6 +194,7 @@ export const MapMissile = (missileProps: MissileProps) => {
                 coordinate={missileProps.currentLocation}
                 title={`Missile: ${missileProps.type}`}
                 description={description}
+                onPress={handleMarkerPress}
             >
                 <Image source={resizedmissileimage} style={resizedmissileicon} />
             </Marker>
@@ -121,6 +204,24 @@ export const MapMissile = (missileProps: MissileProps) => {
                 strokeColor="red"
                 strokeWidth={3}
             />
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={modalVisible}
+                onRequestClose={() => setModalVisible(false)}
+            >
+                <View style={styles.centeredView}>
+                    <View style={[styles.modalView, isDarkMode && styles.modalViewDark]}>
+                        {renderMissileDetails()}
+                        <TouchableOpacity
+                            style={[styles.button, styles.buttonClose]}
+                            onPress={() => setModalVisible(false)}
+                        >
+                            <Text style={styles.textStyle}>Close</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </View>
     )
 }
