@@ -36,9 +36,9 @@ import useFetchHealth from "../hooks/websockets/healthhook";
 import { getlocActive } from "../api/locActive";
 
 const adUnitId = Platform.select({
-  ios: 'ca-app-pub-4035842398612787/IOSADUNITID',
-  android: 'ca-app-pub-4035842398612787/8310612855',
-  default: 'ca-app-pub-4035842398612787/8310612855',
+  ios: 'ca-app-pub-4035842398612787~7024601286',
+  android: 'ca-app-pub-4035842398612787~8146111264',
+  default: 'ca-app-pub-4035842398612787~8146111264',
 });
 
 const rewarded = RewardedAd.createForAdRequest(adUnitId, {
@@ -224,16 +224,32 @@ export default function Map() {
     }, []);
 
     useEffect(() => {
+      // Fetch immediately on component mount
       fetchLocActiveStatus();
-  }, []);
-
+      // Set up interval to fetch every 30 seconds (adjust as needed)
+      const intervalId = setInterval(fetchLocActiveStatus, 30000);
+  
+      // Clean up interval on component unmount
+      return () => {
+        clearInterval(intervalId);
+      };
+    }, []);
+    
     const fetchLocActiveStatus = async () => {
       try {
-        const status = await getlocActive();
-        setLocActive(status);
+        const cachedStatus = await AsyncStorage.getItem('locActive');
+        if (cachedStatus !== null) {
+          setLocActive(JSON.parse(cachedStatus));
+        }
+        
+        // Fetch from API and update if different
+        const apiStatus = await getlocActive();
+        if (apiStatus !== JSON.parse(cachedStatus || 'true')) {
+          setLocActive(apiStatus);
+          await AsyncStorage.setItem('locActive', JSON.stringify(apiStatus));
+        }
       } catch (error) {
         console.error("Failed to fetch locActive status:", error);
-      } finally {
       }
     };
 

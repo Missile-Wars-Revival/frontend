@@ -10,6 +10,7 @@ import { fetchAndCacheImage } from "../util/imagecache";
 import { useNotifications, notificationEmitter } from "../components/Notifications/useNotifications";
 import useFetchFriends from "../hooks/websockets/friendshook";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getlocActive } from "../api/locActive";
 
 interface Friend {
   username: string;
@@ -34,6 +35,7 @@ const FriendsPage: React.FC = () => {
   const [localUnreadCount, setLocalUnreadCount] = useState(initialUnreadCount);
   const [isAlive, setIsAlive] = useState<boolean>(true);
   const colorScheme = useColorScheme();
+  const [locActive, setLocActive] = useState<boolean>(true);
   const isDarkMode = colorScheme === 'dark';
 
   const handleUnreadCountUpdate = useCallback((count: number) => {
@@ -67,6 +69,36 @@ const FriendsPage: React.FC = () => {
 		initializeApp();
 
 	  }, []);
+
+    useEffect(() => {
+      // Fetch immediately on component mount
+      fetchLocActiveStatus();
+      // Set up interval to fetch every 30 seconds (adjust as needed)
+      const intervalId = setInterval(fetchLocActiveStatus, 30000);
+  
+      // Clean up interval on component unmount
+      return () => {
+        clearInterval(intervalId);
+      };
+    }, []);
+    
+    const fetchLocActiveStatus = async () => {
+      try {
+        const cachedStatus = await AsyncStorage.getItem('locActive');
+        if (cachedStatus !== null) {
+          setLocActive(JSON.parse(cachedStatus));
+        }
+        
+        // Fetch from API and update if different
+        const apiStatus = await getlocActive();
+        if (apiStatus !== JSON.parse(cachedStatus || 'true')) {
+          setLocActive(apiStatus);
+          await AsyncStorage.setItem('locActive', JSON.stringify(apiStatus));
+        }
+      } catch (error) {
+        console.error("Failed to fetch locActive status:", error);
+      }
+    };
 
   const handleRemPress = (friendUsername: string) => {
     setSelectedFriend(friendUsername);
@@ -309,7 +341,7 @@ const FriendsPage: React.FC = () => {
               <Text style={styles.doneButtonText}>Done</Text>
             </TouchableOpacity>
           </View>
-          {isAlive ? (
+          {isAlive || locActive ? (
             <MissileLibrary 
               playerName={selectedPlayer} 
               onMissileFired={() => {
