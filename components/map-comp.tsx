@@ -302,7 +302,6 @@ export const MapComp = (props: MapCompProps) => {
 
     // Render map and other components once initialization is complete
     return (
-        <ErrorBoundary>
             <View style={mainmapstyles.container}>
                 <View style={{ width: '100%', height: '100%' }}>
                     <MapView
@@ -311,7 +310,6 @@ export const MapComp = (props: MapCompProps) => {
                         showsCompass={false}
                         showsTraffic={false}
                         showsUserLocation={true}
-                        showsMyLocationButton={Platform.OS === 'android'}
                         pitchEnabled={true}
                         rotateEnabled={true}
                         scrollEnabled={true}
@@ -363,6 +361,5 @@ export const MapComp = (props: MapCompProps) => {
                     />
                 </View>
             </View>
-        </ErrorBoundary>
     );
 };
