@@ -52,33 +52,27 @@ export default function RootLayout() {
   const configurePurchases = useCallback(async () => {
     try {
       console.log('Configuring RevenueCat...');
-      Purchases.setDebugLogsEnabled(true);
+      Purchases.setDebugLogsEnabled(true); // Enable debug logs
       
       let apiKey;
       if (Platform.OS === 'ios') {
-        apiKey = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_APPLE;
-        console.log('Using iOS API Key:', apiKey);
+        apiKey = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_APPLE; // iOS API Key
       } else if (Platform.OS === 'android') {
-        apiKey = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_GOOGLE;
-        console.log('Using Android API Key:', apiKey);
+        apiKey = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_GOOGLE; // Android API Key
       }
 
       if (!apiKey) {
-        throw new Error('RevenueCat API key is not set');
+        throw new Error('RevenueCat API key is not set'); // Error if API key is missing
       }
 
-      await Purchases.configure({ apiKey });
+      await Purchases.configure({ apiKey }); // Configure Purchases
       console.log('RevenueCat configured successfully');
 
-      const customerInfo = await Purchases.getCustomerInfo();
-      //console.log('Customer Info:', customerInfo);
+      const customerInfo = await Purchases.getCustomerInfo(); // Fetch customer info
+      // console.log('Customer Info:', customerInfo); // Uncomment for debugging
 
     } catch (error) {
-      console.error('Failed to initialize Purchases:', error);
-      if (error instanceof Error) {
-        console.error('Error message:', error.message);
-        console.error('Error stack:', error.stack);
-      }
+      console.error('Failed to initialize Purchases:', error); // Log initialization errors
     }
   }, []);
 

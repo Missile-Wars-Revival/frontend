@@ -2,7 +2,6 @@ import React from "react";
 import { PlayerComp } from "./player";
 import { getTimeDifference, isInactiveFor12Hours } from "../util/get-time-difference";
 import useFetchPlayerlocations from "../hooks/websockets/playerlochook";
-import { Platform } from "react-native";
 
 export interface Players {
   username: string;
@@ -14,27 +13,24 @@ export interface Players {
 }
 
 export const AllPlayers = () => {
-  const otherPlayersData = useFetchPlayerlocations()
-  const isAndroid = Platform.OS === 'android';
+
+  const otherPlayersData = useFetchPlayerlocations() 
 
   return (
     <>
       {otherPlayersData
-        .filter(player => !isInactiveFor12Hours(player.updatedAt))
+      .filter(player => !isInactiveFor12Hours(player.updatedAt))
         .map((player, index) => {
           const { text } = getTimeDifference(player.updatedAt);
 
-          const location = isAndroid ? {
-            latitude: parseFloat((player.latitude ?? 0).toFixed(6)),
-            longitude: parseFloat((player.longitude ?? 0).toFixed(6))
-          } : {
-            latitude: player.latitude ?? 0,
-            longitude: player.longitude ?? 0
+          const location = {
+            latitude: player.latitude ?? 0, // Fallback to 0 if undefined
+            longitude: player.longitude ?? 0 // Fallback to 0 if undefined
           };
 
           return (
             <React.Fragment key={index}>
-              <PlayerComp index={index} player={player} location={location} timestamp={text} health={player.health} />
+              <PlayerComp index={index} player={player} location={location} timestamp={text} health={player.health} ></PlayerComp> 
               {/* transportStatus={player.transportStatus} */}
             </React.Fragment>
           );
