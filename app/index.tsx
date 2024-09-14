@@ -35,7 +35,11 @@ import { RewardedAd, RewardedAdEventType, TestIds } from "react-native-google-mo
 import useFetchHealth from "../hooks/websockets/healthhook";
 import { getlocActive } from "../api/locActive";
 
-const adUnitId =  __DEV__ ? TestIds.REWARDED : 'ca-app-pub-4035842398612787/8310612855';
+const adUnitId = Platform.select({
+  ios: 'ca-app-pub-4035842398612787/IOSADUNITID',
+  android: 'ca-app-pub-4035842398612787/8310612855',
+  default: 'ca-app-pub-4035842398612787/8310612855',
+});
 
 const rewarded = RewardedAd.createForAdRequest(adUnitId, {
   keywords: ['games', 'clothing'], //ads category

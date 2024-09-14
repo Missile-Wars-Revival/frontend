@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, Switch, Alert, Platform, ActivityIndicator, TouchableOpacity, useColorScheme, StyleSheet } from "react-native";
+import { View, Text, Switch, Alert, Platform, ActivityIndicator, TouchableOpacity, useColorScheme, StyleSheet, Dimensions } from "react-native";
 import MapView from "react-native-maps";
 import { AllLootDrops } from "./Loot/map-loot";
 import { AllLandMines } from "./Landmine/map-landmines";
@@ -26,6 +26,8 @@ interface MapCompProps {
     selectedMapStyle: any;
 }
 
+const { width, height } = Dimensions.get('window');
+
 export const MapComp = (props: MapCompProps) => {
 
     //WS hooks
@@ -47,6 +49,10 @@ export const MapComp = (props: MapCompProps) => {
     const isDarkMode = colorScheme === 'dark';
     const mainmapstyles = StyleSheet.create({
         ...getMainMapStyles(isDarkMode),
+        relocateButton: {
+            ...getMainMapStyles(isDarkMode).relocateButton,
+            width: typeof width === 'number' ? width : 50, // Add a default value
+        },
     });
 
     const [region, setRegion] = useState({
