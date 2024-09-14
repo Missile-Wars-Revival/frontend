@@ -20,28 +20,36 @@ export async function getCurrentLocation(): Promise<location> {
         throw new Error('Location fetching is disabled because the app is not active.');
     }
 
-    let useBackground = await AsyncStorage.getItem('useBackgroundLocation');
+    let useBackground = await AsyncStorage.getItem('useBackgroundLocation') === 'true';
     let foregroundStatus, backgroundStatus;
 
-    // Request foreground permissions first
-    ({ status: foregroundStatus } = await Location.requestForegroundPermissionsAsync());
-
-    if (foregroundStatus !== 'granted') {
-        throw new Error('Foreground location access permission was denied');
+    // Check and request foreground permissions
+    foregroundStatus = await Location.getForegroundPermissionsAsync();
+    if (foregroundStatus.status !== 'granted') {
+        foregroundStatus = await Location.requestForegroundPermissionsAsync();
+        if (foregroundStatus.status !== 'granted') {
+            throw new Error('Foreground location access permission was denied');
+        }
     }
 
-    // Attempt to request background permissions if enabled and on Android 10+
-    if (useBackground === 'true' && Platform.OS === 'android' && Platform.Version >= 29) {
-        ({ status: backgroundStatus } = await Location.requestBackgroundPermissionsAsync());
-
-        if (backgroundStatus !== 'granted') {
-            console.log('Background location permission not granted');
-            await AsyncStorage.setItem('useBackgroundLocation', 'false');
+    // Check and request background permissions if needed
+    if (useBackground) {
+        if (Platform.OS === 'ios' || (Platform.OS === 'android' && Platform.Version >= 29)) {
+            backgroundStatus = await Location.getBackgroundPermissionsAsync();
+            if (backgroundStatus.status !== 'granted') {
+                backgroundStatus = await Location.requestBackgroundPermissionsAsync();
+                if (backgroundStatus.status !== 'granted') {
+                    console.log('Background location permission not granted');
+                    await AsyncStorage.setItem('useBackgroundLocation', 'false');
+                    useBackground = false;
+                }
+            }
         }
     }
 
     // Update the permission status in AsyncStorage
-    await AsyncStorage.setItem('locationPermissionStatus', foregroundStatus);
+    await AsyncStorage.setItem('locationPermissionStatus', foregroundStatus.status);
+    await AsyncStorage.setItem('useBackgroundLocation', useBackground.toString());
 
     // Fetch the current location
     const location = await Location.getCurrentPositionAsync({});
@@ -74,7 +82,9 @@ export const getlocation = async () => {
             latitude: location.latitude,
             longitude: location.longitude,
             latitudeDelta: 0.01,
-            longitudeDelta: 0.01
+            longitudeDelta: 0.01,
+            pitch: 0,
+            heading: 0
         };
         await saveLocation(newRegion);
     } catch (error) {

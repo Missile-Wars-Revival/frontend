@@ -171,6 +171,8 @@ export const MissilePlacementPopup: React.FC<MissilePlacementPopupProps> = ({ vi
         longitude: details.geometry.location.lng,
         latitudeDelta: 0.01,
         longitudeDelta: 0.01,
+        pitch: 0,
+        heading: 0
       };
       setRegion(newRegion);
       setMarker(newRegion);
@@ -261,7 +263,11 @@ export const MissilePlacementPopup: React.FC<MissilePlacementPopupProps> = ({ vi
             style={styles.map}
             initialRegion={region ?? undefined}
             showsUserLocation={true}
-            showsMyLocationButton={true}
+            showsMyLocationButton={Platform.OS === 'android'}
+                pitchEnabled={true}
+                rotateEnabled={true}
+                scrollEnabled={true}
+                zoomEnabled={true}
             onPress={(e) => setMarker({
               latitude: e.nativeEvent.coordinate.latitude,
               longitude: e.nativeEvent.coordinate.longitude,

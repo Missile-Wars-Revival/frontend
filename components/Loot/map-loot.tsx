@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Image } from "react-native";
+import { View, Image, Platform } from "react-native";
 import { Marker, Circle } from "react-native-maps";
 import { GeoLocation, Loot } from "middle-earth";
 import { convertimestampfuture } from "../../util/get-time-difference";
@@ -29,24 +29,32 @@ export const AllLootDrops = (props: AllLootDropsProps) => {
     )
 }
 
-
 export const LootDrop = (props: LootProps) => {
     const { text } = convertimestampfuture(props.expiretime);
+    const isAndroid = Platform.OS === 'android';
+
     return (
         <View>
             {/* Render Circle */}
             <Circle
-                center={props.location}
-                radius={20} //actual radius size
+                center={isAndroid ? {
+                    latitude: parseFloat(props.location.latitude.toFixed(6)),
+                    longitude: parseFloat(props.location.longitude.toFixed(6))
+                } : props.location}
+                radius={20}
                 fillColor="rgba(0, 0, 255, 0.2)"
                 strokeColor="rgba(0, 0, 255, 0.8)"
+                {...(isAndroid && {
+                    strokeWidth: 1,
+                    zIndex: 1,
+                })}
             />
             {/* Render Marker */}
             <Marker
-                coordinate={{
-                    latitude: props.location.latitude,
-                    longitude: props.location.longitude,
-                }}
+                coordinate={isAndroid ? {
+                    latitude: parseFloat(props.location.latitude.toFixed(6)),
+                    longitude: parseFloat(props.location.longitude.toFixed(6))
+                } : props.location}
                 title={`Loot Rarity: ${props.rarity}`}
                 description={`${text}`}
             >

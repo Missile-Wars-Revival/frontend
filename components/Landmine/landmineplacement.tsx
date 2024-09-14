@@ -51,7 +51,7 @@ export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ 
 
   async function initializeLocation() {
     setLoading(true);
-    
+
     // First, try to load the last known location
     const lastKnownLocation = await loadLastKnownLocation();
     if (lastKnownLocation) {
@@ -105,7 +105,7 @@ export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ 
       try {
         const isDBConnection = await AsyncStorage.getItem('dbconnection');
         setDbConnection(isDBConnection === "true");
-        
+
         const isAliveStatus = await AsyncStorage.getItem('isAlive');
         if (isAliveStatus !== null) {
           const isAliveData = JSON.parse(isAliveStatus);
@@ -156,11 +156,11 @@ export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ 
     }
   };
 
-    //WS hooks
-    const missileData = useFetchMissiles()
-    const lootData = useFetchLoot()
-    const otherData = useFetchOther()
-    const LandmineData = useFetchLandmines()
+  //WS hooks
+  const missileData = useFetchMissiles()
+  const lootData = useFetchLoot()
+  const otherData = useFetchOther()
+  const LandmineData = useFetchLandmines()
 
   return (
     <Modal
@@ -240,6 +240,10 @@ export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ 
             initialRegion={region ?? undefined}
             showsUserLocation={true}
             showsMyLocationButton={true}
+            pitchEnabled={true}
+            rotateEnabled={true}
+            scrollEnabled={true}
+            zoomEnabled={true}
             onPress={(e) => setMarker({
               latitude: e.nativeEvent.coordinate.latitude,
               longitude: e.nativeEvent.coordinate.longitude,

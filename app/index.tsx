@@ -59,30 +59,35 @@ export default function Map() {
 
   useEffect(() => {
     const requestLocationPermission = async () => {
-      let foregroundStatus = await Location.requestForegroundPermissionsAsync();
-      
-      if (foregroundStatus.status !== 'granted') {
-        Alert.alert(
-          "Permission Denied",
-          "Please allow location access to use the map features.",
-          [
-            { text: "OK", onPress: () => console.log("OK Pressed") },
-            { text: "Open Settings", onPress: () => Linking.openSettings() }
-          ]
-        );
-        setLocationPermission(false);
-        return;
-      }
-
-      if (Platform.OS === 'android' && Platform.Version >= 29) {
-        let backgroundStatus = await Location.requestBackgroundPermissionsAsync();
-        if (backgroundStatus.status !== 'granted') {
-          // Optionally alert the user that background location is not enabled
-          console.log('Background location permission not granted');
+      try {
+        let { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
+        
+        if (foregroundStatus !== 'granted') {
+          Alert.alert(
+            "Permission Denied",
+            "Please allow location access to use the map features.",
+            [
+              { text: "OK", onPress: () => console.log("OK Pressed") },
+              { text: "Open Settings", onPress: () => Linking.openSettings() }
+            ]
+          );
+          setLocationPermission(false);
+          return;
         }
-      }
 
-      setLocationPermission(true);
+        if (Platform.OS === 'android' && parseInt(Platform.Version.toString(), 10) >= 29) {
+          let { status: backgroundStatus } = await Location.requestBackgroundPermissionsAsync();
+          if (backgroundStatus !== 'granted') {
+            console.log('Background location permission not granted');
+            // Optionally, inform the user about limited functionality
+          }
+        }
+
+        setLocationPermission(true);
+      } catch (error) {
+        console.error("Error requesting location permission:", error);
+        setLocationPermission(false);
+      }
     };
 
     requestLocationPermission();

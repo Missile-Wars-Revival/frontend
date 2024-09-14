@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Image } from "react-native";
+import { View, Image, Platform } from "react-native";
 import { Circle, Marker, Polyline } from "react-native-maps";
 import { missileImages } from "./missile";
 import { GeoLocation, Missile } from "middle-earth";
@@ -91,6 +91,8 @@ export const MapMissile = (missileProps: MissileProps) => {
     //     description += ` Fallout: ${text}`;
     // }
 
+    const isAndroid = Platform.OS === 'android';
+
     return (
         <View>
             {/* Render Circle at destination coords */}
@@ -99,6 +101,11 @@ export const MapMissile = (missileProps: MissileProps) => {
                 radius={missileProps.radius}
                 fillColor="rgba(255, 0, 0, 0.2)"
                 strokeColor="rgba(255, 0, 0, 0.8)"
+                // Add these props for Android
+                {...(isAndroid && {
+                    strokeWidth: 1,
+                    zIndex: 1,
+                })}
             />
             {/* Render Marker at current coords */}
             <Marker

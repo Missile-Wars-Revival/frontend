@@ -50,7 +50,7 @@ export const LootPlacementPopup: React.FC<LootPlacementPopupProps> = ({ visible,
 
   async function initializeLocation() {
     setLoading(true);
-    
+
     // First, try to load the last known location
     const lastKnownLocation = await loadLastKnownLocation();
     if (lastKnownLocation) {
@@ -104,7 +104,7 @@ export const LootPlacementPopup: React.FC<LootPlacementPopupProps> = ({ visible,
       try {
         const isDBConnection = await AsyncStorage.getItem('dbconnection');
         setDbConnection(isDBConnection === "true");
-        
+
         const isAliveStatus = await AsyncStorage.getItem('isAlive');
         if (isAliveStatus !== null) {
           const isAliveData = JSON.parse(isAliveStatus);
@@ -148,6 +148,8 @@ export const LootPlacementPopup: React.FC<LootPlacementPopupProps> = ({ visible,
         longitude: details.geometry.location.lng,
         latitudeDelta: 0.002,
         longitudeDelta: 0.002,
+        pitch: 0,
+        heading: 0
       };
       setRegion(newRegion);
       setMarker(newRegion);
@@ -239,6 +241,10 @@ export const LootPlacementPopup: React.FC<LootPlacementPopupProps> = ({ visible,
             initialRegion={region ?? undefined}
             showsUserLocation={true}
             showsMyLocationButton={true}
+            pitchEnabled={true}
+            rotateEnabled={true}
+            scrollEnabled={true}
+            zoomEnabled={true}
             onPress={(e) => setMarker({
               latitude: e.nativeEvent.coordinate.latitude,
               longitude: e.nativeEvent.coordinate.longitude,

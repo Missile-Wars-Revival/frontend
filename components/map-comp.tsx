@@ -54,6 +54,8 @@ export const MapComp = (props: MapCompProps) => {
         longitude: 0,
         latitudeDelta: 0.01,
         longitudeDelta: 0.01,
+        pitch: 0,
+        heading: 0
     });
 
     useEffect(() => {
@@ -269,7 +271,7 @@ export const MapComp = (props: MapCompProps) => {
         );
     }
 
-    const relocate = async (setRegion: (arg0: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number; }) => void) => {
+    const relocate = async (setRegion: (arg0: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number; pitch: number; heading: number; }) => void) => {
         try {
             const cachedLocation = await loadLastKnownLocation();
             if (cachedLocation) {
@@ -282,7 +284,9 @@ export const MapComp = (props: MapCompProps) => {
                         latitude: location.latitude,
                         longitude: location.longitude,
                         latitudeDelta: 0.01,
-                        longitudeDelta: 0.01
+                        longitudeDelta: 0.01,
+                        pitch: 0,
+                        heading: 0
                     };
                     await saveLocation(newRegion);
                     setRegion(newRegion);
@@ -302,7 +306,11 @@ export const MapComp = (props: MapCompProps) => {
                 showsCompass={false}
                 showsTraffic={false}
                 showsUserLocation={true}
-                showsMyLocationButton={true}
+                showsMyLocationButton={Platform.OS === 'android'}
+                pitchEnabled={true}
+                rotateEnabled={true}
+                scrollEnabled={true}
+                zoomEnabled={true}
                 customMapStyle={props.selectedMapStyle}>
                 <AllLootDrops lootLocations={lootData} />
                 <AllOther OtherLocations={otherData} />

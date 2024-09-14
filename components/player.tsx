@@ -71,8 +71,13 @@
 
 //   useEffect(() => {
 //     const loadProfileImage = async () => {
-//       const imageUrl = await fetchAndCacheImage(props.player.username);
-//       setProfileImageUrl(imageUrl);
+//       try {
+//         const imageUrl = await fetchAndCacheImage(props.player.username);
+//         setProfileImageUrl(imageUrl);
+//       } catch (error) {
+//         console.error("Failed to load profile image:", error);
+//         setProfileImageUrl(null); // Fallback to default image if loading fails
+//       }
 //     };
 
 //     loadProfileImage();
@@ -102,6 +107,14 @@
 //     }
 //   };
 
+//   const handleMarkerPress = () => {
+//     if (selectedMarkerIndex === props.index) {
+//       setSelectedMarkerIndex(null); // Reset to null instead of 10
+//     } else {
+//       setSelectedMarkerIndex(props.index);
+//     }
+//   };
+
 //   return (
 //     <View>
 //       <Circle
@@ -120,13 +133,7 @@
 //         }}
 //         title={props.player.username}
 //         description={props.timestamp}
-//         onPress={() => {
-//           if (selectedMarkerIndex === props.index) {
-//             setSelectedMarkerIndex(10);
-//           } else {
-//             setSelectedMarkerIndex(props.index);
-//           }
-//         }}
+//         onPress={handleMarkerPress} // Use the new handler
 //       >
 //         <View style={{ alignItems: 'center' }}>
 //           {getTransportImage(props.transportStatus) && (
@@ -141,7 +148,7 @@
 //           />
 //           <Text style={styles.username}>{props.player.username}</Text>
 
-//           {selectedMarkerIndex !== 10 && selectedMarkerIndex === props.index && props.player.username !== userName && (
+//           {selectedMarkerIndex !== null && selectedMarkerIndex === props.index && props.player.username !== userName && (
 //             <View style={{ backgroundColor: 'red', borderRadius: 5, marginTop: 2, padding: 2 }}>
 //               <Button
 //                 title="Fire Missile"
@@ -297,8 +304,13 @@ export const PlayerComp = (props: PlayerProps) => {
 
   useEffect(() => {
     const loadProfileImage = async () => {
-      const imageUrl = await fetchAndCacheImage(props.player.username);
-      setProfileImageUrl(imageUrl);
+      try {
+        const imageUrl = await fetchAndCacheImage(props.player.username);
+        setProfileImageUrl(imageUrl);
+      } catch (error) {
+        console.error("Failed to load profile image:", error);
+        setProfileImageUrl(null); // Fallback to default image if loading fails
+      }
     };
 
     loadProfileImage();
@@ -312,6 +324,14 @@ export const PlayerComp = (props: PlayerProps) => {
     const red = Math.round(255 * (100 - health) / 100);
     const green = Math.round(128 * health / 100);
     return `rgb(${red}, ${green}, 0)`;
+  };
+
+  const handleMarkerPress = () => {
+    if (selectedMarkerIndex === props.index) {
+      setSelectedMarkerIndex(null); // Reset to null instead of 10
+    } else {
+      setSelectedMarkerIndex(props.index);
+    }
   };
 
   return (
@@ -332,13 +352,7 @@ export const PlayerComp = (props: PlayerProps) => {
         }}
         title={props.player.username}
         description={props.timestamp}
-        onPress={() => {
-          if (selectedMarkerIndex === props.index) {
-            setSelectedMarkerIndex(10);
-          } else {
-            setSelectedMarkerIndex(props.index);
-          }
-        }}
+        onPress={handleMarkerPress} // Use the new handler
       >
         <View style={{ alignItems: 'center' }}>
           <Image 
@@ -347,7 +361,7 @@ export const PlayerComp = (props: PlayerProps) => {
           />
           <Text style={styles.username}>{props.player.username}</Text>
 
-          {selectedMarkerIndex !== 10 && selectedMarkerIndex === props.index && props.player.username !== userName && (
+          {selectedMarkerIndex !== null && selectedMarkerIndex === props.index && props.player.username !== userName && (
             <View style={{ backgroundColor: 'red', borderRadius: 5, marginTop: 2, padding: 2 }}>
               <Button
                 title="Fire Missile"

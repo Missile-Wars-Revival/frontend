@@ -80,7 +80,7 @@ export const OtherPlacementPopup: React.FC<OtherPlacementPopupProps> = ({ visibl
       try {
         const isDBConnection = await AsyncStorage.getItem('dbconnection');
         setDbConnection(isDBConnection === "true");
-        
+
         const isAliveStatus = await AsyncStorage.getItem('isAlive');
         if (isAliveStatus !== null) {
           const isAliveData = JSON.parse(isAliveStatus);
@@ -129,6 +129,8 @@ export const OtherPlacementPopup: React.FC<OtherPlacementPopupProps> = ({ visibl
         longitude: details.geometry.location.lng,
         latitudeDelta: 0.002,
         longitudeDelta: 0.002,
+        pitch: 0,
+        heading: 0
       };
       setRegion(newRegion);
       setMarker(newRegion);
@@ -136,11 +138,11 @@ export const OtherPlacementPopup: React.FC<OtherPlacementPopupProps> = ({ visibl
     }
   };
 
-      //WS hooks
-      const missileData = useFetchMissiles()
-      const lootData = useFetchLoot()
-      const otherData = useFetchOther()
-      const LandmineData = useFetchLandmines()
+  //WS hooks
+  const missileData = useFetchMissiles()
+  const lootData = useFetchLoot()
+  const otherData = useFetchOther()
+  const LandmineData = useFetchLandmines()
 
   return (
     <Modal
@@ -220,6 +222,10 @@ export const OtherPlacementPopup: React.FC<OtherPlacementPopupProps> = ({ visibl
             initialRegion={region ?? undefined}
             showsUserLocation={true}
             showsMyLocationButton={true}
+            pitchEnabled={true}
+            rotateEnabled={true}
+            scrollEnabled={true}
+            zoomEnabled={true}
             onPress={(e) => setMarker({
               latitude: e.nativeEvent.coordinate.latitude,
               longitude: e.nativeEvent.coordinate.longitude,
