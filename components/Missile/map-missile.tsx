@@ -114,6 +114,12 @@ export const MapMissile = (missileProps: MissileProps) => {
 
     const trajectoryCoordinates = generateTrajectory(missileProps.currentLocation, missileProps.destination, 100);
 
+    // Ensure all coordinates are numbers
+    const validTrajectoryCoordinates = trajectoryCoordinates.map(coord => ({
+        latitude: Number(coord.latitude),
+        longitude: Number(coord.longitude)
+    }));
+
     const resizedmissileimage = missileImages[missileProps.type];
     const resizedmissileicon = { width: 50, height: 50 }; // Custom size for image
 
@@ -215,7 +221,7 @@ export const MapMissile = (missileProps: MissileProps) => {
             </Marker>
             {/* Render trajectory line */}
             <Polyline
-                coordinates={trajectoryCoordinates}
+                coordinates={validTrajectoryCoordinates}
                 strokeColor="red"
                 strokeWidth={3}
             />
