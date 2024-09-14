@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableHighlight, Switch, ScrollView, Alert, StyleSheet } from 'react-native';
+import { View, Text, TouchableHighlight, Switch, ScrollView, Alert, StyleSheet, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Input } from "../components/ui/input";
@@ -10,6 +10,8 @@ import { updateFriendsOnlyStatus } from '../api/visibility';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColorScheme } from 'react-native';
 import { updatelocActive, getlocActive } from '../api/locActive';
+
+const { width } = Dimensions.get('window');
 
 const SettingsPage: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -420,15 +422,15 @@ const styles = StyleSheet.create({
     color: '#FFF',
   },
   settingsContainer: {
-    width: '90%',
+    width: width * 0.9,
     alignItems: 'center',
   },
   settingGroup: {
-    width: '100%',
+    width: width * 1,
     marginBottom: 20,
   },
   input: {
-    width: '100%',
+    width: width * 1,
     height: 50,
     paddingLeft: 40,
     borderRadius: 10,
@@ -466,7 +468,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     padding: 15,
     borderRadius: 10,
-    width: '100%',
+    width: width * 1,
     marginBottom: 15,
   },
   visibilityContainerDark: {

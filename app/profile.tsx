@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { SafeAreaView, StyleSheet, Text, View, TouchableOpacity, Switch, Modal, ScrollView, FlatList, Alert, Image } from 'react-native';
+import { SafeAreaView, StyleSheet, Text, View, TouchableOpacity, Switch, Modal, ScrollView, FlatList, Alert, Image, Dimensions } from 'react-native';
 import { router } from 'expo-router';
 import { clearCredentials } from '../util/logincache';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -21,6 +21,8 @@ const DEFAULT_IMAGE = require('../assets/mapassets/Female_Avatar_PNG.png');
 interface ItemImages {
   [key: string]: any;
 }
+
+const { width } = Dimensions.get('window');
 
 export const itemimages: ItemImages = {
   Amplifier: require('../assets/missiles/Amplifier.png'),
@@ -477,7 +479,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   badgesContainer: {
-    width: '100%',
+    width: width * 1,
     marginBottom: 20,
   },
   badgesList: {

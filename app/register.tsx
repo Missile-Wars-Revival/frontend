@@ -212,7 +212,7 @@ const lightStyles = StyleSheet.create({
     marginBottom: height * 0.02,
   },
   inputContainer: {
-    width: '90%',
+    width: width * 0.9,
   },
   inputWrapper: {
     marginBottom: 5,
@@ -233,7 +233,7 @@ const lightStyles = StyleSheet.create({
   registerButton: {
     backgroundColor: '#773765',
     borderRadius: 20,
-    width: '90%',
+    width: width * 0.9,
     height: height * 0.06,
     alignItems: 'center',
     justifyContent: 'center',
@@ -246,7 +246,7 @@ const lightStyles = StyleSheet.create({
   bottomContainer: {
     flex: 1,
     justifyContent: 'flex-end',
-    width: '100%',
+    width: width * 1,
     alignItems: 'center',
   },
   cometDivider: {
@@ -256,7 +256,7 @@ const lightStyles = StyleSheet.create({
   },
   backButton: {
     borderRadius: 20,
-    width: '90%',
+    width: width * 0.9,
     height: height * 0.06,
     alignItems: 'center',
     justifyContent: 'center',

@@ -265,7 +265,7 @@ const lightStyles = StyleSheet.create({
     marginBottom: height * 0.00001,
   },
   inputContainer: {
-    width: '90%',
+    width: width * 0.9,
     marginTop: height * 0.01,
   },
   inputWrapper: {
