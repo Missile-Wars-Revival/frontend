@@ -160,15 +160,24 @@ export const MapMissile = (missileProps: MissileProps) => {
                         {missileDetails.description}
                     </Text>
                     <View style={styles.modalStatsContainer}>
-                        <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>Speed: {missileDetails.speed} m/s</Text>
-                        <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>Radius: {selectedMissile.radius} m</Text>
-                        <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>Fallout: {missileDetails.fallout} mins</Text>
-                        <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>Damage: {missileDetails.damage} per 30 seconds</Text>
-                        <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>Status: {selectedMissile.status}</Text>
-                        <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>Sent by: {selectedMissile.sentbyusername}</Text>
-                        <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>
+                        {/* Prominent information */}
+                        <Text style={[styles.modalTextProminent, isDarkMode && styles.modalTextProminentDark]}>
+                            Status: {selectedMissile.status}
+                        </Text>
+                        <Text style={[styles.modalTextProminent, isDarkMode && styles.modalTextProminentDark]}>
+                            Sent by: {selectedMissile.sentbyusername}
+                        </Text>
+                        <Text style={[styles.modalTextProminent, isDarkMode && styles.modalTextProminentDark]}>
                             ETA: {convertimestampfuturemissile(selectedMissile.etatimetoimpact).text}
                         </Text>
+
+                        {/* Less important details */}
+                        <View style={styles.lessImportantDetails}>
+                            <Text style={[styles.modalTextSecondary, isDarkMode && styles.modalTextSecondaryDark]}>Speed: {missileDetails.speed} m/s</Text>
+                            <Text style={[styles.modalTextSecondary, isDarkMode && styles.modalTextSecondaryDark]}>Radius: {selectedMissile.radius} m</Text>
+                            <Text style={[styles.modalTextSecondary, isDarkMode && styles.modalTextSecondaryDark]}>Fallout: {missileDetails.fallout} mins</Text>
+                            <Text style={[styles.modalTextSecondary, isDarkMode && styles.modalTextSecondaryDark]}>Damage: {missileDetails.damage} per 30 seconds</Text>
+                        </View>
                     </View>
                 </View>
             </ScrollView>
@@ -179,7 +188,10 @@ export const MapMissile = (missileProps: MissileProps) => {
         <View>
             {/* Render Circle at destination coords */}
             <Circle
-                center={missileProps.destination}
+                center={{
+                    latitude: Number(missileProps.destination.latitude),
+                    longitude: Number(missileProps.destination.longitude)
+                }}
                 radius={missileProps.radius}
                 fillColor="rgba(255, 0, 0, 0.2)"
                 strokeColor="rgba(255, 0, 0, 0.8)"
@@ -191,7 +203,10 @@ export const MapMissile = (missileProps: MissileProps) => {
             />
             {/* Render Marker at current coords */}
             <Marker
-                coordinate={missileProps.currentLocation}
+                coordinate={{
+                    latitude: Number(missileProps.currentLocation.latitude),
+                    longitude: Number(missileProps.currentLocation.longitude)
+                }}
                 title={`Missile: ${missileProps.type}`}
                 description={description}
                 onPress={handleMarkerPress}

@@ -24,8 +24,8 @@ export const AllPlayers = () => {
           const { text } = getTimeDifference(player.updatedAt);
 
           const location = {
-            latitude: player.latitude ?? 0, // Fallback to 0 if undefined
-            longitude: player.longitude ?? 0 // Fallback to 0 if undefined
+            latitude: Number(player.latitude ?? 0), // Fallback to 0 if undefined
+            longitude: Number(player.longitude ?? 0) // Fallback to 0 if undefined
           };
 
           return (

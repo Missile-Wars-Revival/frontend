@@ -47,8 +47,8 @@ export const LootDrop = (props: LootProps) => {
             {/* Render Marker */}
             <Marker
                 coordinate={{
-                    latitude: props.location.latitude,
-                    longitude: props.location.longitude,
+                    latitude: Number(props.location.latitude),
+                    longitude: Number(props.location.longitude),
                 }}
                 title={`Loot Rarity: ${props.rarity}`}
                 description={`${text}`}

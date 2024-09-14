@@ -380,6 +380,43 @@ export const getShopStyles = (colorScheme: 'light' | 'dark') => StyleSheet.creat
       fontWeight: 'bold',
       textAlign: 'center',
     },
+    modalTextProminent: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      marginBottom: 10,
+      color: '#000', // Adjust color as needed
+    },
+    modalTextProminentDark: {
+      color: '#fff', // Adjust color for dark mode
+    },
+    lessImportantDetails: {
+      marginTop: 15,
+      paddingTop: 15,
+      borderTopWidth: 1,
+      borderTopColor: '#ccc',
+    },
+    modalTextSecondary: {
+      fontSize: 14,
+      color: '#666', // Adjust color as needed
+      marginBottom: 5,
+    },
+    modalTextSecondaryDark: {
+      color: '#aaa', // Adjust color for dark mode
+    },
+    closeButton: {
+      backgroundColor: '#e74c3c', // A red color, you can change this
+      paddingVertical: 10,
+      paddingHorizontal: 20,
+      borderRadius: 5,
+      alignSelf: 'center',
+      marginTop: 20,
+    },
+  
+    closeButtonText: {
+      color: '#fff',
+      fontSize: 16,
+      fontWeight: 'bold',
+    },
   });
 
 export const getMainMapStyles = (isDarkMode: boolean) => createStyles(isDarkMode);
