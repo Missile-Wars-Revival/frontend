@@ -338,8 +338,8 @@ export const PlayerComp = (props: PlayerProps) => {
     <View>
       <Circle
         center={{
-          latitude: props.location.latitude,
-          longitude: props.location.longitude,
+          latitude: Number(props.location.latitude),
+          longitude: Number(props.location.longitude),
         }}
         radius={6}
         fillColor="rgba(0, 255, 0, 0.2)"
@@ -347,8 +347,8 @@ export const PlayerComp = (props: PlayerProps) => {
       />
       <Marker
         coordinate={{
-          latitude: props.location.latitude,
-          longitude: props.location.longitude,
+          latitude: Number(props.location.latitude),
+          longitude: Number(props.location.longitude),
         }}
         title={props.player.username}
         description={props.timestamp}
