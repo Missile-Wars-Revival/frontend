@@ -1,14 +1,25 @@
 import React, { useEffect, useState } from 'react';
-import { SafeAreaView, StyleSheet, Text, View, Image, ScrollView, TouchableOpacity, Alert, useColorScheme, Platform, Dimensions } from 'react-native';
+import { SafeAreaView, StyleSheet, Text, View, Image, ScrollView, TouchableOpacity, Alert, useColorScheme, Platform, Dimensions, Modal, TouchableWithoutFeedback } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as SecureStore from "expo-secure-store";
 import { getuserprofile } from '../api/getprofile';
 import { fetchAndCacheImage } from '../util/imagecache';
 import useFetchFriends from '../hooks/websockets/friendshook';
 import { addFriend } from '../api/friends';
-const { width } = Dimensions.get('window');
 
 const DEFAULT_IMAGE = require('../assets/mapassets/Female_Avatar_PNG.png');
+
+const badgeImages = {
+  Founder: require('../assets/icons/founder.png'),
+  Staff: require('../assets/icons/staff.png'),
+  //leagues
+  Bronze: require('../assets/leagues/bronze.png'),
+  Silver: require('../assets/leagues/silver.png'),
+  Gold: require('../assets/leagues/gold.png'),
+  Diamond: require('../assets/leagues/diamond.png'),
+  Legend: require('../assets/leagues/legend.png')
+  // Add more badge images here
+};
 
 export interface Statistics {
   badges: string[];
@@ -40,6 +51,7 @@ const UserProfilePage: React.FC = () => {
   const router = useRouter();
   const friends = useFetchFriends();
   const [isFriend, setIsFriend] = useState(false);
+  const [selectedBadge, setSelectedBadge] = useState<string | null>(null);
 
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
@@ -121,6 +133,25 @@ const UserProfilePage: React.FC = () => {
     }
   };
 
+  const renderBadge = (badge: string) => {
+    const badgeKey = Object.keys(badgeImages).find(key => badge.toLowerCase().includes(key.toLowerCase()));
+    if (badgeKey) {
+      return (
+        <TouchableOpacity 
+          key={badge} 
+          style={styles.badge}
+          onPress={() => setSelectedBadge(badge)}
+        >
+          <Image 
+            source={badgeImages[badgeKey as keyof typeof badgeImages]} 
+            style={styles.badgeImage} 
+          />
+        </TouchableOpacity>
+      );
+    }
+    return null;
+  };
+
   if (!username) {
     return (
       <View style={[styles.loadingContainer, isDarkMode && styles.loadingContainerDark]}>
@@ -169,9 +200,7 @@ const UserProfilePage: React.FC = () => {
             <Text style={[styles.sectionTitle, isDarkMode && styles.sectionTitleDark]}>Badges</Text>
             <View style={styles.badgesList}>
               {userProfile.statistics.badges && userProfile.statistics.badges.length > 0 ? (
-                userProfile.statistics.badges.map((badge, index) => (
-                  <View key={index} style={[styles.badge, isDarkMode && styles.badgeDark]}><Text>{badge}</Text></View>
-                ))
+                userProfile.statistics.badges.map(renderBadge)
               ) : (
                 <Text style={[styles.text, isDarkMode && styles.textDark]}>No badges yet</Text>
               )}
@@ -209,6 +238,21 @@ const UserProfilePage: React.FC = () => {
           </ScrollView>
         </View>
       </ScrollView>
+
+      <Modal
+        visible={!!selectedBadge}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setSelectedBadge(null)}
+      >
+        <TouchableWithoutFeedback onPress={() => setSelectedBadge(null)}>
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, isDarkMode && styles.modalContentDark]}>
+              <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>{selectedBadge}</Text>
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -267,7 +311,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   badgesContainer: {
-    width: width * 1,
+    width: '100%',
     marginBottom: 20,
   },
   badgesList: {
@@ -279,10 +323,15 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#edf2f7',
     justifyContent: 'center',
     alignItems: 'center',
     margin: 5,
+    overflow: 'hidden',
+  },
+  badgeImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'contain',
   },
   sectionContainer: {
     marginBottom: 20,
@@ -414,6 +463,28 @@ const styles = StyleSheet.create({
   },
   loadingContainerDark: {
     backgroundColor: '#1E1E1E', // Dark mode background
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  modalContentDark: {
+    backgroundColor: '#2C2C2C',
+  },
+  modalText: {
+    fontSize: 18,
+    color: '#333',
+  },
+  modalTextDark: {
+    color: '#FFF',
   },
 });
 

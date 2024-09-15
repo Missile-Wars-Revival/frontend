@@ -21,7 +21,6 @@ import { FontAwesome } from '@expo/vector-icons';
 import useFetchOther from "../hooks/websockets/otherhook";
 import { AllOther } from "./Other/map-other";
 import { getlocActive } from "../api/locActive";
-import ErrorBoundary from './ErrorBoundary';
 
 interface MapCompProps {
     selectedMapStyle: any;

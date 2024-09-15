@@ -361,7 +361,7 @@ const StorePage: React.FC = () => {
             )}
             {selectedWeapon.name === 'UltraShield' && (
               <>
-               <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>AA shield will defend you against attacks for 12 hours.</Text>
+               <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>A shield will defend you against attacks for 12 hours.</Text>
               </>
             )}
           </View>

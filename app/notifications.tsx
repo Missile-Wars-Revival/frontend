@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { MissileLibrary } from '../components/Missile/missile';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getlocActive } from '../api/locActive';
 
 interface Notification {
 	id: string;
@@ -44,6 +45,7 @@ const NotificationsPage: React.FC = () => {
 	const [isAlive, setIsAlive] = useState<boolean>(true);
 	const [showMissileLibrary, setShowMissileLibrary] = useState(false);
 	const [selectedPlayer, setSelectedPlayer] = useState("");
+	const [locActive, setLocActive] = useState<boolean>(true);
 
 	const colorScheme = useColorScheme();
 	const isDarkMode = colorScheme === 'dark';
@@ -65,8 +67,19 @@ const NotificationsPage: React.FC = () => {
 		};
 
 		initializeApp();
+		fetchLocActiveStatus();
 
 	  }, []);
+
+	  const fetchLocActiveStatus = async () => {
+		try {
+		  const status = await getlocActive();
+		  setLocActive(status);
+		} catch (error) {
+		  console.error("Failed to fetch locActive status:", error);
+		} finally {
+		}
+	  };
 
 	const handleAccept = useCallback(async (item: Notification) => {
 		console.log('Accept friend request:', item);
@@ -207,29 +220,19 @@ const NotificationsPage: React.FC = () => {
 						</TouchableOpacity>
 					</View>
 				)}
-				{item.title === 'Eliminated!' && (
+				{['Incoming Missile!', 'Eliminated!'].includes(item.title) && (
 					<View style={styles.actionButtons}>
-						{isAlive && (
-							<TouchableOpacity style={[styles.fireBackButton, isDarkMode && styles.fireBackButtonDark]} onPress={() => handleFireBack(item)}>
-								<Text style={[styles.buttonText, isDarkMode && styles.buttonTextDark]}>Fire Back!</Text>
-							</TouchableOpacity>
+						{isAlive || locActive && (
+						<TouchableOpacity style={[styles.fireBackButton, isDarkMode && styles.fireBackButtonDark]} onPress={() => handleFireBack(item)}>
+							<Text style={[styles.buttonText, isDarkMode && styles.buttonTextDark]}>Fire Back!</Text>
+						</TouchableOpacity>
 						)}
 						<TouchableOpacity style={[styles.dismissButton, isDarkMode && styles.dismissButtonDark]} onPress={() => dismissNotification(item)}>
 							<Text style={[styles.buttonText, isDarkMode && styles.dismissTextDark]}>Dismiss</Text>
 						</TouchableOpacity>
 					</View>
 				)}
-				{['Incoming Missile!'].includes(item.title) && (
-					<View style={styles.actionButtons}>
-						<TouchableOpacity style={[styles.fireBackButton, isDarkMode && styles.fireBackButtonDark]} onPress={() => handleFireBack(item)}>
-							<Text style={[styles.buttonText, isDarkMode && styles.buttonTextDark]}>Fire Back!</Text>
-						</TouchableOpacity>
-						<TouchableOpacity style={[styles.dismissButton, isDarkMode && styles.dismissButtonDark]} onPress={() => dismissNotification(item)}>
-							<Text style={[styles.buttonText, isDarkMode && styles.dismissTextDark]}>Dismiss</Text>
-						</TouchableOpacity>
-					</View>
-				)}
-				{['Missile Alert!', 'Missile Impact Alert!', 'Landmine Nearby!', 'Loot Nearby!', 'Loot Collected!', 'Loot Within Reach!', 'Kill Reward', `Damaged!`].includes(item.title) && (
+				{['Missile Alert!', 'Missile Impact Alert!', 'Landmine Nearby!', 'Loot Nearby!', 'Loot Collected!', 'Loot Within Reach!', 'Kill Reward', `Damaged!`, `Elimination Reward`].includes(item.title) && (
 					<View style={styles.actionButtons}>
 						<TouchableOpacity style={[styles.dismissButton, isDarkMode && styles.dismissButtonDark]} onPress={() => dismissNotification(item)}>
 							<Text style={[styles.buttonText, isDarkMode && styles.dismissTextDark]}>Dismiss</Text>

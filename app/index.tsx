@@ -237,19 +237,11 @@ export default function Map() {
     
     const fetchLocActiveStatus = async () => {
       try {
-        const cachedStatus = await AsyncStorage.getItem('locActive');
-        if (cachedStatus !== null) {
-          setLocActive(JSON.parse(cachedStatus));
-        }
-        
-        // Fetch from API and update if different
-        const apiStatus = await getlocActive();
-        if (apiStatus !== JSON.parse(cachedStatus || 'true')) {
-          setLocActive(apiStatus);
-          await AsyncStorage.setItem('locActive', JSON.stringify(apiStatus));
-        }
+        const status = await getlocActive();
+        setLocActive(status);
       } catch (error) {
         console.error("Failed to fetch locActive status:", error);
+      } finally {
       }
     };
 

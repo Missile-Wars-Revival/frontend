@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { SafeAreaView, StyleSheet, Text, View, TouchableOpacity, Switch, Modal, ScrollView, FlatList, Alert, Image, Dimensions } from 'react-native';
+import { SafeAreaView, StyleSheet, Text, View, TouchableOpacity, Switch, Modal, ScrollView, FlatList, Alert, Image, Dimensions, TouchableWithoutFeedback } from 'react-native';
 import { router } from 'expo-router';
 import { clearCredentials } from '../util/logincache';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -62,6 +62,19 @@ interface Friend {
   profileImageUrl: string;
 }
 
+// Add this near the top of the file, after other imports
+const badgeImages: { [key: string]: any } = {
+  Founder: require('../assets/icons/founder.png'),
+  Staff: require('../assets/icons/staff.png'),
+
+  //leagues
+  Bronze: require('../assets/leagues/bronze.png'),
+  Silver: require('../assets/leagues/silver.png'),
+  Gold: require('../assets/leagues/gold.png'),
+  Diamond: require('../assets/leagues/diamond.png'),
+  Legend: require('../assets/leagues/legend.png'),
+};
+
 const ProfilePage: React.FC = () => {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
@@ -77,6 +90,7 @@ const ProfilePage: React.FC = () => {
   const [friendImages, setFriendImages] = useState<{ [key: string]: string }>({});
   const [rankPoints, setRankPoints] = useState<number | null>(null);
   const { setIsSignedIn } = useAuth();
+  const [selectedBadge, setSelectedBadge] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUsername = async () => {
@@ -268,6 +282,25 @@ const ProfilePage: React.FC = () => {
     }
   }, [friends]);
 
+  const renderBadge = (badge: string) => {
+    const badgeKey = Object.keys(badgeImages).find(key => badge.toLowerCase().includes(key.toLowerCase()));
+    if (badgeKey) {
+      return (
+        <TouchableOpacity 
+          key={badge} 
+          style={styles.badge}
+          onPress={() => setSelectedBadge(badge)}
+        >
+          <Image 
+            source={badgeImages[badgeKey]} 
+            style={styles.badgeImage} 
+          />
+        </TouchableOpacity>
+      );
+    }
+    return null;
+  };
+
   return (
     <SafeAreaView style={[styles.container, isDarkMode && styles.containerDark]}>
       <View style={[styles.header, isDarkMode && styles.headerDark]}>
@@ -306,9 +339,7 @@ const ProfilePage: React.FC = () => {
             <Text style={[styles.sectionTitle, isDarkMode && styles.sectionTitleDark]}>Badges</Text>
             <View style={styles.badgesList}>
               {statistics && statistics.badges && statistics.badges.length > 0 ? (
-                statistics.badges.map((badge, index) => (
-                  <View key={index} style={[styles.badge, isDarkMode && styles.badgeDark]}><Text>{badge}</Text></View>
-                ))
+                statistics.badges.map(renderBadge)
               ) : (
                 <Text style={[styles.emptyInventoryText, isDarkMode && styles.emptyInventoryTextDark]}>No badges yet</Text>
               )}
@@ -413,6 +444,21 @@ const ProfilePage: React.FC = () => {
           </View>
         </SafeAreaView>
       </Modal>
+
+      <Modal
+        visible={!!selectedBadge}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setSelectedBadge(null)}
+      >
+        <TouchableWithoutFeedback onPress={() => setSelectedBadge(null)}>
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, isDarkMode && styles.modalContentDark]}>
+              <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>{selectedBadge}</Text>
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -479,7 +525,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   badgesContainer: {
-    width: width * 1,
+    width: '100%',
     marginBottom: 20,
   },
   badgesList: {
@@ -490,10 +536,15 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#edf2f7',
     justifyContent: 'center',
     alignItems: 'center',
-    marginHorizontal: 5,
+    margin: 5,
+    overflow: 'hidden',
+  },
+  badgeImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'contain',
   },
   settingContainer: {
     flexDirection: 'row',
@@ -686,9 +737,6 @@ const styles = StyleSheet.create({
   profileDetailsDark: {
     color: '#B0B0B0',
   },
-  badgeDark: {
-    backgroundColor: '#3D3D3D',
-  },
   settingTextDark: {
     color: '#FFF',
   },
@@ -740,6 +788,28 @@ const styles = StyleSheet.create({
   },
   leagueTextDark: {
     color: '#B0B0B0',
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  modalContentDark: {
+    backgroundColor: '#2C2C2C',
+  },
+  modalText: {
+    fontSize: 18,
+    color: '#333',
+  },
+  modalTextDark: {
+    color: '#FFF',
   },
 });
 

@@ -84,19 +84,11 @@ const FriendsPage: React.FC = () => {
     
     const fetchLocActiveStatus = async () => {
       try {
-        const cachedStatus = await AsyncStorage.getItem('locActive');
-        if (cachedStatus !== null) {
-          setLocActive(JSON.parse(cachedStatus));
-        }
-        
-        // Fetch from API and update if different
-        const apiStatus = await getlocActive();
-        if (apiStatus !== JSON.parse(cachedStatus || 'true')) {
-          setLocActive(apiStatus);
-          await AsyncStorage.setItem('locActive', JSON.stringify(apiStatus));
-        }
+        const status = await getlocActive();
+        setLocActive(status);
       } catch (error) {
         console.error("Failed to fetch locActive status:", error);
+      } finally {
       }
     };
 
@@ -194,7 +186,7 @@ const FriendsPage: React.FC = () => {
         <Text style={[styles.friendName, isDarkMode && styles.friendNameDark]}>{item.username}</Text>
       </TouchableOpacity>
       <View style={styles.actionButtons}>
-        {isAlive || locActive && (
+        {isAlive && locActive && (
           <TouchableOpacity
             style={[styles.actionButton, styles.fireButton]}
             onPress={() => fireMissile(item.username)}
@@ -341,7 +333,7 @@ const FriendsPage: React.FC = () => {
               <Text style={styles.doneButtonText}>Done</Text>
             </TouchableOpacity>
           </View>
-          {isAlive || locActive ? (
+          {isAlive && locActive ? (
             <MissileLibrary 
               playerName={selectedPlayer} 
               onMissileFired={() => {
