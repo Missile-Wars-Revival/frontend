@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { SafeAreaView, StyleSheet, Text, View, TouchableOpacity, Switch, Modal, ScrollView, FlatList, Alert, Image, Dimensions, TouchableWithoutFeedback } from 'react-native';
+import { SafeAreaView, StyleSheet, Text, View, TouchableOpacity, Switch, Modal, ScrollView, FlatList, Alert, Image, Dimensions, TouchableWithoutFeedback, AlertButton, Linking } from 'react-native';
 import { router } from 'expo-router';
 import { clearCredentials } from '../util/logincache';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import * as SecureStore from "expo-secure-store";
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import useFetchInventory from '../hooks/websockets/inventoryhook';
 import { getselfprofile } from '../api/getprofile';
@@ -150,6 +150,19 @@ const ProfilePage: React.FC = () => {
   };
 
   const pickImage = async () => {
+    // Check media library permissions first
+    const { status } = await ImagePicker.getMediaLibraryPermissionsAsync();
+    
+    if (status !== 'granted') {
+      Alert.alert(
+        "Permission Denied",
+        "Sorry, we need camera roll permissions to make this work. Please enable it in your phone's settings.",
+        [{ text: "OK" }]
+      );
+      return;
+    }
+
+    // If permission is granted, proceed with image picking
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
@@ -167,6 +180,19 @@ const ProfilePage: React.FC = () => {
   };
 
   const takePhoto = async () => {
+    // Check camera permissions first
+    const { status } = await ImagePicker.getCameraPermissionsAsync();
+    
+    if (status !== 'granted') {
+      Alert.alert(
+        "Permission Denied",
+        "Sorry, we need camera permissions to make this work. Please enable it in your phone's settings.",
+        [{ text: "OK" }]
+      );
+      return;
+    }
+
+    // If permission is granted, proceed with taking a photo
     let result = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
       aspect: [4, 3],
@@ -207,29 +233,55 @@ const ProfilePage: React.FC = () => {
     );
   };
 
-  const openImagePicker = () => {
-    (async () => {
-      // Request media library permissions
-      const mediaLibraryStatus = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (mediaLibraryStatus.status !== 'granted') {
-        alert('Sorry, we need camera roll permissions to make this work!');
-      }
+  const openImagePicker = async () => {
+    const cameraPermission = await ImagePicker.getCameraPermissionsAsync();
+    const mediaLibraryPermission = await ImagePicker.getMediaLibraryPermissionsAsync();
 
-      // Request camera permissions
-      const cameraStatus = await ImagePicker.requestCameraPermissionsAsync();
-      if (cameraStatus.status !== 'granted') {
-        alert('Sorry, we need camera permissions to make this work!');
+    const openSettings = () => {
+      Linking.openSettings();
+    };
+
+    const handleCameraOption = async () => {
+      if (cameraPermission.status !== 'granted') {
+        Alert.alert(
+          "Permission Required",
+          "Camera access is required to take a photo. Please grant permission in Settings.",
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Open Settings", onPress: openSettings }
+          ]
+        );
+      } else {
+        takePhoto();
       }
-    })();
+    };
+
+    const handleLibraryOption = async () => {
+      if (mediaLibraryPermission.status !== 'granted') {
+        Alert.alert(
+          "Permission Required",
+          "Photo library access is required to choose a photo. Please grant permission in Settings.",
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Open Settings", onPress: openSettings }
+          ]
+        );
+      } else {
+        pickImage();
+      }
+    };
+
+    const options: AlertButton[] = [
+      { text: "Take Photo", onPress: handleCameraOption },
+      { text: "Choose from Library", onPress: handleLibraryOption },
+      { text: "Remove Photo", onPress: removePhoto },
+      { text: "Cancel", style: "cancel" }
+    ];
+
     Alert.alert(
       "Change Profile Photo",
       "Choose an option",
-      [
-        { text: "Take Photo", onPress: takePhoto },
-        { text: "Choose from Library", onPress: pickImage },
-        { text: "Remove Photo", onPress: removePhoto },
-        { text: "Cancel", style: "cancel" },
-      ]
+      options
     );
   };
 

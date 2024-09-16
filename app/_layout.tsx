@@ -1,22 +1,22 @@
 import { Stack } from "expo-router";
 import 'react-native-reanimated';
-import React, { useEffect, useState, useCallback, useRef, useMemo, memo } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
-import { View, Text, TouchableOpacity, StyleSheet, AppStateStatus, AppState, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, AppStateStatus, AppState } from 'react-native';
 import { useRouter, usePathname, useRootNavigationState } from 'expo-router';
 import SplashScreen from './splashscreen';
 import { FontAwesome } from '@expo/vector-icons';
 import useWebSocket, { } from "../hooks/websockets/websockets"; 
 import { WebSocketContext, WebSocketProviderProps } from "../util/Context/websocket";
 import { CountdownContext, CountdownProviderProps } from "../util/Context/countdown";
+import { Platform } from 'react-native';
 import Purchases from 'react-native-purchases';
 import CountdownTimer from '../components/countdown';
 import { useCountdown } from '../util/Context/countdown';
 import { AuthProvider } from "../util/Context/authcontext";
 import { useNotifications, notificationEmitter } from "../components/Notifications/useNotifications";
 import { useColorScheme } from 'react-native';
-import { NativeStackNavigationOptions } from '@react-navigation/native-stack';
 
 const WebSocketProvider = ({ children }: WebSocketProviderProps) => {
   const { data, missiledata, landminedata, lootdata, otherdata, healthdata, friendsdata, inventorydata, playerlocations, sendWebsocket } = useWebSocket();
@@ -132,8 +132,7 @@ export default function RootLayout() {
     </QueryClientProvider>
   );
 }
-
-const NavBar = memo(({ unreadCount }: { unreadCount: number }) => {
+function NavBar({ unreadCount }: { unreadCount: number }) {
   const router = useRouter();
   const pathname = usePathname();
   const [selectedTab, setSelectedTab] = useState(pathname);
@@ -233,12 +232,12 @@ const NavBar = memo(({ unreadCount }: { unreadCount: number }) => {
       ))}
     </View>
   );
-});
+}
 
 
 function RootLayoutNav() {
   const pathname = usePathname();
-  const hideNavBarRoutes = ['/login', '/register', '/add-friends', '/notifications', '/settings', '/user-profile'];
+  const hideNavBarRoutes = ['/login', '/register', '/add-friends'];
   const { countdownIsActive, stopCountdown } = useCountdown();
   const [unreadCount, setUnreadCount] = useState(0);
   const { unreadCount: initialUnreadCount, fetchNotifications } = useNotifications();
@@ -275,25 +274,18 @@ function RootLayoutNav() {
     };
   }, [initialUnreadCount, fetchNotifications]);
 
-  // Use useMemo for complex calculations or object creations
-  const screenOptions: NativeStackNavigationOptions = useMemo(() => ({
-    headerShown: false,
-    gestureEnabled: false,
-    animationTypeForReplace: 'push',
-    customAnimationOnGesture: true,
-    gestureDirection: 'horizontal',
-  }), []);
-
-  // Use Platform.select for platform-specific optimizations
-  const navBarHeight = Platform.select({
-    android: 80,
-    default: 100,
-  });
-
   return (
     <SafeAreaProvider>
       <View style={{ flex: 1, backgroundColor }}>
-        <Stack screenOptions={screenOptions}>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            gestureEnabled: false,
+            animationTypeForReplace: 'push',
+            customAnimationOnGesture: true,
+            gestureDirection: 'horizontal',
+          }}
+        >
           <Stack.Screen 
             name="index" 
             options={{
@@ -333,10 +325,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     backgroundColor: '#f0f2f5',
-    height: Platform.select({
-      android: 80,
-      default: 100,
-    }),
+    height: 100,
     alignItems: 'center',
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',

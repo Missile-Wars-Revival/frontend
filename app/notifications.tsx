@@ -222,7 +222,7 @@ const NotificationsPage: React.FC = () => {
 				)}
 				{['Incoming Missile!', 'Eliminated!'].includes(item.title) && (
 					<View style={styles.actionButtons}>
-						{isAlive || locActive && (
+						{isAlive && locActive && (
 						<TouchableOpacity style={[styles.fireBackButton, isDarkMode && styles.fireBackButtonDark]} onPress={() => handleFireBack(item)}>
 							<Text style={[styles.buttonText, isDarkMode && styles.buttonTextDark]}>Fire Back!</Text>
 						</TouchableOpacity>

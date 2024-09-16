@@ -30,8 +30,7 @@ export const AllPlayers = () => {
 
           return (
             <React.Fragment key={index}>
-              <PlayerComp index={index} player={player} location={location} timestamp={text} health={player.health} ></PlayerComp> 
-              {/* transportStatus={player.transportStatus} */}
+              <PlayerComp index={index} player={player} location={location} timestamp={text} health={player.health} transportStatus={player.transportStatus} ></PlayerComp> 
             </React.Fragment>
           );
         })}

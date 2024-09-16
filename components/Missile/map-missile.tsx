@@ -144,45 +144,61 @@ export const MapMissile = (missileProps: MissileProps) => {
 
     const handleMarkerPress = () => {
         setSelectedMissile(missileProps);
-        const missileProduct = weapons.find(weapon => weapon.name === missileProps.type);
-        setMissileDetails(missileProduct || null);
+        const missileProduct = weapons.find(weapon => weapon.name === missileProps.type) || null;
+        setMissileDetails(missileProduct);
         setModalVisible(true);
     };
 
     const renderMissileDetails = () => {
         if (!selectedMissile || !missileDetails) return null;
 
+        const fallbackImage = require('../../assets/logo.png'); // Make sure to add a fallback image
+
         return (
             <ScrollView style={[styles.modalContainer, isDarkMode && styles.modalContainerDark]}>
                 <View style={styles.modalHeader}>
-                    <Image source={missileImages[selectedMissile.type]} style={styles.modalImage} />
+                    <Image 
+                        source={missileImages[selectedMissile.type] || fallbackImage} 
+                        style={styles.modalImage}
+                        defaultSource={fallbackImage}
+                    />
                     <View style={styles.modalTitleContainer}>
-                        <Text style={[styles.modalTitle, isDarkMode && styles.modalTitleDark]}>{selectedMissile.type}</Text>
-                        <Text style={[styles.modalPrice, isDarkMode && styles.modalPriceDark]}>🪙{missileDetails.price}</Text>
+                        <Text style={[styles.modalTitle, isDarkMode && styles.modalTitleDark]}>
+                            {selectedMissile.type || 'Unknown Missile'}
+                        </Text>
+                        <Text style={[styles.modalPrice, isDarkMode && styles.modalPriceDark]}>
+                            🪙{missileDetails.price || 'N/A'}
+                        </Text>
                     </View>
                 </View>
                 <View style={styles.modalContent}>
                     <Text style={[styles.modalDescription, isDarkMode && styles.modalDescriptionDark]}>
-                        {missileDetails.description}
+                        {missileDetails.description || 'No description available'}
                     </Text>
                     <View style={styles.modalStatsContainer}>
-                        {/* Prominent information */}
                         <Text style={[styles.modalTextProminent, isDarkMode && styles.modalTextProminentDark]}>
-                            Status: {selectedMissile.status}
+                            Status: {selectedMissile.status || 'Unknown'}
                         </Text>
                         <Text style={[styles.modalTextProminent, isDarkMode && styles.modalTextProminentDark]}>
-                            Sent by: {selectedMissile.sentbyusername}
+                            Sent by: {selectedMissile.sentbyusername || 'Unknown'}
                         </Text>
                         <Text style={[styles.modalTextProminent, isDarkMode && styles.modalTextProminentDark]}>
-                            ETA: {convertimestampfuturemissile(selectedMissile.etatimetoimpact).text}
+                            ETA: {selectedMissile.etatimetoimpact ? convertimestampfuturemissile(selectedMissile.etatimetoimpact).text : 'Unknown'}
                         </Text>
 
-                        {/* Less important details */}
                         <View style={styles.lessImportantDetails}>
-                            <Text style={[styles.modalTextSecondary, isDarkMode && styles.modalTextSecondaryDark]}>Speed: {missileDetails.speed} m/s</Text>
-                            <Text style={[styles.modalTextSecondary, isDarkMode && styles.modalTextSecondaryDark]}>Radius: {selectedMissile.radius} m</Text>
-                            <Text style={[styles.modalTextSecondary, isDarkMode && styles.modalTextSecondaryDark]}>Fallout: {missileDetails.fallout} mins</Text>
-                            <Text style={[styles.modalTextSecondary, isDarkMode && styles.modalTextSecondaryDark]}>Damage: {missileDetails.damage} per 30 seconds</Text>
+                            <Text style={[styles.modalTextSecondary, isDarkMode && styles.modalTextSecondaryDark]}>
+                                Speed: {missileDetails.speed || 'N/A'} m/s
+                            </Text>
+                            <Text style={[styles.modalTextSecondary, isDarkMode && styles.modalTextSecondaryDark]}>
+                                Radius: {selectedMissile.radius || 'N/A'} m
+                            </Text>
+                            <Text style={[styles.modalTextSecondary, isDarkMode && styles.modalTextSecondaryDark]}>
+                                Fallout: {missileDetails.fallout || 'N/A'} mins
+                            </Text>
+                            <Text style={[styles.modalTextSecondary, isDarkMode && styles.modalTextSecondaryDark]}>
+                                Damage: {missileDetails.damage || 'N/A'} per 30 seconds
+                            </Text>
                         </View>
                     </View>
                 </View>
