@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, FlatList, Image, TextInput, TouchableOpacity, StyleSheet, useColorScheme, KeyboardAvoidingView, Platform, SafeAreaView, Modal, Alert } from 'react-native';
+import { View, Text, FlatList, Image, TextInput, TouchableOpacity, StyleSheet, useColorScheme, KeyboardAvoidingView, Platform, SafeAreaView, Modal, Alert, Animated } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getDatabase, ref, onValue, push, set, get, update, serverTimestamp, increment } from 'firebase/database';
@@ -10,6 +10,8 @@ import * as SecureStore from "expo-secure-store";
 import { generateUID } from '../../util/uidGenerator';
 import FastImage from 'react-native-fast-image';
 import * as FileSystem from 'expo-file-system';
+import useFetchInventory from '../../hooks/websockets/inventoryhook';
+import { itemimages } from '../profile'; // Import the itemimages object from profile.tsx
 
 type Message = {
   id: string;
@@ -20,6 +22,19 @@ type Message = {
   delivered: boolean;
   read: boolean;
   readTimestamp?: number;
+  inventoryItem?: InventoryMessageItem;
+};
+
+// Add this type definition at the top of your file
+type InventoryItem = { name: string; quantity: number; id: string };
+
+// Add this new type
+type InventoryMessageItem = {
+  id: string;
+  name: string;
+  quantity: number;
+  messageId: string;
+  senderUsername: string;
 };
 
 export default function ChatScreen() {
@@ -39,6 +54,13 @@ export default function ChatScreen() {
   const [imageUploadProgress, setImageUploadProgress] = useState(0);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [selectedInventoryItem, setSelectedInventoryItem] = useState<InventoryItem | null>(null);
+  const [itemQuantity, setItemQuantity] = useState(1);
+  const [showInventoryMenu, setShowInventoryMenu] = useState(false);
+  const [isAttachMenuVisible, setIsAttachMenuVisible] = useState(false);
+  const slideAnimation = useRef(new Animated.Value(0)).current;
+
+  const inventory = useFetchInventory();
 
   useEffect(() => {
     const fetchUsernameAndGenerateUID = async () => {
@@ -126,8 +148,73 @@ export default function ChatScreen() {
     })();
   }, []);
 
+  const handleAttachPress = () => {
+    setIsAttachMenuVisible(true);
+    Animated.timing(slideAnimation, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const hideAttachMenu = () => {
+    Animated.timing(slideAnimation, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => setIsAttachMenuVisible(false));
+  };
+
+  const renderAttachMenu = () => {
+    const translateY = slideAnimation.interpolate({
+      inputRange: [0, 1],
+      outputRange: [300, 0],
+    });
+
+    return (
+      <Animated.View style={[
+        styles.attachMenuContainer,
+        isDarkMode && styles.attachMenuContainerDark,
+        { transform: [{ translateY }] }
+      ]}>
+        <View style={styles.attachMenuHeader}>
+          <Text style={[styles.attachMenuTitle, isDarkMode && styles.attachMenuTitleDark]}>Attach</Text>
+          <TouchableOpacity onPress={hideAttachMenu}>
+            <Ionicons name="close" size={24} color={isDarkMode ? "#FFFFFF" : "#000000"} />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.attachMenuOptions}>
+          <TouchableOpacity style={styles.attachOption} onPress={() => {
+            hideAttachMenu();
+            setShowInventoryMenu(true);
+          }}>
+            <View style={styles.attachOptionIcon}>
+              <Ionicons name="cube" size={30} color="#fff" />
+            </View>
+            <Text style={[styles.attachOptionText, isDarkMode && styles.attachOptionTextDark]}>Inventory Item</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.attachOption} onPress={() => {
+            hideAttachMenu();
+            pickImage();
+          }}>
+            <View style={[styles.attachOptionIcon, { backgroundColor: '#4CAF50' }]}>
+              <Ionicons name="image" size={30} color="#fff" />
+            </View>
+            <Text style={[styles.attachOptionText, isDarkMode && styles.attachOptionTextDark]}>Image</Text>
+          </TouchableOpacity>
+        </View>
+      </Animated.View>
+    );
+  };
+
+  const handleSelectInventoryItem = (item: InventoryItem) => {
+    setSelectedInventoryItem(item);
+    setItemQuantity(1);
+    setShowInventoryMenu(false);
+  };
+
   const handleSendMessage = async () => {
-    if (!username || (!message.trim() && !selectedImage)) return;
+    if (!username || (!message.trim() && !selectedImage && !selectedInventoryItem)) return;
 
     const db = getDatabase();
     let imageUrl = '';
@@ -137,17 +224,43 @@ export default function ChatScreen() {
       setSelectedImage(null);
     }
 
-    const messageText = message.trim();
+    let messageText = message.trim();
+    let inventoryItemData = null;
+
+    if (selectedInventoryItem) {
+      // Ensure the quantity doesn't exceed the user's inventory
+      const actualQuantity = Math.min(itemQuantity, selectedInventoryItem.quantity);
+      messageText = `Sent ${actualQuantity} ${selectedInventoryItem.name}`;
+      inventoryItemData = {
+        id: selectedInventoryItem.id,
+        name: selectedInventoryItem.name,
+        quantity: actualQuantity,
+      };
+
+      // Update the user's inventory
+      const userInventoryRef = ref(db, `users/${username}/inventory/${selectedInventoryItem.id}`);
+      await update(userInventoryRef, {
+        quantity: increment(-actualQuantity)
+      });
+    }
+
     const timestamp = serverTimestamp();
 
-    const messageData = {
+    const messageData: any = {
       text: messageText,
-      imageUrl,
       timestamp,
       senderUsername: username,
       delivered: false,
       read: false,
     };
+
+    if (imageUrl) {
+      messageData.imageUrl = imageUrl;
+    }
+
+    if (inventoryItemData) {
+      messageData.inventoryItem = inventoryItemData;
+    }
 
     const newMessageRef = push(ref(db, `conversations/${id}/messages`));
     await set(newMessageRef, messageData);
@@ -165,19 +278,8 @@ export default function ChatScreen() {
     });
 
     setMessage('');
-  };
-
-  const handleAttachImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
-
-    if (!result.canceled && result.assets?.[0]?.uri) {
-      setSelectedImage(result.assets[0].uri);
-    }
+    setSelectedInventoryItem(null);
+    setItemQuantity(1);
   };
 
   const uploadImage = async (uri: string): Promise<string> => {
@@ -297,6 +399,44 @@ export default function ChatScreen() {
     setUnreadCount(0); // Reset unread count after marking messages as read
   };
 
+  const handleCollectItem = async (item: InventoryMessageItem) => {
+    if (!username || item.senderUsername === username) return; // Prevent sender from collecting their own item
+
+    const db = getDatabase();
+    const userInventoryRef = ref(db, `users/${username}/inventory/${item.id}`);
+    const snapshot = await get(userInventoryRef);
+
+    if (snapshot.exists()) {
+      // Item exists in inventory, update quantity
+      await update(userInventoryRef, {
+        quantity: increment(item.quantity)
+      });
+    } else {
+      // Item doesn't exist, add it to inventory
+      await set(userInventoryRef, {
+        name: item.name,
+        quantity: item.quantity
+      });
+    }
+
+    // Remove the item from the message
+    const messageRef = ref(db, `conversations/${id}/messages/${item.messageId}`);
+    await update(messageRef, {
+      inventoryItem: null
+    });
+
+    // Refresh the messages
+    const messagesRef = ref(db, `conversations/${id}/messages`);
+    const messagesSnapshot = await get(messagesRef);
+    if (messagesSnapshot.exists()) {
+      const messageList = Object.entries(messagesSnapshot.val()).map(([key, value]: [string, any]) => ({
+        id: key,
+        ...value,
+      }));
+      setMessages(messageList.sort((a, b) => a.timestamp - b.timestamp));
+    }
+  };
+
   const renderMessageItem = useCallback(({ item }: { item: Message }) => {
     const isOwnMessage = item.senderUsername === username;
     return (
@@ -312,6 +452,31 @@ export default function ChatScreen() {
         )}
         <Text style={[styles.senderUsername, isDarkMode && styles.senderUsernameDark]}>{item.senderUsername}</Text>
         {item.text && <Text style={[styles.messageText, isDarkMode && styles.messageTextDark]}>{item.text}</Text>}
+        {item.inventoryItem && (
+          <TouchableOpacity 
+            style={styles.inventoryMessageItem}
+            onPress={() => !isOwnMessage && item.inventoryItem && handleCollectItem({
+              id: item.inventoryItem.id,
+              name: item.inventoryItem.name,
+              quantity: item.inventoryItem.quantity,
+              messageId: item.id,
+              senderUsername: item.senderUsername
+            })}
+          >
+            <Image source={itemimages[item.inventoryItem.name]} style={styles.inventoryMessageItemImage} />
+            <View style={styles.inventoryMessageItemContent}>
+              <Text style={styles.inventoryMessageItemText} numberOfLines={1} ellipsizeMode="tail">
+                {item.inventoryItem.name}
+              </Text>
+              <Text style={styles.inventoryMessageItemQuantity}>
+                x{item.inventoryItem.quantity}
+              </Text>
+            </View>
+            {!isOwnMessage && (
+              <Text style={styles.collectText}>Tap to collect</Text>
+            )}
+          </TouchableOpacity>
+        )}
         {isOwnMessage && (
           <View style={styles.messageStatus}>
             {item.delivered && <Ionicons name="checkmark" size={16} color={isDarkMode ? "#B0B0B0" : "#4a5568"} />}
@@ -332,6 +497,19 @@ export default function ChatScreen() {
       </Text>
     </View>
   );
+
+  const pickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    if (!result.canceled && result.assets?.[0]?.uri) {
+      setSelectedImage(result.assets[0].uri);
+    }
+  };
 
   return (
     <SafeAreaView style={[styles.container, isDarkMode && styles.containerDark]}>
@@ -355,11 +533,39 @@ export default function ChatScreen() {
           onContentSizeChange={scrollToBottom}
           onLayout={scrollToBottom}
         />
+        {showInventoryMenu && (
+          <View style={[styles.inventoryMenuContainer, isDarkMode && styles.inventoryMenuContainerDark]}>
+            <FlatList
+              data={inventory}
+              renderItem={({ item }) => (
+                <TouchableOpacity onPress={() => handleSelectInventoryItem(item)} style={[styles.inventoryItem, isDarkMode && styles.inventoryItemDark]}>
+                  <Image source={itemimages[item.name]} style={styles.inventoryItemImage} />
+                  <Text style={[styles.inventoryItemName, isDarkMode && styles.inventoryItemNameDark]}>{item.name}</Text>
+                  <Text style={[styles.inventoryItemQuantity, isDarkMode && styles.inventoryItemQuantityDark]}>x{item.quantity}</Text>
+                </TouchableOpacity>
+              )}
+              keyExtractor={(item) => item.id}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+            />
+          </View>
+        )}
         <View style={[styles.inputContainer, isDarkMode && styles.inputContainerDark]}>
           {selectedImage && (
             <Image source={{ uri: selectedImage }} style={styles.selectedImage} />
           )}
-          <TouchableOpacity onPress={handleAttachImage} style={styles.attachButton}>
+          {selectedInventoryItem && (
+            <View style={styles.selectedInventoryItem}>
+              <Text>{selectedInventoryItem.name} x {itemQuantity}</Text>
+              <TextInput
+                style={styles.quantityInput}
+                value={itemQuantity.toString()}
+                onChangeText={(text) => setItemQuantity(parseInt(text) || 1)}
+                keyboardType="numeric"
+              />
+            </View>
+          )}
+          <TouchableOpacity onPress={handleAttachPress} style={styles.attachButton}>
             <Ionicons name="attach" size={24} color={isDarkMode ? "#B0B0B0" : "#4a5568"} />
           </TouchableOpacity>
           <TextInput
@@ -391,6 +597,7 @@ export default function ChatScreen() {
           <View style={[styles.progressBar, { width: `${imageUploadProgress}%` }]} />
         </View>
       )}
+      {isAttachMenuVisible && renderAttachMenu()}
     </SafeAreaView>
   );
 }
@@ -623,5 +830,148 @@ const styles = StyleSheet.create({
     padding: 5,
     backgroundColor: '#e0e0e0',
     color: '#333',
+  },
+  inventoryMenuContainer: {
+    backgroundColor: '#f0f2f5',
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+    padding: 10,
+  },
+  inventoryMenuContainerDark: {
+    backgroundColor: '#2C2C2C',
+    borderTopColor: '#3D3D3D',
+  },
+  inventoryItem: {
+    alignItems: 'center',
+    marginHorizontal: 10,
+  },
+  inventoryItemDark: {
+    backgroundColor: '#3D3D3D', // Add a dark mode background color
+  },
+  inventoryItemImage: {
+    width: 50,
+    height: 50,
+    resizeMode: 'contain',
+  },
+  inventoryItemName: {
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 5,
+  },
+  inventoryItemNameDark: {
+    color: '#FFFFFF',
+  },
+  inventoryItemQuantity: {
+    fontSize: 10,
+    color: '#666',
+  },
+  inventoryItemQuantityDark: {
+    color: '#B0B0B0',
+  },
+  inventoryMessageItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(240, 240, 240, 0.5)',
+    padding: 5,
+    borderRadius: 5,
+    marginTop: 5,
+  },
+  inventoryMessageItemImage: {
+    width: 30,
+    height: 30,
+    resizeMode: 'contain',
+    marginRight: 5,
+  },
+  inventoryMessageItemContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  inventoryMessageItemText: {
+    fontSize: 14,
+    color: '#333',
+    flex: 1,
+    marginRight: 5,
+  },
+  inventoryMessageItemQuantity: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: 'bold',
+  },
+  collectText: {
+    fontSize: 12,
+    color: '#007AFF',
+    marginLeft: 5,
+  },
+  selectedInventoryItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  quantityInput: {
+    width: 40,
+    marginLeft: 5,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
+    textAlign: 'center',
+  },
+  attachMenuContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: -2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  attachMenuContainerDark: {
+    backgroundColor: '#2C2C2C', // Adjust this color as needed
+  },
+  attachMenuHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  attachMenuTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  attachMenuTitleDark: {
+    color: '#FFFFFF',
+  },
+  attachMenuOptions: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  attachOption: {
+    alignItems: 'center',
+  },
+  attachOptionIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#2196F3',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  attachOptionText: {
+    fontSize: 14,
+  },
+  attachOptionTextDark: {
+    fontSize: 14,
+    color: '#FFFFFF', // or any other color suitable for dark mode
   },
 });
