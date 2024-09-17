@@ -314,11 +314,11 @@ export const MapComp = (props: MapCompProps) => {
                         scrollEnabled={true}
                         zoomEnabled={true}
                         customMapStyle={props.selectedMapStyle}>
+                        <AllPlayers />
                         <AllLootDrops lootLocations={lootData} />
                         <AllOther OtherLocations={otherData} />
                         <AllLandMines landminedata={LandmineData} />
                         <AllMissiles missileData={missileData} />
-                        <AllPlayers />
                     </MapView>
                 </View>
                 <TouchableOpacity

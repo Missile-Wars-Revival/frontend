@@ -32,6 +32,7 @@ export async function clearCredentials(): Promise<void> {
     await AsyncStorage.setItem('dbconnection', 'true'); //To cache db connection status across the app
     await AsyncStorage.setItem(`isAlive`, `true`); //Stored locally for same reason as above
     await AsyncStorage.removeItem('signedIn');
+    await AsyncStorage.removeItem('locActive');
     console.log("All credentials and settings successfully cleared.");
   } catch (error) {
     console.error("Failed to clear credentials and settings:", error);

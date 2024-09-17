@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, SafeAreaView, useColorScheme, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import useFetchFriends from '../hooks/websockets/friendshook';
-import { database, serverTimestamp } from '../util/firebase/config';
+import { getDatabase, ref, push, set, update, serverTimestamp, query, orderByChild, equalTo, get } from 'firebase/database';
 import * as SecureStore from 'expo-secure-store';
 
 const DEFAULT_IMAGE = require('../assets/mapassets/Female_Avatar_PNG.png');
@@ -53,24 +53,51 @@ const FriendsList = () => {
     }
 
     try {
-      const newConversationRef = database.ref('conversations').push();
-      const conversationId = newConversationRef.key;
+      const db = getDatabase();
+      const participants = [username, friendUsername].sort();
+      const participantsString = participants.join(',');
 
-      await newConversationRef.set({
-        participants: [username, friendUsername],
-        createdAt: serverTimestamp,
-        lastMessage: null,
-        lastMessageTimestamp: null,
-      });
+      // Check if a conversation already exists
+      const conversationsRef = ref(db, 'conversations');
+      const conversationsQuery = query(conversationsRef, orderByChild('participants'), equalTo(participantsString));
+      
+      const snapshot = await get(conversationsQuery);
 
-      // Update both users' conversation lists
-      const updates = {};
-      updates[`users/${username}/conversations/${conversationId}`] = true;
-      updates[`users/${friendUsername}/conversations/${conversationId}`] = true;
+      let conversationId;
 
-      await database.ref().update(updates);
+      if (snapshot.exists()) {
+        // Conversation already exists, use the existing one
+        conversationId = Object.keys(snapshot.val())[0];
+        console.log('Using existing conversation with ID:', conversationId);
+      } else {
+        // Create a new conversation
+        const newConversationRef = push(conversationsRef);
+        conversationId = newConversationRef.key;
 
-      console.log('New conversation created with ID: ', conversationId);
+        const conversationData = {
+          participants: participantsString,
+          participantsArray: participants,
+          createdAt: serverTimestamp(),
+          lastMessage: {
+            text: '',
+            timestamp: serverTimestamp(),
+            senderId: '',
+            isRead: true
+          },
+          unreadCount: 0
+        };
+
+        await set(newConversationRef, conversationData);
+
+        // Update both users' conversation lists
+        const updates = {};
+        updates[`users/${username}/conversations/${conversationId}`] = true;
+        updates[`users/${friendUsername}/conversations/${conversationId}`] = true;
+
+        await update(ref(db), updates);
+
+        console.log('New conversation created with ID:', conversationId);
+      }
 
       // Navigate to the chat screen
       router.push({ pathname: '/chat/[id]', params: { id: conversationId } });
@@ -78,7 +105,7 @@ const FriendsList = () => {
       console.error('Detailed error:', JSON.stringify(error, null, 2));
       console.error('Error code:', error.code);
       console.error('Error message:', error.message);
-      Alert.alert("Error", `Failed to create a new conversation. Error: ${error.message}`);
+      Alert.alert("Error", `Failed to create or find a conversation. Error: ${error.message}`);
     }
   }, [username, router]);
 

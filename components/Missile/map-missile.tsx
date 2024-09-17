@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Image, Platform, ScrollView, Text, useColorScheme, Modal, TouchableOpacity } from "react-native";
+import { View, Image, Platform, ScrollView, Text, useColorScheme, Modal, TouchableOpacity, Dimensions } from "react-native";
 import { Circle, Marker, Polyline } from "react-native-maps";
 import { missileImages } from "./missile";
 import { GeoLocation, Missile } from "middle-earth";
@@ -59,13 +59,14 @@ export const AllMissiles = (props: AllMissilesProps) => {
     );
 }
 
-
 export const MapMissile = (missileProps: MissileProps) => {
 
     const [weapons, setWeapons] = useState<Product[]>([]);
     const [selectedMissile, setSelectedMissile] = useState<MissileProps | null>(null);
     const [missileDetails, setMissileDetails] = useState<Product | null>(null);
     const [modalVisible, setModalVisible] = useState(false);
+    const screenWidth = Dimensions.get('window').width;
+    const screenHeight = Dimensions.get('window').height;
 
     useEffect(() => {
         const fetchWeapons = async () => {
@@ -152,57 +153,65 @@ export const MapMissile = (missileProps: MissileProps) => {
     const renderMissileDetails = () => {
         if (!selectedMissile || !missileDetails) return null;
 
-        const fallbackImage = require('../../assets/logo.png'); // Make sure to add a fallback image
+        const fallbackImage = require('../../assets/logo.png');
 
         return (
-            <ScrollView style={[styles.modalContainer, isDarkMode && styles.modalContainerDark]}>
-                <View style={styles.modalHeader}>
-                    <Image 
-                        source={missileImages[selectedMissile.type] || fallbackImage} 
-                        style={styles.modalImage}
-                        defaultSource={fallbackImage}
-                    />
-                    <View style={styles.modalTitleContainer}>
-                        <Text style={[styles.modalTitle, isDarkMode && styles.modalTitleDark]}>
-                            {selectedMissile.type || 'Unknown Missile'}
-                        </Text>
-                        <Text style={[styles.modalPrice, isDarkMode && styles.modalPriceDark]}>
-                            🪙{missileDetails.price || 'N/A'}
-                        </Text>
-                    </View>
-                </View>
-                <View style={styles.modalContent}>
-                    <Text style={[styles.modalDescription, isDarkMode && styles.modalDescriptionDark]}>
-                        {missileDetails.description || 'No description available'}
-                    </Text>
-                    <View style={styles.modalStatsContainer}>
-                        <Text style={[styles.modalTextProminent, isDarkMode && styles.modalTextProminentDark]}>
-                            Status: {selectedMissile.status || 'Unknown'}
-                        </Text>
-                        <Text style={[styles.modalTextProminent, isDarkMode && styles.modalTextProminentDark]}>
-                            Sent by: {selectedMissile.sentbyusername || 'Unknown'}
-                        </Text>
-                        <Text style={[styles.modalTextProminent, isDarkMode && styles.modalTextProminentDark]}>
-                            ETA: {selectedMissile.etatimetoimpact ? convertimestampfuturemissile(selectedMissile.etatimetoimpact).text : 'Unknown'}
-                        </Text>
-
-                        <View style={styles.lessImportantDetails}>
-                            <Text style={[styles.modalTextSecondary, isDarkMode && styles.modalTextSecondaryDark]}>
-                                Speed: {missileDetails.speed || 'N/A'} m/s
+            <View style={[styles.modalContainer, isDarkMode && styles.modalContainerDark]}>
+                <ScrollView>
+                    <View style={styles.modalHeader}>
+                        <Image 
+                            source={missileImages[selectedMissile.type] || fallbackImage} 
+                            style={styles.modalImage}
+                            defaultSource={fallbackImage}
+                        />
+                        <View style={styles.modalTitleContainer}>
+                            <Text style={[styles.modalTitle, isDarkMode && styles.modalTitleDark]}>
+                                {selectedMissile.type || 'Unknown Missile'}
                             </Text>
-                            <Text style={[styles.modalTextSecondary, isDarkMode && styles.modalTextSecondaryDark]}>
-                                Radius: {selectedMissile.radius || 'N/A'} m
-                            </Text>
-                            <Text style={[styles.modalTextSecondary, isDarkMode && styles.modalTextSecondaryDark]}>
-                                Fallout: {missileDetails.fallout || 'N/A'} mins
-                            </Text>
-                            <Text style={[styles.modalTextSecondary, isDarkMode && styles.modalTextSecondaryDark]}>
-                                Damage: {missileDetails.damage || 'N/A'} per 30 seconds
+                            <Text style={[styles.modalPrice, isDarkMode && styles.modalPriceDark]}>
+                                🪙{missileDetails.price || 'N/A'}
                             </Text>
                         </View>
                     </View>
-                </View>
-            </ScrollView>
+                    <View style={styles.modalContent}>
+                        <Text style={[styles.modalDescription, isDarkMode && styles.modalDescriptionDark]}>
+                            {missileDetails.description || 'No description available'}
+                        </Text>
+                        <View style={styles.modalStatsContainer}>
+                            <Text style={[styles.modalTextProminent, isDarkMode && styles.modalTextProminentDark]}>
+                                Status: {selectedMissile.status || 'Unknown'}
+                            </Text>
+                            <Text style={[styles.modalTextProminent, isDarkMode && styles.modalTextProminentDark]}>
+                                Sent by: {selectedMissile.sentbyusername || 'Unknown'}
+                            </Text>
+                            <Text style={[styles.modalTextProminent, isDarkMode && styles.modalTextProminentDark]}>
+                                ETA: {selectedMissile.etatimetoimpact ? convertimestampfuturemissile(selectedMissile.etatimetoimpact).text : 'Unknown'}
+                            </Text>
+
+                            <View style={styles.lessImportantDetails}>
+                                <Text style={[styles.modalTextSecondary, isDarkMode && styles.modalTextSecondaryDark]}>
+                                    Speed: {missileDetails.speed || 'N/A'} m/s
+                                </Text>
+                                <Text style={[styles.modalTextSecondary, isDarkMode && styles.modalTextSecondaryDark]}>
+                                    Radius: {selectedMissile.radius || 'N/A'} m
+                                </Text>
+                                <Text style={[styles.modalTextSecondary, isDarkMode && styles.modalTextSecondaryDark]}>
+                                    Fallout: {missileDetails.fallout || 'N/A'} mins
+                                </Text>
+                                <Text style={[styles.modalTextSecondary, isDarkMode && styles.modalTextSecondaryDark]}>
+                                    Damage: {missileDetails.damage || 'N/A'} per 30 seconds
+                                </Text>
+                            </View>
+                        </View>
+                    </View>
+                </ScrollView>
+                <TouchableOpacity
+                    style={[styles.button, styles.buttonClose]}
+                    onPress={() => setModalVisible(false)}
+                >
+                    <Text style={styles.textStyle}>Close</Text>
+                </TouchableOpacity>
+            </View>
         );
     };
 
@@ -242,23 +251,59 @@ export const MapMissile = (missileProps: MissileProps) => {
                 strokeWidth={3}
             />
             <Modal
-                animationType="slide"
+                animationType="fade"
                 transparent={true}
                 visible={modalVisible}
                 onRequestClose={() => setModalVisible(false)}
             >
                 <View style={styles.centeredView}>
-                    <View style={[styles.modalView, isDarkMode && styles.modalViewDark]}>
-                        {renderMissileDetails()}
-                        <TouchableOpacity
-                            style={[styles.button, styles.buttonClose]}
-                            onPress={() => setModalVisible(false)}
-                        >
-                            <Text style={styles.textStyle}>Close</Text>
-                        </TouchableOpacity>
-                    </View>
+                    {renderMissileDetails()}
                 </View>
             </Modal>
         </View>
     )
 }
+
+// Add these styles to your existing styles object
+const additionalStyles = {
+    centeredView: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    modalContainer: {
+        width: Dimensions.get('window').width * 0.9,
+        maxHeight: Dimensions.get('window').height * 0.8,
+        backgroundColor: 'white',
+        borderRadius: 20,
+        padding: 20,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5
+    },
+    modalContainerDark: {
+        backgroundColor: '#333',
+    },
+    button: {
+        borderRadius: 20,
+        padding: 10,
+        elevation: 2,
+        marginTop: 15,
+    },
+    buttonClose: {
+        backgroundColor: '#2196F3',
+    },
+    textStyle: {
+        color: 'white',
+        fontWeight: 'bold',
+        textAlign: 'center',
+    },
+};
+

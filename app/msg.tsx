@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, SafeAreaView, useColorScheme } from 'react-native';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, SafeAreaView, useColorScheme, PanResponder, Animated, TouchableWithoutFeedback } from 'react-native';
 import { Link, useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { getDatabase, ref, onValue, get } from 'firebase/database';
+import { getDatabase, ref, onValue, get, remove, push, set, off } from 'firebase/database';
 import * as SecureStore from "expo-secure-store";
 import useFetchFriends from '../hooks/websockets/friendshook';
 import { fetchAndCacheImage } from '../util/imagecache';
@@ -12,7 +12,8 @@ const DEFAULT_IMAGE = require('../assets/mapassets/Female_Avatar_PNG.png');
 // Updated Conversation type
 type Conversation = {
     id: string;
-    participants: string[];
+    participants: string;
+    participantsArray: string[];
     lastMessage: {
       text: string;
       timestamp: number;
@@ -31,6 +32,19 @@ const ConversationList = () => {
   const [username, setUsername] = useState<string | null>(null);
   const friends = useFetchFriends(); // WS
 
+  const panRefs = useRef<{ [key: string]: Animated.ValueXY }>({});
+  const isOpenRefs = useRef<{ [key: string]: boolean }>({});
+
+  const closeSwipe = useCallback((id: string) => {
+    if (panRefs.current[id]) {
+      Animated.spring(panRefs.current[id], {
+        toValue: { x: 0, y: 0 },
+        useNativeDriver: false,
+      }).start();
+      isOpenRefs.current[id] = false;
+    }
+  }, []);
+
   useEffect(() => {
     const fetchUsername = async () => {
       const fetchedUsername = await SecureStore.getItemAsync("username");
@@ -45,34 +59,44 @@ const ConversationList = () => {
     const db = getDatabase();
     const userConversationsRef = ref(db, `users/${username}/conversations`);
 
-    const unsubscribe = onValue(userConversationsRef, async (snapshot) => {
+    const handleConversations = (snapshot: any) => {
       const userConversationsData = snapshot.val();
       if (userConversationsData) {
-        const conversationPromises = Object.keys(userConversationsData).map(async (convId) => {
+        const conversationsArray: Conversation[] = [];
+        Object.keys(userConversationsData).forEach((convId) => {
           const convRef = ref(db, `conversations/${convId}`);
-          const convSnapshot = await get(convRef);
-          const convData = convSnapshot.val();
-
-          if (convData) {
-            const otherParticipant = convData.participants.find((p: string) => p !== username) || '';
-            return {
-              id: convId,
-              participants: convData.participants,
-              lastMessage: convData.lastMessage || { text: '', timestamp: 0, senderId: '', isRead: true },
-              unreadCount: convData.unreadCount || 0,
-              otherParticipant
-            };
-          }
-          return null;
+          onValue(convRef, (convSnapshot) => {
+            const convData = convSnapshot.val();
+            if (convData && convData.participantsArray) {
+              const otherParticipant = convData.participantsArray.find((p: string) => p !== username) || '';
+              const lastMessage = convData.lastMessage || { text: '', timestamp: 0, senderId: '', isRead: true };
+              const unreadCount = lastMessage.senderId !== username && !lastMessage.isRead ? 1 : 0;
+              const conversation: Conversation = {
+                id: convId,
+                participants: convData.participants,
+                participantsArray: convData.participantsArray,
+                lastMessage,
+                unreadCount,
+                otherParticipant
+              };
+              const index = conversationsArray.findIndex(c => c.id === convId);
+              if (index !== -1) {
+                conversationsArray[index] = conversation;
+              } else {
+                conversationsArray.push(conversation);
+              }
+              setConversations([...conversationsArray]);
+            }
+          });
         });
-
-        const resolvedConversations = (await Promise.all(conversationPromises))
-          .filter((conv): conv is Conversation => conv !== null);
-        setConversations(resolvedConversations);
       }
-    });
+    };
 
-    return () => unsubscribe();
+    onValue(userConversationsRef, handleConversations);
+
+    return () => {
+      off(userConversationsRef);
+    };
   }, [username]);
 
   // Memoize the sorted conversations
@@ -101,47 +125,107 @@ const ConversationList = () => {
     }
   };
 
+  const deleteConversation = useCallback(async (conversationId: string) => {
+    if (!username) return;
+
+    const db = getDatabase();
+    const userConversationRef = ref(db, `users/${username}/conversations/${conversationId}`);
+
+    try {
+      await remove(userConversationRef);
+      setConversations(prevConversations => 
+        prevConversations.filter(conv => conv.id !== conversationId)
+      );
+    } catch (error) {
+      console.error("Error deleting conversation:", error);
+    }
+  }, [username]);
+
   const renderConversationItem = useCallback(({ item }: { item: Conversation }) => {
     const otherParticipant = friends.find(friend => friend.username === item.otherParticipant);
     const avatarUri = avatarUris[item.otherParticipant];
 
+    if (!panRefs.current[item.id]) {
+      panRefs.current[item.id] = new Animated.ValueXY();
+      isOpenRefs.current[item.id] = false;
+    }
+
+    const panResponder = PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        return gestureState.dx < 0;
+      },
+      onPanResponderMove: (_, gestureState) => {
+        const newX = Math.max(-100, gestureState.dx);
+        panRefs.current[item.id]?.setValue({ x: newX, y: 0 });
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dx < -50) {
+          Animated.spring(panRefs.current[item.id] ?? new Animated.ValueXY(), {
+            toValue: { x: -100, y: 0 },
+            useNativeDriver: false,
+          }).start();
+        } else if (panRefs.current[item.id]) {
+          closeSwipe(item.id);
+        }
+      },
+    });
+
     return (
-      <Link href={{ pathname: '/chat/[id]', params: { id: item.id } }} asChild>
-        <TouchableOpacity 
-          style={[styles.conversationItem, isDarkMode && styles.conversationItemDark]}
-          accessibilityLabel={`Conversation with ${otherParticipant?.username || 'Unknown'}`}
+      <Animated.View
+        style={[
+          styles.conversationItemContainer,
+          { transform: [{ translateX: panRefs.current[item.id]?.x ?? 0 }] },
+        ]}
+        {...panResponder.panHandlers}
+      >
+        <TouchableOpacity
+          style={[styles.deleteButton, { right: -70 }]}
+          onPress={() => deleteConversation(item.id)}
         >
-          <View style={styles.avatarContainer}>
-            <Image 
-              source={avatarUri ? { uri: avatarUri } : DEFAULT_IMAGE} 
-              style={styles.avatar} 
-            />
-            <View style={styles.textContainer}>
-              <View style={styles.nameAndTimeContainer}>
-                <Text style={[styles.name, isDarkMode && styles.textDark]} numberOfLines={1}>
-                  {otherParticipant?.username || 'Unknown'}
-                </Text>
-                <Text style={[styles.timestamp, isDarkMode && styles.timestampDark]}>
-                  {formatTimestamp(item.lastMessage.timestamp)}
-                </Text>
-              </View>
-              <Text style={[
-                styles.lastMessage, 
-                isDarkMode && (item.lastMessage.isRead ? styles.lastMessageReadDark : styles.lastMessageUnreadDark)
-              ]} numberOfLines={1}>
-                {item.lastMessage.text}
-              </Text>
-            </View>
-          </View>
-          {item.unreadCount > 0 && (
-            <View style={styles.unreadIndicator}>
-              <Text style={styles.unreadCount}>{item.unreadCount}</Text>
-            </View>
-          )}
+          <Ionicons name="trash-bin" size={24} color="#FFFFFF" />
         </TouchableOpacity>
-      </Link>
+        <TouchableWithoutFeedback onPress={() => isOpenRefs.current[item.id] ? closeSwipe(item.id) : undefined}>
+          <View>
+            <Link href={{ pathname: '/chat/[id]', params: { id: item.id } }} asChild>
+              <TouchableOpacity 
+                style={[styles.conversationItem, isDarkMode && styles.conversationItemDark]}
+                accessibilityLabel={`Conversation with ${otherParticipant?.username || 'Unknown'}`}
+              >
+                <View style={styles.avatarContainer}>
+                  <Image 
+                    source={avatarUri ? { uri: avatarUri } : DEFAULT_IMAGE} 
+                    style={styles.avatar} 
+                  />
+                  <View style={styles.textContainer}>
+                    <View style={styles.nameAndTimeContainer}>
+                      <Text style={[styles.name, isDarkMode && styles.textDark]} numberOfLines={1}>
+                        {otherParticipant?.username || 'Unknown'}
+                      </Text>
+                      <Text style={[styles.timestamp, isDarkMode && styles.timestampDark]}>
+                        {formatTimestamp(item.lastMessage.timestamp)}
+                      </Text>
+                    </View>
+                    <Text style={[
+                      styles.lastMessage, 
+                      isDarkMode && (item.lastMessage.senderId === username || item.lastMessage.isRead ? styles.lastMessageReadDark : styles.lastMessageUnreadDark),
+                      item.lastMessage.senderId !== username && !item.lastMessage.isRead && styles.lastMessageUnread
+                    ]} numberOfLines={1}>
+                      {item.lastMessage.text}
+                    </Text>
+                  </View>
+                </View>
+                {item.unreadCount > 0 && (
+                  <View style={styles.unreadIndicator}>
+                    <Text style={styles.unreadCount}>{item.unreadCount}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </Link>
+          </View>
+        </TouchableWithoutFeedback>
+      </Animated.View>
     );
-  }, [username, friends, isDarkMode, avatarUris]);
+  }, [friends, isDarkMode, avatarUris, deleteConversation, closeSwipe, username]);
 
   return (
     <SafeAreaView style={[styles.container, isDarkMode && styles.containerDark]}>
@@ -213,6 +297,7 @@ const styles = StyleSheet.create({
   },
   avatarContainer: {
     flexDirection: 'row',
+    marginLeft: 10,
     alignItems: 'center',
     flex: 1,
   },
@@ -223,6 +308,7 @@ const styles = StyleSheet.create({
   nameAndTimeContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginTop: -20,
     alignItems: 'center',
     marginBottom: 4,
   },
@@ -240,17 +326,22 @@ const styles = StyleSheet.create({
   },
   lastMessage: {
     fontSize: 14,
-    color: '#8E8E93', // Gray for light mode (both read and unread)
+    color: '#8E8E93',
+  },
+  lastMessageUnread: {
+    fontWeight: 'bold',
+    color: '#000000',
   },
   lastMessageReadDark: {
-    color: '#8E8E93', // Gray for read messages in dark mode
+    color: '#8E8E93',
   },
   lastMessageUnreadDark: {
-    color: '#FFFFFF', // White for unread messages in dark mode
-    fontWeight: '600', // Optional: make unread messages bold
+    color: '#FFFFFF',
+    fontWeight: 'bold',
   },
   timestamp: {
     fontSize: 12,
+    marginRight: 10,
     color: '#8E8E93',
   },
   timestampDark: {
@@ -269,6 +360,18 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: 'bold',
+  },
+  conversationItemContainer: {
+    position: 'relative',
+  },
+  deleteButton: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 70,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'red',
   },
 });
 

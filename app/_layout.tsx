@@ -147,6 +147,8 @@ function NavBar({ unreadCount }: { unreadCount: number }) {
   useEffect(() => {
     if (pathname === '/notifications' || pathname === '/add-friends') {
       setSelectedTab('/friends');
+    } else if (pathname === '/settings') {
+      setSelectedTab('/profile');
     } else {
       setSelectedTab(pathname);
     }
@@ -188,9 +190,9 @@ function NavBar({ unreadCount }: { unreadCount: number }) {
       {[
         '/', 
         '/store', 
-        '/league', 
+        //'/league', 
         '/friends',
-        //'/msg', 
+        '/msg', 
         '/profile'
       ].map((tab, index) => (
         <TouchableOpacity
@@ -210,7 +212,7 @@ function NavBar({ unreadCount }: { unreadCount: number }) {
                   tab === '/friends' ? 'users' :
                     tab === '/league' ? 'trophy' :
                       tab === '/profile' ? 'user' :
-                        tab === '/msg' ? 'envelope' :
+                        tab === '/msg' ? 'comment' :
                         'user'}
               color={selectedTab === tab ? (isDarkMode ? '#4CAF50' : 'blue') : (isDarkMode ? '#B0B0B0' : 'black')}
               size={24}

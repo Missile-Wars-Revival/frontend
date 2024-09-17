@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { SafeAreaView, StyleSheet, Text, View, TouchableOpacity, Switch, Modal, ScrollView, FlatList, Alert, Image, Dimensions, TouchableWithoutFeedback, AlertButton, Linking } from 'react-native';
+import { SafeAreaView, StyleSheet, Text, View, TouchableOpacity, Switch, Modal, ScrollView, FlatList, Alert, Image, Dimensions, TouchableWithoutFeedback, AlertButton, Linking, TextInput } from 'react-native';
 import { router } from 'expo-router';
 import { clearCredentials } from '../util/logincache';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -15,6 +15,9 @@ import { fetchAndCacheImage } from '../util/imagecache';
 import { useAuth } from '../util/Context/authcontext';
 import useFetchFriends from '../hooks/websockets/friendshook';
 import { useColorScheme } from 'react-native';
+import { editUser } from '../api/debug/editUser';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as Clipboard from 'expo-clipboard';
 
 const DEFAULT_IMAGE = require('../assets/mapassets/Female_Avatar_PNG.png');
 
@@ -87,15 +90,29 @@ const ProfilePage: React.FC = () => {
   const [statistics, setStatistics] = useState<Statistics | null>(null);
   const [email, setEmail] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [friendImages, setFriendImages] = useState<{ [key: string]: string }>({});
   const [rankPoints, setRankPoints] = useState<number | null>(null);
   const { setIsSignedIn } = useAuth();
   const [selectedBadge, setSelectedBadge] = useState<string | null>(null);
+  const [isDebugMenuVisible, setIsDebugMenuVisible] = useState(false);
+  const [selectedUsername, setSelectedUsername] = useState<string>('');
+  const [newUsername, setNewUsername] = useState<string>('');
+  const [newPassword, setNewPassword] = useState<string>('');
+  const [newEmail, setNewEmail] = useState<string>('');
+  const [newMoney, setNewMoney] = useState<string>('');
+  const [newRankPoints, setNewRankPoints] = useState<string>('');
+  const [newHealth, setNewHealth] = useState<string>('');
+  const [newIsAlive, setNewIsAlive] = useState<boolean>(true);
+  const [isLocationActive, setIsLocationActive] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
 
   useEffect(() => {
     const fetchUsername = async () => {
       const name = await SecureStore.getItemAsync("username");
+      const token = await SecureStore.getItemAsync("token");
       setUsername(name);
+      setToken(token);
     };
     fetchUsername();
   }, []);
@@ -234,40 +251,45 @@ const ProfilePage: React.FC = () => {
   };
 
   const openImagePicker = async () => {
-    const cameraPermission = await ImagePicker.getCameraPermissionsAsync();
-    const mediaLibraryPermission = await ImagePicker.getMediaLibraryPermissionsAsync();
-
-    const openSettings = () => {
-      Linking.openSettings();
+    const requestPermission = async (permissionType: 'camera' | 'mediaLibrary') => {
+      let permission;
+      if (permissionType === 'camera') {
+        permission = await ImagePicker.requestCameraPermissionsAsync();
+      } else {
+        permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      }
+      return permission.status === 'granted';
     };
 
     const handleCameraOption = async () => {
-      if (cameraPermission.status !== 'granted') {
+      const hasPermission = await requestPermission('camera');
+      if (hasPermission) {
+        takePhoto();
+      } else {
         Alert.alert(
           "Permission Required",
           "Camera access is required to take a photo. Please grant permission in Settings.",
           [
             { text: "Cancel", style: "cancel" },
-            { text: "Open Settings", onPress: openSettings }
+            { text: "Open Settings", onPress: () => Linking.openSettings() }
           ]
         );
-      } else {
-        takePhoto();
       }
     };
 
     const handleLibraryOption = async () => {
-      if (mediaLibraryPermission.status !== 'granted') {
+      const hasPermission = await requestPermission('mediaLibrary');
+      if (hasPermission) {
+        pickImage();
+      } else {
         Alert.alert(
           "Permission Required",
           "Photo library access is required to choose a photo. Please grant permission in Settings.",
           [
             { text: "Cancel", style: "cancel" },
-            { text: "Open Settings", onPress: openSettings }
+            { text: "Open Settings", onPress: () => Linking.openSettings() }
           ]
         );
-      } else {
-        pickImage();
       }
     };
 
@@ -353,15 +375,168 @@ const ProfilePage: React.FC = () => {
     return null;
   };
 
+  const handleEditUser = async (updates: any) => {
+    try {
+      await editUser(selectedUsername, updates);
+      Alert.alert('Success', 'User updated successfully');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to update user');
+    }
+  };
+
+  const copyToClipboard = async (text: string) => {
+    await Clipboard.setStringAsync(text);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
+  };
+
+  const truncateToken = (token: string | null) => {
+    if (!token) return 'No token';
+    if (token.length <= 20) return token;
+    return `${token.substring(0, 10)}...${token.substring(token.length - 10)}`;
+  };
+
+  const renderDebugMenu = () => (
+    <ScrollView style={styles.debugMenu}>
+      <Text style={styles.debugMenuTitle}>Debug Menu</Text>
+      <TextInput
+        style={styles.debugMenuInput}
+        placeholder="Enter username to edit"
+        value={selectedUsername}
+        onChangeText={setSelectedUsername}
+        placeholderTextColor="#999"
+      />
+      <View style={styles.debugMenuSection}>
+        <Text style={styles.debugMenuSectionTitle}>User Details</Text>
+        <TextInput
+          style={styles.debugMenuInput}
+          placeholder="New username"
+          value={newUsername}
+          onChangeText={setNewUsername}
+          placeholderTextColor="#999"
+        />
+        <TouchableOpacity style={styles.debugMenuButton} onPress={() => handleEditUser({ username: newUsername })}>
+          <Text style={styles.debugMenuButtonText}>Edit Username</Text>
+        </TouchableOpacity>
+        <TextInput
+          style={styles.debugMenuInput}
+          placeholder="New password"
+          value={newPassword}
+          onChangeText={setNewPassword}
+          secureTextEntry
+          placeholderTextColor="#999"
+        />
+        <TouchableOpacity style={styles.debugMenuButton} onPress={() => handleEditUser({ password: newPassword })}>
+          <Text style={styles.debugMenuButtonText}>Edit Password</Text>
+        </TouchableOpacity>
+        <TextInput
+          style={styles.debugMenuInput}
+          placeholder="New email"
+          value={newEmail}
+          onChangeText={setNewEmail}
+          placeholderTextColor="#999"
+        />
+        <TouchableOpacity style={styles.debugMenuButton} onPress={() => handleEditUser({ email: newEmail })}>
+          <Text style={styles.debugMenuButtonText}>Edit Email</Text>
+        </TouchableOpacity>
+      </View>
+      <View style={styles.debugMenuSection}>
+        <Text style={styles.debugMenuSectionTitle}>Game Stats</Text>
+        <TextInput
+          style={styles.debugMenuInput}
+          placeholder="New money amount"
+          value={newMoney}
+          onChangeText={setNewMoney}
+          keyboardType="numeric"
+          placeholderTextColor="#999"
+        />
+        <TouchableOpacity style={styles.debugMenuButton} onPress={() => handleEditUser({ money: parseInt(newMoney) })}>
+          <Text style={styles.debugMenuButtonText}>Edit Money</Text>
+        </TouchableOpacity>
+        <TextInput
+          style={styles.debugMenuInput}
+          placeholder="New rank points"
+          value={newRankPoints}
+          onChangeText={setNewRankPoints}
+          keyboardType="numeric"
+          placeholderTextColor="#999"
+        />
+        <TouchableOpacity style={styles.debugMenuButton} onPress={() => handleEditUser({ rankPoints: parseInt(newRankPoints) })}>
+          <Text style={styles.debugMenuButtonText}>Edit Rank Points</Text>
+        </TouchableOpacity>
+        <TextInput
+          style={styles.debugMenuInput}
+          placeholder="New health"
+          value={newHealth}
+          onChangeText={setNewHealth}
+          keyboardType="numeric"
+          placeholderTextColor="#999"
+        />
+        <TouchableOpacity style={styles.debugMenuButton} onPress={() => handleEditUser({ health: parseInt(newHealth) })}>
+          <Text style={styles.debugMenuButtonText}>Edit Health</Text>
+        </TouchableOpacity>
+        <View style={styles.switchContainer}>
+          <Text style={styles.switchLabel}>Is Alive:</Text>
+          <Switch
+            value={newIsAlive}
+            onValueChange={setNewIsAlive}
+            trackColor={{ false: "#767577", true: "#81b0ff" }}
+            thumbColor={newIsAlive ? "#f5dd4b" : "#f4f3f4"}
+          />
+        </View>
+        <TouchableOpacity style={styles.debugMenuButton} onPress={() => handleEditUser({ isAlive: newIsAlive })}>
+          <Text style={styles.debugMenuButtonText}>Edit Is Alive</Text>
+        </TouchableOpacity>
+      </View>
+      <View style={styles.debugMenuSection}>
+        <Text style={styles.debugMenuSectionTitle}>Location Settings</Text>
+        <View style={styles.switchContainer}>
+          <Text style={styles.switchLabel}>Location Active:</Text>
+          <Switch
+            value={isLocationActive}
+            onValueChange={setIsLocationActive}
+            trackColor={{ false: "#767577", true: "#81b0ff" }}
+            thumbColor={isLocationActive ? "#f5dd4b" : "#f4f3f4"}
+          />
+          <TouchableOpacity style={styles.debugMenuButton} onPress={() => handleEditUser({ isLocationActive: isLocationActive })}>
+          <Text style={styles.debugMenuButtonText}>Edit Is Loc Active</Text>
+        </TouchableOpacity>
+        </View>
+      </View>
+      
+      <View style={styles.debugMenuSection}>
+        <Text style={styles.debugMenuSectionTitle}>Cached Data</Text>
+        <View style={styles.cachedDataItem}>
+          <Text style={styles.cachedDataLabel}>Cached Token:</Text>
+          <View style={styles.tokenContainer}>
+            <Text style={styles.cachedDataValue}>{truncateToken(token)}</Text>
+            <TouchableOpacity 
+              style={styles.copyButton} 
+              onPress={() => token && copyToClipboard(token)}
+            >
+              <Text style={styles.copyButtonText}>
+                {isCopied ? 'Copied!' : 'Copy'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+        <View style={styles.cachedDataItem}>
+          <Text style={styles.cachedDataLabel}>Cached Username:</Text>
+          <Text style={styles.cachedDataValue}>{username}</Text>
+        </View>
+      </View>
+    </ScrollView>
+  );
+
   return (
     <SafeAreaView style={[styles.container, isDarkMode && styles.containerDark]}>
       <View style={[styles.header, isDarkMode && styles.headerDark]}>
         <Text style={[styles.headerText, isDarkMode && styles.headerTextDark]}>Profile</Text>
         <View style={styles.headerButtons}>
           {/* Leagues: */}
-          {/* <TouchableOpacity style={styles.headerButton} onPress={navigateToLeagues}>
+          <TouchableOpacity style={styles.headerButton} onPress={navigateToLeagues}>
             <MaterialCommunityIcons name="trophy" size={24} color={isDarkMode ? "white" : "white"} />
-          </TouchableOpacity> */}
+          </TouchableOpacity>
           <TouchableOpacity style={styles.headerButton} onPress={openSettings}>
             <Ionicons name="settings" size={24} color={isDarkMode ? "white" : "white"} />
           </TouchableOpacity>
@@ -511,6 +686,13 @@ const ProfilePage: React.FC = () => {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
+
+      {statistics && statistics.badges.includes('Staff') && (
+        <TouchableOpacity onPress={() => setIsDebugMenuVisible(!isDebugMenuVisible)}>
+          <Text style={styles.debugMenuToggle}>Toggle Debug Menu</Text>
+        </TouchableOpacity>
+      )}
+      {isDebugMenuVisible && renderDebugMenu()}
     </SafeAreaView>
   );
 };
@@ -862,6 +1044,94 @@ const styles = StyleSheet.create({
   },
   modalTextDark: {
     color: '#FFF',
+  },
+  debugMenu: {
+    padding: 20,
+    backgroundColor: '#2C2C2C',
+    borderRadius: 10,
+    margin: 10,
+    maxHeight: 800, // Set a max height to ensure scrolling
+  },
+  debugMenuTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFF',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  debugMenuSection: {
+    marginBottom: 20,
+  },
+  debugMenuSectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFF',
+    marginBottom: 10,
+  },
+  debugMenuInput: {
+    backgroundColor: '#444',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 10,
+    color: '#FFF',
+    fontSize: 16,
+  },
+  debugMenuButton: {
+    backgroundColor: '#007AFF',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  debugMenuButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  debugMenuToggle: {
+    color: '#007AFF',
+    padding: 10,
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  switchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  switchLabel: {
+    color: '#FFF',
+    fontSize: 16,
+  },
+  cachedDataItem: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    marginBottom: 10,
+  },
+  cachedDataLabel: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  cachedDataValue: {
+    color: '#B0B0B0',
+    fontSize: 14,
+  },
+  tokenContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  copyButton: {
+    backgroundColor: '#007AFF',
+    padding: 6,
+    borderRadius: 4,
+    marginLeft: 10,
+  },
+  copyButtonText: {
+    color: '#FFF',
+    fontSize: 12,
   },
 });
 
