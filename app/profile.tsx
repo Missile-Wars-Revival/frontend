@@ -106,15 +106,25 @@ const ProfilePage: React.FC = () => {
   const [newIsAlive, setNewIsAlive] = useState<boolean>(true);
   const [isLocationActive, setIsLocationActive] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const [notificationToken, setNotificationToken] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUsername = async () => {
       const name = await SecureStore.getItemAsync("username");
       const token = await SecureStore.getItemAsync("token");
+      const notificationToken = await AsyncStorage.getItem('notificaitonToken');
       setUsername(name);
       setToken(token);
     };
     fetchUsername();
+  }, []);
+
+  useEffect(() => {
+    const fetchNotificationToken = async () => {
+      const cachedNotificationToken = await SecureStore.getItemAsync('notificationToken');
+      setNotificationToken(cachedNotificationToken);
+    };
+    fetchNotificationToken();
   }, []);
 
   const filteredInventory = useMemo(() => {
@@ -513,6 +523,20 @@ const ProfilePage: React.FC = () => {
             <TouchableOpacity 
               style={styles.copyButton} 
               onPress={() => token && copyToClipboard(token)}
+            >
+              <Text style={styles.copyButtonText}>
+                {isCopied ? 'Copied!' : 'Copy'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+        <View style={styles.cachedDataItem}>
+          <Text style={styles.cachedDataLabel}>Cached Notification Token:</Text>
+          <View style={styles.tokenContainer}>
+            <Text style={styles.cachedDataValue}>{truncateToken(notificationToken)}</Text>
+            <TouchableOpacity 
+              style={styles.copyButton} 
+              onPress={() => notificationToken && copyToClipboard(notificationToken)}
             >
               <Text style={styles.copyButtonText}>
                 {isCopied ? 'Copied!' : 'Copy'}

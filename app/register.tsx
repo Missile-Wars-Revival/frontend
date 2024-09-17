@@ -40,7 +40,7 @@ export default function Register() {
 
   const mutation = useRegister(
     async (token) => {
-      await saveCredentials(username, token);
+      await saveCredentials(username, token, notificationToken);
       console.log("Registered and logged in with token", token);
       await AsyncStorage.setItem('signedIn', 'true');
       setIsSignedIn(true);

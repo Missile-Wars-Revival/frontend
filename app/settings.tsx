@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableHighlight, Switch, ScrollView, Alert, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, TouchableHighlight, Switch, ScrollView, Alert, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Input } from "../components/ui/input";
@@ -10,6 +10,7 @@ import { updateFriendsOnlyStatus } from '../api/visibility';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColorScheme } from 'react-native';
 import { updatelocActive, getlocActive } from '../api/locActive';
+import * as Clipboard from 'expo-clipboard';
 
 const { width } = Dimensions.get('window');
 
@@ -26,6 +27,9 @@ const SettingsPage: React.FC = () => {
   const isDarkMode = colorScheme === 'dark';
   const [locActive, setLocActive] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState(true);
+  const [token, setToken] = useState<string | null>(null);
+  const [notificationToken, setNotificationToken] = useState<string | null>(null);
+  const [isCopied, setIsCopied] = useState(false);
 
   useEffect(() => {
     loadUserData();
@@ -36,8 +40,12 @@ const SettingsPage: React.FC = () => {
   const loadUserData = async () => {
     const storedUsername = await SecureStore.getItemAsync('username');
     const storedEmail = await SecureStore.getItemAsync('email');
+    const cachedNotificationToken = await SecureStore.getItemAsync('notificationToken');
+    const cachedToken = await SecureStore.getItemAsync('token');
+    setNotificationToken(cachedNotificationToken);
     setUsername(storedUsername || '');
     setEmail(storedEmail || '');
+    setToken(cachedToken);
   };
 
   const loadSettings = async () => {
@@ -57,6 +65,18 @@ const SettingsPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const copyToClipboard = async (text: string) => {
+    await Clipboard.setStringAsync(text);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
+  };
+
+  const truncateToken = (token: string | null) => {
+    if (!token) return 'No token';
+    if (token.length <= 20) return token;
+    return `${token.substring(0, 10)}...${token.substring(token.length - 10)}`;
   };
 
   const validateEmail = (email: string) => {
@@ -364,6 +384,44 @@ const SettingsPage: React.FC = () => {
             </Text>
           </View>
         </View>
+
+        <View style={[styles.debugMenu, isDarkMode && styles.debugMenuDark]}>
+          <Text style={[styles.debugMenuTitle, isDarkMode && styles.debugMenuTitleDark]}>Debug Menu</Text>
+          <View style={styles.debugMenuItem}>
+            <Text style={[styles.debugMenuLabel, isDarkMode && styles.debugMenuLabelDark]}>Cached Username:</Text>
+            <Text style={[styles.debugMenuValue, isDarkMode && styles.debugMenuValueDark]}>{username || 'Not set'}</Text>
+          </View>
+          <View style={styles.debugMenuItem}>
+            <Text style={[styles.debugMenuLabel, isDarkMode && styles.debugMenuLabelDark]}>Cached Token:</Text>
+            <View style={styles.tokenContainer}>
+              <Text style={[styles.debugMenuValue, isDarkMode && styles.debugMenuValueDark]}>{truncateToken(token)}</Text>
+              <TouchableOpacity 
+                style={styles.copyButton} 
+                onPress={() => token && copyToClipboard(token)}
+              >
+                <Text style={styles.copyButtonText}>
+                  {isCopied ? 'Copied!' : 'Copy'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          <View style={styles.debugMenuItem}>
+            <Text style={[styles.debugMenuLabel, isDarkMode && styles.debugMenuLabelDark]}>Cached Notification Token:</Text>
+            <View style={styles.tokenContainer}>
+              <Text style={[styles.debugMenuValue, isDarkMode && styles.debugMenuValueDark]}>
+                {truncateToken(notificationToken)}
+              </Text>
+              <TouchableOpacity 
+                style={styles.copyButton} 
+                onPress={() => notificationToken && copyToClipboard(notificationToken)}
+              >
+                <Text style={styles.copyButtonText}>
+                  {isCopied ? 'Copied!' : 'Copy'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       </SafeAreaView>
     </ScrollView>
   );
@@ -488,6 +546,56 @@ const styles = StyleSheet.create({
   },
   visibilityModeTextDark: {
     color: '#B0B0B0',
+  },
+  debugMenu: {
+    marginTop: 20,
+    padding: 15,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 10,
+  },
+  debugMenuDark: {
+    backgroundColor: '#2C2C2C',
+  },
+  debugMenuTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#333',
+  },
+  debugMenuTitleDark: {
+    color: '#FFF',
+  },
+  debugMenuItem: {
+    marginBottom: 10,
+  },
+  debugMenuLabel: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 5,
+  },
+  debugMenuLabelDark: {
+    color: '#B0B0B0',
+  },
+  debugMenuValue: {
+    fontSize: 14,
+    color: '#333',
+  },
+  debugMenuValueDark: {
+    color: '#FFF',
+  },
+  tokenContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  copyButton: {
+    backgroundColor: '#007AFF',
+    padding: 6,
+    borderRadius: 4,
+    marginLeft: 10,
+  },
+  copyButtonText: {
+    color: '#FFF',
+    fontSize: 12,
   },
 });
 

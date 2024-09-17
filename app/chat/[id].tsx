@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, FlatList, Image, TextInput, TouchableOpacity, StyleSheet, useColorScheme, KeyboardAvoidingView, Platform, SafeAreaView, Modal, Alert, Animated } from 'react-native';
+import { View, Text, FlatList, Image, TextInput, TouchableOpacity, StyleSheet, useColorScheme, KeyboardAvoidingView, Platform, SafeAreaView, Modal, Alert, Animated, Linking } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getDatabase, ref, onValue, push, set, get, update, serverTimestamp, increment } from 'firebase/database';
@@ -11,7 +11,7 @@ import { generateUID } from '../../util/uidGenerator';
 import FastImage from 'react-native-fast-image';
 import * as FileSystem from 'expo-file-system';
 import useFetchInventory from '../../hooks/websockets/inventoryhook';
-import { itemimages } from '../profile'; // Import the itemimages object from profile.tsx
+import { itemimages } from '../profile'; 
 
 type Message = {
   id: string;
@@ -35,6 +35,67 @@ type InventoryMessageItem = {
   quantity: number;
   messageId: string;
   senderUsername: string;
+};
+
+// Add this type definition
+type LinkPreviewData = {
+  url: string;
+  type: 'instagram' | 'snapchat' | 'x' | 'other';
+};
+
+// Add this function to parse URLs
+const parseUrls = (text: string): LinkPreviewData[] => {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const matches = text.match(urlRegex);
+  
+  if (!matches) return [];
+
+  return matches.map(url => {
+    if (url.includes('instagram.com')) return { url, type: 'instagram' };
+    if (url.includes('snapchat.com')) return { url, type: 'snapchat' };
+    if (url.includes('x.com') || url.includes('twitter.com')) return { url, type: 'x' };
+    return { url, type: 'other' };
+  });
+};
+
+// Add this function to strip URLs from the text
+const stripUrls = (text: string): string => {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  return text.replace(urlRegex, '').trim();
+};
+
+// Add this component for link previews
+const LinkPreview = ({ data }: { data: LinkPreviewData }) => {
+  const handlePress = () => {
+    Linking.openURL(data.url);
+  };
+
+  const getIconName = () => {
+    switch (data.type) {
+      case 'instagram': return 'logo-instagram';
+      case 'snapchat': return 'logo-snapchat';
+      case 'x': return 'logo-twitter';
+      default: return 'link';
+    }
+  };
+
+  const getColor = () => {
+    switch (data.type) {
+      case 'instagram': return '#E1306C';
+      case 'snapchat': return '#FFFC00';
+      case 'x': return '#1DA1F2';
+      default: return '#007AFF';
+    }
+  };
+
+  return (
+    <TouchableOpacity onPress={handlePress} style={[styles.linkPreview, { backgroundColor: `${getColor()}20` }]}>
+      <Ionicons name={getIconName()} size={50} color={getColor()} />
+      <Text style={[styles.linkPreviewText, { color: getColor() }]} numberOfLines={1} ellipsizeMode="tail">
+        {data.url}
+      </Text>
+    </TouchableOpacity>
+  );
 };
 
 export default function ChatScreen() {
@@ -439,19 +500,28 @@ export default function ChatScreen() {
 
   const renderMessageItem = useCallback(({ item }: { item: Message }) => {
     const isOwnMessage = item.senderUsername === username;
+    const linkPreviews = parseUrls(item.text);
+    const strippedText = stripUrls(item.text);
+
     return (
       <View style={[
         styles.messageItem,
         isOwnMessage ? styles.sentMessage : styles.receivedMessage,
-        isDarkMode && (isOwnMessage ? styles.sentMessageDark : styles.receivedMessageDark)
+        isDarkMode && (isOwnMessage ? styles.sentMessageDark : styles.receivedMessageDark),
+        linkPreviews.length > 0 && styles.messageWithEmbed,
       ]}>
+        <Text style={[styles.senderUsername, isDarkMode && styles.senderUsernameDark]}>{item.senderUsername}</Text>
+        {strippedText && (
+          <Text style={[styles.messageText, isDarkMode && styles.messageTextDark]}>{strippedText}</Text>
+        )}
+        {linkPreviews.map((preview, index) => (
+          <LinkPreview key={index} data={preview} />
+        ))}
         {item.imageUrl && (
           <TouchableOpacity onPress={() => handleImagePress(item.imageUrl!)}>
             <FastImage source={{ uri: item.imageUrl }} style={styles.messageImage} />
           </TouchableOpacity>
         )}
-        <Text style={[styles.senderUsername, isDarkMode && styles.senderUsernameDark]}>{item.senderUsername}</Text>
-        {item.text && <Text style={[styles.messageText, isDarkMode && styles.messageTextDark]}>{item.text}</Text>}
         {item.inventoryItem && (
           <TouchableOpacity 
             style={styles.inventoryMessageItem}
@@ -703,12 +773,15 @@ const styles = StyleSheet.create({
     maxWidth: '80%',
     borderRadius: 10,
   },
+  messageWithEmbed: {
+    maxWidth: '90%', // Make messages with embeds larger
+  },
   sentMessage: {
     alignSelf: 'flex-end',
     backgroundColor: '#DCF8C6',
   },
   sentMessageDark: {
-    backgroundColor: '#0B93F6',
+    backgroundColor: '#005C4B', // Darker green for sent messages in dark mode
   },
   receivedMessage: {
     alignSelf: 'flex-start',
@@ -973,5 +1046,18 @@ const styles = StyleSheet.create({
   attachOptionTextDark: {
     fontSize: 14,
     color: '#FFFFFF', // or any other color suitable for dark mode
+  },
+  linkPreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    borderRadius: 5,
+    marginTop: 5,
+    marginBottom: 5,
+  },
+  linkPreviewText: {
+    marginLeft: 10,
+    flex: 1,
+    fontSize: 14,
   },
 });

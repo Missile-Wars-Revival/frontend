@@ -139,7 +139,7 @@ function LoginButton({
   const { setIsSignedIn } = useAuth();
   const mutation = useLogin(
     async (token) => {
-      await saveCredentials(username, token);
+      await saveCredentials(username, token, notificationToken);
       console.log("Logged in with token", token);
       await AsyncStorage.setItem('signedIn', 'true');
       setIsSignedIn(true);

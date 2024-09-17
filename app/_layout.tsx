@@ -190,9 +190,9 @@ function NavBar({ unreadCount }: { unreadCount: number }) {
       {[
         '/', 
         '/store', 
-        //'/league', 
+        '/league', 
         '/friends',
-        '/msg', 
+        //'/msg', 
         '/profile'
       ].map((tab, index) => (
         <TouchableOpacity

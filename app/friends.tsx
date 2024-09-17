@@ -11,6 +11,7 @@ import { useNotifications, notificationEmitter } from "../components/Notificatio
 import useFetchFriends from "../hooks/websockets/friendshook";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getlocActive } from "../api/locActive";
+import { Ionicons } from '@expo/vector-icons'; 
 
 interface Friend {
   username: string;
@@ -349,6 +350,13 @@ const FriendsPage: React.FC = () => {
           )}
         </View>
       </Modal>
+      
+      <TouchableOpacity
+        style={[styles.messageButton, isDarkMode && styles.messageButtonDark]}
+        onPress={() => router.navigate("/msg")}
+      >
+        <Ionicons name="chatbubble-ellipses" size={24} color={isDarkMode ? "#FFF" : "#000"} />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -598,6 +606,25 @@ const styles = StyleSheet.create({
   doneButtonText: {
     color: '#ffffff',
     fontWeight: 'bold',
+  },
+  messageButton: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#4CAF50',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  messageButtonDark: {
+    backgroundColor: '#3D3D3D',
   },
 });
 
