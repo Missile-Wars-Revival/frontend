@@ -104,7 +104,7 @@ export default function Login() {
           error={forgotError}
           setError={(error: string | null) => setForgotError(error || '')}
           isDarkMode={isDarkMode}
-          styles={styles.input}
+          styles={styles}
         />
         <View style={styles.bottomContainer}>
           {!isDarkMode && (
@@ -215,8 +215,8 @@ function ForgotCredentialsModal({
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
-      <View style={[styles.modalOverlay, isDarkMode && styles.modalOverlayDark]}>
+    <Modal visible={visible} animationType="fade" transparent>
+      <View style={styles.modalOverlay}>
         <View style={[styles.modalContent, isDarkMode && styles.modalContentDark]}>
           <Text style={[styles.modalTitle, isDarkMode && styles.modalTitleDark]}>Forgot Credentials</Text>
           <View style={styles.inputWrapper}>
@@ -226,25 +226,25 @@ function ForgotCredentialsModal({
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
-              style={[styles.input, isDarkMode && styles.modalInputDark]}
-              icon={<User size={24} color={isDarkMode ? "white" : "black"} />}
+              style={[styles.modalInput, isDarkMode && styles.modalInputDark]}
+              icon={<User size={24} color={isDarkMode ? "#FFFFFF" : "#000000"} />}
             />
           </View>
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
-          <TouchableHighlight
+          <TouchableOpacity
             onPress={() => handleSubmit('username')}
             style={[styles.modalButton, isDarkMode && styles.modalButtonDark]}
           >
             <Text style={[styles.modalButtonText, isDarkMode && styles.modalButtonTextDark]}>Recover Username</Text>
-          </TouchableHighlight>
-          <TouchableHighlight
+          </TouchableOpacity>
+          <TouchableOpacity
             onPress={() => handleSubmit('password')}
             style={[styles.modalButton, isDarkMode && styles.modalButtonDark]}
           >
             <Text style={[styles.modalButtonText, isDarkMode && styles.modalButtonTextDark]}>Reset Password</Text>
-          </TouchableHighlight>
-          <TouchableOpacity onPress={onClose} style={styles.forgotButton}>
-            <Text style={[styles.forgotText, isDarkMode && styles.forgotTextDark]}>Cancel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={onClose} style={styles.cancelButton}>
+            <Text style={[styles.cancelButtonText, isDarkMode && styles.cancelButtonTextDark]}>Cancel</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -334,7 +334,7 @@ const lightStyles = StyleSheet.create({
   modalContent: {
     backgroundColor: "white",
     borderRadius: 20,
-    padding: 35,
+    padding: 20,
     alignItems: "center",
     shadowColor: "#000",
     shadowOffset: {
@@ -352,17 +352,32 @@ const lightStyles = StyleSheet.create({
     marginBottom: 15,
     color: "#000",
   },
+  modalInput: {
+    backgroundColor: '#f0f2f5',
+    borderRadius: 10,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    marginBottom: 15,
+    width: '100%',
+  },
   modalButton: {
     backgroundColor: '#773765',
-    borderRadius: 20,
+    borderRadius: 10,
     width: '100%',
-    height: height * 0.06,
+    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: height * 0.02,
+    marginBottom: 10,
   },
   modalButtonText: {
     color: 'white',
+    fontWeight: 'bold',
+  },
+  cancelButton: {
+    marginTop: 10,
+  },
+  cancelButtonText: {
+    color: '#773765',
     fontWeight: 'bold',
   },
   iconContainer: {
@@ -396,9 +411,6 @@ const darkStyles = StyleSheet.create({
   signUpButtonTextDark: {
     color: '#FFFFFF',
   },
-  modalOverlayDark: {
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-  },
   modalContentDark: {
     backgroundColor: '#2C2C2C',
   },
@@ -414,6 +426,9 @@ const darkStyles = StyleSheet.create({
   },
   modalButtonTextDark: {
     color: '#FFFFFF',
+  },
+  cancelButtonTextDark: {
+    color: '#4CAF50',
   },
   iconContainer: {
     position: 'absolute',

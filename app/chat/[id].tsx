@@ -11,7 +11,8 @@ import { generateUID } from '../../util/uidGenerator';
 import FastImage from 'react-native-fast-image';
 import * as FileSystem from 'expo-file-system';
 import useFetchInventory from '../../hooks/websockets/inventoryhook';
-import { itemimages } from '../profile'; 
+import { itemimages } from '../profile';
+import { receiveItem, removeItem } from '../../api/add-item';
 
 type Message = {
   id: string;
@@ -25,10 +26,8 @@ type Message = {
   inventoryItem?: InventoryMessageItem;
 };
 
-// Add this type definition at the top of your file
 type InventoryItem = { name: string; quantity: number; id: string };
 
-// Add this new type
 type InventoryMessageItem = {
   id: string;
   name: string;
@@ -37,7 +36,6 @@ type InventoryMessageItem = {
   senderUsername: string;
 };
 
-// Add this type definition
 type LinkPreviewData = {
   url: string;
   type: 'instagram' | 'snapchat' | 'x' | 'other';
@@ -47,7 +45,7 @@ type LinkPreviewData = {
 const parseUrls = (text: string): LinkPreviewData[] => {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
   const matches = text.match(urlRegex);
-  
+
   if (!matches) return [];
 
   return matches.map(url => {
@@ -101,10 +99,8 @@ const LinkPreview = ({ data }: { data: LinkPreviewData }) => {
 export default function ChatScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const [friendUsername, setFriendUsername] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [message, setMessage] = useState('');
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uid, setUid] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
   const colorScheme = useColorScheme();
@@ -120,6 +116,7 @@ export default function ChatScreen() {
   const [showInventoryMenu, setShowInventoryMenu] = useState(false);
   const [isAttachMenuVisible, setIsAttachMenuVisible] = useState(false);
   const slideAnimation = useRef(new Animated.Value(0)).current;
+  const [isUploading, setIsUploading] = useState(false);
 
   const inventory = useFetchInventory();
 
@@ -169,13 +166,13 @@ export default function ChatScreen() {
             ...value,
           }));
           setMessages(messageList.sort((a, b) => a.timestamp - b.timestamp));
-          
+
           // Calculate unread count
-          const unreadMessages = messageList.filter(msg => 
+          const unreadMessages = messageList.filter(msg =>
             msg.senderUsername !== username && !msg.read
           );
           setUnreadCount(unreadMessages.length);
-          
+
           // Mark messages as read
           if (other) {
             markMessagesAsRead(messageList, other);
@@ -199,15 +196,6 @@ export default function ChatScreen() {
       flatListRef.current.scrollToEnd({ animated: true });
     }
   };
-
-  useEffect(() => {
-    (async () => {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission required', 'Sorry, we need camera roll permissions to make this work!');
-      }
-    })();
-  }, []);
 
   const handleAttachPress = () => {
     setIsAttachMenuVisible(true);
@@ -270,19 +258,28 @@ export default function ChatScreen() {
 
   const handleSelectInventoryItem = (item: InventoryItem) => {
     setSelectedInventoryItem(item);
-    setItemQuantity(1);
+    setItemQuantity(1); // Initialize with 1
     setShowInventoryMenu(false);
   };
 
+  const handleQuantityChange = (text: string) => {
+    const quantity = parseInt(text) || 1;
+    if (selectedInventoryItem) {
+      setItemQuantity(Math.min(quantity, selectedInventoryItem.quantity));
+    }
+  };
+
   const handleSendMessage = async () => {
-    if (!username || (!message.trim() && !selectedImage && !selectedInventoryItem)) return;
+    if (!username || (!message.trim() && !selectedImage && !selectedInventoryItem) || isUploading) return; // Check isUploading
 
     const db = getDatabase();
     let imageUrl = '';
 
     if (selectedImage) {
+      setIsUploading(true); // Set isUploading to true
       imageUrl = await uploadImage(selectedImage);
       setSelectedImage(null);
+      setIsUploading(false); // Set isUploading to false after upload
     }
 
     let messageText = message.trim();
@@ -321,6 +318,7 @@ export default function ChatScreen() {
 
     if (inventoryItemData) {
       messageData.inventoryItem = inventoryItemData;
+      removeItem(inventoryItemData.name, inventoryItemData.quantity);
     }
 
     const newMessageRef = push(ref(db, `conversations/${id}/messages`));
@@ -354,9 +352,9 @@ export default function ChatScreen() {
 
     try {
       const uploadTask = uploadBytesResumable(imageRef, blob);
-      
+
       return new Promise((resolve, reject) => {
-        uploadTask.on('state_changed', 
+        uploadTask.on('state_changed',
           (snapshot) => {
             const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
             setImageUploadProgress(progress);
@@ -380,22 +378,6 @@ export default function ChatScreen() {
     }
   };
 
-  const sendImageMessage = async (imageUrl: string) => {
-    if (!username) return;
-
-    const db = getDatabase();
-    const messageData = {
-      text: '',
-      imageUrl,
-      timestamp: serverTimestamp(),
-      senderUsername: username,
-      delivered: false,
-      read: false,
-    };
-
-    await push(ref(db, `conversations/${id}/messages`), messageData);
-  };
-
   const handleImagePress = (imageUrl: string) => {
     setFullScreenImage(imageUrl);
   };
@@ -415,7 +397,7 @@ export default function ChatScreen() {
 
         // Then, save the local file to media library
         const asset = await MediaLibrary.createAssetAsync(fileUri);
-        
+
         if (asset) {
           await MediaLibrary.createAlbumAsync('ChatApp', asset, false);
           Alert.alert('Success', 'Image saved to gallery!');
@@ -433,18 +415,13 @@ export default function ChatScreen() {
     }
   };
 
-  const markMessageAsDelivered = async (messageId: string) => {
-    const db = getDatabase();
-    await set(ref(db, `conversations/${id}/messages/${messageId}/delivered`), true);
-  };
-
   const markMessagesAsRead = async (messageList: Message[], otherParticipant: string) => {
     if (!username || !otherParticipant) return;
     const db = getDatabase();
-    const unreadMessages = messageList.filter(msg => 
+    const unreadMessages = messageList.filter(msg =>
       msg.senderUsername === otherParticipant && !msg.read
     );
-    
+
     if (unreadMessages.length === 0) return;
 
     const updates: { [key: string]: any } = {};
@@ -464,21 +441,8 @@ export default function ChatScreen() {
     if (!username || item.senderUsername === username) return; // Prevent sender from collecting their own item
 
     const db = getDatabase();
-    const userInventoryRef = ref(db, `users/${username}/inventory/${item.id}`);
-    const snapshot = await get(userInventoryRef);
 
-    if (snapshot.exists()) {
-      // Item exists in inventory, update quantity
-      await update(userInventoryRef, {
-        quantity: increment(item.quantity)
-      });
-    } else {
-      // Item doesn't exist, add it to inventory
-      await set(userInventoryRef, {
-        name: item.name,
-        quantity: item.quantity
-      });
-    }
+    receiveItem(item.name, item.quantity);
 
     // Remove the item from the message
     const messageRef = ref(db, `conversations/${id}/messages/${item.messageId}`);
@@ -523,7 +487,7 @@ export default function ChatScreen() {
           </TouchableOpacity>
         )}
         {item.inventoryItem && (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.inventoryMessageItem}
             onPress={() => !isOwnMessage && item.inventoryItem && handleCollectItem({
               id: item.inventoryItem.id,
@@ -569,6 +533,12 @@ export default function ChatScreen() {
   );
 
   const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission required', 'Sorry, we need camera roll permissions to make this work!');
+      return;
+    }
+
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
@@ -588,10 +558,10 @@ export default function ChatScreen() {
       {unreadCount > 0 && (
         <Text style={styles.unreadCount}>{unreadCount} unread messages</Text>
       )}
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardAvoidingView}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0} // Adjusted from 90 to 60
       >
         <FlatList
           ref={flatListRef}
@@ -630,7 +600,7 @@ export default function ChatScreen() {
               <TextInput
                 style={styles.quantityInput}
                 value={itemQuantity.toString()}
-                onChangeText={(text) => setItemQuantity(parseInt(text) || 1)}
+                onChangeText={handleQuantityChange}
                 keyboardType="numeric"
               />
             </View>
@@ -645,12 +615,12 @@ export default function ChatScreen() {
             placeholder="Type a message..."
             placeholderTextColor={isDarkMode ? "#B0B0B0" : "#4a5568"}
           />
-          <TouchableOpacity onPress={handleSendMessage} style={styles.sendButton}>
-            <Ionicons name="send" size={24} color={isDarkMode ? "#B0B0B0" : "#4a5568"} />
+          <TouchableOpacity onPress={handleSendMessage} style={styles.sendButton} disabled={isUploading}>
+            <Ionicons name="send" size={24} color={isUploading ? "#B0B0B0" : (isDarkMode ? "#B0B0B0" : "#4a5568")} />
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-      
+
       <Modal visible={!!fullScreenImage} transparent={true} onRequestClose={() => setFullScreenImage(null)}>
         <View style={styles.fullScreenImageContainer}>
           <FastImage source={{ uri: fullScreenImage ?? undefined }} style={styles.fullScreenImage} />
@@ -671,54 +641,6 @@ export default function ChatScreen() {
     </SafeAreaView>
   );
 }
-
-const ensureUsersExist = async (db: any, currentUsername: string, conversationId: string) => {
-  const usersRef = ref(db, 'users');
-  
-  // Check current user
-  const currentUserRef = ref(db, `users/${currentUsername}`);
-  const currentUserSnapshot = await get(currentUserRef);
-  
-  if (!currentUserSnapshot.exists()) {
-    await set(currentUserRef, { conversations: { [conversationId]: true } });
-  } else {
-    const userData = currentUserSnapshot.val();
-    if (!userData.conversations || !userData.conversations[conversationId]) {
-      await set(ref(db, `users/${currentUsername}/conversations/${conversationId}`), true);
-    }
-  }
-
-  // Get the conversation data to find the friend's username
-  const conversationRef = ref(db, `conversations/${conversationId}`);
-  const conversationSnapshot = await get(conversationRef);
-  
-  if (!conversationSnapshot.exists()) {
-    console.error('Conversation not found');
-    return;
-  }
-
-  const conversationData = conversationSnapshot.val();
-  const participants = conversationData.participants || [];
-  const friendUsername = participants.find((participant: string) => participant !== currentUsername);
-
-  if (!friendUsername) {
-    console.error('Friend username not found in conversation participants');
-    return;
-  }
-
-  // Check friend
-  const friendUserRef = ref(db, `users/${friendUsername}`);
-  const friendUserSnapshot = await get(friendUserRef);
-
-  if (!friendUserSnapshot.exists()) {
-    await set(friendUserRef, { conversations: { [conversationId]: true } });
-  } else {
-    const friendData = friendUserSnapshot.val();
-    if (!friendData.conversations || !friendData.conversations[conversationId]) {
-      await set(ref(db, `users/${friendUsername}/conversations/${conversationId}`), true);
-    }
-  }
-};
 
 const styles = StyleSheet.create({
   container: {

@@ -2,13 +2,6 @@ import axiosInstance from "./axios-instance";
 import { isAxiosError } from "axios";
 import * as SecureStore from "expo-secure-store";
 
-interface Player {
-    id: string;
-    username: string;
-    points: number;
-    isCurrentUser: boolean;
-  }
-
 export interface League {
     id: string;
     name: string;

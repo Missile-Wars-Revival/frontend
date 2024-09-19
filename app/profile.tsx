@@ -15,7 +15,7 @@ import { fetchAndCacheImage } from '../util/imagecache';
 import { useAuth } from '../util/Context/authcontext';
 import useFetchFriends from '../hooks/websockets/friendshook';
 import { useColorScheme } from 'react-native';
-import { editUser } from '../api/debug/editUser';
+import { editUser } from '../api/editUser';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 
@@ -82,7 +82,6 @@ const ProfilePage: React.FC = () => {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
 
-  const [useBackgroundLocation, setUseBackgroundLocation] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [userImageUrl, setUserImageUrl] = useState<string | null>(null);
   const friends = useFetchFriends() //WS
@@ -93,7 +92,6 @@ const ProfilePage: React.FC = () => {
   const [token, setToken] = useState<string | null>(null);
   const [friendImages, setFriendImages] = useState<{ [key: string]: string }>({});
   const [rankPoints, setRankPoints] = useState<number | null>(null);
-  const { setIsSignedIn } = useAuth();
   const [selectedBadge, setSelectedBadge] = useState<string | null>(null);
   const [isDebugMenuVisible, setIsDebugMenuVisible] = useState(false);
   const [selectedUsername, setSelectedUsername] = useState<string>('');
@@ -112,43 +110,18 @@ const ProfilePage: React.FC = () => {
     const fetchUsername = async () => {
       const name = await SecureStore.getItemAsync("username");
       const token = await SecureStore.getItemAsync("token");
-      const notificationToken = await AsyncStorage.getItem('notificaitonToken');
+      const cachedNotificationToken = await AsyncStorage.getItem('notificaitonToken');
       setUsername(name);
       setToken(token);
+      setNotificationToken(cachedNotificationToken);
     };
     fetchUsername();
   }, []);
 
-  useEffect(() => {
-    const fetchNotificationToken = async () => {
-      const cachedNotificationToken = await SecureStore.getItemAsync('notificationToken');
-      setNotificationToken(cachedNotificationToken);
-    };
-    fetchNotificationToken();
-  }, []);
 
   const filteredInventory = useMemo(() => {
     return inventory.filter(item => item.quantity > 0);
   }, [inventory]);
-
-  const handleLogout = async () => {
-    await clearCredentials();
-    await AsyncStorage.setItem('signedIn', 'false');
-    setIsSignedIn(false);
-    router.navigate("/login");
-  };
-
-  const loadPreference = async () => {
-    const preference = await AsyncStorage.getItem('useBackgroundLocation');
-    setUseBackgroundLocation(preference === 'true');
-  };
-
-  const toggleSwitch = async () => {
-    const newValue = !useBackgroundLocation;
-    setUseBackgroundLocation(newValue);
-    await Location.requestBackgroundPermissionsAsync()
-    await AsyncStorage.setItem('useBackgroundLocation', newValue.toString());
-  };
 
   const openSettings = () => {
     router.navigate("/settings");
@@ -329,7 +302,6 @@ const ProfilePage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    loadPreference();
     fetchUserStatistics();
   }, []);
 
@@ -596,17 +568,6 @@ const ProfilePage: React.FC = () => {
               )}
             </View>
           </View>
-
-          <View style={styles.settingContainer}>
-            <Text style={[styles.settingText, isDarkMode && styles.settingTextDark]}>
-              {useBackgroundLocation ? 'Background Location Access is enabled.' : 'Foreground Location Access'}
-            </Text>
-            <Switch onValueChange={toggleSwitch} value={useBackgroundLocation} />
-          </View>
-
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Text style={styles.logoutButtonText}>Sign Out</Text>
-          </TouchableOpacity>
         </View>
 
         <View style={[styles.sectionContainer, isDarkMode && styles.sectionContainerDark]}>

@@ -1,5 +1,5 @@
 import { isAxiosError } from "axios";
-import axiosInstance from "../axios-instance";
+import axiosInstance from "./axios-instance";
 import * as SecureStore from "expo-secure-store";
 
 export const editUser = async (username: string, updates: any) => {

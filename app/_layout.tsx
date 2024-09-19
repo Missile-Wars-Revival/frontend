@@ -19,10 +19,10 @@ import { useNotifications, notificationEmitter } from "../components/Notificatio
 import { useColorScheme } from 'react-native';
 
 const WebSocketProvider = ({ children }: WebSocketProviderProps) => {
-  const { data, missiledata, landminedata, lootdata, otherdata, healthdata, friendsdata, inventorydata, playerlocations, sendWebsocket } = useWebSocket();
+  const { data, missiledata, landminedata, lootdata, otherdata, healthdata, friendsdata, inventorydata, playerlocations, leaguesData, sendWebsocket } = useWebSocket();
 
   return (
-    <WebSocketContext.Provider value={{ data, missiledata, landminedata, lootdata, otherdata, healthdata, friendsdata, inventorydata, playerlocations, sendWebsocket }}>
+    <WebSocketContext.Provider value={{ data, missiledata, landminedata, lootdata, otherdata, healthdata, friendsdata, inventorydata, playerlocations, leaguesData, sendWebsocket }}>
       {children}
     </WebSocketContext.Provider>
   );

@@ -11,6 +11,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColorScheme } from 'react-native';
 import { updatelocActive, getlocActive } from '../api/locActive';
 import * as Clipboard from 'expo-clipboard';
+import { clearCredentials } from '../util/logincache';
+import { useAuth } from '../util/Context/authcontext';
+import * as Location from 'expo-location';
 
 const { width } = Dimensions.get('window');
 
@@ -30,11 +33,14 @@ const SettingsPage: React.FC = () => {
   const [token, setToken] = useState<string | null>(null);
   const [notificationToken, setNotificationToken] = useState<string | null>(null);
   const [isCopied, setIsCopied] = useState(false);
+  const [useBackgroundLocation, setUseBackgroundLocation] = useState(false);
+  const { setIsSignedIn } = useAuth();
 
   useEffect(() => {
     loadUserData();
     loadSettings();
     fetchLocActiveStatus();
+    loadPreference();
   }, []);
 
   const loadUserData = async () => {
@@ -242,6 +248,25 @@ const SettingsPage: React.FC = () => {
     }
   };
 
+  const loadPreference = async () => {
+    const preference = await AsyncStorage.getItem('useBackgroundLocation');
+    setUseBackgroundLocation(preference === 'true');
+  };
+
+  const toggleBackgroundLocation = async () => {
+    const newValue = !useBackgroundLocation;
+    setUseBackgroundLocation(newValue);
+    await Location.requestBackgroundPermissionsAsync()
+    await AsyncStorage.setItem('useBackgroundLocation', newValue.toString());
+  };
+
+  const handleLogout = async () => {
+    await clearCredentials();
+    await AsyncStorage.setItem('signedIn', 'false');
+    setIsSignedIn(false);
+    router.navigate("/login");
+  };
+
   return (
     <ScrollView style={[styles.container, isDarkMode && styles.containerDark]}>
       <SafeAreaView style={[styles.safeArea, isDarkMode && styles.safeAreaDark]}>
@@ -383,6 +408,27 @@ const SettingsPage: React.FC = () => {
               {locActive ? 'On' : 'Off'}
             </Text>
           </View>
+
+          <View style={[styles.visibilityContainer, isDarkMode && styles.visibilityContainerDark]}>
+            <Text style={[styles.visibilityText, isDarkMode && styles.visibilityTextDark]}>Background Location</Text>
+            <Switch
+              value={useBackgroundLocation}
+              onValueChange={toggleBackgroundLocation}
+              trackColor={{ false: "#cbd5e0", true: "#773765" }}
+              thumbColor={useBackgroundLocation ? "#5c2a4f" : "#ffffff"}
+            />
+            <Text style={[styles.visibilityModeText, isDarkMode && styles.visibilityModeTextDark]}>
+              {useBackgroundLocation ? 'Enabled' : 'Disabled'}
+            </Text>
+          </View>
+
+          <TouchableHighlight 
+            onPress={handleLogout}
+            style={[styles.button, styles.logoutButton, isDarkMode && styles.buttonDark]}
+            underlayColor={isDarkMode ? '#5c2a4f' : '#662d60'}
+          >
+            <Text style={styles.buttonText}>Sign Out</Text>
+          </TouchableHighlight>
         </View>
 
         <View style={[styles.debugMenu, isDarkMode && styles.debugMenuDark]}>
@@ -596,6 +642,10 @@ const styles = StyleSheet.create({
   copyButtonText: {
     color: '#FFF',
     fontSize: 12,
+  },
+  logoutButton: {
+    backgroundColor: '#e53e3e',
+    marginTop: 20,
   },
 });
 

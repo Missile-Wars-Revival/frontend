@@ -7,7 +7,6 @@ import { useAuth } from "../../util/Context/authcontext";
 const WEBSOCKET_URL = process.env.EXPO_PUBLIC_WEBSOCKET_URL || "ws://localhost:3000";
 const RECONNECT_INTERVAL_BASE = 1000; // base interval in ms
 const MAX_RECONNECT_ATTEMPTS = 10;
-const WEBSOCKET_PROTOCOL = 'missilewars';
 
 const useWebSocket = () => {
     const { isSignedIn } = useAuth();
@@ -20,6 +19,7 @@ const useWebSocket = () => {
     const [friendsdata, setfriendsData] = useState<any>(null);
     const [inventorydata, setinventoryData] = useState<any>(null);
     const [playerlocations, setplayerlocations] = useState<any>(null);
+    const [leaguesData, setLeaguesData] = useState<any>(null);
     const [websocket, setWebsocket] = useState<WebSocket | null>(null);
     const [reconnectAttempts, setReconnectAttempts] = useState(0);
 
@@ -122,6 +122,10 @@ const useWebSocket = () => {
                                 //console.log("Received playerlocations:", msg.data);
                                 setplayerlocations(msg.data);
                                 break;
+                            case "leagues":
+                                //console.log("Received league data:", msg.data);
+                                setLeaguesData(msg.data);
+                                break;
                             default:
                                 console.warn("Unhandled itemType:", msg.itemType);
                         }
@@ -176,7 +180,7 @@ const useWebSocket = () => {
         }
     };
 
-    return { data, missiledata, landminedata, lootdata, otherdata, healthdata, friendsdata, inventorydata, playerlocations, sendWebsocket };
+    return { data, missiledata, landminedata, lootdata, otherdata, healthdata, friendsdata, inventorydata, playerlocations, leaguesData, sendWebsocket };
 };
 
 export default useWebSocket;

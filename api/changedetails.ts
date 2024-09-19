@@ -50,13 +50,17 @@ export async function changePassword(newPassword: string) {
       token,
       newPassword
     });
+    if (response.data.token) {
+      // Update the token in SecureStore
+      await SecureStore.setItemAsync("token", response.data.token);
+    }
     return response.data;
   } catch (error) {
     if (isAxiosError(error)) {
       console.log("Failed to request password change");
       return (
         error.response?.data || { success: false, message: "Request failed" }
-      );
+      );  
     } else {
       console.log("Failed to request password change");
       console.error(error);
@@ -73,6 +77,13 @@ export async function changeUsername(newUsername: string) {
       token,
       newUsername
     });
+    
+    // Check if the response contains a new token
+    if (response.data.token) {
+      // Update the token in SecureStore
+      await SecureStore.setItemAsync("token", response.data.token);
+    }
+    
     return response.data;
   } catch (error) {
     if (isAxiosError(error)) {
@@ -111,3 +122,25 @@ export async function changeEmail(newEmail: string) {
   }
 }
 
+export async function deleteAcc(username: string) {
+  try {
+    const token = await SecureStore.getItemAsync("token");
+    if (!token) throw new Error("No authentication token found.");
+    const response = await axiosInstance.post("/api/deleteUser", {
+      token,
+      username
+    });
+    return response.data;
+  } catch (error) {
+    if (isAxiosError(error)) {
+      console.log("Failed to delete account");
+      return (
+        error.response?.data || { success: false, message: "Request failed" }
+      );
+    } else {
+      console.log("Failed to request account deletion change");
+      console.error(error);
+      return { success: false, message: "Request failed" };
+    }
+  }
+}

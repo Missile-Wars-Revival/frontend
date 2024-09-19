@@ -11,6 +11,7 @@ export interface WebSocketContextProps {
     friendsdata: any;
     inventorydata: any;
     playerlocations: any;
+    leaguesData: any;
     sendWebsocket: (data: WebSocketMessage) => void;
   }
 
