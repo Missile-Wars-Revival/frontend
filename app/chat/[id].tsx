@@ -310,6 +310,7 @@ export default function ChatScreen() {
       senderUsername: username,
       delivered: false,
       read: false,
+      isNotified: false,
     };
 
     if (imageUrl) {

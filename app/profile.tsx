@@ -18,6 +18,7 @@ import { useColorScheme } from 'react-native';
 import { editUser } from '../api/editUser';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
+import { deleteAcc } from '../api/changedetails';
 
 const DEFAULT_IMAGE = require('../assets/mapassets/Female_Avatar_PNG.png');
 
@@ -378,6 +379,24 @@ const ProfilePage: React.FC = () => {
     return `${token.substring(0, 10)}...${token.substring(token.length - 10)}`;
   };
 
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      "Delete Account",
+      "Are you sure you want to delete this account? This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Delete", 
+          style: "destructive",
+          onPress: () => {
+            deleteAcc(selectedUsername);
+            Alert.alert("Account Deleted", "The account has been successfully deleted.");
+          }
+        }
+      ]
+    );
+  };
+
   const renderDebugMenu = () => (
     <ScrollView style={styles.debugMenu}>
       <Text style={styles.debugMenuTitle}>Debug Menu</Text>
@@ -520,6 +539,16 @@ const ProfilePage: React.FC = () => {
           <Text style={styles.cachedDataLabel}>Cached Username:</Text>
           <Text style={styles.cachedDataValue}>{username}</Text>
         </View>
+      </View>
+      
+      <View style={styles.debugMenuSection}>
+        <Text style={styles.debugMenuSectionTitle}>Danger Zone</Text>
+        <TouchableOpacity 
+          style={[styles.debugMenuButton, styles.deleteAccountButton]} 
+          onPress={handleDeleteAccount}
+        >
+          <Text style={styles.debugMenuButtonText}>Delete Account</Text>
+        </TouchableOpacity>
       </View>
     </ScrollView>
   );
@@ -1029,6 +1058,9 @@ const styles = StyleSheet.create({
   },
   modalTextDark: {
     color: '#FFF',
+  },
+  deleteAccountButton: {
+    backgroundColor: '#FF3B30',
   },
   debugMenu: {
     padding: 20,
