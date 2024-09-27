@@ -92,7 +92,7 @@ const ConversationList = () => {
               let unreadCount = 0;
               if (convData.messages) {
                 unreadCount = Object.values(convData.messages).filter((msg: any) => 
-                  msg.senderId !== username && msg.read === false
+                  msg.senderUsername !== username && msg.read === false
                 ).length;
               }
 
@@ -140,7 +140,7 @@ const ConversationList = () => {
               let unreadCount = 0;
               if (convData.messages) {
                 unreadCount = Object.values(convData.messages).filter((msg: any) => 
-                  msg.senderId !== username && msg.read === false
+                  msg.senderUsername !== username && msg.read === false
                 ).length;
               }
   
