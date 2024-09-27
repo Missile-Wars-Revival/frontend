@@ -13,9 +13,9 @@ import { getShopStyles } from '../map-themes/stylesheet';
 
 
 export const products: Product[] = [
-  { id: "20", name: 'LootDrop', price: 400, image: require('../assets/mapassets/Airdropicon.png'), description: 'A Loot Drop', type: 'Loot Drops' },
-  { id: "21", name: 'Shield', price: 2000, image: require('../assets/mapassets/shield.png'), description: 'A Standard Shield', type: 'Other' },
-  { id: "22", name: 'UltraShield', price: 5000, image: require('../assets/mapassets/shield.png'), description: 'A Ultra Shield', type: 'Other' },
+  // { id: "20", name: 'LootDrop', price: 400, image: require('../assets/mapassets/Airdropicon.png'), description: 'A Loot Drop', type: 'Loot Drops' },
+  // { id: "21", name: 'Shield', price: 2000, image: require('../assets/mapassets/shield.png'), description: 'A Standard Shield', type: 'Other' },
+  // { id: "22", name: 'UltraShield', price: 5000, image: require('../assets/mapassets/shield.png'), description: 'A Ultra Shield', type: 'Other' },
 ];
 
 const { width, height } = Dimensions.get('window');
@@ -45,7 +45,7 @@ const StorePage: React.FC = () => {
     const fetchWeapons = async () => {
       try {
         const response = await getWeaponTypes();
-        const { landmineTypes, missileTypes } = response;
+        const { landmineTypes, missileTypes, otherTypes } = response;
 
         const mappedLandmines = landmineTypes.map((landmine: any) => ({
           id: landmine.name,
@@ -71,7 +71,18 @@ const StorePage: React.FC = () => {
           fallout: missile.fallout,
         }));
 
-        setWeapons([...mappedMissiles, ...mappedLandmines, ...products]);
+        const mappedOther = otherTypes.map((other: any) => ({
+          id: other.name,
+          name: other.name,
+          type: 'Other',
+          price: other.price,
+          image: getImageForProduct(other.name),
+          description: other.description,
+          duration: other.duration,
+          radius: other.radius,
+        }));
+
+        setWeapons([...mappedMissiles, ...mappedLandmines, ...mappedOther, ...products]);
       } catch (error) {
         console.error('Error fetching weapons:', error);
         setWeapons([...products]); // Fallback to just the hard-coded products
@@ -349,19 +360,10 @@ const StorePage: React.FC = () => {
               <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>Damage: {selectedWeapon.damage}</Text>
               </>
             )}
-            {selectedWeapon.type === 'Loot Drops' && (
+            {selectedWeapon.type === 'Other' && (
               <>
-               <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>Just a Pesky Loot Drop!</Text>
-              </>
-            )}
-            {selectedWeapon.name === 'Shield' && (
-              <>
-               <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>A shield will defend you against attacks for 1 hour.</Text>
-              </>
-            )}
-            {selectedWeapon.name === 'UltraShield' && (
-              <>
-               <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>A shield will defend you against attacks for 12 hours.</Text>
+               <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>Duration: {selectedWeapon.duration} hours</Text>
+               <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>Radius: {selectedWeapon.radius} m</Text>
               </>
             )}
           </View>

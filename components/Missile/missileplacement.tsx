@@ -76,7 +76,7 @@ export const MissilePlacementPopup: React.FC<MissilePlacementPopupProps> = ({ vi
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
         latitudeDelta: 0.004,
-        longitudeDelta: 0.003,
+        longitudeDelta: 0.004,
       };
       setRegion(currentRegion);
       setMarker(currentRegion);

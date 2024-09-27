@@ -56,7 +56,7 @@ export const missileImages: MissileImages = {
   CorporateRaider: require('../../assets/missiles/CorporateRaider.png'),
   GutShot: require('../../assets/missiles/GutShot.png'),
   TheNuke: require('../../assets/missiles/TheNuke.png'),
-  Yokozuna: require('../../assets/missiles/Yokozuna.png'),
+  ShieldBreaker: require('../../assets/missiles/Yokozuna.png'),
   Zippy: require('../../assets/missiles/Zippy.png'),
 
   // Add other missile images here

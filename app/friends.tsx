@@ -12,6 +12,7 @@ import useFetchFriends from "../hooks/websockets/friendshook";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getlocActive } from "../api/locActive";
 import { Ionicons } from '@expo/vector-icons'; 
+import MissileFiringAnimation from "../components/Animations/MissileFiring";
 
 interface Friend {
   username: string;
@@ -32,15 +33,18 @@ const FriendsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredFriends, setFilteredFriends] = useState<Friend[]>([]);
   const [isSearchActive, setIsSearchActive] = useState(false);
-  const { unreadCount: initialUnreadCount } = useNotifications();
+  const { unreadCount: initialUnreadCount, unreadChatCount: initialUnreadChatCount } = useNotifications();
   const [localUnreadCount, setLocalUnreadCount] = useState(initialUnreadCount);
+  const [localUnreadChatCount, setLocalUnreadChatCount] = useState(initialUnreadChatCount);
   const [isAlive, setIsAlive] = useState<boolean>(true);
   const colorScheme = useColorScheme();
   const [locActive, setLocActive] = useState<boolean>(true);
   const isDarkMode = colorScheme === 'dark';
+  const [showMissileFiringAnimation, setShowMissileFiringAnimation] = useState(false);
 
-  const handleUnreadCountUpdate = useCallback((count: number) => {
+  const handleUnreadCountUpdate = useCallback(({ count, chatCount }: { count: number, chatCount: number }) => {
     setLocalUnreadCount(count);
+    setLocalUnreadChatCount(chatCount);
   }, []);
 
   useEffect(() => {
@@ -101,9 +105,17 @@ const FriendsPage: React.FC = () => {
   const fireMissile = (username: string) => {
     setSelectedPlayer(username);
     setShowMissileLibrary(true);
-    console.log(`Firing missile for friend with username: ${username}`);
   };
 
+  const handleMissileFired = () => {
+    setShowMissileLibrary(false);
+    setShowMissileFiringAnimation(true);
+  };
+
+  const handleMissileAnimationComplete = () => {
+    setShowMissileFiringAnimation(false);
+    setSelectedPlayer("");
+  };
 
   const handleRemoveFriend = async (friendUsername: string) => {
     const token = await SecureStore.getItemAsync("token");
@@ -337,10 +349,7 @@ const FriendsPage: React.FC = () => {
           {isAlive && locActive ? (
             <MissileLibrary 
               playerName={selectedPlayer} 
-              onMissileFired={() => {
-                // Handle missile fired event
-                setShowMissileLibrary(false);
-              }}
+              onMissileFired={handleMissileFired}
               onClose={() => setShowMissileLibrary(false)}
             />
           ) : (
@@ -356,7 +365,17 @@ const FriendsPage: React.FC = () => {
         onPress={() => router.navigate("/msg")}
       >
         <Ionicons name="chatbubble-ellipses" size={24} color={isDarkMode ? "#FFF" : "#000"} />
+        {localUnreadChatCount > 0 && (
+          <View style={styles.chatBadge}>
+            <Text style={styles.chatBadgeText}>{localUnreadChatCount}</Text>
+          </View>
+        )}
       </TouchableOpacity>
+      {showMissileFiringAnimation && (
+        <View style={styles.animationOverlay}>
+          <MissileFiringAnimation onAnimationComplete={handleMissileAnimationComplete} />
+        </View>
+      )}
     </View>
   );
 }
@@ -625,6 +644,27 @@ const styles = StyleSheet.create({
   },
   messageButtonDark: {
     backgroundColor: '#3D3D3D',
+  },
+  chatBadge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: 'red',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  chatBadgeText: {
+    color: 'white',
+    fontSize: 12,
+  },
+  animationOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 1000,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 

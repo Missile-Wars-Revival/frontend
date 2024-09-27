@@ -4,6 +4,7 @@ import mobileAds from 'react-native-google-mobile-ads';
 import { getlocation } from '../util/locationreq';
 import { initializeApp } from "firebase/app";
 import { firebaseConfig } from '../util/firebase/config';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 mobileAds()
   .initialize()
@@ -22,7 +23,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
 
   useEffect(() => {
     getlocation();
-    const app = initializeApp(firebaseConfig);
+    const app = initializeApp(firebaseConfig); 
     const timer = setTimeout(() => {
       onFinish();
     }, 2000); // 2 seconds splash screen

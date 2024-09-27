@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getNotifications, markNotificationAsRead, deleteNotification } from '../../api/notifications';
+import { useCountdown } from '../../util/Context/countdown';
 
 // Simple custom event emitter
 class SimpleEventEmitter {
@@ -39,6 +40,7 @@ interface Notification {
 export const useNotifications = () => {
 	const [notifications, setNotifications] = useState<Notification[]>([]);
 	const [unreadCount, setUnreadCount] = useState(0);
+	const [unreadChatCount, setUnreadChatCount] = useState(0);
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 
@@ -58,29 +60,57 @@ export const useNotifications = () => {
 	}, []);
 
 	const updateUnreadCount = useCallback((notifs: Notification[]) => {
-		const count = notifs.filter(n => !n.isRead).length;
-		setUnreadCount(count);
-		// Emit the new unread count
-		notificationEmitter.emit('unreadCountUpdated', count);
+		const chatCount = notifs.filter(n => !n.isRead && n.title === 'New Message').length;
+		const otherCount = notifs.filter(n => !n.isRead && n.title !== 'New Message').length;
+		setUnreadChatCount(chatCount);
+		setUnreadCount(otherCount);
+		notificationEmitter.emit('unreadCountUpdated', { count: otherCount, chatCount });
 	}, []);
 
 	useEffect(() => {
 		fetchNotifications();
 
-		// Set up listener for new notifications
 		const handleNewNotification = () => {
 			fetchNotifications();
 		};
 		notificationEmitter.on('newNotification', handleNewNotification);
 
+		const handleNotificationsUpdated = (data: { type: string, count: number }) => {
+			if (data.type === 'chat') {
+				setUnreadChatCount(prevCount => Math.max(0, prevCount - data.count));
+			}
+			// Fetch all notifications to ensure all counts are up to date
+			fetchNotifications();
+		};
+		notificationEmitter.on('notificationsUpdated', handleNotificationsUpdated);
+
 		return () => {
 			notificationEmitter.off('newNotification', handleNewNotification);
+			notificationEmitter.off('notificationsUpdated', handleNotificationsUpdated);
 		};
 	}, [fetchNotifications]);
+
 
 	const markAsRead = async (notificationId: string) => {
 		try {
 			await markNotificationAsRead(notificationId);
+			setNotifications(prevNotifications =>
+				prevNotifications.map(notification =>
+					notification.id === notificationId.toString()
+						? { ...notification, isRead: true }
+						: notification
+				)
+			);
+			updateUnreadCount(notifications.map(n =>
+				n.id === notificationId.toString() ? { ...n, isRead: true } : n
+			));
+		} catch (error) {
+			console.error('Failed to mark notification as read:', error);
+		}
+	};
+
+	const markMessagesAsRead = async (notificationId: string) => {
+		try {
 			setNotifications(prevNotifications =>
 				prevNotifications.map(notification =>
 					notification.id === notificationId.toString()
@@ -132,10 +162,12 @@ export const useNotifications = () => {
 	return {
 		notifications,
 		unreadCount,
+		unreadChatCount,
 		isLoading,
 		error,
 		fetchNotifications,
 		markAsRead,
+		markMessagesAsRead,
 		deleteNotificationById,
 		clearAllNotifications,
 	};

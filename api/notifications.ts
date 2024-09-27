@@ -52,6 +52,22 @@ export const markNotificationAsRead = async (notificationId: string): Promise<vo
 	}
 };
 
+export const markMessageNotificationAsRead = async (): Promise<void> => {
+	try {
+		const token = await SecureStore.getItemAsync("token");
+		if (!token) {
+			throw new Error('Authentication token not found');
+		}
+
+		await axiosInstance.delete("/api/deleteMessageNotifications", { 
+			data: { token }
+		});
+	} catch (error) {
+		console.error("Failed to mark notification as read:", error);
+		throw error;
+	}
+};
+
 export const deleteNotification = async (notificationId: string) => {
 	try {
 	  const token = await SecureStore.getItemAsync("token");

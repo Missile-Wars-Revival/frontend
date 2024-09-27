@@ -13,7 +13,7 @@ export async function additem(token: string, itemName: string, category: string)
     return response.data;
   } catch (error) {
     if (isAxiosError(error)) {
-      console.log("failed to add item")
+      //console.log("failed to add item")
       return (
         error.response?.data || { success: false, message: "Request failed" }
       );
@@ -38,12 +38,12 @@ export async function removeItem(itemName: string, quantity: number) {
     return response.data;
   } catch (error) {
     if (isAxiosError(error)) {
-      console.log("failed to add item")
+      //console.log("failed to add item")
       return (
         error.response?.data || { success: false, message: "Request failed" }
       );
     } else {
-      console.log("failed to add item")
+      //console.log("failed to add item")
       console.error(error);
       return { success: false, message: "Request failed" };
     }

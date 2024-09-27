@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, GestureResponderEvent, Alert, StyleSheet, useColorScheme } from 'react-native'; // make sure to install axios or use fetch
 import axiosInstance from '../../api/axios-instance';
 import * as SecureStore from "expo-secure-store";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from "expo-router";
 import { Product } from '../../api/store';
+import CartPurchaseAnimation from '../Animations/CartPurchaseAnimation';
 
 interface CartItem {
   product: Product;
@@ -35,6 +36,8 @@ const Cart: React.FC<CartProps> = ({ cart, onRemove }) => {
       </TouchableOpacity>
     </View>
   );
+
+  const [showAnimation, setShowAnimation] = useState(false);
 
   async function checkout(event: GestureResponderEvent): Promise<void> {
     if (cart.length === 0) {
@@ -67,15 +70,20 @@ const Cart: React.FC<CartProps> = ({ cart, onRemove }) => {
       money: totalPrice,
     })
       .then(async response => {
-        await AsyncStorage.removeItem('cartitems'); // Clears the cart
-        router.navigate("/"); // Navigates user away from the current page
-        Alert.alert("Success", "Checkout successful!");
+        setShowAnimation(true); // Show the animation
       })
       .catch(error => {
         Alert.alert("Checkout Failed", error.response?.data.message || "An error occurred during checkout.");
         console.error('Checkout failed', error);
       });
   }
+
+  const handleAnimationComplete = async () => {
+    setShowAnimation(false);
+    await AsyncStorage.removeItem('cartitems');
+    router.navigate("/");
+    Alert.alert("Success", "Checkout successful!");
+  };
 
   return (
     <View style={styles.cartContainer}>
@@ -88,6 +96,12 @@ const Cart: React.FC<CartProps> = ({ cart, onRemove }) => {
       <TouchableOpacity onPress={checkout} style={styles.checkoutButton}>
         <Text style={styles.checkoutButtonText}>Checkout All Items</Text>
       </TouchableOpacity>
+      {showAnimation && (
+        <CartPurchaseAnimation 
+          cartItems={cart} 
+          onAnimationComplete={handleAnimationComplete} 
+        />
+      )}
     </View>
   );
 };

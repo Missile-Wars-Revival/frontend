@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, FlatList, Image, TextInput, TouchableOpacity, StyleSheet, useColorScheme, KeyboardAvoidingView, Platform, SafeAreaView, Modal, Alert, Animated, Linking } from 'react-native';
+import { View, Text, FlatList, Image, TextInput, TouchableOpacity, StyleSheet, useColorScheme, KeyboardAvoidingView, Platform, SafeAreaView, Modal, Alert, Animated, Linking, Keyboard } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getDatabase, ref, onValue, push, set, get, update, serverTimestamp, increment } from 'firebase/database';
@@ -13,6 +13,8 @@ import * as FileSystem from 'expo-file-system';
 import useFetchInventory from '../../hooks/websockets/inventoryhook';
 import { itemimages } from '../profile';
 import { receiveItem, removeItem } from '../../api/add-item';
+import { notificationEmitter } from '../../components/Notifications/useNotifications';
+import ItemCollectAnimation from '../../components/Animations/itemCollect';
 
 type Message = {
   id: string;
@@ -22,6 +24,7 @@ type Message = {
   timestamp: number;
   delivered: boolean;
   read: boolean;
+  isNotified: boolean;
   readTimestamp?: number;
   inventoryItem?: InventoryMessageItem;
 };
@@ -117,6 +120,9 @@ export default function ChatScreen() {
   const [isAttachMenuVisible, setIsAttachMenuVisible] = useState(false);
   const slideAnimation = useRef(new Animated.Value(0)).current;
   const [isUploading, setIsUploading] = useState(false);
+  const [collectingItem, setCollectingItem] = useState<InventoryMessageItem | null>(null);
+  const [inputHeight, setInputHeight] = useState(40);
+  const [keyboardOffset, setKeyboardOffset] = useState(Platform.OS === "ios" ? 60 : 0);
 
   const inventory = useFetchInventory();
 
@@ -133,6 +139,28 @@ export default function ChatScreen() {
       }
     };
     fetchUsernameAndGenerateUID();
+  }, []);
+
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      (e) => {
+        // Adjust this value to increase or decrease the space above the keyboard
+        const offset = Platform.OS === "ios" ? e.endCoordinates.height + 10 : 0;
+        setKeyboardOffset(offset);
+      }
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      () => {
+        setKeyboardOffset(Platform.OS === "ios" ? 60 : 0);
+      }
+    );
+
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
   }, []);
 
   useEffect(() => {
@@ -178,6 +206,12 @@ export default function ChatScreen() {
             markMessagesAsRead(messageList, other);
           }
 
+          // Update unread chat count
+          notificationEmitter.emit('unreadCountUpdated', { 
+            count: 0, // We don't know the count of other notifications here
+            chatCount: unreadMessages.length 
+          });
+
           // Scroll to bottom after setting messages
           setTimeout(() => scrollToBottom(), 100);
         }
@@ -198,6 +232,7 @@ export default function ChatScreen() {
   };
 
   const handleAttachPress = () => {
+    Keyboard.dismiss(); // Add this line to hide the keyboard
     setIsAttachMenuVisible(true);
     Animated.timing(slideAnimation, {
       toValue: 1,
@@ -331,6 +366,7 @@ export default function ChatScreen() {
       timestamp,
       senderId: username,
       isRead: false,
+      isNotified: false,
     };
 
     await update(ref(db, `conversations/${id}`), {
@@ -439,7 +475,9 @@ export default function ChatScreen() {
   };
 
   const handleCollectItem = async (item: InventoryMessageItem) => {
-    if (!username || item.senderUsername === username) return; // Prevent sender from collecting their own item
+    if (!username || item.senderUsername === username) return;
+
+    setCollectingItem(item);
 
     const db = getDatabase();
 
@@ -463,6 +501,10 @@ export default function ChatScreen() {
     }
   };
 
+  const handleAnimationComplete = () => {
+    setCollectingItem(null);
+  };
+
   const renderMessageItem = useCallback(({ item }: { item: Message }) => {
     const isOwnMessage = item.senderUsername === username;
     const linkPreviews = parseUrls(item.text);
@@ -484,7 +526,11 @@ export default function ChatScreen() {
         ))}
         {item.imageUrl && (
           <TouchableOpacity onPress={() => handleImagePress(item.imageUrl!)}>
-            <FastImage source={{ uri: item.imageUrl }} style={styles.messageImage} />
+           <Image
+            source={{ uri: item.imageUrl }}
+            style={styles.messageImage}
+            resizeMode="cover"
+          />
           </TouchableOpacity>
         )}
         {item.inventoryItem && (
@@ -541,9 +587,8 @@ export default function ChatScreen() {
     }
 
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
+      mediaTypes: ImagePicker.MediaTypeOptions.All, // Allow all media types, including GIFs
+      allowsEditing: false, // Set to false to preserve GIF animation
       quality: 1,
     });
 
@@ -555,14 +600,13 @@ export default function ChatScreen() {
   return (
     <SafeAreaView style={[styles.container, isDarkMode && styles.containerDark]}>
       {renderHeader()}
-      {/* You can display the unread count somewhere in your UI if needed */}
       {unreadCount > 0 && (
         <Text style={styles.unreadCount}>{unreadCount} unread messages</Text>
       )}
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardAvoidingView}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0} // Adjusted from 90 to 60
+        keyboardVerticalOffset={keyboardOffset}
       >
         <FlatList
           ref={flatListRef}
@@ -610,11 +654,19 @@ export default function ChatScreen() {
             <Ionicons name="attach" size={24} color={isDarkMode ? "#B0B0B0" : "#4a5568"} />
           </TouchableOpacity>
           <TextInput
-            style={[styles.input, isDarkMode && styles.inputDark]}
+            style={[
+              styles.input,
+              isDarkMode && styles.inputDark,
+              { height: Math.max(40, inputHeight) }
+            ]}
             value={message}
             onChangeText={setMessage}
             placeholder="Type a message..."
             placeholderTextColor={isDarkMode ? "#B0B0B0" : "#4a5568"}
+            multiline
+            onContentSizeChange={(event) =>
+              setInputHeight(event.nativeEvent.contentSize.height)
+            }
           />
           <TouchableOpacity onPress={handleSendMessage} style={styles.sendButton} disabled={isUploading}>
             <Ionicons name="send" size={24} color={isUploading ? "#B0B0B0" : (isDarkMode ? "#B0B0B0" : "#4a5568")} />
@@ -639,6 +691,12 @@ export default function ChatScreen() {
         </View>
       )}
       {isAttachMenuVisible && renderAttachMenu()}
+      {collectingItem && (
+        <ItemCollectAnimation
+          itemName={collectingItem.name}
+          onAnimationComplete={handleAnimationComplete}
+        />
+      )}
     </SafeAreaView>
   );
 }

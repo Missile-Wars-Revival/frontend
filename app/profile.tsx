@@ -40,6 +40,7 @@ export const itemimages: ItemImages = {
   GutShot: require('../assets/missiles/GutShot.png'),
   TheNuke: require('../assets/missiles/TheNuke.png'),
   Yokozuna: require('../assets/missiles/Yokozuna.png'),
+  ShieldBreaker: require('../assets/missiles/Yokozuna.png'),
   Zippy: require('../assets/missiles/Zippy.png'),
   LootDrop: require('../assets/mapassets/Airdropicon.png'),
   Shield: require('../assets/mapassets/shield.png'),

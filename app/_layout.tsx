@@ -17,6 +17,7 @@ import { useCountdown } from '../util/Context/countdown';
 import { AuthProvider } from "../util/Context/authcontext";
 import { useNotifications, notificationEmitter } from "../components/Notifications/useNotifications";
 import { useColorScheme } from 'react-native';
+import notifications from "./notifications";
 
 const WebSocketProvider = ({ children }: WebSocketProviderProps) => {
   const { data, missiledata, landminedata, lootdata, otherdata, healthdata, friendsdata, inventorydata, playerlocations, leaguesData, sendWebsocket } = useWebSocket();
@@ -122,13 +123,13 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
       <CountdownProvider>
+      <AuthProvider>
         <WebSocketProvider>
           <RootLayoutNav />
         </WebSocketProvider>
-      </CountdownProvider>
       </AuthProvider>
+      </CountdownProvider>
     </QueryClientProvider>
   );
 }
@@ -169,6 +170,40 @@ function NavBar({ unreadCount }: { unreadCount: number }) {
       router.navigate(tab);
     }
   };
+
+  const { notifications} = useNotifications();
+  const [countdownActive, setCountdownActive] = useState(false);
+  const { countdownIsActive, startCountdown, stopCountdown } = useCountdown();
+	
+  useEffect(() => {
+
+    const checkRecentDamageNotifications = () => {
+      const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000); // Increase time window to 2 minutes
+      const recentDamageNotification = notifications.find(
+        (notification) => 
+          (notification.title === 'Missile Damage!' || notification.title === 'Landmine Damage!') &&
+          new Date(notification.timestamp) > twoMinutesAgo
+      );
+
+      if (recentDamageNotification && !countdownActive) {
+        console.log('Starting countdown for notification:', recentDamageNotification);
+        startCountdown();
+        setCountdownActive(true);
+      } else if (!recentDamageNotification && countdownActive) {
+        console.log('Stopping countdown');
+        stopCountdown();
+        setCountdownActive(false);
+      }
+    };
+
+    checkRecentDamageNotifications();
+
+    // Set up an interval to check every second
+    const intervalId = setInterval(checkRecentDamageNotifications, 1000);
+
+    // Clean up the interval on component unmount
+    return () => clearInterval(intervalId);
+  }, [notifications, countdownActive, startCountdown, stopCountdown]);
 
   const getDisplayName = (route: any) => {
     switch (route) {
@@ -242,7 +277,8 @@ function RootLayoutNav() {
   const hideNavBarRoutes = ['/login', '/register', '/add-friends'];
   const { countdownIsActive, stopCountdown } = useCountdown();
   const [unreadCount, setUnreadCount] = useState(0);
-  const { unreadCount: initialUnreadCount, fetchNotifications } = useNotifications();
+  const [unreadChatCount, setUnreadChatCount] = useState(0);
+  const { unreadCount: initialUnreadCount, unreadChatCount: initialUnreadChatCount, fetchNotifications } = useNotifications();
   const colorScheme = useColorScheme();
   const navigationState = useRootNavigationState();
 
@@ -250,9 +286,11 @@ function RootLayoutNav() {
 
   useEffect(() => {
     setUnreadCount(initialUnreadCount);
+    setUnreadChatCount(initialUnreadChatCount);
   
-    const handleUnreadCountUpdated = (count: number) => {
+    const handleUnreadCountUpdated = ({ count, chatCount }: { count: number, chatCount: number }) => {
       setUnreadCount(count);
+      setUnreadChatCount(chatCount);
     };
   
     notificationEmitter.on('unreadCountUpdated', handleUnreadCountUpdated);
@@ -274,7 +312,7 @@ function RootLayoutNav() {
       clearInterval(intervalId);
       subscription.remove();
     };
-  }, [initialUnreadCount, fetchNotifications]);
+  }, [initialUnreadCount, initialUnreadChatCount, fetchNotifications]);
 
   return (
     <SafeAreaProvider>
@@ -316,7 +354,7 @@ function RootLayoutNav() {
             <CountdownTimer duration={30} onExpire={stopCountdown} />
           </View>
         )}
-        {!hideNavBarRoutes.includes(pathname) && <NavBar unreadCount={unreadCount} />}
+        {!hideNavBarRoutes.includes(pathname) && <NavBar unreadCount={unreadCount + unreadChatCount} />}
       </View>
     </SafeAreaProvider>
   );

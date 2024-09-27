@@ -88,15 +88,33 @@ const FriendsList = () => {
         };
 
         await set(newConversationRef, conversationData);
-
-        // Update both users' conversation lists
-        const updates = {};
-        updates[`users/${username}/conversations/${conversationId}`] = true;
-        updates[`users/${friendUsername}/conversations/${conversationId}`] = true;
-
-        await update(ref(db), updates);
-
         console.log('New conversation created with ID:', conversationId);
+      }
+
+      // Check if the conversation is already in the user's list
+      const userConversationsRef = ref(db, `users/${username}/conversations`);
+      const userConversationsSnapshot = await get(userConversationsRef);
+      const userConversations = userConversationsSnapshot.val() || {};
+
+      const updates = {};
+
+      // Only add to user's list if it's not already there
+      if (!userConversations[conversationId]) {
+        updates[`users/${username}/conversations/${conversationId}`] = true;
+      }
+
+      // Do the same for the friend
+      const friendConversationsRef = ref(db, `users/${friendUsername}/conversations`);
+      const friendConversationsSnapshot = await get(friendConversationsRef);
+      const friendConversations = friendConversationsSnapshot.val() || {};
+
+      if (!friendConversations[conversationId]) {
+        updates[`users/${friendUsername}/conversations/${conversationId}`] = true;
+      }
+
+      // Only perform the update if there are changes to be made
+      if (Object.keys(updates).length > 0) {
+        await update(ref(db), updates);
       }
 
       // Navigate to the chat screen

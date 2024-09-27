@@ -10,6 +10,7 @@ import { usePushNotifications } from "../components/Notifications/usePushNotific
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from "../util/Context/authcontext";
 import { requestPasswordReset, requestUsernameReminder } from "../api/changedetails";
+import LoginSwirl from "../components/Animations/loginSwirl";
 
 const { width, height } = Dimensions.get('window');
 
@@ -137,27 +138,40 @@ function LoginButton({
   styles: any;
 }) {
   const { setIsSignedIn } = useAuth();
+  const [showSwirl, setShowSwirl] = useState(false);
   const mutation = useLogin(
     async (token) => {
       await saveCredentials(username, token, notificationToken);
       console.log("Logged in with token", token);
       await AsyncStorage.setItem('signedIn', 'true');
       setIsSignedIn(true);
-      router.navigate('/');
+      setShowSwirl(true);
     },
     () => {
       setIsError(true);
     }
   );
+
+  const handleLogin = () => {
+    mutation.mutate({ username, password, notificationToken });
+  };
+
+  const handleAnimationComplete = () => {
+    router.navigate('/');
+  };
+
   return (
-    <TouchableHighlight
-      onPress={() => mutation.mutate({ username, password, notificationToken })}
-      style={[styles.loginButton, isDarkMode && styles.loginButtonDark]}
-    >
-      <View>
-        <Text style={styles.loginButtonText}>Let's Fight</Text>
-      </View>
-    </TouchableHighlight>
+    <>
+      <TouchableHighlight
+        onPress={handleLogin}
+        style={[styles.loginButton, isDarkMode && styles.loginButtonDark]}
+      >
+        <View>
+          <Text style={styles.loginButtonText}>Let's Fight</Text>
+        </View>
+      </TouchableHighlight>
+      {showSwirl && <LoginSwirl onAnimationComplete={handleAnimationComplete} />}
+    </>
   );
 }
 

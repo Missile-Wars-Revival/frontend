@@ -6,6 +6,9 @@ import { getDatabase, ref, onValue, get, remove, push, set, off } from 'firebase
 import * as SecureStore from "expo-secure-store";
 import useFetchFriends from '../hooks/websockets/friendshook';
 import { fetchAndCacheImage } from '../util/imagecache';
+import { useNotifications } from '../components/Notifications/useNotifications';
+import { markMessageNotificationAsRead } from '../api/notifications';
+import { useFocusEffect } from '@react-navigation/native';
 
 const DEFAULT_IMAGE = require('../assets/mapassets/Female_Avatar_PNG.png');
 
@@ -26,6 +29,7 @@ type Conversation = {
 
 const ConversationList = () => {
   const router = useRouter();
+  const { notifications, isLoading, markAsRead, markMessagesAsRead } = useNotifications();
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -54,6 +58,67 @@ const ConversationList = () => {
   }, []);
 
   useEffect(() => {
+    markMessageNotificationAsRead();
+  }, []);
+
+  // Add this new effect to refresh conversations when the screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      if (username) {
+        refreshConversations();
+      }
+    }, [username])
+  );
+
+  const refreshConversations = useCallback(() => {
+    if (!username) return;
+
+    const db = getDatabase();
+    const userConversationsRef = ref(db, `users/${username}/conversations`);
+
+    get(userConversationsRef).then((snapshot) => {
+      const userConversationsData = snapshot.val();
+      if (userConversationsData) {
+        const conversationsArray: Conversation[] = [];
+        Object.keys(userConversationsData).forEach((convId) => {
+          const convRef = ref(db, `conversations/${convId}`);
+          get(convRef).then((convSnapshot) => {
+            const convData = convSnapshot.val();
+            if (convData && convData.participantsArray) {
+              const otherParticipant = convData.participantsArray.find((p: string) => p !== username) || '';
+              const lastMessage = convData.lastMessage || { text: '', timestamp: 0, senderId: '', isRead: true };
+              
+              // Calculate the actual unread count
+              let unreadCount = 0;
+              if (convData.messages) {
+                unreadCount = Object.values(convData.messages).filter((msg: any) => 
+                  msg.senderId !== username && msg.read === false
+                ).length;
+              }
+
+              const conversation: Conversation = {
+                id: convId,
+                participants: convData.participants,
+                participantsArray: convData.participantsArray,
+                lastMessage,
+                unreadCount,
+                otherParticipant
+              };
+              const index = conversationsArray.findIndex(c => c.id === convId);
+              if (index !== -1) {
+                conversationsArray[index] = conversation;
+              } else {
+                conversationsArray.push(conversation);
+              }
+              setConversations([...conversationsArray]);
+            }
+          });
+        });
+      }
+    });
+  }, [username]);
+
+  useEffect(() => {
     if (!username) return;
 
     const db = getDatabase();
@@ -69,8 +134,16 @@ const ConversationList = () => {
             const convData = convSnapshot.val();
             if (convData && convData.participantsArray) {
               const otherParticipant = convData.participantsArray.find((p: string) => p !== username) || '';
-              const lastMessage = convData.lastMessage || { text: '', timestamp: 0, senderId: '', isRead: true };
-              const unreadCount = lastMessage.senderId !== username && !lastMessage.isRead ? 1 : 0;
+              const lastMessage = convData.lastMessage || { text: '', timestamp: 0, senderId: '', read: true };
+              
+              // Calculate the actual unread count
+              let unreadCount = 0;
+              if (convData.messages) {
+                unreadCount = Object.values(convData.messages).filter((msg: any) => 
+                  msg.senderId !== username && msg.read === false
+                ).length;
+              }
+  
               const conversation: Conversation = {
                 id: convId,
                 participants: convData.participants,
@@ -188,7 +261,11 @@ const ConversationList = () => {
           <View>
             <Link href={{ pathname: '/chat/[id]', params: { id: item.id } }} asChild>
               <TouchableOpacity 
-                style={[styles.conversationItem, isDarkMode && styles.conversationItemDark]}
+                style={[
+                  styles.conversationItem, 
+                  isDarkMode && styles.conversationItemDark,
+                  item.unreadCount > 0 && (isDarkMode ? styles.unreadConversationItemDark : styles.unreadConversationItem)
+                ]}
                 accessibilityLabel={`Conversation with ${otherParticipant?.username || 'Unknown'}`}
               >
                 <View style={styles.avatarContainer}>
@@ -198,7 +275,11 @@ const ConversationList = () => {
                   />
                   <View style={styles.textContainer}>
                     <View style={styles.nameAndTimeContainer}>
-                      <Text style={[styles.name, isDarkMode && styles.textDark]} numberOfLines={1}>
+                      <Text style={[
+                        styles.name, 
+                        isDarkMode && styles.textDark,
+                        item.unreadCount > 0 && (isDarkMode ? styles.unreadTextDark : styles.unreadText)
+                      ]} numberOfLines={1}>
                         {otherParticipant?.username || 'Unknown'}
                       </Text>
                       <Text style={[styles.timestamp, isDarkMode && styles.timestampDark]}>
@@ -208,7 +289,7 @@ const ConversationList = () => {
                     <Text style={[
                       styles.lastMessage, 
                       isDarkMode && (item.lastMessage.senderId === username || item.lastMessage.isRead ? styles.lastMessageReadDark : styles.lastMessageUnreadDark),
-                      item.lastMessage.senderId !== username && !item.lastMessage.isRead && styles.lastMessageUnread
+                      item.unreadCount > 0 && (isDarkMode ? styles.unreadTextDark : styles.unreadText)
                     ]} numberOfLines={1}>
                       {item.lastMessage.text}
                     </Text>
@@ -245,11 +326,12 @@ const ConversationList = () => {
         renderItem={renderConversationItem}
         keyExtractor={(item) => item.id}
         style={styles.list}
+        refreshing={false}
+        onRefresh={refreshConversations}
       />
     </SafeAreaView>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -350,17 +432,6 @@ const styles = StyleSheet.create({
   textDark: {
     color: '#FFFFFF',
   },
-  unreadIndicator: {
-    backgroundColor: '#34B7F1',
-    borderRadius: 10,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  unreadCount: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
   conversationItemContainer: {
     position: 'relative',
   },
@@ -372,6 +443,35 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'red',
+  },
+  unreadConversationItem: {
+    backgroundColor: '#E8F5FE',
+  },
+  unreadConversationItemDark: {
+    backgroundColor: '#1E3A5F',
+  },
+  unreadText: {
+    fontWeight: 'bold',
+    color: '#000000',
+  },
+  unreadTextDark: {
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  unreadIndicator: {
+    backgroundColor: '#34B7F1',
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    marginRight: 50,
+  },
+  unreadCount: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
 });
 

@@ -5,6 +5,7 @@ import * as SecureStore from "expo-secure-store";
 interface WeaponTypesResponse {
   landmineTypes: any[];
   missileTypes: any[];
+  otherTypes: any[];
 }
 
 export interface Product {
@@ -51,7 +52,7 @@ export const mapProductType = (productid: string) => {
         return "Missiles";
       case "GutShot":
         return "Missiles";
-      case "Yokozuna":
+      case "ShieldBreaker":
         return "Missiles";
       case "Zippy":
         return "Missiles";
@@ -78,10 +79,14 @@ export const mapProductType = (productid: string) => {
     GutShot: require('../assets/missiles/GutShot.png'),
     TheNuke: require('../assets/missiles/TheNuke.png'),
     Yokozuna: require('../assets/missiles/Yokozuna.png'),
+    ShieldBreaker: require('../assets/missiles/Yokozuna.png'),
     Zippy: require('../assets/missiles/Zippy.png'),
     Coins500_: require('../assets/store/500coins.png'),
     Coins1000_: require('../assets/store/1000coins.png'),
     Coins2000_: require('../assets/store/1000coins.png'),
+    LootDrop: require('../assets/mapassets/Airdropicon.png'),
+    Shield: require('../assets/mapassets/shield.png'),
+    UltraShield: require('../assets/mapassets/shield.png'),
     default: require('../assets/logo.png'), // Default image if identifier not found
   };
 
@@ -92,11 +97,11 @@ export async function getWeaponTypes(): Promise<WeaponTypesResponse> {
     const response = await axiosInstance.get('/api/getWeaponTypes', {
       params: { token },
     });
-    if (response.data && response.data.landmineTypes && response.data.missileTypes) {
+    if (response.data && response.data.landmineTypes && response.data.missileTypes && response.data.otherTypes) {
       return response.data;
     } else {
       console.error("API did not return the expected structure:", response.data);
-      return { landmineTypes: [], missileTypes: [] };
+      return { landmineTypes: [], missileTypes: [], otherTypes: [] };
     }
   } catch (error) {
     if (isAxiosError(error)) {
@@ -104,6 +109,6 @@ export async function getWeaponTypes(): Promise<WeaponTypesResponse> {
     } else {
       console.error("Error fetching weapon types:", error);
     }
-    return { landmineTypes: [], missileTypes: [] };
+    return { landmineTypes: [], missileTypes: [], otherTypes: [] };
   }
 }
