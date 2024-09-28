@@ -17,7 +17,6 @@ import { useCountdown } from '../util/Context/countdown';
 import { AuthProvider } from "../util/Context/authcontext";
 import { useNotifications, notificationEmitter } from "../components/Notifications/useNotifications";
 import { useColorScheme } from 'react-native';
-import notifications from "./notifications";
 
 const WebSocketProvider = ({ children }: WebSocketProviderProps) => {
   const { data, missiledata, landminedata, lootdata, otherdata, healthdata, friendsdata, inventorydata, playerlocations, leaguesData, sendWebsocket } = useWebSocket();

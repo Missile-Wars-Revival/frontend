@@ -8,7 +8,6 @@ import { useRouter } from 'expo-router';
 import { MissileLibrary } from '../components/Missile/missile';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getlocActive } from '../api/locActive';
-import { useCountdown } from '../util/Context/countdown';
 
 interface Notification {
 	id: string;

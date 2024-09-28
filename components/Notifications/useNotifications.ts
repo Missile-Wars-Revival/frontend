@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getNotifications, markNotificationAsRead, deleteNotification } from '../../api/notifications';
-import { useCountdown } from '../../util/Context/countdown';
 
 // Simple custom event emitter
 class SimpleEventEmitter {
