@@ -62,11 +62,6 @@ export interface ApiResponse {
   userProfile: SelfProfile;
 }
 
-interface Friend {
-  username: string;
-  profileImageUrl: string;
-}
-
 // Add this near the top of the file, after other imports
 const badgeImages: { [key: string]: any } = {
   Founder: require('../assets/icons/founder.png'),

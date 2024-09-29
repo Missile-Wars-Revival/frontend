@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Modal, Text, View, Dimensions, Alert, StyleSheet, TouchableOpacity } from 'react-native';
+import { Modal, Text, View, Dimensions, Alert, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import MapView, { Marker, Circle } from 'react-native-maps';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -17,6 +17,9 @@ import useFetchMissiles from '../../hooks/websockets/missilehook';
 import useFetchLoot from '../../hooks/websockets/loothook';
 import useFetchOther from '../../hooks/websockets/otherhook';
 import useFetchLandmines from '../../hooks/websockets/landminehook';
+import { MapStyle } from '../../types/types';
+import { androidDefaultMapStyle } from '../../map-themes/Android-themes/defaultMapStyle';
+import { IOSDefaultMapStyle } from '../../map-themes/IOS-themes/themestemp';
 
 const GOOGLE_PLACES_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 
@@ -47,6 +50,23 @@ export const LootPlacementPopup: React.FC<LootPlacementPopupProps> = ({ visible,
   const [currentLocation, setCurrentLocation] = useState<Region | null>(null);
   const userName = useUserName();
   const mapRef = useRef<MapView>(null);
+  const [currentMapStyle, setCurrentMapStyle] = useState<MapStyle[]>(Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle);
+
+  useEffect(() => {
+    const loadStoredMapStyle = async () => {
+      try {
+        const storedStyle = await AsyncStorage.getItem('selectedMapStyle');
+        if (storedStyle) {
+          const parsedStyle = JSON.parse(storedStyle) as MapStyle[];
+          setCurrentMapStyle(parsedStyle);
+        }
+      } catch (error) {
+        console.error('Error loading stored map style:', error);
+      }
+    };
+
+    loadStoredMapStyle();
+  }, []);
 
   async function initializeLocation() {
     setLoading(true);
@@ -245,6 +265,7 @@ export const LootPlacementPopup: React.FC<LootPlacementPopupProps> = ({ visible,
             rotateEnabled={true}
             scrollEnabled={true}
             zoomEnabled={true}
+            customMapStyle={currentMapStyle}
             onPress={(e) => setMarker({
               latitude: e.nativeEvent.coordinate.latitude,
               longitude: e.nativeEvent.coordinate.longitude,

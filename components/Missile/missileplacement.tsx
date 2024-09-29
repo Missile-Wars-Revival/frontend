@@ -8,7 +8,7 @@ import { useUserName } from "../../util/fetchusernameglobal";
 import { mapstyles } from '../../map-themes/stylesheet';
 import { firemissileloc } from '../../api/fireentities';
 import { useColorScheme } from 'react-native';
-import { loadLastKnownLocation, saveLocation } from '../../util/mapstore';
+import { getStoredMapStyle, loadLastKnownLocation, saveLocation } from '../../util/mapstore';
 import { AllLootDrops } from '../Loot/map-loot';
 import { AllOther } from '../Other/map-other';
 import { AllLandMines } from '../Landmine/map-landmines';
@@ -18,6 +18,9 @@ import useFetchMissiles from '../../hooks/websockets/missilehook';
 import useFetchLoot from '../../hooks/websockets/loothook';
 import useFetchOther from '../../hooks/websockets/otherhook';
 import useFetchLandmines from '../../hooks/websockets/landminehook';
+import { MapStyle } from '../../types/types';
+import { androidDefaultMapStyle } from '../../map-themes/Android-themes/defaultMapStyle';
+import { IOSDefaultMapStyle } from '../../map-themes/IOS-themes/themestemp';
 
 const GOOGLE_PLACES_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 
@@ -48,6 +51,23 @@ export const MissilePlacementPopup: React.FC<MissilePlacementPopupProps> = ({ vi
   const [isAlive, setisAlive] = useState<boolean>(true);
   const userName = useUserName();
   const mapRef = useRef<MapView>(null);
+  const [currentMapStyle, setCurrentMapStyle] = useState<MapStyle[]>(Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle);
+
+  useEffect(() => {
+    const loadStoredMapStyle = async () => {
+      try {
+        const storedStyle = await AsyncStorage.getItem('selectedMapStyle');
+        if (storedStyle) {
+          const parsedStyle = JSON.parse(storedStyle) as MapStyle[];
+          setCurrentMapStyle(parsedStyle);
+        }
+      } catch (error) {
+        console.error('Error loading stored map style:', error);
+      }
+    };
+
+    loadStoredMapStyle();
+  }, []);
 
   // Function to handle location permission and fetch current location
   async function initializeLocation() {
@@ -264,16 +284,17 @@ export const MissilePlacementPopup: React.FC<MissilePlacementPopupProps> = ({ vi
             initialRegion={region ?? undefined}
             showsUserLocation={true}
             showsMyLocationButton={Platform.OS === 'android'}
-                pitchEnabled={true}
-                rotateEnabled={true}
-                scrollEnabled={true}
-                zoomEnabled={true}
+            pitchEnabled={true}
+            rotateEnabled={true}
+            scrollEnabled={true}
+            zoomEnabled={true}
             onPress={(e) => setMarker({
               latitude: e.nativeEvent.coordinate.latitude,
               longitude: e.nativeEvent.coordinate.longitude,
               latitudeDelta: 0.01,
               longitudeDelta: 0.01
             })}
+            customMapStyle={currentMapStyle}
           >
             {marker && (
               <Circle

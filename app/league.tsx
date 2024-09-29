@@ -136,7 +136,7 @@ const LeagueRankingPage: React.FC = () => {
           <Ionicons 
             name={viewMode === 'players' ? 'trophy-outline' : 'people-outline'} 
             size={24} 
-            color={scheme === 'dark' ? '#FFF' : '#000'} 
+            color={scheme === 'dark' ? '#FFF' : '#FFF'} 
           />
           <Text style={styles.headerButtonText}>{viewMode === 'players' ? 'Leagues' : 'Players'}</Text>
         </TouchableOpacity>

@@ -318,7 +318,7 @@ const ConversationList = () => {
           onPress={() => router.push('/friendslist')}
           accessibilityLabel="Create new message"
         >
-          <Ionicons name="create-outline" size={24} color={isDarkMode ? "#FFFFFF" : "#4a5568"} />
+          <Ionicons name="create-outline" size={24} color={isDarkMode ? "#FFFFFF" : "#FFFFFF"} />
         </TouchableOpacity>
       </View>
       <FlatList

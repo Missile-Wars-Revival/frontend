@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Platform, Alert, Image, StyleSheet, TouchableOpacity, Text, Linking, Dimensions, useColorScheme } from "react-native";
+import { View, Platform, Alert, Image, StyleSheet, TouchableOpacity, Text, Linking, Dimensions, useColorScheme, Switch, Modal } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
 import axiosInstance from "../api/axios-instance";
@@ -34,6 +34,9 @@ import { playDeathSound } from "../util/sounds/deathsound";
 import { RewardedAd, RewardedAdEventType, TestIds } from "react-native-google-mobile-ads";
 import useFetchHealth from "../hooks/websockets/healthhook";
 import { getlocActive } from "../api/locActive";
+import PlayerViewButton from "../components/PlayerViewButton";
+import { MissileLibrary } from "../components/Missile/missile";
+import MissileFiringAnimation from "../components/Animations/MissileFiring";
 
 const adUnitId = Platform.select({
   ios: 'ca-app-pub-4035842398612787~7024601286',
@@ -57,9 +60,23 @@ export default function Map() {
   const health = useFetchHealth()//WS hook
   const [locationPermission, setLocationPermission] = useState(false);
   const [locActive, setLocActive] = useState<boolean>(true);
+  const [showMissileLibrary, setShowMissileLibrary] = useState(false);
+  const [selectedPlayer, setSelectedPlayer] = useState("");
+  const [showMissileFiringAnimation, setShowMissileFiringAnimation] = useState(false);
 
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
+
+  useEffect(() => {
+    const loadStoredMapStyle = async () => {
+      const storedStyle = await getStoredMapStyle();
+      if (storedStyle) {
+        selectMapStyle(storedStyle);
+      }
+    };
+
+    loadStoredMapStyle();
+  }, []);
 
   useEffect(() => {
     const requestLocationPermission = async () => {
@@ -293,6 +310,21 @@ export default function Map() {
     rewarded.show();
   };
 
+  const handleFireMissile = (username: string) => {
+    setSelectedPlayer(username);
+    setShowMissileLibrary(true);
+  };
+
+  const handleMissileFired = () => {
+    setShowMissileLibrary(false);
+    setShowMissileFiringAnimation(true);
+  };
+
+  const handleMissileAnimationComplete = () => {
+    setShowMissileFiringAnimation(false);
+    setSelectedPlayer("");
+  };
+
   return (
     <View style={[styles.container, isDarkMode && styles.containerDark]}>
       {(isAlive && locationPermission) && (
@@ -317,6 +349,11 @@ export default function Map() {
               getStoredMapStyle={getStoredMapStyle}
               selectMapStyle={selectMapStyle}
             />
+          </View>
+          )}
+          {locActive && (
+          <View style={styles.switchContainer}>
+            <PlayerViewButton onFireMissile={handleFireMissile} />
           </View>
           )}
         </>
@@ -350,6 +387,36 @@ export default function Map() {
           >
             <Text style={styles.permissionButtonText}>Open Settings</Text>
           </TouchableOpacity>
+        </View>
+      )}
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showMissileLibrary}
+        onRequestClose={() => setShowMissileLibrary(false)}
+      >
+        <View style={[styles.missileLibraryContainer, isDarkMode && styles.missileLibraryContainerDark]}>
+          <View style={[styles.missileLibraryHeader, isDarkMode && styles.missileLibraryHeaderDark]}>
+            <Text style={[styles.missileLibraryTitle, isDarkMode && styles.missileLibraryTitleDark]}>Missile Library</Text>
+            <TouchableOpacity
+              style={styles.doneButton}
+              onPress={() => setShowMissileLibrary(false)}
+            >
+              <Text style={styles.doneButtonText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+            <MissileLibrary 
+              playerName={selectedPlayer} 
+              onMissileFired={handleMissileFired}
+              onClose={() => setShowMissileLibrary(false)}
+            />
+        </View>
+      </Modal>
+
+      {showMissileFiringAnimation && (
+        <View style={styles.animationOverlay}>
+          <MissileFiringAnimation onAnimationComplete={handleMissileAnimationComplete} />
         </View>
       )}
     </View>
@@ -432,5 +499,55 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 16,
     textAlign: 'center',
+  },
+  switchContainer: {
+    position: 'absolute',
+    top: height * 0.15,
+    right: width * 0.05,
+    flexDirection: 'column',
+    alignItems: 'center',
+  },
+  missileLibraryContainer: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    paddingTop: 60,
+  },
+  missileLibraryContainerDark: {
+    backgroundColor: '#1E1E1E',
+    paddingTop: 60,
+  },
+  missileLibraryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 15,
+    backgroundColor: '#f7fafc',
+  },
+  missileLibraryHeaderDark: {
+    backgroundColor: '#2C2C2C',
+  },
+  missileLibraryTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2d3748',
+  },
+  missileLibraryTitleDark: {
+    color: '#FFF',
+  },
+  doneButton: {
+    backgroundColor: '#4299e1',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 5,
+  },
+  doneButtonText: {
+    color: '#ffffff',
+    fontWeight: 'bold',
+  },
+  animationOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 1000,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
