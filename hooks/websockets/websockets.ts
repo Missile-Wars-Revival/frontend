@@ -29,21 +29,30 @@ const useWebSocket = () => {
             try {
                 if (!token) {
                     console.log('Token not found');
+                    reject(new Error('Token not found'));
                     return;
                 }
-                const ws = new WebSocket(WEBSOCKET_URL, token);
-
+                // Use the token as a query parameter instead of as a protocol
+                const ws = new WebSocket(`${WEBSOCKET_URL}?token=${encodeURIComponent(token)}`);
+    
                 ws.onopen = () => {
                     console.log("Connected to websocket");
                     AsyncStorage.setItem('dbconnection', 'true');
                     resolve(ws);
                 };
-
+    
                 ws.onerror = (error) => {
                     console.error("WebSocket error:", error);
                     reject(error);
                 };
+    
+                ws.onclose = (event) => {
+                    console.log(`WebSocket closed. Code: ${event.code}, Reason: ${event.reason}`);
+                    AsyncStorage.setItem('dbconnection', 'false');
+                };
             } catch (error) {
+                console.error("Error setting up WebSocket:", error);
+                reject(error);
             }
         });
     };

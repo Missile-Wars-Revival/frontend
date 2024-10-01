@@ -11,13 +11,6 @@ import { additem } from '../api/add-item';
 import { getWeaponTypes, mapProductType, PremProduct, Product, shopimages } from '../api/store';
 import { getShopStyles } from '../map-themes/stylesheet';
 
-
-export const products: Product[] = [
-  // { id: "20", name: 'LootDrop', price: 400, image: require('../assets/mapassets/Airdropicon.png'), description: 'A Loot Drop', type: 'Loot Drops' },
-  // { id: "21", name: 'Shield', price: 2000, image: require('../assets/mapassets/shield.png'), description: 'A Standard Shield', type: 'Other' },
-  // { id: "22", name: 'UltraShield', price: 5000, image: require('../assets/mapassets/shield.png'), description: 'A Ultra Shield', type: 'Other' },
-];
-
 const { width, height } = Dimensions.get('window');
 
 export const getImageForProduct = (identifier: string): ImageSourcePropType => {
@@ -40,6 +33,10 @@ const StorePage: React.FC = () => {
   const [isLoadingPremium, setIsLoadingPremium] = useState<boolean>(true);
   const [isPurchasing, setIsPurchasing] = useState<boolean>(false);
   const [cartTotal, setCartTotal] = useState<number>(0);
+
+  const sortedWeapons = React.useMemo(() => {
+    return [...weapons].sort((a, b) => a.price - b.price);
+  }, [weapons]);
 
   useEffect(() => {
     const fetchWeapons = async () => {
@@ -82,10 +79,9 @@ const StorePage: React.FC = () => {
           radius: other.radius,
         }));
 
-        setWeapons([...mappedMissiles, ...mappedLandmines, ...mappedOther, ...products]);
+        setWeapons([...mappedMissiles, ...mappedLandmines, ...mappedOther]);
       } catch (error) {
         console.error('Error fetching weapons:', error);
-        setWeapons([...products]); // Fallback to just the hard-coded products
       }
     };
 
@@ -485,8 +481,8 @@ const StorePage: React.FC = () => {
           <View style={styles.container}>
             <FlatList
               data={selectedCategory === 'All' 
-                ? weapons 
-                : weapons.filter(p => p.type === selectedCategory || (selectedCategory === 'Other' && (p.type === 'Other' || p.type === 'Loot Drops')))}
+                ? sortedWeapons 
+                : sortedWeapons.filter(p => p.type === selectedCategory || (selectedCategory === 'Other' && (p.type === 'Other' || p.type === 'Loot Drops')))}
               keyExtractor={(item) => item.id.toString()}
               renderItem={renderButton}
               numColumns={3}
@@ -601,7 +597,7 @@ const StorePage: React.FC = () => {
               {renderTabs()}
               <View style={styles.container}>
                 <FlatList
-                  data={selectedCategory === 'All' ? weapons : weapons.filter(p => p.type === selectedCategory || (selectedCategory === 'Other' && (p.type === 'Other' || p.type === 'Loot Drops')))}
+                  data={selectedCategory === 'All' ? sortedWeapons : sortedWeapons.filter(p => p.type === selectedCategory || (selectedCategory === 'Other' && (p.type === 'Other' || p.type === 'Loot Drops')))}
                   keyExtractor={(item) => item.id.toString()}
                   renderItem={renderButton}
                   numColumns={3}
