@@ -148,12 +148,12 @@ export default function Map() {
 
       try {
         const response = await axiosInstance.post('/api/addMoney', {
-          token, amount: 500
+          token, amount: 1000
         });
 
         if (response.data) {
           console.log('Money added successfully:', response.data.message);
-          Alert.alert("Claimed!", `You have clamed your daily reward! 500 Coins`);
+          Alert.alert("Claimed!", `You have clamed your daily reward! 1000 Coins`);
           await AsyncStorage.setItem('lastRewardedDate', today); // Update the last rewarded date
         }
       } catch (error) {
