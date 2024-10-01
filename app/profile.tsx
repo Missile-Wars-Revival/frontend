@@ -385,7 +385,7 @@ const ProfilePage: React.FC = () => {
           text: "Delete", 
           style: "destructive",
           onPress: () => {
-            deleteAcc(selectedUsername);
+            handleEditUser({ deleteAccount: true });
             Alert.alert("Account Deleted", "The account has been successfully deleted.");
           }
         }

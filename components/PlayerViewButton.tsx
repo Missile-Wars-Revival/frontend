@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, Modal, FlatList, Image, StyleSheet, useColorScheme, Dimensions, ActivityIndicator, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, FlatList, Image, StyleSheet, useColorScheme, Dimensions, ActivityIndicator, Animated, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchAndCacheImage } from "../util/imagecache";
 import * as SecureStore from 'expo-secure-store';
@@ -145,20 +145,28 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
     }
   };
 
-  const handleAddFriend = async (username: string) => {
+  const handleAddFriend = async (friendUsername: string) => {
+    const token = await SecureStore.getItemAsync("token");
     try {
-      const token = await SecureStore.getItemAsync("token");
       if (!token) {
-        console.error("No token found");
-        return;
+        console.log('Token not found')
+        return; 
       }
-      await addFriend(token, username);
-      // Update the local state to reflect the change
-      setPlayers(players.map(player => 
-        player.username === username ? {...player, isFriend: true} : player
-      ));
+      const result = await addFriend(token, friendUsername);
+      if (result.message === "Friend added successfully") {
+        // Update the players state to reflect the new friend status
+        setPlayers(prevPlayers => 
+          prevPlayers.map(player =>
+            player.username === friendUsername ? { ...player, isFriend: true } : player
+          )
+        );
+        Alert.alert("Success", "Friend added successfully!");
+      } else {
+        Alert.alert("Error", result.message || "Failed to add friend.");
+      }
     } catch (error) {
-      console.error("Failed to add friend:", error);
+      console.warn('Error adding friend:', error);
+      Alert.alert("This player is already your friend!");
     }
   };
 

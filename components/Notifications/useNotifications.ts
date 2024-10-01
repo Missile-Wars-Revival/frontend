@@ -42,21 +42,28 @@ export const useNotifications = () => {
 	const [unreadChatCount, setUnreadChatCount] = useState(0);
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
+	const [lastFetchTime, setLastFetchTime] = useState(0);
 
-	const fetchNotifications = useCallback(async () => {
+	const fetchNotifications = useCallback(async (force = false) => {
+		if (!force && Date.now() - lastFetchTime < 30000) {
+			// If not forced and less than 30 seconds since last fetch, don't fetch
+			return;
+		}
 		try {
 			setIsLoading(true);
 			setError(null);
 			const data = await getNotifications();
 			setNotifications(data);
 			updateUnreadCount(data);
+			notificationEmitter.emit('notificationsUpdated', data);
+			setLastFetchTime(Date.now());
 		} catch (error) {
 			console.error('Failed to fetch notifications:', error);
 			setError('Failed to load notifications. Please try again.');
 		} finally {
 			setIsLoading(false);
 		}
-	}, []);
+	}, [lastFetchTime]);
 
 	const updateUnreadCount = useCallback((notifs: Notification[]) => {
 		const chatCount = notifs.filter(n => !n.isRead && n.title === 'New Message').length;

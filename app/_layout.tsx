@@ -1,6 +1,6 @@
 import { Stack } from "expo-router";
 import 'react-native-reanimated';
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import { View, Text, TouchableOpacity, StyleSheet, AppStateStatus, AppState } from 'react-native';
@@ -17,6 +17,7 @@ import { useCountdown } from '../util/Context/countdown';
 import { AuthProvider } from "../util/Context/authcontext";
 import { useNotifications, notificationEmitter } from "../components/Notifications/useNotifications";
 import { useColorScheme } from 'react-native';
+import { Notification } from "./notifications";
 
 const WebSocketProvider = ({ children }: WebSocketProviderProps) => {
   const { data, missiledata, landminedata, lootdata, otherdata, healthdata, friendsdata, inventorydata, playerlocations, leaguesData, sendWebsocket } = useWebSocket();
@@ -139,46 +140,43 @@ function NavBar({ unreadCount }: { unreadCount: number }) {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
 
-  // Update selectedTab when pathname changes
-  useEffect(() => {
-    setSelectedTab(pathname);
-  }, [pathname]);
-
-  useEffect(() => {
-    if (pathname === '/notifications' || pathname === '/add-friends') {
-      setSelectedTab('/friends');
-    } else if (pathname === '/settings') {
-      setSelectedTab('/profile');
+  const getTabForPath = useMemo(() => (path: string) => {
+    if (path === '/notifications' || path === '/add-friends') {
+      return '/friends';
+    } else if (path === '/settings') {
+      return '/profile';
+    } else if (['/store', '/friends', '/profile', '/league'].includes(path)) {
+      return path;
     } else {
-      setSelectedTab(pathname);
+      return '/';
     }
-  }, [pathname]);
+  }, []);
 
   useEffect(() => {
-    //if (pathname === '/league' || pathname === '/settings') {
-    if (pathname === '/settings') {
-      setSelectedTab('/profile');
-    } else {
-      setSelectedTab(pathname);
-    }
-  }, [pathname]);
-
+    const newTab = getTabForPath(pathname);
+    setSelectedTab(newTab);
+  }, [pathname, getTabForPath]);
+  
   const handlePress = (tab: string) => {
-    if (selectedTab !== tab) {
-      setSelectedTab(tab);
+    if (getTabForPath(pathname) !== tab) {
       router.navigate(tab);
     }
-  };
+  };  
 
-  const { notifications} = useNotifications();
+  const { notifications } = useNotifications();
   const [countdownActive, setCountdownActive] = useState(false);
   const { countdownIsActive, startCountdown, stopCountdown } = useCountdown();
-	
-  useEffect(() => {
+  const [localNotifications, setLocalNotifications] = useState<Notification[]>([]);
+  const [countdownStartTime, setCountdownStartTime] = useState<Date | null>(null);
 
+  useEffect(() => {
+    setLocalNotifications(notifications);
+  }, [notifications]);
+
+  useEffect(() => {
     const checkRecentDamageNotifications = () => {
-      const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000); // Increase time window to 2 minutes
-      const recentDamageNotification = notifications.find(
+      const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+      const recentDamageNotification = localNotifications.find(
         (notification) => 
           (notification.title === 'Missile Damage!' || notification.title === 'Landmine Damage!') &&
           new Date(notification.timestamp) > twoMinutesAgo
@@ -186,10 +184,12 @@ function NavBar({ unreadCount }: { unreadCount: number }) {
 
       if (recentDamageNotification && !countdownActive) {
         console.log('Starting countdown for notification:', recentDamageNotification);
+        setCountdownStartTime(new Date(recentDamageNotification.timestamp));
         startCountdown();
         setCountdownActive(true);
       } else if (!recentDamageNotification && countdownActive) {
         console.log('Stopping countdown');
+        setCountdownStartTime(null);
         stopCountdown();
         setCountdownActive(false);
       }
@@ -197,19 +197,16 @@ function NavBar({ unreadCount }: { unreadCount: number }) {
 
     checkRecentDamageNotifications();
 
-    // Set up an interval to check every second
-    const intervalId = setInterval(checkRecentDamageNotifications, 1000);
+    const intervalId = setInterval(checkRecentDamageNotifications, 5000); // Check every 5 seconds
 
-    // Clean up the interval on component unmount
     return () => clearInterval(intervalId);
-  }, [notifications, countdownActive, startCountdown, stopCountdown]);
+  }, [localNotifications, countdownActive, startCountdown, stopCountdown]);
 
   const getDisplayName = (route: any) => {
     switch (route) {
       case '/': return 'Map';
       case '/store': return 'Store';
       case '/league': return 'Ranking';
-      case '/msg': return 'Messages';
       case '/friends': return 'Friends';
       case '/profile': return 'Profile';
       default: return '';
@@ -226,7 +223,6 @@ function NavBar({ unreadCount }: { unreadCount: number }) {
         '/store', 
         '/league', 
         '/friends',
-        //'/msg', 
         '/profile'
       ].map((tab, index) => (
         <TouchableOpacity
@@ -246,7 +242,6 @@ function NavBar({ unreadCount }: { unreadCount: number }) {
                   tab === '/friends' ? 'users' :
                     tab === '/league' ? 'trophy' :
                       tab === '/profile' ? 'user' :
-                        tab === '/msg' ? 'comment' :
                         'user'}
               color={selectedTab === tab ? (isDarkMode ? '#4CAF50' : 'blue') : (isDarkMode ? '#B0B0B0' : 'black')}
               size={24}
@@ -273,7 +268,7 @@ function NavBar({ unreadCount }: { unreadCount: number }) {
 
 function RootLayoutNav() {
   const pathname = usePathname();
-  const hideNavBarRoutes = ['/login', '/register', '/add-friends'];
+  const hideNavBarRoutes = ['/login', '/register', '/user-profile'];
   const { countdownIsActive, stopCountdown } = useCountdown();
   const [unreadCount, setUnreadCount] = useState(0);
   const [unreadChatCount, setUnreadChatCount] = useState(0);
@@ -294,12 +289,10 @@ function RootLayoutNav() {
   
     notificationEmitter.on('unreadCountUpdated', handleUnreadCountUpdated);
   
-    // Set up interval to check for notifications every 30 seconds
     const intervalId = setInterval(() => {
       fetchNotifications();
-    }, 30000); // 30 seconds
+    }, 30000); // Fetch every 30 seconds
   
-    // Check for notifications when the app comes to the foreground
     const subscription = AppState.addEventListener('change', (nextAppState) => {
       if (nextAppState === 'active') {
         fetchNotifications();

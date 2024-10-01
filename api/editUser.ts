@@ -1,4 +1,3 @@
-import { isAxiosError } from "axios";
 import axiosInstance from "./axios-instance";
 import * as SecureStore from "expo-secure-store";
 

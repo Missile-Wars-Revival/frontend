@@ -51,9 +51,7 @@ export async function changePassword(newPassword: string) {
       newPassword
     });
     if (response.data.token) {
-      // Parse the token and update it in SecureStore
-      const newToken = JSON.parse(response.data.token);
-      await SecureStore.setItemAsync("token", newToken);
+      await SecureStore.setItemAsync("token", response.data.token);
     }
     return { success: true, message: response.data.message, token: response.data.token };
   } catch (error) {
@@ -90,9 +88,7 @@ export async function changeUsername(newUsername: string) {
     });
     
     if (response.data.token) {
-      // Parse the token and update it in SecureStore
-      const newToken = JSON.parse(response.data.token);
-      await SecureStore.setItemAsync("token", newToken);
+      await SecureStore.setItemAsync("token", response.data.token);
     }
     
     return {

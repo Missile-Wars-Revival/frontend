@@ -9,7 +9,7 @@ import { MissileLibrary } from '../components/Missile/missile';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getlocActive } from '../api/locActive';
 
-interface Notification {
+export interface Notification {
 	id: string;
 	title: string;
 	body: string;
@@ -162,6 +162,10 @@ const NotificationsPage: React.FC = () => {
 		);
 	  }, [notifications, clearAllNotifications]);
 
+	const handleRetry = useCallback(() => {
+		fetchNotifications(true); // Force fetch notifications
+	}, [fetchNotifications]);
+
 	const renderNotificationItem = useCallback(({ item }: { item: Notification }) => {
 		if (hiddenIds.has(item.id) || item.title === 'New Message') return null;
 
@@ -262,7 +266,10 @@ const NotificationsPage: React.FC = () => {
 				) : error ? (
 					<View style={styles.centerContainer}>
 						<Text style={[styles.errorText, isDarkMode && styles.errorTextDark]}>{error}</Text>
-						<TouchableOpacity style={[styles.retryButton, isDarkMode && styles.retryButtonDark]} onPress={fetchNotifications}>
+						<TouchableOpacity 
+							style={[styles.retryButton, isDarkMode && styles.retryButtonDark]} 
+							onPress={handleRetry}
+						>
 							<Text style={[styles.retryButtonText, isDarkMode && styles.retryButtonTextDark]}>Retry</Text>
 						</TouchableOpacity>
 					</View>
@@ -273,7 +280,7 @@ const NotificationsPage: React.FC = () => {
 						keyExtractor={(item) => item.id}
 						contentContainerStyle={styles.listContainer}
 						refreshing={isLoading}
-						onRefresh={fetchNotifications}
+						onRefresh={() => fetchNotifications(true)} // Force fetch on pull-to-refresh
 						ListEmptyComponent={
 							<Text style={[styles.noNotifications, isDarkMode && styles.noNotificationsDark]}>No notifications</Text>
 						}
