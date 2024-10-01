@@ -197,3 +197,35 @@ export async function deleteAcc(username: string) {
     }
   }
 }
+
+export async function resetPassword(email: string, code: string, newPassword: string) {
+  try {
+    const response = await axiosInstance.post("/api/resetPassword", {
+      email,
+      code,
+      newPassword
+    });
+    return { success: true, message: response.data.message };
+  } catch (error) {
+    if (isAxiosError(error)) {
+      console.log("Failed to reset password");
+      if (error.response?.status === 400) {
+        if (error.response.data.message.includes("Invalid or expired reset code")) {
+          return { success: false, message: "Invalid or expired reset code. Please request a new one." };
+        } else if (error.response.data.message.includes("New password must be")) {
+          return { success: false, message: "New password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character." };
+        } else {
+          return { success: false, message: error.response.data.message || "Invalid input for password reset" };
+        }
+      } else if (error.response?.status === 404) {
+        return { success: false, message: "User not found. Please check your email address." };
+      } else if (error.response?.status === 500) {
+        return { success: false, message: "Server error. Failed to reset password." };
+      }
+      return { success: false, message: error.response?.data.message || "Failed to reset password" };
+    } else {
+      console.error("Failed to reset password:", error);
+      return { success: false, message: "An unexpected error occurred" };
+    }
+  }
+}

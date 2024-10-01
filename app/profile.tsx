@@ -1,9 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { SafeAreaView, StyleSheet, Text, View, TouchableOpacity, Switch, Modal, ScrollView, FlatList, Alert, Image, Dimensions, TouchableWithoutFeedback, AlertButton, Linking, TextInput } from 'react-native';
 import { router } from 'expo-router';
-import { clearCredentials } from '../util/logincache';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Location from 'expo-location';
 import * as SecureStore from "expo-secure-store";
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -12,13 +10,11 @@ import { getselfprofile } from '../api/getprofile';
 import { Statistics } from './user-profile';
 import firebase from '../util/firebase/config';
 import { fetchAndCacheImage } from '../util/imagecache';
-import { useAuth } from '../util/Context/authcontext';
 import useFetchFriends from '../hooks/websockets/friendshook';
 import { useColorScheme } from 'react-native';
 import { editUser } from '../api/editUser';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
-import { deleteAcc } from '../api/changedetails';
 
 const DEFAULT_IMAGE = require('../assets/mapassets/Female_Avatar_PNG.png');
 

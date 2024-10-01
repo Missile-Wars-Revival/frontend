@@ -1,10 +1,9 @@
-import { Stack } from "expo-router";
 import 'react-native-reanimated';
 import React, { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import { View, Text, TouchableOpacity, StyleSheet, AppStateStatus, AppState } from 'react-native';
-import { useRouter, usePathname, useRootNavigationState } from 'expo-router';
+import { useRouter, usePathname, useRootNavigationState, Stack } from 'expo-router';
 import SplashScreen from './splashscreen';
 import { FontAwesome } from '@expo/vector-icons';
 import useWebSocket, { } from "../hooks/websockets/websockets"; 
@@ -49,6 +48,8 @@ export default function RootLayout() {
   const [lastActiveTime, setLastActiveTime] = useState(Date.now());
   const BACKGROUND_THRESHOLD = 2 * 60 * 1000; // 5 minutes in milliseconds
   const { fetchNotifications } = useNotifications();
+  const router = useRouter();
+  const pathname = usePathname();
 
   const configurePurchases = useCallback(async () => {
     try {
@@ -89,21 +90,37 @@ export default function RootLayout() {
 
   const [appState, setAppState] = useState(AppState.currentState);
 
-  const handleAppStateChange = useCallback((nextAppState: AppStateStatus) => {
+  const handleAppStateChange = useCallback(async (nextAppState: AppStateStatus) => {
     const now = Date.now();
-    if (nextAppState === 'active') {
+    if (appState.match(/inactive|background/) && nextAppState === 'active') {
       // App has come to the foreground
       if (now - lastActiveTime > BACKGROUND_THRESHOLD) {
-        setIsSplashVisible(true); // Show splash screen if inactive for more than threshold
+        // App was in background for more than 5 minutes
+        console.log('App was in background for more than 5 minutes');
+
+        if (pathname) {
+          router.replace(pathname);
+        }
+
+        // Refresh the NavBar
+        setIsSplashVisible(true);
+        setTimeout(() => setIsSplashVisible(false), 100);
+
+        // Refetch notifications and other data
+        fetchNotifications();
+        
+      } else {
+        // App was in background for less than 5 minutes
+        // Perform a lighter refresh here if needed
+        console.log('App was in background for less than 5 minutes');
       }
-      fetchNotifications();
       setLastActiveTime(now);
-    } else if (nextAppState === 'background') {
+    } else if (nextAppState.match(/inactive|background/)) {
       // App is going to the background
       setLastActiveTime(now);
     }
     setAppState(nextAppState);
-  }, [appState, fetchNotifications, lastActiveTime]);
+  }, [appState, lastActiveTime]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', handleAppStateChange);
@@ -111,7 +128,7 @@ export default function RootLayout() {
     return () => {
       subscription.remove();
     };
-  }, [appState]);
+  }, [handleAppStateChange]);
 
   const handleSplashFinish = useCallback(() => {
     setIsSplashVisible(false);

@@ -3,13 +3,13 @@ import { router } from "expo-router";
 import { Input } from "../components/ui/input";
 import { useMemo, useState } from "react";
 import useLogin from "../hooks/api/useLogin";
-import { User, LockKeyhole } from "lucide-react-native";
+import { User, LockKeyhole, CheckCircle2 } from "lucide-react-native";
 import React from "react";
 import { saveCredentials } from "../util/logincache";
 import { usePushNotifications } from "../components/Notifications/usePushNotifications";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from "../util/Context/authcontext";
-import { requestPasswordReset, requestUsernameReminder } from "../api/changedetails";
+import { requestPasswordReset, requestUsernameReminder, resetPassword } from "../api/changedetails";
 import LoginSwirl from "../components/Animations/loginSwirl";
 
 const { width, height } = Dimensions.get('window');
@@ -209,6 +209,43 @@ function ForgotCredentialsModal({
   isDarkMode: boolean;
   styles: any;
 }) {
+  const [resetCode, setResetCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [showResetForm, setShowResetForm] = useState(false);
+  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+
+  const isValidEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const handleRequestReset = async () => {
+    try {
+      await requestPasswordReset(email);
+      setShowResetForm(true);
+      setError("");
+    } catch (err) {
+      setError("Failed to request password reset. Please try again.");
+    }
+  };
+
+  const handleResetPassword = async () => {
+    try {
+      const result = await resetPassword(email, resetCode, newPassword);
+      if (result.success) {
+        setShowSuccessAnimation(true);
+        setTimeout(() => {
+          setShowSuccessAnimation(false);
+          onClose();
+        }, 2000);
+      } else {
+        setError(result.message);
+      }
+    } catch (err) {
+      setError("Failed to reset password. Please try again.");
+    }
+  };
+
   const handleSubmit = async (type: 'username' | 'password') => {
     try {
       if (type === 'username') {
@@ -219,10 +256,8 @@ function ForgotCredentialsModal({
           alert('No username found for this email address.');
         }
       } else {
-        await requestPasswordReset(email);
-        Alert.alert('A password reset email has been sent if the account exists.');
+        handleRequestReset();
       }
-      onClose();
     } catch (err) {
       setError(`Failed to request ${type} recovery. Please try again.`);
     }
@@ -233,33 +268,91 @@ function ForgotCredentialsModal({
       <View style={styles.modalOverlay}>
         <View style={[styles.modalContent, isDarkMode && styles.modalContentDark]}>
           <Text style={[styles.modalTitle, isDarkMode && styles.modalTitleDark]}>Forgot Credentials</Text>
-          <View style={styles.inputWrapper}>
-            <Input
-              placeholder="Enter your email"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              style={[styles.modalInput, isDarkMode && styles.modalInputDark]}
-              icon={<User size={24} color={isDarkMode ? "#FFFFFF" : "#000000"} />}
-            />
-          </View>
+          {!showResetForm ? (
+            <>
+              <View style={styles.inputWrapper}>
+                <Input
+                  placeholder="Enter your email"
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  style={[styles.modalInput, isDarkMode && styles.modalInputDark]}
+                  icon={<User size={24} color={isDarkMode ? "#FFFFFF" : "#000000"} />}
+                />
+              </View>
+              <TouchableOpacity
+                onPress={() => handleSubmit('username')}
+                style={[
+                  styles.modalButton,
+                  isDarkMode && styles.modalButtonDark,
+                  !isValidEmail(email) && styles.disabledButton
+                ]}
+                disabled={!isValidEmail(email)}
+              >
+                <Text style={[
+                  styles.modalButtonText,
+                  isDarkMode && styles.modalButtonTextDark,
+                  !isValidEmail(email) && styles.disabledButtonText
+                ]}>
+                  Recover Username
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleRequestReset}
+                style={[
+                  styles.modalButton,
+                  isDarkMode && styles.modalButtonDark,
+                  !isValidEmail(email) && styles.disabledButton
+                ]}
+                disabled={!isValidEmail(email)}
+              >
+                <Text style={[
+                  styles.modalButtonText,
+                  isDarkMode && styles.modalButtonTextDark,
+                  !isValidEmail(email) && styles.disabledButtonText
+                ]}>
+                  Reset Password
+                </Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <View style={styles.inputWrapper}>
+                <Input
+                  placeholder="Enter reset code"
+                  value={resetCode}
+                  onChangeText={setResetCode}
+                  keyboardType="number-pad"
+                  style={[styles.modalInput, isDarkMode && styles.modalInputDark]}
+                />
+              </View>
+              <View style={styles.inputWrapper}>
+                <Input
+                  placeholder="Enter new password"
+                  value={newPassword}
+                  onChangeText={setNewPassword}
+                  secureTextEntry
+                  style={[styles.modalInput, isDarkMode && styles.modalInputDark]}
+                />
+              </View>
+              <TouchableOpacity
+                onPress={handleResetPassword}
+                style={[styles.modalButton, isDarkMode && styles.modalButtonDark]}
+              >
+                <Text style={[styles.modalButtonText, isDarkMode && styles.modalButtonTextDark]}>Confirm Reset</Text>
+              </TouchableOpacity>
+            </>
+          )}
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
-          <TouchableOpacity
-            onPress={() => handleSubmit('username')}
-            style={[styles.modalButton, isDarkMode && styles.modalButtonDark]}
-          >
-            <Text style={[styles.modalButtonText, isDarkMode && styles.modalButtonTextDark]}>Recover Username</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => handleSubmit('password')}
-            style={[styles.modalButton, isDarkMode && styles.modalButtonDark]}
-          >
-            <Text style={[styles.modalButtonText, isDarkMode && styles.modalButtonTextDark]}>Reset Password</Text>
-          </TouchableOpacity>
           <TouchableOpacity onPress={onClose} style={styles.cancelButton}>
             <Text style={[styles.cancelButtonText, isDarkMode && styles.cancelButtonTextDark]}>Cancel</Text>
           </TouchableOpacity>
+          {showSuccessAnimation && (
+            <View style={styles.successAnimation}>
+              <CheckCircle2 size={64} color={isDarkMode ? "#4CAF50" : "#773765"} />
+            </View>
+          )}
         </View>
       </View>
     </Modal>
@@ -401,6 +494,16 @@ const lightStyles = StyleSheet.create({
     transform: [{ translateY: 2 }],
     zIndex: 1,
   },
+  successAnimation: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+  },
 });
 
 const darkStyles = StyleSheet.create({
@@ -450,5 +553,8 @@ const darkStyles = StyleSheet.create({
     top: 10,
     transform: [{ translateY: 2 }],
     zIndex: 1,
+  },
+  successAnimation: {
+    backgroundColor: 'rgba(30, 30, 30, 0.9)',
   },
 });
