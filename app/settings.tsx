@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableHighlight, Switch, ScrollView, Alert, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableHighlight, Switch, ScrollView, Alert, StyleSheet, Dimensions, TouchableOpacity, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Input } from "../components/ui/input";
@@ -35,8 +35,8 @@ const SettingsPage: React.FC = () => {
   const [isCopied, setIsCopied] = useState(false);
   const [useBackgroundLocation, setUseBackgroundLocation] = useState(false);
   const { setIsSignedIn } = useAuth();
-  const [deleteAccountUsername, setDeleteAccountUsername] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteAccountUsername, setDeleteAccountUsername] = useState('');
 
   useEffect(() => {
     loadUserData();
@@ -275,19 +275,24 @@ const SettingsPage: React.FC = () => {
       return;
     }
 
-    const result = await deleteAcc(username);
-    if (result.success) {
-      Alert.alert("Account Deleted", result.message, [
-        { 
-          text: "OK", 
-          onPress: async () => {
-            await handleLogout();
-            router.replace("/login");
+    try {
+      const result = await deleteAcc(username);
+      if (result.success) {
+        Alert.alert("Account Deleted", result.message, [
+          { 
+            text: "OK", 
+            onPress: async () => {
+              await handleLogout();
+              router.replace("/login");
+            }
           }
-        }
-      ]);
-    } else {
-      Alert.alert("Error", result.message);
+        ]);
+      } else {
+        Alert.alert("Error", result.message);
+      }
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      Alert.alert("Error", "An unexpected error occurred. Please try again.");
     }
     setShowDeleteModal(false);
   };
@@ -457,7 +462,7 @@ const SettingsPage: React.FC = () => {
 
           <TouchableHighlight 
             onPress={() => setShowDeleteModal(true)}
-            style={[styles.button, styles.deleteButton, isDarkMode && styles.buttonDark]}
+            style={[styles.button, styles.deleteButton, isDarkMode && styles.deleteButtonDark]}
             underlayColor={isDarkMode ? '#8B0000' : '#FF0000'}
           >
             <Text style={styles.buttonText}>Delete Account</Text>
@@ -502,9 +507,13 @@ const SettingsPage: React.FC = () => {
           </View>
         </View>
 
-        {showDeleteModal && (
-          <View style={[styles.modalContainer, isDarkMode && styles.modalContainerDark]}>
-            <View style={[styles.modal, isDarkMode && styles.modalDark]}>
+        <Modal
+          visible={showDeleteModal}
+          transparent={true}
+          animationType="fade"
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, isDarkMode && styles.modalContentDark]}>
               <Text style={[styles.modalTitle, isDarkMode && styles.modalTitleDark]}>Delete Account</Text>
               <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>
                 This action cannot be undone. Please enter your username to confirm.
@@ -525,7 +534,7 @@ const SettingsPage: React.FC = () => {
                 </TouchableHighlight>
                 <TouchableHighlight
                   onPress={handleDeleteAccount}
-                  style={[styles.modalButton, styles.deleteButton]}
+                  style={[styles.modalButton, styles.confirmDeleteButton]}
                   underlayColor="#FF0000"
                 >
                   <Text style={styles.modalButtonText}>Delete</Text>
@@ -533,7 +542,7 @@ const SettingsPage: React.FC = () => {
               </View>
             </View>
           </View>
-        )}
+        </Modal>
       </SafeAreaView>
     </ScrollView>
   );
@@ -715,27 +724,25 @@ const styles = StyleSheet.create({
   },
   deleteButton: {
     backgroundColor: '#DC3545',
+    marginTop: 20,
   },
-  modalContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+  deleteButtonDark: {
+    backgroundColor: '#8B0000',
+  },
+  modalOverlay: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
-  modalContainerDark: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  modal: {
+  modalContent: {
     backgroundColor: '#FFFFFF',
     borderRadius: 10,
     padding: 20,
     width: '80%',
+    alignItems: 'center',
   },
-  modalDark: {
+  modalContentDark: {
     backgroundColor: '#2C2C2C',
   },
   modalTitle: {
@@ -750,6 +757,7 @@ const styles = StyleSheet.create({
   modalText: {
     marginBottom: 15,
     color: '#666',
+    textAlign: 'center',
   },
   modalTextDark: {
     color: '#B0B0B0',
@@ -757,6 +765,8 @@ const styles = StyleSheet.create({
   modalButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    width: '100%',
+    marginTop: 20,
   },
   modalButton: {
     padding: 10,
@@ -766,6 +776,9 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     backgroundColor: '#6C757D',
+  },
+  confirmDeleteButton: {
+    backgroundColor: '#DC3545',
   },
   modalButtonText: {
     color: '#FFFFFF',

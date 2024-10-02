@@ -360,7 +360,7 @@ const FriendsPage: React.FC = () => {
         </View>
       </Modal>
       
-      {/* <TouchableOpacity
+      <TouchableOpacity
         style={[styles.messageButton, isDarkMode && styles.messageButtonDark]}
         onPress={() => router.navigate("/msg")}
       >
@@ -370,7 +370,7 @@ const FriendsPage: React.FC = () => {
             <Text style={styles.chatBadgeText}>{localUnreadChatCount}</Text>
           </View>
         )}
-      </TouchableOpacity> */}
+      </TouchableOpacity>
       {showMissileFiringAnimation && (
         <View style={styles.animationOverlay}>
           <MissileFiringAnimation onAnimationComplete={handleMissileAnimationComplete} />

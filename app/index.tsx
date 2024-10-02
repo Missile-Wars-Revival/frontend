@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Platform, Alert, Image, StyleSheet, TouchableOpacity, Text, Linking, Dimensions, useColorScheme, Switch, Modal } from "react-native";
+import { View, Platform, Alert, Image, StyleSheet, TouchableOpacity, Text, Linking, Dimensions, useColorScheme, Modal } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
 import axiosInstance from "../api/axios-instance";
@@ -84,14 +84,6 @@ export default function Map() {
         let { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
         
         if (foregroundStatus !== 'granted') {
-          Alert.alert(
-            "Permission Denied",
-            "Please allow location access to use the map features.",
-            [
-              { text: "OK", onPress: () => console.log("OK Pressed") },
-              { text: "Open Settings", onPress: () => Linking.openSettings() }
-            ]
-          );
           setLocationPermission(false);
           return;
         }

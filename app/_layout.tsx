@@ -9,14 +9,13 @@ import { FontAwesome } from '@expo/vector-icons';
 import useWebSocket, { } from "../hooks/websockets/websockets"; 
 import { WebSocketContext, WebSocketProviderProps } from "../util/Context/websocket";
 import { CountdownContext, CountdownProviderProps } from "../util/Context/countdown";
-import { Platform } from 'react-native';
-import Purchases from 'react-native-purchases';
 import CountdownTimer from '../components/countdown';
 import { useCountdown } from '../util/Context/countdown';
 import { AuthProvider } from "../util/Context/authcontext";
 import { useNotifications, notificationEmitter } from "../components/Notifications/useNotifications";
 import { useColorScheme } from 'react-native';
 import { Notification } from "./notifications";
+import PermissionsCheck from '../components/PermissionsCheck';
 
 const WebSocketProvider = ({ children }: WebSocketProviderProps) => {
   const { data, missiledata, landminedata, lootdata, otherdata, healthdata, friendsdata, inventorydata, playerlocations, leaguesData, sendWebsocket } = useWebSocket();
@@ -45,90 +44,6 @@ const CountdownProvider: React.FC<CountdownProviderProps> = ({ children }) => {
 export default function RootLayout() {
   const queryClient = new QueryClient();
   const [isSplashVisible, setIsSplashVisible] = useState(true);
-  const [lastActiveTime, setLastActiveTime] = useState(Date.now());
-  const BACKGROUND_THRESHOLD = 2 * 60 * 1000; // 5 minutes in milliseconds
-  const { fetchNotifications } = useNotifications();
-  const router = useRouter();
-  const pathname = usePathname();
-
-  const configurePurchases = useCallback(async () => {
-    try {
-      console.log('Configuring RevenueCat...');
-      Purchases.setDebugLogsEnabled(true); // Enable debug logs
-      
-      let apiKey;
-      if (Platform.OS === 'ios') {
-        apiKey = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_APPLE; // iOS API Key
-      } else if (Platform.OS === 'android') {
-        apiKey = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_GOOGLE; // Android API Key
-      }
-
-      if (!apiKey) {
-        throw new Error('RevenueCat API key is not set'); // Error if API key is missing
-      }
-
-      await Purchases.configure({ apiKey }); // Configure Purchases
-      console.log('RevenueCat configured successfully');
-
-      const customerInfo = await Purchases.getCustomerInfo(); // Fetch customer info
-      // console.log('Customer Info:', customerInfo); // Uncomment for debugging
-
-    } catch (error) {
-      console.error('Failed to initialize Purchases:', error); // Log initialization errors
-    }
-  }, []);
-
-  const isConfigured = useRef(false);
-
-  useEffect(() => {
-    if (!isConfigured.current) {
-      console.log('Calling configurePurchases...');
-      configurePurchases();
-      isConfigured.current = true;
-    }
-  }, []);
-
-  const [appState, setAppState] = useState(AppState.currentState);
-
-  const handleAppStateChange = useCallback(async (nextAppState: AppStateStatus) => {
-    const now = Date.now();
-    if (appState.match(/inactive|background/) && nextAppState === 'active') {
-      // App has come to the foreground
-      if (now - lastActiveTime > BACKGROUND_THRESHOLD) {
-        // App was in background for more than 5 minutes
-        console.log('App was in background for more than 5 minutes');
-
-        if (pathname) {
-          router.replace(pathname);
-        }
-
-        // Refresh the NavBar
-        setIsSplashVisible(true);
-        setTimeout(() => setIsSplashVisible(false), 100);
-
-        // Refetch notifications and other data
-        fetchNotifications();
-        
-      } else {
-        // App was in background for less than 5 minutes
-        // Perform a lighter refresh here if needed
-        console.log('App was in background for less than 5 minutes');
-      }
-      setLastActiveTime(now);
-    } else if (nextAppState.match(/inactive|background/)) {
-      // App is going to the background
-      setLastActiveTime(now);
-    }
-    setAppState(nextAppState);
-  }, [appState, lastActiveTime]);
-
-  useEffect(() => {
-    const subscription = AppState.addEventListener('change', handleAppStateChange);
-
-    return () => {
-      subscription.remove();
-    };
-  }, [handleAppStateChange]);
 
   const handleSplashFinish = useCallback(() => {
     setIsSplashVisible(false);
@@ -141,15 +56,18 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <CountdownProvider>
-      <AuthProvider>
-        <WebSocketProvider>
-          <RootLayoutNav />
-        </WebSocketProvider>
-      </AuthProvider>
+        <AuthProvider>
+          <WebSocketProvider>
+            <PermissionsCheck>
+              <RootLayoutNav />
+            </PermissionsCheck>
+          </WebSocketProvider>
+        </AuthProvider>
       </CountdownProvider>
     </QueryClientProvider>
   );
 }
+
 function NavBar({ unreadCount }: { unreadCount: number }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -285,7 +203,7 @@ function NavBar({ unreadCount }: { unreadCount: number }) {
 
 function RootLayoutNav() {
   const pathname = usePathname();
-  const hideNavBarRoutes = ['/login', '/register', '/user-profile'];
+  const hideNavBarRoutes = ['/login', '/register', '/user-profile', '/PermissionsScreen'];
   const { countdownIsActive, stopCountdown } = useCountdown();
   const [unreadCount, setUnreadCount] = useState(0);
   const [unreadChatCount, setUnreadChatCount] = useState(0);
@@ -348,7 +266,8 @@ function RootLayoutNav() {
             options={{ headerShown: false, gestureEnabled: false, animation: 'slide_from_bottom' }} 
           />
           <Stack.Screen name="register" options={{ headerShown: false, gestureEnabled: true }} />
-          {/* <Stack.Screen name="msg" options={{ headerShown: false }} /> */}
+          <Stack.Screen name="PermissionsScreen" options={{ headerShown: false, animation: 'slide_from_bottom' }} />
+          <Stack.Screen name="msg" options={{ headerShown: false }} />
           <Stack.Screen name="store" options={{ headerShown: false }} />
           <Stack.Screen name="league" options={{ headerShown: false }} />
           <Stack.Screen name="friends" options={{ headerShown: false }} />
