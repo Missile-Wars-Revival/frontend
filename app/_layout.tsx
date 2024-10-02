@@ -2,7 +2,7 @@ import 'react-native-reanimated';
 import React, { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
-import { View, Text, TouchableOpacity, StyleSheet, AppStateStatus, AppState } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, AppStateStatus, AppState, Platform } from 'react-native';
 import { useRouter, usePathname, useRootNavigationState, Stack } from 'expo-router';
 import SplashScreen from './splashscreen';
 import { FontAwesome } from '@expo/vector-icons';
@@ -16,6 +16,7 @@ import { useNotifications, notificationEmitter } from "../components/Notificatio
 import { useColorScheme } from 'react-native';
 import { Notification } from "./notifications";
 import PermissionsCheck from '../components/PermissionsCheck';
+import Purchases from 'react-native-purchases';
 
 const WebSocketProvider = ({ children }: WebSocketProviderProps) => {
   const { data, missiledata, landminedata, lootdata, otherdata, healthdata, friendsdata, inventorydata, playerlocations, leaguesData, sendWebsocket } = useWebSocket();
@@ -44,6 +45,43 @@ const CountdownProvider: React.FC<CountdownProviderProps> = ({ children }) => {
 export default function RootLayout() {
   const queryClient = new QueryClient();
   const [isSplashVisible, setIsSplashVisible] = useState(true);
+
+  const configurePurchases = useCallback(async () => {
+    try {
+      console.log('Configuring RevenueCat...');
+      Purchases.setDebugLogsEnabled(true); // Enable debug logs
+      
+      let apiKey;
+      if (Platform.OS === 'ios') {
+        apiKey = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_APPLE; // iOS API Key
+      } else if (Platform.OS === 'android') {
+        apiKey = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_GOOGLE; // Android API Key
+      }
+
+      if (!apiKey) {
+        throw new Error('RevenueCat API key is not set'); // Error if API key is missing
+      }
+
+      await Purchases.configure({ apiKey }); // Configure Purchases
+      console.log('RevenueCat configured successfully');
+
+      const customerInfo = await Purchases.getCustomerInfo(); // Fetch customer info
+      // console.log('Customer Info:', customerInfo); // Uncomment for debugging
+
+    } catch (error) {
+      console.error('Failed to initialize Purchases:', error); // Log initialization errors
+    }
+  }, []);
+
+  const isConfigured = useRef(false);
+
+  useEffect(() => {
+    if (!isConfigured.current) {
+      console.log('Calling configurePurchases...');
+      configurePurchases();
+      isConfigured.current = true;
+    }
+  }, []);
 
   const handleSplashFinish = useCallback(() => {
     setIsSplashVisible(false);

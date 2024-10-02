@@ -22,8 +22,21 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
   const isDarkMode = colorScheme === 'dark';
 
   useEffect(() => {
-    getlocation();
-    const app = initializeApp(firebaseConfig); 
+    const initializeAppLoad = async () => {
+      try {
+        getlocation();
+        initializeApp(firebaseConfig);
+
+        await initializeAsyncStorageValues();
+
+        // ... existing animation and timer logic ...
+      } catch (error) {
+        console.error("Error during app initialization:", error);
+      }
+    };
+
+    initializeAppLoad();
+
     const timer = setTimeout(() => {
       onFinish();
     }, 2000); // 2 seconds splash screen
@@ -36,6 +49,26 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
 
     return () => clearTimeout(timer);
   }, [onFinish, fadeAnim]);
+
+  const initializeAsyncStorageValues = async () => {
+    const keysToInitialize = [
+      { key: 'visibilitymode', defaultValue: 'global' },
+      { key: 'selectedMapStyle', defaultValue: 'default' },
+      { key: 'regionlocation', defaultValue: JSON.stringify({ latitude: 0, longitude: 0, latitudeDelta: 0.0922, longitudeDelta: 0.0421 }) },
+      { key: 'firstload', defaultValue: 'true' },
+      { key: 'dbconnection', defaultValue: 'false' },
+      { key: 'isAlive', defaultValue: 'true' },
+      { key: 'signedIn', defaultValue: 'false' },
+      { key: 'locActive', defaultValue: 'false' },
+    ];
+
+    for (const { key, defaultValue } of keysToInitialize) {
+      const value = await AsyncStorage.getItem(key);
+      if (value === null) {
+        await AsyncStorage.setItem(key, defaultValue);
+      }
+    }
+  };
 
   return (
     <View style={[styles.container, isDarkMode && styles.containerDark]}>

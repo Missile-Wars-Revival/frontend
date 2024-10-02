@@ -83,7 +83,7 @@ export const getlocation = async () => {
             longitude: location.longitude,
             latitudeDelta: 0.01,
             longitudeDelta: 0.01,
-            pitch: 0,
+            pitch: 45,
             heading: 0
         };
         await saveLocation(newRegion);

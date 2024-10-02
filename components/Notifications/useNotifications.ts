@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getNotifications, markNotificationAsRead, deleteNotification } from '../../api/notifications';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Simple custom event emitter
 class SimpleEventEmitter {
@@ -57,9 +58,22 @@ export const useNotifications = () => {
 			updateUnreadCount(data);
 			notificationEmitter.emit('notificationsUpdated', data);
 			setLastFetchTime(Date.now());
+
+			// Store the latest notification
+			try {
+				if (data.length > 0) {
+					const latestNotification = data[0];
+					if (latestNotification) {
+						await AsyncStorage.setItem('latestNotification', `${latestNotification.title}: ${latestNotification.body}`);
+					}
+				}
+			} catch (error) {
+				console.error('Failed to store latest notification:', error);
+			}
 		} catch (error) {
 			console.error('Failed to fetch notifications:', error);
 			setError('Failed to load notifications. Please try again.');
+			notificationEmitter.emit('error', error);
 		} finally {
 			setIsLoading(false);
 		}

@@ -4,6 +4,7 @@ import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
 import { MapPin, Bell, Navigation, FileText } from 'lucide-react-native';
 import { Linking } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width, height } = Dimensions.get('window');
 
@@ -82,11 +83,13 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGrant
           { text: "Don't Allow", style: "cancel" },
           { text: "Allow", onPress: () => {
             handlePermissionRequest('backgroundLocation', Location.requestBackgroundPermissionsAsync);
+            AsyncStorage.setItem('useBackgroundLocation', 'true');
           }}
         ]
       );
     } else {
       handlePermissionRequest('backgroundLocation', Location.requestBackgroundPermissionsAsync);
+      AsyncStorage.setItem('useBackgroundLocation', 'true');
     }
   };
 

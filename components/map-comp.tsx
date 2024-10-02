@@ -11,7 +11,7 @@ import { dispatch } from "../api/dispatch";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCurrentLocation } from "../util/locationreq";
 import { getMainMapStyles } from "../map-themes/stylesheet";
-import { DefRegLocationTask } from "../util/backgroundtasks";
+import { startBackgroundLocationUpdates } from "../util/backgroundtasks";
 import * as SecureStore from "expo-secure-store";
 import { updateFriendsOnlyStatus } from "../api/visibility";
 import useFetchMissiles from "../hooks/websockets/missilehook";
@@ -93,7 +93,6 @@ export const MapComp = (props: MapCompProps) => {
                         await getlocation();
                     }
                     setRegion(savedlocation);
-                    await DefRegLocationTask();
 
                     await AsyncStorage.setItem('firstload', 'false');
                     setFirstLoad(false);
@@ -116,7 +115,11 @@ export const MapComp = (props: MapCompProps) => {
                 const status = await getLocationPermission();
                 setIsLocationEnabled(status === 'granted');
 
+                // Initial dispatch
                 await dispatchLocation();
+
+                // Set up interval for regular dispatches
+                const dispatchIntervalId = setInterval(dispatchLocation, 30000); // Every 30 seconds
 
                 const intervalId = setInterval(async () => {
                     // Periodically check DB connection status
@@ -150,7 +153,10 @@ export const MapComp = (props: MapCompProps) => {
 
                 }, 1000);
 
-                return () => clearInterval(intervalId);
+                return () => {
+                    clearInterval(dispatchIntervalId);
+                    clearInterval(intervalId);
+                };
             } catch (error) {
                 setIsLoading(false);
                 console.error('Error initializing app:', error);
@@ -158,6 +164,7 @@ export const MapComp = (props: MapCompProps) => {
         };
 
         initializeApp();
+        startBackgroundLocationUpdates();
     }, []);
 
     useEffect(() => {
@@ -204,12 +211,12 @@ export const MapComp = (props: MapCompProps) => {
             const token = await SecureStore.getItemAsync("token");
             if (token && location.latitude && location.longitude) {
                 await dispatch(token, location.latitude, location.longitude);
-                //console.log("Location dispatched successfully");
+                console.log("Location dispatched successfully");
             } else {
-                //console.log("Invalid token or location data", token, location);
+                console.log("Invalid token or location data", token, location);
             }
         } catch (error) {
-            //console.log("Failed to dispatch location", error);
+            console.log("Failed to dispatch location", error);
         }
     };
 
