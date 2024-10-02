@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableHighlight, Switch, ScrollView, Alert, StyleSheet, Dimensions, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, TouchableHighlight, Switch, ScrollView, Alert, StyleSheet, Dimensions, TouchableOpacity, Modal, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Input } from "../components/ui/input";
@@ -507,6 +507,21 @@ const SettingsPage: React.FC = () => {
           </View>
         </View>
 
+        {/* Add this new View for the links */}
+        <View style={styles.footerLinks}>
+          <TouchableOpacity onPress={() => Linking.openURL('https://website.missilewars.dev/privacypolicy')}>
+            <Text style={[styles.footerLinkText, isDarkMode && styles.footerLinkTextDark]}>
+              Privacy Policy
+            </Text>
+          </TouchableOpacity>
+          <Text style={[styles.footerLinkText, isDarkMode && styles.footerLinkTextDark]}> | </Text>
+          <TouchableOpacity onPress={() => Linking.openURL('https://discord.gg/Gk8jqUnVd3')}>
+            <Text style={[styles.footerLinkText, isDarkMode && styles.footerLinkTextDark]}>
+              Contact Support
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         <Modal
           visible={showDeleteModal}
           transparent={true}
@@ -522,7 +537,7 @@ const SettingsPage: React.FC = () => {
                 placeholder="Enter your username"
                 value={deleteAccountUsername}
                 onChangeText={setDeleteAccountUsername}
-                style={[styles.input, isDarkMode && styles.inputDark]}
+                style={[styles.modalInput, isDarkMode && styles.modalInputDark]}
               />
               <View style={styles.modalButtons}>
                 <TouchableHighlight
@@ -783,6 +798,33 @@ const styles = StyleSheet.create({
   modalButtonText: {
     color: '#FFFFFF',
     fontWeight: 'bold',
+  },
+  modalInput: {
+    width: '100%',
+    height: 40,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
+    paddingHorizontal: 10,
+    marginBottom: 10,
+  },
+  modalInputDark: {
+    borderColor: '#555',
+    color: '#FFF',
+    backgroundColor: '#3C3C3C',
+  },
+  footerLinks: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  footerLinkText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  footerLinkTextDark: {
+    color: '#B0B0B0',
   },
 });
 
