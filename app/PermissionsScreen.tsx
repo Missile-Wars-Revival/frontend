@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform, Dimensions, ImageBackground, Image, SafeAreaView, KeyboardAvoidingView, StatusBar, useColorScheme, ScrollView } from 'react-native';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
-import { MapPin, Bell, Navigation } from 'lucide-react-native';
+import { MapPin, Bell, Navigation, FileText } from 'lucide-react-native';
 import { Linking } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
@@ -15,6 +15,7 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGrant
   const [locationPermission, setLocationPermission] = useState(false);
   const [notificationPermission, setNotificationPermission] = useState(false);
   const [backgroundLocationPermission, setBackgroundLocationPermission] = useState(false);
+  const [privacyPolicyAgreed, setPrivacyPolicyAgreed] = useState(false);
 
   useEffect(() => {
     checkPermissions();
@@ -89,11 +90,19 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGrant
     }
   };
 
+  const openPrivacyPolicy = () => {
+    Linking.openURL('https://website.missilewars.dev/privacypolicy');
+  };
+
+  const agreeToPrivacyPolicy = () => {
+    setPrivacyPolicyAgreed(true);
+  };
+
   const handleContinue = () => {
-    if (locationPermission) {
+    if (locationPermission && privacyPolicyAgreed) {
       onPermissionGranted();
     } else {
-      Alert.alert('Location Permission Required', 'You must grant location permission to use this app.');
+      Alert.alert('Required Permissions', 'You must grant location permission and agree to the Privacy Policy to use this app.');
     }
   };
 
@@ -167,14 +176,37 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGrant
                 styles={styles}
                 isDarkMode={isDarkMode}
               />
+
+              <PermissionItem
+                title="Agree to Privacy Policy (Required)"
+                description="You must agree to our Privacy Policy to use this app."
+                icon={<FileText size={24} color={isDarkMode ? "#FFFFFF" : "#000000"} />}
+                isGranted={privacyPolicyAgreed}
+                onPress={agreeToPrivacyPolicy}
+                styles={styles}
+                isDarkMode={isDarkMode}
+              >
+                <TouchableOpacity 
+                  style={[styles.privacyPolicyButton, isDarkMode && styles.privacyPolicyButtonDark]} 
+                  onPress={openPrivacyPolicy}
+                >
+                  <Text style={[styles.privacyPolicyButtonText, isDarkMode && styles.privacyPolicyButtonTextDark]}>
+                    Read Privacy Policy
+                  </Text>
+                </TouchableOpacity>
+              </PermissionItem>
             </View>
           </ScrollView>
 
           <View style={styles.bottomContainer}>
             <TouchableOpacity 
-              style={[styles.continueButton, !locationPermission && styles.disabledButton, isDarkMode && styles.continueButtonDark]} 
+              style={[
+                styles.continueButton, 
+                (!locationPermission || !privacyPolicyAgreed) && styles.disabledButton, 
+                isDarkMode && styles.continueButtonDark
+              ]} 
               onPress={handleContinue}
-              disabled={!locationPermission}
+              disabled={!locationPermission || !privacyPolicyAgreed}
             >
               <Text style={styles.continueButtonText}>Agree & Continue</Text>
             </TouchableOpacity>
@@ -185,7 +217,16 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGrant
   );
 };
 
-const PermissionItem = ({ title, description, icon, isGranted, onPress, styles, isDarkMode }: { title: string; description: string; icon: React.ReactNode; isGranted: boolean; onPress: () => void; styles: any; isDarkMode: boolean }) => (
+const PermissionItem = ({ title, description, icon, isGranted, onPress, styles, isDarkMode, children }: { 
+  title: string; 
+  description: string; 
+  icon: React.ReactNode; 
+  isGranted: boolean; 
+  onPress: () => void; 
+  styles: any; 
+  isDarkMode: boolean;
+  children?: React.ReactNode;
+}) => (
   <View style={[
     styles.permissionItem, 
     isDarkMode && styles.permissionItemDark,
@@ -196,6 +237,7 @@ const PermissionItem = ({ title, description, icon, isGranted, onPress, styles, 
       <Text style={[styles.permissionTitle, isDarkMode && styles.permissionTitleDark]}>{title}</Text>
     </View>
     <Text style={[styles.permissionDescription, isDarkMode && styles.permissionDescriptionDark]}>{description}</Text>
+    {children}
     <TouchableOpacity 
       style={[
         styles.permissionButton, 
@@ -207,7 +249,7 @@ const PermissionItem = ({ title, description, icon, isGranted, onPress, styles, 
         styles.permissionButtonText,
         isGranted ? styles.grantedPermissionButtonText : (isDarkMode ? styles.darkModePermissionButtonText : styles.lightModePermissionButtonText)
       ]}>
-        {isGranted ? 'Granted' : 'Grant Access'}
+        {isGranted ? 'Agreed' : 'Agree'}
       </Text>
     </TouchableOpacity>
   </View>
@@ -340,6 +382,17 @@ const lightStyles = StyleSheet.create({
   grantedPermissionButtonText: {
     color: '#FFFFFF', // White text for granted button (both modes)
   },
+  privacyPolicyButton: {
+    backgroundColor: '#E0E0E0',
+    borderRadius: 10,
+    padding: 10,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  privacyPolicyButtonText: {
+    color: '#773765',
+    fontWeight: 'bold',
+  },
 });
 
 const darkStyles = StyleSheet.create({
@@ -372,6 +425,12 @@ const darkStyles = StyleSheet.create({
   },
   darkModePermissionButtonText: {
     color: '#FFFFFF', // White text for dark mode button
+  },
+  privacyPolicyButtonDark: {
+    backgroundColor: '#444444',
+  },
+  privacyPolicyButtonTextDark: {
+    color: '#4CAF50',
   },
 });
 

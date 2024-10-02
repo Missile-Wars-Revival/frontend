@@ -210,7 +210,7 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
       >
         <Image source={{ uri: item.profileImageUrl }} style={styles.playerImage} />
         <View style={styles.playerInfo}>
-          <Text style={styles.playerName} numberOfLines={1} ellipsizeMode="tail">
+          <Text style={[styles.playerName, isDarkMode && styles.playerNameDark]} numberOfLines={1} ellipsizeMode="tail">
             {item.username}
           </Text>
           <Text style={[styles.playerStatus, isDarkMode && styles.playerStatusDark]}>
@@ -280,7 +280,7 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
           source={missileImages[selectedMissile.type] || require('../assets/logo.png')} 
           style={styles.missileDetailImage} 
         />
-        <Text style={styles.missileDetailTitle}>{selectedMissile.type}</Text>
+        <Text style={[styles.missileDetailTitle, isDarkMode && styles.missileDetailTitleDark]}>{selectedMissile.type}</Text>
         <View style={styles.missileInfoContainer}>
           <View style={styles.missileInfoItem}>
             <Text style={styles.missileInfoLabel}>Status</Text>
@@ -467,12 +467,12 @@ const styles = StyleSheet.create({
   },
   playerName: {
     fontSize: 16,
-    color: '#FFFFFF',
+    color: '#333333', // Changed from '#FFFFFF' to a darker color
     fontFamily: 'monospace',
     fontWeight: 'bold',
   },
   playerNameDark: {
-    color: '#B0B0B0',
+    color: '#FFFFFF', // Keep white for dark mode
   },
   playerStatus: {
     fontSize: 14,
@@ -555,8 +555,11 @@ const styles = StyleSheet.create({
   missileDetailTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: '#333333', // Changed from '#FFFFFF' to a darker color
     marginBottom: 15,
+  },
+  missileDetailTitleDark: {
+    color: '#FFFFFF', // Keep white for dark mode
   },
   missileInfoContainer: {
     flexDirection: 'row',
