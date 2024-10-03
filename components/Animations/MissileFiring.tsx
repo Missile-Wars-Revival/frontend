@@ -50,13 +50,13 @@ const MissileFiringAnimation: React.FC<MissileFiringAnimationProps> = ({ onAnima
       {
         translateY: missileAnim.interpolate({
           inputRange: [0, 1],
-          outputRange: [-150, 0],
+          outputRange: [150, -150], // Changed to move upwards
         }),
       },
       {
         scale: missileAnim.interpolate({
           inputRange: [0, 0.8, 1],
-          outputRange: [0.5, 0.5, 0],
+          outputRange: [1, 1, 0.5], // Adjusted scale
         }),
       },
     ],
@@ -71,13 +71,13 @@ const MissileFiringAnimation: React.FC<MissileFiringAnimationProps> = ({ onAnima
       {
         translateY: smokeAnim.interpolate({
           inputRange: [0, 1],
-          outputRange: [-100, 50],
+          outputRange: [0, -100], // Changed to move upwards
         }),
       },
       {
         scale: smokeAnim.interpolate({
           inputRange: [0, 1],
-          outputRange: [0.5, 2],
+          outputRange: [0.5, 3],
         }),
       },
     ],
@@ -118,6 +118,7 @@ const MissileFiringAnimation: React.FC<MissileFiringAnimationProps> = ({ onAnima
           colors={isDarkMode ? ['#303030', '#505050'] : ['#A0A0A0', '#C0C0C0']}
           style={styles.missileGradient}
         />
+        <View style={styles.fins} />
       </Animated.View>
       <Animated.View style={[styles.flame, flameStyle]}>
         <LinearGradient
@@ -142,29 +143,43 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   missile: {
-    width: 20,
-    height: 60,
-    borderTopLeftRadius: 10,
-    borderTopRightRadius: 10,
-    borderBottomLeftRadius: 5,
-    borderBottomRightRadius: 5,
+    width: 10,
+    height: 50,
+    borderTopLeftRadius: 5,
+    borderTopRightRadius: 5,
+    borderBottomLeftRadius: 2,
+    borderBottomRightRadius: 2,
     overflow: 'hidden',
   },
   missileGradient: {
     flex: 1,
   },
+  fins: {
+    position: 'absolute',
+    bottom: 0,
+    left: -5,
+    right: -5,
+    height: 10,
+    backgroundColor: 'transparent',
+    borderLeftWidth: 10,
+    borderRightWidth: 10,
+    borderBottomWidth: 10,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderBottomColor: '#505050',
+  },
   smoke: {
     position: 'absolute',
-    width: 40,
+    width: 20,
     height: 100,
-    borderRadius: 20,
+    borderRadius: 10,
     backgroundColor: 'rgba(200, 200, 200, 0.6)',
   },
   flame: {
     position: 'absolute',
-    width: 30,
-    height: 80,
-    bottom: -40,
+    width: 15,
+    height: 40,
+    bottom: 150, // Adjusted to align with missile's initial position
     overflow: 'hidden',
   },
   flameGradient: {
@@ -176,6 +191,7 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 50,
     overflow: 'hidden',
+    top: 50, // Adjusted to appear at the top of the screen
   },
   explosionGradient: {
     flex: 1,

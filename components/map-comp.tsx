@@ -11,7 +11,6 @@ import { dispatch } from "../api/dispatch";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCurrentLocation } from "../util/locationreq";
 import { getMainMapStyles } from "../map-themes/stylesheet";
-import { startBackgroundLocationUpdates } from "../util/backgroundtasks";
 import * as SecureStore from "expo-secure-store";
 import { updateFriendsOnlyStatus } from "../api/visibility";
 import useFetchMissiles from "../hooks/websockets/missilehook";
@@ -56,7 +55,7 @@ export const MapComp = (props: MapCompProps) => {
         longitude: 0,
         latitudeDelta: 0.01,
         longitudeDelta: 0.01,
-        pitch: 0,
+        pitch: 45,
         heading: 0
     });
 
@@ -164,7 +163,6 @@ export const MapComp = (props: MapCompProps) => {
         };
 
         initializeApp();
-        startBackgroundLocationUpdates();
     }, []);
 
     useEffect(() => {
@@ -294,7 +292,7 @@ export const MapComp = (props: MapCompProps) => {
                         longitude: location.longitude,
                         latitudeDelta: 0.01,
                         longitudeDelta: 0.01,
-                        pitch: 0,
+                        pitch: 45,
                         heading: 0
                     };
                     await saveLocation(newRegion);
@@ -320,6 +318,7 @@ export const MapComp = (props: MapCompProps) => {
                         rotateEnabled={true}
                         scrollEnabled={true}
                         zoomEnabled={true}
+                        showsMyLocationButton={false}
                         customMapStyle={props.selectedMapStyle}>
                         <AllPlayers />
                         <AllLootDrops lootLocations={lootData} />

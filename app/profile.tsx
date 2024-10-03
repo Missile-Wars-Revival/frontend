@@ -62,6 +62,7 @@ export interface ApiResponse {
 const badgeImages: { [key: string]: any } = {
   Founder: require('../assets/icons/founder.png'),
   Staff: require('../assets/icons/staff.png'),
+  Early: require('../assets/icons/earlysupporter.png'),
 
   //leagues
   Bronze: require('../assets/leagues/bronze.png'),

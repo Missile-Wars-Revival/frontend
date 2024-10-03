@@ -26,10 +26,7 @@ export async function getCurrentLocation(): Promise<location> {
     // Check and request foreground permissions
     foregroundStatus = await Location.getForegroundPermissionsAsync();
     if (foregroundStatus.status !== 'granted') {
-        foregroundStatus = await Location.requestForegroundPermissionsAsync();
-        if (foregroundStatus.status !== 'granted') {
-            throw new Error('Foreground location access permission was denied');
-        }
+        throw new Error('Foreground location access permission was denied');
     }
 
     // Check and request background permissions if needed

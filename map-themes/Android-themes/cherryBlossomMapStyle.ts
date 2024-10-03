@@ -2,7 +2,7 @@ export const androidCherryBlossomMapStyle = [
     {
       "elementType": "geometry",
       "stylers": [
-        { "color": "#f5f5f5" } // Light grey color
+        { "color": "#FFF0F5" } // Lavender blush (very light pink)
       ]
     },
     {
@@ -14,20 +14,20 @@ export const androidCherryBlossomMapStyle = [
     {
       "elementType": "labels.text.fill",
       "stylers": [
-        { "color": "#8C4356" } // Cherry blossom pink color
+        { "color": "#D87093" } // Pale violet red (darker pink)
       ]
     },
     {
       "elementType": "labels.text.stroke",
       "stylers": [
-        { "color": "#f5f5f5" } // Light grey color
+        { "color": "#FFFFFF" } // White
       ]
     },
     {
       "featureType": "administrative",
       "elementType": "labels.text.fill",
       "stylers": [
-        { "color": "#8C4356" } // Cherry blossom pink color
+        { "color": "#D87093" } // Pale violet red (darker pink)
       ]
     },
     {
@@ -40,7 +40,7 @@ export const androidCherryBlossomMapStyle = [
       "featureType": "road",
       "elementType": "geometry",
       "stylers": [
-        { "color": "#ffffff" } // White color
+        { "color": "#FFFFFF" } // White
       ]
     },
     {
@@ -54,35 +54,49 @@ export const androidCherryBlossomMapStyle = [
       "featureType": "road.arterial",
       "elementType": "labels.text.fill",
       "stylers": [
-        { "color": "#8C4356" } // Cherry blossom pink color
+        { "color": "#D87093" } // Pale violet red (darker pink)
       ]
     },
     {
       "featureType": "road.highway",
       "elementType": "geometry",
       "stylers": [
-        { "color": "#dadada" } // Light grey color
+        { "color": "#FFB6C1" } // Light pink
       ]
     },
     {
       "featureType": "road.highway",
       "elementType": "labels.text.fill",
       "stylers": [
-        { "color": "#8C4356" } // Cherry blossom pink color
+        { "color": "#D87093" } // Pale violet red (darker pink)
       ]
     },
     {
       "featureType": "water",
       "elementType": "geometry",
       "stylers": [
-        { "color": "#E8B3C2" } // Light cherry blossom pink color
+        { "color": "#FFB7C5" } // Cherry blossom pink
       ]
     },
     {
       "featureType": "water",
       "elementType": "labels.text.fill",
       "stylers": [
-        { "color": "#9e9e9e" } // Grey color
+        { "color": "#D87093" } // Pale violet red (darker pink)
+      ]
+    },
+    {
+      "featureType": "poi.park",
+      "elementType": "geometry",
+      "stylers": [
+        { "color": "#FAE6FA" } // Very light pink for parks
+      ]
+    },
+    {
+      "featureType": "poi.park",
+      "elementType": "labels.text.fill",
+      "stylers": [
+        { "color": "#D87093" } // Pale violet red (darker pink)
       ]
     }
   ];

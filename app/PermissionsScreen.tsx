@@ -66,8 +66,13 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGrant
     }
   };
 
-  const requestLocationPermission = () => {
-    handlePermissionRequest('location', Location.requestForegroundPermissionsAsync);
+  const requestLocationPermission = async () => {
+    if (Platform.OS === 'ios') {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      setLocationPermission(status === 'granted');
+    } else {
+      handlePermissionRequest('location', Location.requestForegroundPermissionsAsync);
+    }
   };
 
   const requestNotificationPermission = () => {
@@ -112,7 +117,7 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGrant
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
 
-  const backgroundImage = require('../assets/concept/Map.png'); 
+  const backgroundImage = require('../assets/concept/map.png'); 
 
   const styles = useMemo(() => StyleSheet.create({
     ...lightStyles,
@@ -170,7 +175,7 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGrant
                 isDarkMode={isDarkMode}
               />
 
-              <PermissionItem
+              {/* <PermissionItem
                 title="Background Location Permission (Optional)"
                 description="Allows the app to update your location even when it's not actively in use."
                 icon={<Navigation size={24} color={isDarkMode ? "#FFFFFF" : "#000000"} />}
@@ -178,7 +183,7 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGrant
                 onPress={requestBackgroundLocationPermission}
                 styles={styles}
                 isDarkMode={isDarkMode}
-              />
+              /> */}
 
               <PermissionItem
                 title="Agree to Privacy Policy (Required)"
@@ -206,12 +211,18 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGrant
               style={[
                 styles.continueButton, 
                 (!locationPermission || !privacyPolicyAgreed) && styles.disabledButton, 
-                isDarkMode && styles.continueButtonDark
+                isDarkMode && styles.continueButtonDark,
+                isDarkMode && (!locationPermission || !privacyPolicyAgreed) && styles.disabledButtonDark
               ]} 
               onPress={handleContinue}
               disabled={!locationPermission || !privacyPolicyAgreed}
             >
-              <Text style={styles.continueButtonText}>Agree & Continue</Text>
+              <Text style={[
+                styles.continueButtonText,
+                isDarkMode && (!locationPermission || !privacyPolicyAgreed) && styles.disabledButtonTextDark
+              ]}>
+                Agree & Continue
+              </Text>
             </TouchableOpacity>
           </View>
         </SafeAreaView>
@@ -252,7 +263,7 @@ const PermissionItem = ({ title, description, icon, isGranted, onPress, styles, 
         styles.permissionButtonText,
         isGranted ? styles.grantedPermissionButtonText : (isDarkMode ? styles.darkModePermissionButtonText : styles.lightModePermissionButtonText)
       ]}>
-        {isGranted ? 'Agreed' : 'Agree'}
+        {isGranted ? 'Granted' : 'Grant Permission'}
       </Text>
     </TouchableOpacity>
   </View>
@@ -434,6 +445,12 @@ const darkStyles = StyleSheet.create({
   },
   privacyPolicyButtonTextDark: {
     color: '#4CAF50',
+  },
+  disabledButtonDark: {
+    backgroundColor: '#2C2C2C', // Darker shade for disabled state in dark mode
+  },
+  disabledButtonTextDark: {
+    color: '#666666', // Darker text for disabled state in dark mode
   },
 });
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, Modal, FlatList, Image, StyleSheet, useColorScheme, Dimensions, ActivityIndicator, Animated, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, FlatList, Image, StyleSheet, useColorScheme, Dimensions, ActivityIndicator, Animated, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchAndCacheImage } from "../util/imagecache";
 import * as SecureStore from 'expo-secure-store';
@@ -12,8 +12,15 @@ import { isInactiveFor12Hours, getTimeDifference, convertimestampfuturemissile }
 import { useRouter } from "expo-router";
 import useFetchMissiles from '../hooks/websockets/missilehook';
 import { Missile } from "middle-earth";
-import { missileImages } from "./Missile/missile"; // Adjust the import path as needed
+import { missileImages } from "./Missile/missile";
 import MapView, { Marker } from 'react-native-maps';
+import { MapStyle } from '../types/types';
+import { androidCherryBlossomMapStyle } from '../map-themes/Android-themes/cherryBlossomMapStyle';
+import { androidColorblindMapStyle } from '../map-themes/Android-themes/colourblindstyle';
+import { androidCyberpunkMapStyle } from '../map-themes/Android-themes/cyberpunkstyle';
+import { androidDefaultMapStyle } from '../map-themes/Android-themes/defaultMapStyle';
+import { androidRadarMapStyle } from '../map-themes/Android-themes/radarMapStyle';
+import { IOSDefaultMapStyle, IOSRadarMapStyle, IOSCherryBlossomMapStyle, IOSCyberpunkMapStyle, IOSColorblindMapStyle } from '../map-themes/IOS-themes/themestemp';
 
 interface Player {
   username: string;
@@ -26,12 +33,8 @@ interface PlayerViewButtonProps {
   onFireMissile: (username: string) => void;
 }
 
-interface MissileViewProps {
-  missile: Missile;
-  onPress: () => void;
-}
-
 const { width, height } = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get('window');
 
 const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) => {
   const router = useRouter();
@@ -50,6 +53,8 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
   const [isLoading, setIsLoading] = useState(false);
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const mapRef = useRef<MapView>(null);
+  const [currentMapStyle, setCurrentMapStyle] = useState<MapStyle[]>(Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle);
 
   useEffect(() => {
     if (modalVisible && isInitialLoad) {
@@ -95,6 +100,49 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
     };
 
     initializeApp();
+  }, []);
+
+  useEffect(() => {
+    const loadStoredMapStyle = async () => {
+      try {
+        const storedStyle = await AsyncStorage.getItem('selectedMapStyle');
+        if (storedStyle) {
+          console.log('Stored style:', storedStyle);
+          
+          // Check if the stored value is a simple string (like "default")
+          if (['default', 'radar', 'cherry', 'cyber', 'colourblind'].includes(storedStyle)) {
+            // Convert the string to the corresponding map style
+            switch (storedStyle) {
+              case 'default':
+                setCurrentMapStyle(Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle);
+                break;
+              case 'radar':
+                setCurrentMapStyle(Platform.OS === 'android' ? androidRadarMapStyle : IOSRadarMapStyle);
+                break;
+              case 'cherry':
+                setCurrentMapStyle(Platform.OS === 'android' ? androidCherryBlossomMapStyle : IOSCherryBlossomMapStyle);
+                break;
+              case 'cyber':
+                setCurrentMapStyle(Platform.OS === 'android' ? androidCyberpunkMapStyle : IOSCyberpunkMapStyle);
+                break;
+              case 'colourblind':
+                setCurrentMapStyle(Platform.OS === 'android' ? androidColorblindMapStyle : IOSColorblindMapStyle);
+                break;
+            }
+          } else {
+            // If it's not a simple string, try to parse it as JSON
+            const parsedStyle = JSON.parse(storedStyle) as MapStyle[];
+            setCurrentMapStyle(parsedStyle);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading stored map style:', error);
+        // Fallback to default style
+        setCurrentMapStyle(Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle);
+      }
+    };
+
+    loadStoredMapStyle();
   }, []);
 
   useEffect(() => {
@@ -255,7 +303,7 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
         style={styles.missileImage} 
       />
       <View style={styles.playerInfo}>
-        <Text style={styles.playerName} numberOfLines={1} ellipsizeMode="tail">
+        <Text style={[styles.playerName, isDarkMode && styles.playerNameDark]} numberOfLines={1} ellipsizeMode="tail">
           {item.type}
         </Text>
         <Text style={[styles.playerStatus, isDarkMode && styles.playerStatusDark]}>
@@ -295,13 +343,21 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
         </View>
         <View style={styles.mapContainer}>
           <MapView
+            ref={mapRef}
             style={styles.map}
+            showsUserLocation={true}
+            showsMyLocationButton={true}
+            pitchEnabled={true}
+            rotateEnabled={true}
+            scrollEnabled={true}
+            zoomEnabled={true}
             initialRegion={{
               latitude: selectedMissile.destination.latitude,
               longitude: selectedMissile.destination.longitude,
               latitudeDelta: 0.0922,
               longitudeDelta: 0.0421,
             }}
+            customMapStyle={currentMapStyle}
           >
             <Marker
               coordinate={{
@@ -318,7 +374,11 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
   return (
     <View>
       <TouchableOpacity
-        style={[styles.playerViewButton, isDarkMode && styles.playerViewButtonDark]}
+        style={[
+          styles.playerViewButton,
+          isDarkMode && styles.playerViewButtonDark,
+          styles.responsiveButton
+        ]}
         onPress={() => setModalVisible(true)}
       >
         <Ionicons name="clipboard-outline" size={24} color={isDarkMode ? '#FFFFFF' : '#000000'} />
@@ -388,11 +448,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 10,
-    width: width * 0.13,
-    height: width * 0.13,
   },
   playerViewButtonDark: {
     backgroundColor: '#2C2C2C',
+  },
+  responsiveButton: {
+    width: Platform.OS === 'ios' ? Math.min(screenWidth * 0.13, 60) : Math.min(screenWidth * 0.13, 70),
+    height: Platform.OS === 'ios' ? Math.min(screenWidth * 0.13, 60) : Math.min(screenWidth * 0.13, 70),
   },
   modalContainer: {
     flex: 1,
@@ -467,12 +529,12 @@ const styles = StyleSheet.create({
   },
   playerName: {
     fontSize: 16,
-    color: '#333333', // Changed from '#FFFFFF' to a darker color
+    color: '#000000', // Black for light mode
     fontFamily: 'monospace',
     fontWeight: 'bold',
   },
   playerNameDark: {
-    color: '#FFFFFF', // Keep white for dark mode
+    color: '#FFFFFF', // White for dark mode
   },
   playerStatus: {
     fontSize: 14,

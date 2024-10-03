@@ -20,7 +20,11 @@ import useFetchOther from '../../hooks/websockets/otherhook';
 import useFetchLandmines from '../../hooks/websockets/landminehook';
 import { MapStyle } from '../../types/types';
 import { androidDefaultMapStyle } from '../../map-themes/Android-themes/defaultMapStyle';
-import { IOSDefaultMapStyle } from '../../map-themes/IOS-themes/themestemp';
+import { IOSCherryBlossomMapStyle, IOSColorblindMapStyle, IOSCyberpunkMapStyle, IOSDefaultMapStyle, IOSRadarMapStyle } from '../../map-themes/IOS-themes/themestemp';
+import { androidCherryBlossomMapStyle } from '../../map-themes/Android-themes/cherryBlossomMapStyle';
+import { androidColorblindMapStyle } from '../../map-themes/Android-themes/colourblindstyle';
+import { androidCyberpunkMapStyle } from '../../map-themes/Android-themes/cyberpunkstyle';
+import { androidRadarMapStyle } from '../../map-themes/Android-themes/radarMapStyle';
 
 const GOOGLE_PLACES_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 
@@ -58,11 +62,38 @@ export const MissilePlacementPopup: React.FC<MissilePlacementPopupProps> = ({ vi
       try {
         const storedStyle = await AsyncStorage.getItem('selectedMapStyle');
         if (storedStyle) {
-          const parsedStyle = JSON.parse(storedStyle) as MapStyle[];
-          setCurrentMapStyle(parsedStyle);
+          console.log('Stored style:', storedStyle);
+          
+          // Check if the stored value is a simple string (like "default")
+          if (['default', 'radar', 'cherry', 'cyber', 'colourblind'].includes(storedStyle)) {
+            // Convert the string to the corresponding map style
+            switch (storedStyle) {
+              case 'default':
+                setCurrentMapStyle(Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle);
+                break;
+              case 'radar':
+                setCurrentMapStyle(Platform.OS === 'android' ? androidRadarMapStyle : IOSRadarMapStyle);
+                break;
+              case 'cherry':
+                setCurrentMapStyle(Platform.OS === 'android' ? androidCherryBlossomMapStyle : IOSCherryBlossomMapStyle);
+                break;
+              case 'cyber':
+                setCurrentMapStyle(Platform.OS === 'android' ? androidCyberpunkMapStyle : IOSCyberpunkMapStyle);
+                break;
+              case 'colourblind':
+                setCurrentMapStyle(Platform.OS === 'android' ? androidColorblindMapStyle : IOSColorblindMapStyle);
+                break;
+            }
+          } else {
+            // If it's not a simple string, try to parse it as JSON
+            const parsedStyle = JSON.parse(storedStyle) as MapStyle[];
+            setCurrentMapStyle(parsedStyle);
+          }
         }
       } catch (error) {
         console.error('Error loading stored map style:', error);
+        // Fallback to default style
+        setCurrentMapStyle(Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle);
       }
     };
 
@@ -283,7 +314,7 @@ export const MissilePlacementPopup: React.FC<MissilePlacementPopupProps> = ({ vi
             style={styles.map}
             initialRegion={region ?? undefined}
             showsUserLocation={true}
-            showsMyLocationButton={Platform.OS === 'android'}
+            showsMyLocationButton={true}
             pitchEnabled={true}
             rotateEnabled={true}
             scrollEnabled={true}

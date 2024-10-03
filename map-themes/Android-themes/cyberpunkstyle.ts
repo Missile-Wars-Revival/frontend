@@ -2,87 +2,108 @@ export const androidCyberpunkMapStyle = [
   {
     "elementType": "geometry",
     "stylers": [
-      { "color": "#1b1b1b" } // Dark background color
-    ]
-  },
-  {
-    "elementType": "labels.icon",
-    "stylers": [
-      { "visibility": "off" }
+      { "color": "#000000" } // Deep black background
     ]
   },
   {
     "elementType": "labels.text.fill",
     "stylers": [
-      { "color": "#ffffff" } // White text color
+      { "color": "#00FFFF" } // Cyan text color
     ]
   },
   {
     "elementType": "labels.text.stroke",
     "stylers": [
-      { "color": "#1b1b1b" } // Dark text stroke color
+      { "color": "#000000" },
+      { "weight": 3 }
     ]
   },
   {
     "featureType": "administrative",
-    "elementType": "labels.text.fill",
+    "elementType": "geometry.stroke",
     "stylers": [
-      { "color": "#757575" } // Grey administrative labels
+      { "color": "#00FF00" }, // Neon green borders
+      { "weight": 1.5 }
+    ]
+  },
+  {
+    "featureType": "road",
+    "elementType": "geometry",
+    "stylers": [
+      { "color": "#1C1C1C" } // Dark grey road color
+    ]
+  },
+  {
+    "featureType": "road",
+    "elementType": "geometry.stroke",
+    "stylers": [
+      { "color": "#FF00FF" }, // Magenta road outlines
+      { "weight": 0.5 }
+    ]
+  },
+  {
+    "featureType": "road.highway",
+    "elementType": "geometry",
+    "stylers": [
+      { "color": "#330033" } // Dark purple highway
+    ]
+  },
+  {
+    "featureType": "road.highway",
+    "elementType": "geometry.stroke",
+    "stylers": [
+      { "color": "#FF00FF" }, // Magenta highway outlines
+      { "weight": 1 }
+    ]
+  },
+  {
+    "featureType": "water",
+    "elementType": "geometry",
+    "stylers": [
+      { "color": "#000066" } // Dark blue water color
+    ]
+  },
+  {
+    "featureType": "water",
+    "elementType": "geometry.stroke",
+    "stylers": [
+      { "color": "#0000FF" }, // Blue water outlines
+      { "weight": 1 }
     ]
   },
   {
     "featureType": "poi",
-    "stylers": [
-      { "visibility": "off" }
-    ]
-  },
-  {
-    "featureType": "road",
     "elementType": "geometry",
     "stylers": [
-      { "color": "#383838" } // Dark grey road color
+      { "color": "#003300" } // Dark green POIs
     ]
   },
   {
-    "featureType": "road",
-    "elementType": "labels.icon",
-    "stylers": [
-      { "visibility": "off" }
-    ]
-  },
-  {
-    "featureType": "road.arterial",
+    "featureType": "poi",
     "elementType": "labels.text.fill",
     "stylers": [
-      { "color": "#757575" } // Grey arterial road labels
+      { "color": "#00FF00" } // Neon green POI labels
     ]
   },
   {
-    "featureType": "road.highway",
+    "featureType": "transit",
     "elementType": "geometry",
     "stylers": [
-      { "color": "#555555" } // Dark highway color
+      { "color": "#330066" } // Dark purple transit lines
     ]
   },
   {
-    "featureType": "road.highway",
+    "featureType": "transit",
     "elementType": "labels.text.fill",
     "stylers": [
-      { "color": "#ffffff" } // White highway labels
+      { "color": "#FF00FF" } // Magenta transit labels
     ]
   },
   {
-    "featureType": "water",
+    "featureType": "landscape",
     "elementType": "geometry",
     "stylers": [
-      { "color": "#004080" } // Dark blue water color
-    ]
-  },
-  {
-    "featureType": "water",
-    "elementType": "labels.text.fill",
-    "stylers": [
-      { "color": "#9e9e9e" } // Grey water labels
+      { "color": "#0D0D0D" } // Very dark grey landscape
     ]
   }
 ];

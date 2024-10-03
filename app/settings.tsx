@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableHighlight, Switch, ScrollView, Alert, StyleSheet, Dimensions, TouchableOpacity, Modal, Linking } from 'react-native';
+import { View, Text, TouchableHighlight, Switch, ScrollView, Alert, StyleSheet, Dimensions, TouchableOpacity, Modal, Linking, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Input } from "../components/ui/input";
@@ -14,6 +14,7 @@ import * as Clipboard from 'expo-clipboard';
 import { clearCredentials } from '../util/logincache';
 import { useAuth } from '../util/Context/authcontext';
 import * as Location from 'expo-location';
+import AppIconChanger from '../components/appiconchanger';
 
 const { width } = Dimensions.get('window');
 
@@ -411,6 +412,7 @@ const SettingsPage: React.FC = () => {
             >
               <Text style={styles.buttonText}>Change Password</Text>
             </TouchableHighlight>
+            {Platform.OS === 'ios' && <AppIconChanger />}
           </View>
 
           <View style={[styles.visibilityContainer, isDarkMode && styles.visibilityContainerDark]}>
@@ -454,19 +456,32 @@ const SettingsPage: React.FC = () => {
 
           <TouchableHighlight 
             onPress={handleLogout}
-            style={[styles.button, styles.logoutButton, isDarkMode && styles.buttonDark]}
+            style={[styles.button, styles.signOutButton, isDarkMode && styles.buttonDark]}
             underlayColor={isDarkMode ? '#5c2a4f' : '#662d60'}
           >
-            <Text style={styles.buttonText}>Sign Out</Text>
+            <Text style={styles.signOutButtonText}>Sign Out</Text>
           </TouchableHighlight>
 
-          <TouchableHighlight 
-            onPress={() => setShowDeleteModal(true)}
-            style={[styles.button, styles.deleteButton, isDarkMode && styles.deleteButtonDark]}
-            underlayColor={isDarkMode ? '#8B0000' : '#FF0000'}
-          >
-            <Text style={styles.buttonText}>Delete Account</Text>
-          </TouchableHighlight>
+          {/* Update the footer links */}
+          <View style={styles.footerLinks}>
+            <TouchableOpacity onPress={() => Linking.openURL('https://website.missilewars.dev/privacypolicy')}>
+              <Text style={[styles.footerLinkText, isDarkMode && styles.footerLinkTextDark]}>
+                Privacy Policy
+              </Text>
+            </TouchableOpacity>
+            <Text style={[styles.footerLinkText, isDarkMode && styles.footerLinkTextDark]}> | </Text>
+            <TouchableOpacity onPress={() => Linking.openURL('https://discord.gg/Gk8jqUnVd3')}>
+              <Text style={[styles.footerLinkText, isDarkMode && styles.footerLinkTextDark]}>
+                Contact Support
+              </Text>
+            </TouchableOpacity>
+            <Text style={[styles.footerLinkText, isDarkMode && styles.footerLinkTextDark]}> | </Text>
+            <TouchableOpacity onPress={() => setShowDeleteModal(true)}>
+              <Text style={[styles.footerLinkText, styles.deleteAccountText, isDarkMode && styles.deleteAccountTextDark]}>
+                Delete Account
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={[styles.debugMenu, isDarkMode && styles.debugMenuDark]}>
@@ -475,7 +490,7 @@ const SettingsPage: React.FC = () => {
             <Text style={[styles.debugMenuLabel, isDarkMode && styles.debugMenuLabelDark]}>Cached Username:</Text>
             <Text style={[styles.debugMenuValue, isDarkMode && styles.debugMenuValueDark]}>{username || 'Not set'}</Text>
           </View>
-          <View style={styles.debugMenuItem}>
+          {/* <View style={styles.debugMenuItem}>
             <Text style={[styles.debugMenuLabel, isDarkMode && styles.debugMenuLabelDark]}>Cached Token:</Text>
             <View style={styles.tokenContainer}>
               <Text style={[styles.debugMenuValue, isDarkMode && styles.debugMenuValueDark]}>{truncateToken(token)}</Text>
@@ -488,7 +503,7 @@ const SettingsPage: React.FC = () => {
                 </Text>
               </TouchableOpacity>
             </View>
-          </View>
+          </View> */}
           <View style={styles.debugMenuItem}>
             <Text style={[styles.debugMenuLabel, isDarkMode && styles.debugMenuLabelDark]}>Cached Notification Token:</Text>
             <View style={styles.tokenContainer}>
@@ -505,21 +520,6 @@ const SettingsPage: React.FC = () => {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
-
-        {/* Add this new View for the links */}
-        <View style={styles.footerLinks}>
-          <TouchableOpacity onPress={() => Linking.openURL('https://website.missilewars.dev/privacypolicy')}>
-            <Text style={[styles.footerLinkText, isDarkMode && styles.footerLinkTextDark]}>
-              Privacy Policy
-            </Text>
-          </TouchableOpacity>
-          <Text style={[styles.footerLinkText, isDarkMode && styles.footerLinkTextDark]}> | </Text>
-          <TouchableOpacity onPress={() => Linking.openURL('https://discord.gg/Gk8jqUnVd3')}>
-            <Text style={[styles.footerLinkText, isDarkMode && styles.footerLinkTextDark]}>
-              Contact Support
-            </Text>
-          </TouchableOpacity>
         </View>
 
         <Modal
@@ -646,6 +646,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 15,
+    width: '100%',
   },
   buttonDark: {
     backgroundColor: '#5c2a4f',
@@ -653,6 +654,17 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#ffffff',
     fontSize: 16,
+    fontWeight: 'bold',
+  },
+  signOutButton: {
+    height: 40,
+    width: '50%',
+    marginTop: 20,
+    marginBottom: 20,
+  },
+  signOutButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
     fontWeight: 'bold',
   },
   visibilityContainer: {
@@ -733,17 +745,6 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 12,
   },
-  logoutButton: {
-    backgroundColor: '#e53e3e',
-    marginTop: 20,
-  },
-  deleteButton: {
-    backgroundColor: '#DC3545',
-    marginTop: 20,
-  },
-  deleteButtonDark: {
-    backgroundColor: '#8B0000',
-  },
   modalOverlay: {
     flex: 1,
     justifyContent: 'center',
@@ -816,15 +817,25 @@ const styles = StyleSheet.create({
   footerLinks: {
     flexDirection: 'row',
     justifyContent: 'center',
+    alignItems: 'center',
+    flexWrap: 'wrap',
     marginTop: 20,
     marginBottom: 10,
+    paddingHorizontal: 10,
   },
   footerLinkText: {
     fontSize: 12,
     color: '#666',
+    marginHorizontal: 5,
   },
   footerLinkTextDark: {
     color: '#B0B0B0',
+  },
+  deleteAccountText: {
+    color: '#DC3545',
+  },
+  deleteAccountTextDark: {
+    color: '#FF6B6B',
   },
 });
 

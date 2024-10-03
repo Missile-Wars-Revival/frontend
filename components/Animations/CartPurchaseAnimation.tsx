@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Image, StyleSheet, Animated, Easing } from 'react-native';
+import { View, Image, StyleSheet, Animated, Easing, useColorScheme } from 'react-native';
 import { itemimages } from '../../app/profile';
 import { Product } from '../../api/store';
 
@@ -12,6 +12,7 @@ const CartPurchaseAnimation: React.FC<CartPurchaseAnimationProps> = ({ cartItems
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const sparkleAnims = useRef(Array(6).fill(null).map(() => new Animated.Value(0))).current;
+  const colorScheme = useColorScheme();
 
   useEffect(() => {
     Animated.parallel([
@@ -56,7 +57,10 @@ const CartPurchaseAnimation: React.FC<CartPurchaseAnimationProps> = ({ cartItems
   }, []);
 
   return (
-    <View style={styles.container}>
+    <View style={[
+      styles.container,
+      { backgroundColor: colorScheme === 'dark' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }
+    ]}>
       <Animated.View style={[styles.itemsContainer, { opacity: opacityAnim, transform: [{ scale: scaleAnim }] }]}>
         {cartItems.map((item, index) => (
           <Image 
@@ -91,7 +95,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    // Remove the backgroundColor from here
   },
   itemsContainer: {
     width: 150,

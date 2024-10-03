@@ -417,6 +417,172 @@ export const getShopStyles = (colorScheme: 'light' | 'dark') => StyleSheet.creat
       fontSize: 16,
       fontWeight: 'bold',
     },
+    tabletProductButton: {
+      width: '18%',
+      aspectRatio: 0.75,
+      margin: '1%',
+      backgroundColor: colorScheme === 'dark' ? '#2C2C2C' : '#fff',
+      borderRadius: 15,
+      padding: 15,
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    tabletProductImage: {
+      width: '80%',
+      height: '60%',
+      resizeMode: 'contain',
+    },
+    tabletProductName: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      textAlign: 'center',
+      marginTop: 10,
+      color: colorScheme === 'dark' ? '#FFF' : '#000',
+    },
+    tabletProductPrice: {
+      fontSize: 14,
+      color: colorScheme === 'dark' ? '#B0B0B0' : '#666',
+      marginTop: 5,
+    },
+    tabletContentContainer: {
+      paddingHorizontal: 20,
+      paddingBottom: 30,
+    },
+    tabletColumnWrapper: {
+      justifyContent: 'space-around',
+    },
+    tabletHeaderContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: 20,
+      marginTop: -15,
+      backgroundColor: 'transparent',
+    },
+    tabletCurrencyContainer: {
+      backgroundColor: colorScheme === 'dark' ? '#3D3D3D' : '#fff',
+      borderRadius: 25,
+      padding: 15,
+    },
+    tabletCurrencyText: {
+      fontSize: 22,
+      fontWeight: 'bold',
+      color: colorScheme === 'dark' ? '#FFF' : '#000',
+    },
+    tabletToggleButton: {
+      paddingVertical: 15,
+      paddingHorizontal: 25,
+      borderRadius: 25,
+    },
+    tabletToggleButtonText: {
+      fontWeight: 'bold',
+      color: '#fff',
+      fontSize: 18,
+    },
+    tabletTabContainerMissiles: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      marginVertical: 20,
+    },
+    tabletTabMissiles: {
+      paddingVertical: 12,
+      paddingHorizontal: 24,
+      borderRadius: 25,
+      backgroundColor: colorScheme === 'dark' ? '#3D3D3D' : '#fff',
+    },
+    tabletMissileTabText: {
+      fontWeight: 'bold',
+      color: colorScheme === 'dark' ? '#FFF' : '#000',
+      fontSize: 16,
+    },
+    tabletCartButton: {
+      backgroundColor: '#4CAF50',
+      paddingVertical: 15,
+      paddingHorizontal: 30,
+      borderRadius: 10,
+      alignSelf: 'center',
+      marginTop: 20,
+    },
+    tabletCartButtonText: {
+      color: '#ffffff',
+      fontSize: 20,
+      fontWeight: 'bold',
+    },
+  });
+
+export const Layout_styles = StyleSheet.create({
+    navBar: {
+      width: '100%',
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      backgroundColor: '#f0f2f5',
+      height: 100,
+      alignItems: 'center',
+      borderTopWidth: 1,
+      borderTopColor: '#e0e0e0',
+    },
+    navBarDark: {
+      backgroundColor: '#1E1E1E',
+      borderTopColor: '#3D3D3D',
+    },
+    tabButton: {
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    iconContainer: {
+      width: 50,
+      height: 50,
+      borderRadius: 25,
+      backgroundColor: '#ffffff',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 5,
+    },
+    iconContainerDark: {
+      backgroundColor: '#2C2C2C',
+    },
+    selectedIconContainer: {
+      backgroundColor: '#e6f7ff',
+    },
+    selectedIconContainerDark: {
+      backgroundColor: '#3D3D3D',
+    },
+    tabText: {
+      color: '#666',
+      fontSize: 12,
+    },
+    tabTextDark: {
+      color: '#B0B0B0',
+    },
+    selectedTabText: {
+      color: 'blue',
+    },
+    selectedTabTextDark: {
+      color: '#4CAF50',
+    },
+    badge: {
+      position: 'absolute',
+      top: -5,
+      right: -5,
+      backgroundColor: 'red',
+      borderRadius: 10,
+      width: 20,
+      height: 20,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    badgeText: {
+      color: 'white',
+      fontSize: 12,
+    },
+    countdownContainer: {
+      position: 'absolute',
+      bottom: 90,
+      left: 0,
+      right: 0,
+      alignItems: 'center',
+      zIndex: 1000,
+    },
   });
 
 export const getMainMapStyles = (isDarkMode: boolean) => createStyles(isDarkMode);
