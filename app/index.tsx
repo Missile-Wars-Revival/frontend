@@ -4,7 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
 import axiosInstance from "../api/axios-instance";
 import axios from "axios";
-import * as Location from 'expo-location';
+import { Ionicons } from '@expo/vector-icons';
 
 // Android Themes
 import { androidDefaultMapStyle } from "../map-themes/Android-themes/defaultMapStyle";
@@ -31,7 +31,7 @@ import { router } from "expo-router";
 import HealthBar from "../components/healthbar";
 import { getisAlive, setHealth, updateisAlive } from "../api/health";
 import { playDeathSound } from "../util/sounds/deathsound";
-import { RewardedAd, RewardedAdEventType, TestIds } from "react-native-google-mobile-ads";
+import { RewardedAd, RewardedAdEventType } from "react-native-google-mobile-ads";
 import useFetchHealth from "../hooks/websockets/healthhook";
 import { getlocActive } from "../api/locActive";
 import PlayerViewButton from "../components/PlayerViewButton";
@@ -39,7 +39,7 @@ import { MissileLibrary } from "../components/Missile/missile";
 import MissileFiringAnimation from "../components/Animations/MissileFiring";
 
 const adUnitId = Platform.select({
-  ios: 'ca-app-pub-4035842398612787~7024601286',
+  ios: 'ca-app-pub-4035842398612787/8310612855',
   android: 'ca-app-pub-4035842398612787~8146111264',
   default: 'ca-app-pub-4035842398612787~8146111264',
 });
@@ -76,34 +76,6 @@ export default function Map() {
     };
 
     loadStoredMapStyle();
-  }, []);
-
-  useEffect(() => {
-    const requestLocationPermission = async () => {
-      try {
-        let { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
-        
-        if (foregroundStatus !== 'granted') {
-          setLocationPermission(false);
-          return;
-        }
-
-        if (Platform.OS === 'android' && parseInt(Platform.Version.toString(), 10) >= 29) {
-          let { status: backgroundStatus } = await Location.requestBackgroundPermissionsAsync();
-          if (backgroundStatus !== 'granted') {
-            console.log('Background location permission not granted');
-            // Optionally, inform the user about limited functionality
-          }
-        }
-
-        setLocationPermission(true);
-      } catch (error) {
-        console.error("Error requesting location permission:", error);
-        setLocationPermission(false);
-      }
-    };
-
-    requestLocationPermission();
   }, []);
 
   // Fetch username from secure storage
@@ -319,7 +291,7 @@ export default function Map() {
 
   return (
     <View style={[styles.container, isDarkMode && styles.containerDark]}>
-      {(isAlive && locationPermission) && (
+      {(isAlive && locActive) && (
         <>
           <MapComp selectedMapStyle={selectedMapStyle} />
           <View style={styles.healthBarContainer}>
@@ -368,16 +340,23 @@ export default function Map() {
           </TouchableOpacity>
         </View>
       )}
-      {(isAlive && !locationPermission) && (
-        <View style={[styles.container, isDarkMode && styles.containerDark]}>
+      {(isAlive && !locActive) && (
+        <View style={[styles.permissionContainer, isDarkMode && styles.permissionContainerDark]}>
+          <Ionicons name="location-outline" size={80} color={isDarkMode ? "#FFF" : "#007AFF"} />
+          <Text style={[styles.permissionTitle, isDarkMode && styles.permissionTitleDark]}>
+            Location Access Required
+          </Text>
           <Text style={[styles.permissionText, isDarkMode && styles.permissionTextDark]}>
-            Location permission is required to use the map.
+            To enjoy the full game experience, we need access to your location. This allows us to show your position on the map and enable exciting gameplay features.
+          </Text>
+          <Text style={[styles.permissionSubText, isDarkMode && styles.permissionSubTextDark]}>
+            Please enable location services for this app in your device settings.
           </Text>
           <TouchableOpacity
             style={[styles.permissionButton, isDarkMode && styles.permissionButtonDark]}
-            onPress={() => Linking.openSettings()}
+            onPress={() => router.navigate('/settings')}
           >
-            <Text style={styles.permissionButtonText}>Open Settings</Text>
+            <Text style={styles.permissionButtonText}>Grant Permission</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -471,26 +450,64 @@ const styles = StyleSheet.create({
   retryButtonTextDark: {
     color: '#FFF',
   },
+  permissionContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F7F7F7',
+    padding: 20,
+  },
+  permissionContainerDark: {
+    backgroundColor: '#1E1E1E',
+  },
+  permissionTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  permissionTitleDark: {
+    color: '#FFF',
+  },
   permissionText: {
     fontSize: 16,
+    color: '#666',
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 30,
+    lineHeight: 24,
   },
   permissionTextDark: {
-    color: '#FFF',
+    color: '#CCC',
+  },
+  permissionSubText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 10,
+    marginBottom: 20,
+  },
+  permissionSubTextDark: {
+    color: '#AAA',
   },
   permissionButton: {
     backgroundColor: '#007AFF',
-    padding: 10,
-    borderRadius: 5,
+    paddingHorizontal: 30,
+    paddingVertical: 15,
+    borderRadius: 25,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   permissionButtonDark: {
     backgroundColor: '#0A84FF',
   },
   permissionButtonText: {
     color: '#FFF',
-    fontSize: 16,
-    textAlign: 'center',
+    fontSize: 18,
+    fontWeight: '600',
   },
   switchContainer: {
     position: 'absolute',

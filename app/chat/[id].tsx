@@ -122,7 +122,7 @@ export default function ChatScreen() {
   const [isUploading, setIsUploading] = useState(false);
   const [collectingItem, setCollectingItem] = useState<InventoryMessageItem | null>(null);
   const [inputHeight, setInputHeight] = useState(40);
-  const [keyboardOffset, setKeyboardOffset] = useState(Platform.OS === "ios" ? 60 : 0);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   const inventory = useFetchInventory();
 
@@ -142,24 +142,22 @@ export default function ChatScreen() {
   }, []);
 
   useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener(
-      'keyboardDidShow',
+    const keyboardWillShowListener = Keyboard.addListener(
+      'keyboardWillShow',
       (e) => {
-        // Adjust this value to increase or decrease the space above the keyboard
-        const offset = Platform.OS === "ios" ? e.endCoordinates.height + 10 : 0;
-        setKeyboardOffset(offset);
+        setKeyboardHeight(e.endCoordinates.height);
       }
     );
-    const keyboardDidHideListener = Keyboard.addListener(
-      'keyboardDidHide',
+    const keyboardWillHideListener = Keyboard.addListener(
+      'keyboardWillHide',
       () => {
-        setKeyboardOffset(Platform.OS === "ios" ? 60 : 0);
+        setKeyboardHeight(0);
       }
     );
 
     return () => {
-      keyboardDidShowListener.remove();
-      keyboardDidHideListener.remove();
+      keyboardWillShowListener.remove();
+      keyboardWillHideListener.remove();
     };
   }, []);
 
@@ -606,7 +604,7 @@ export default function ChatScreen() {
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardAvoidingView}
-        keyboardVerticalOffset={keyboardOffset}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0}
       >
         <FlatList
           ref={flatListRef}
@@ -614,7 +612,10 @@ export default function ChatScreen() {
           renderItem={renderMessageItem}
           keyExtractor={(item) => item.id}
           style={styles.messageList}
-          contentContainerStyle={styles.messageListContent}
+          contentContainerStyle={[
+            styles.messageListContent,
+            { paddingBottom: keyboardHeight }
+          ]}
           onContentSizeChange={scrollToBottom}
           onLayout={scrollToBottom}
         />

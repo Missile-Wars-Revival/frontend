@@ -1,4 +1,4 @@
-import { SafeAreaView, Text, View, Image, TouchableOpacity, ScrollView, Dimensions, StyleSheet, useColorScheme } from "react-native";
+import { SafeAreaView, Text, View, Image, TouchableOpacity, ScrollView, Dimensions, StyleSheet, useColorScheme, Alert } from "react-native";
 import { router } from "expo-router";
 import { Input } from "../components/ui/input";
 import { useState, useMemo, useCallback } from "react";
@@ -9,6 +9,7 @@ import { saveCredentials } from "../util/logincache";
 import { usePushNotifications } from "../components/Notifications/usePushNotifications";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from "../util/Context/authcontext";
+import { registerWithFirebase } from "../util/firebase/firebaseAuth";
 
 const { width, height } = Dimensions.get('window');
 
@@ -43,6 +44,23 @@ export default function Register() {
       await saveCredentials(username, token, notificationToken);
       console.log("Registered and logged in with token", token);
       await AsyncStorage.setItem('signedIn', 'true');
+
+      try {
+        console.log("Attempting Firebase registration");
+        const user = await registerWithFirebase(email, password);
+        if (user) {
+          console.log("Firebase registration successful");
+        } else {
+          console.error("Firebase registration failed");
+        }
+      } catch (firebaseError) {
+        console.error("Firebase registration failed:", firebaseError);
+        // Alert.alert(
+        //   "Firebase Registration Failed",
+        //   "Continuing with registration process. Some features may be limited."
+        // );
+      }
+
       setIsSignedIn(true);
       router.navigate('/');
     },

@@ -3,9 +3,9 @@ import { View, TouchableOpacity, Text, Modal, StyleSheet, Image, Alert, useColor
 import * as AlternateAppIcon from 'expo-alternate-app-icons';
 
 const iconOptions = [
-  { name: 'default', path: require('../assets/appIcons/defaulticon.png') },
-  { name: 'retro', path: require('../assets/appIcons/retroicon.png') },
-  { name: 'graphic', path: require('../assets/appIcons/graphicicon.png') },
+  { name: 'default', path: require('../assets/appIcons/default.png') },
+  { name: 'retro', path: require('../assets/appIcons/retro.png') },
+  { name: 'graphic', path: require('../assets/appIcons/graphic.png') },
 ];
 
 const AppIconChanger: React.FC = () => {

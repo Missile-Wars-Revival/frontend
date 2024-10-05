@@ -17,6 +17,7 @@ import { useColorScheme } from 'react-native';
 import { Notification } from "./notifications";
 import PermissionsCheck from '../components/PermissionsCheck';
 import Purchases from 'react-native-purchases';
+import * as ExpoSplashScreen from 'expo-splash-screen';
 
 const WebSocketProvider = ({ children }: WebSocketProviderProps) => {
   const { data, missiledata, landminedata, lootdata, otherdata, healthdata, friendsdata, inventorydata, playerlocations, leaguesData, sendWebsocket } = useWebSocket();
@@ -45,6 +46,11 @@ const CountdownProvider: React.FC<CountdownProviderProps> = ({ children }) => {
 export default function RootLayout() {
   const queryClient = new QueryClient();
   const [isSplashVisible, setIsSplashVisible] = useState(true);
+  const [appState, setAppState] = useState(AppState.currentState);
+  const [lastActiveTime, setLastActiveTime] = useState(Date.now());
+  const router = useRouter();
+
+  const BACKGROUND_THRESHOLD = 2 * 60 * 1000; // 2 minutes in milliseconds
 
   const configurePurchases = useCallback(async () => {
     try {
@@ -86,6 +92,50 @@ export default function RootLayout() {
   const handleSplashFinish = useCallback(() => {
     setIsSplashVisible(false);
   }, []);
+
+  const handleAppStateChange = useCallback(async (nextAppState: AppStateStatus) => {
+    const now = Date.now();
+    if (appState.match(/inactive|background/) && nextAppState === 'active') {
+      // App has come to the foreground
+      if (now - lastActiveTime > BACKGROUND_THRESHOLD) {
+        // App was in background for more than 2 minutes
+        console.log('App was in background for more than 2 minutes, reloading...');
+        
+        // Show splash screen
+        await ExpoSplashScreen.preventAutoHideAsync();
+        
+        // Reset the app state
+        setIsSplashVisible(true);
+        
+        // Clear any existing state or caches if necessary
+        // For example: queryClient.clear();
+        
+        // Navigate to the splash screen
+        router.replace('/');
+        
+        // Simulate a delay for the splash screen
+        setTimeout(async () => {
+          await ExpoSplashScreen.hideAsync();
+          setIsSplashVisible(false);
+        }, 2000); // 2 seconds delay
+      } else {
+        // App was in background for less than 2 minutes
+        console.log('App was in background for less than 2 minutes');
+      }
+      setLastActiveTime(now);
+    } else if (nextAppState.match(/inactive|background/)) {
+      // App is going to the background
+      setLastActiveTime(now);
+    }
+    setAppState(nextAppState);
+  }, [appState, lastActiveTime, router]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => {
+      subscription.remove();
+    };
+  }, [handleAppStateChange]);
 
   if (isSplashVisible) {
     return <SplashScreen onFinish={handleSplashFinish} />;
@@ -241,7 +291,8 @@ function NavBar({ unreadCount }: { unreadCount: number }) {
 
 function RootLayoutNav() {
   const pathname = usePathname();
-  const hideNavBarRoutes = ['/login', '/register', '/user-profile', '/PermissionsScreen'];
+  const router = useRouter();
+  const hideNavBarRoutes = ['/login', '/register', '/user-profile', '/PermissionsScreen', '/splashscreen'];
   const { countdownIsActive, stopCountdown } = useCountdown();
   const [unreadCount, setUnreadCount] = useState(0);
   const [unreadChatCount, setUnreadChatCount] = useState(0);

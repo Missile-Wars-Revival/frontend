@@ -12,6 +12,7 @@ const DEFAULT_IMAGE = require('../assets/mapassets/Female_Avatar_PNG.png');
 const badgeImages = {
   Founder: require('../assets/icons/founder.png'),
   Staff: require('../assets/icons/staff.png'),
+  Early: require('../assets/icons/earlysupporter.png'),
   //leagues
   Bronze: require('../assets/leagues/bronze.png'),
   Silver: require('../assets/leagues/silver.png'),

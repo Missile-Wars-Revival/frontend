@@ -13,7 +13,6 @@ import { updatelocActive, getlocActive } from '../api/locActive';
 import * as Clipboard from 'expo-clipboard';
 import { clearCredentials } from '../util/logincache';
 import { useAuth } from '../util/Context/authcontext';
-import * as Location from 'expo-location';
 import AppIconChanger from '../components/appiconchanger';
 
 const { width } = Dimensions.get('window');
@@ -33,8 +32,8 @@ const SettingsPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [token, setToken] = useState<string | null>(null);
   const [notificationToken, setNotificationToken] = useState<string | null>(null);
+  const [firebaseToken, setFirebaseToken] = useState<string | null>(null);
   const [isCopied, setIsCopied] = useState(false);
-  const [useBackgroundLocation, setUseBackgroundLocation] = useState(false);
   const { setIsSignedIn } = useAuth();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteAccountUsername, setDeleteAccountUsername] = useState('');
@@ -43,15 +42,16 @@ const SettingsPage: React.FC = () => {
     loadUserData();
     loadSettings();
     fetchLocActiveStatus();
-    loadPreference();
   }, []);
 
   const loadUserData = async () => {
     const storedUsername = await SecureStore.getItemAsync('username');
     const storedEmail = await SecureStore.getItemAsync('email');
     const cachedNotificationToken = await SecureStore.getItemAsync('notificationToken');
+    const cachedFirebaseToken = await SecureStore.getItemAsync("firebaseUID");
     const cachedToken = await SecureStore.getItemAsync('token');
     setNotificationToken(cachedNotificationToken);
+    setFirebaseToken(cachedFirebaseToken);
     setUsername(storedUsername || '');
     setEmail(storedEmail || '');
     setToken(cachedToken);
@@ -251,18 +251,6 @@ const SettingsPage: React.FC = () => {
     }
   };
 
-  const loadPreference = async () => {
-    const preference = await AsyncStorage.getItem('useBackgroundLocation');
-    setUseBackgroundLocation(preference === 'true');
-  };
-
-  const toggleBackgroundLocation = async () => {
-    const newValue = !useBackgroundLocation;
-    setUseBackgroundLocation(newValue);
-    await Location.requestBackgroundPermissionsAsync()
-    await AsyncStorage.setItem('useBackgroundLocation', newValue.toString());
-  };
-
   const handleLogout = async () => {
     await clearCredentials();
     await AsyncStorage.setItem('signedIn', 'false');
@@ -280,8 +268,8 @@ const SettingsPage: React.FC = () => {
       const result = await deleteAcc(username);
       if (result.success) {
         Alert.alert("Account Deleted", result.message, [
-          { 
-            text: "OK", 
+          {
+            text: "OK",
             onPress: async () => {
               await handleLogout();
               router.replace("/login");
@@ -301,8 +289,8 @@ const SettingsPage: React.FC = () => {
   return (
     <ScrollView style={[styles.container, isDarkMode && styles.containerDark]}>
       <SafeAreaView style={[styles.safeArea, isDarkMode && styles.safeAreaDark]}>
-        <TouchableHighlight 
-          onPress={() => router.back()} 
+        <TouchableHighlight
+          onPress={() => router.back()}
           style={styles.backButton}
           underlayColor={isDarkMode ? '#3D3D3D' : '#E5E5E5'}
         >
@@ -311,7 +299,7 @@ const SettingsPage: React.FC = () => {
             <Text style={[styles.backButtonText, isDarkMode && styles.backButtonTextDark]}>Back</Text>
           </View>
         </TouchableHighlight>
-        
+
         <Text style={[styles.title, isDarkMode && styles.titleDark]}>Settings</Text>
 
         <View style={styles.settingsContainer}>
@@ -333,7 +321,7 @@ const SettingsPage: React.FC = () => {
             {usernameError ? (
               <Text style={styles.errorText}>{usernameError}</Text>
             ) : null}
-            <TouchableHighlight 
+            <TouchableHighlight
               onPress={handleUsernameChange}
               style={[styles.button, isDarkMode && styles.buttonDark]}
               underlayColor={isDarkMode ? '#5c2a4f' : '#662d60'}
@@ -359,7 +347,7 @@ const SettingsPage: React.FC = () => {
               {emailError ? (
                 <Text style={styles.errorText}>{emailError}</Text>
               ) : null}
-              <TouchableHighlight 
+              <TouchableHighlight
                 onPress={() => handleEmailChange(email)}
                 style={[styles.button, isDarkMode && styles.buttonDark]}
                 underlayColor={isDarkMode ? '#5c2a4f' : '#662d60'}
@@ -405,14 +393,18 @@ const SettingsPage: React.FC = () => {
             {passwordError ? (
               <Text style={styles.errorText}>{passwordError}</Text>
             ) : null}
-            <TouchableHighlight 
+            <TouchableHighlight
               onPress={handlePasswordChange}
               style={[styles.button, isDarkMode && styles.buttonDark]}
               underlayColor={isDarkMode ? '#5c2a4f' : '#662d60'}
             >
               <Text style={styles.buttonText}>Change Password</Text>
             </TouchableHighlight>
+
+
             {Platform.OS === 'ios' && <AppIconChanger />}
+
+
           </View>
 
           <View style={[styles.visibilityContainer, isDarkMode && styles.visibilityContainerDark]}>
@@ -441,20 +433,7 @@ const SettingsPage: React.FC = () => {
             </Text>
           </View>
 
-          <View style={[styles.visibilityContainer, isDarkMode && styles.visibilityContainerDark]}>
-            <Text style={[styles.visibilityText, isDarkMode && styles.visibilityTextDark]}>Background Location</Text>
-            <Switch
-              value={useBackgroundLocation}
-              onValueChange={toggleBackgroundLocation}
-              trackColor={{ false: "#cbd5e0", true: "#773765" }}
-              thumbColor={useBackgroundLocation ? "#5c2a4f" : "#ffffff"}
-            />
-            <Text style={[styles.visibilityModeText, isDarkMode && styles.visibilityModeTextDark]}>
-              {useBackgroundLocation ? 'Enabled' : 'Disabled'}
-            </Text>
-          </View>
-
-          <TouchableHighlight 
+          <TouchableHighlight
             onPress={handleLogout}
             style={[styles.button, styles.signOutButton, isDarkMode && styles.buttonDark]}
             underlayColor={isDarkMode ? '#5c2a4f' : '#662d60'}
@@ -490,6 +469,22 @@ const SettingsPage: React.FC = () => {
             <Text style={[styles.debugMenuLabel, isDarkMode && styles.debugMenuLabelDark]}>Cached Username:</Text>
             <Text style={[styles.debugMenuValue, isDarkMode && styles.debugMenuValueDark]}>{username || 'Not set'}</Text>
           </View>
+          <View style={styles.debugMenuItem}>
+            <Text style={[styles.debugMenuLabel, isDarkMode && styles.debugMenuLabelDark]}>Cached Firebase Token:</Text>
+            <View style={styles.tokenContainer}>
+              <Text style={[styles.debugMenuValue, isDarkMode && styles.debugMenuValueDark]}>
+                {truncateToken(firebaseToken)}
+              </Text>
+              <TouchableOpacity
+                style={styles.copyButton}
+                onPress={() => firebaseToken && copyToClipboard(firebaseToken)}
+              >
+                <Text style={styles.copyButtonText}>
+                  {isCopied ? 'Copied!' : 'Copy'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
           {/* <View style={styles.debugMenuItem}>
             <Text style={[styles.debugMenuLabel, isDarkMode && styles.debugMenuLabelDark]}>Cached Token:</Text>
             <View style={styles.tokenContainer}>
@@ -510,8 +505,8 @@ const SettingsPage: React.FC = () => {
               <Text style={[styles.debugMenuValue, isDarkMode && styles.debugMenuValueDark]}>
                 {truncateToken(notificationToken)}
               </Text>
-              <TouchableOpacity 
-                style={styles.copyButton} 
+              <TouchableOpacity
+                style={styles.copyButton}
                 onPress={() => notificationToken && copyToClipboard(notificationToken)}
               >
                 <Text style={styles.copyButtonText}>

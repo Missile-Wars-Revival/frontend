@@ -7,6 +7,7 @@ import { getCurrentLocation, location } from "../util/locationreq";
 import * as SecureStore from "expo-secure-store";
 import { Ionicons } from '@expo/vector-icons';
 import { fetchAndCacheImage } from "../util/imagecache";
+import FriendAddedAnimation from "../components/Animations/FriendAddedAnimation";
 
 interface Filterddata {
   username: string,
@@ -28,6 +29,7 @@ const QuickAddPage: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [filteredData, setFilteredData] = useState<Filterddata[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [showAnimation, setShowAnimation] = useState(false);
 
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
@@ -78,21 +80,17 @@ const QuickAddPage: React.FC = () => {
         return; 
       }
       const result = await addFriend(token, friendUsername);
-      // Assuming successful addition if no errors thrown and possibly checking a status or message
       if (result.message === "Friend added successfully") {
-      // Update UI state to reflect the new friend status
-      setPlayersData(prevData => 
-        prevData.map(player =>
-          player.username === friendUsername ? { ...player, isFriend: "You are already friends with this person." } : player
-        )
-      );
-        Alert.alert("Success", "Friend added successfully!");
+        setPlayersData(prevData => 
+          prevData.map(player =>
+            player.username === friendUsername ? { ...player, isFriend: "You are already friends with this person." } : player
+          )
+        );
+        setShowAnimation(true); // Trigger the animation
       } else {
-        // Handle any other messages or default case
         Alert.alert("Error", result.message || "Failed to add friend.");
       }
     } catch (error) {
-      // Handle any errors thrown from the addFriend function
       console.warn('Error adding friend:', error);
       Alert.alert("This player is already your friend!");
     }
@@ -245,6 +243,15 @@ const QuickAddPage: React.FC = () => {
               </>
             )}
           </>
+        )}
+        
+        {showAnimation && (
+          <FriendAddedAnimation
+            onAnimationComplete={() => {
+              setShowAnimation(false);
+              Alert.alert("Success", "Friend added successfully!");
+            }}
+          />
         )}
       </SafeAreaView>
     </TouchableWithoutFeedback>

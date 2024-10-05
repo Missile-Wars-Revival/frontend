@@ -11,6 +11,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from "../util/Context/authcontext";
 import { requestPasswordReset, requestUsernameReminder, resetPassword } from "../api/changedetails";
 import LoginSwirl from "../components/Animations/loginSwirl";
+import { signInWithFirebase } from "../util/firebase/firebaseAuth";
 
 const { width, height } = Dimensions.get('window');
 
@@ -143,6 +144,18 @@ function LoginButton({
     async (token) => {
       await saveCredentials(username, token, notificationToken);
       console.log("Logged in with token", token);
+
+      try {
+        console.log("Attempting Firebase sign-in");
+        await signInWithFirebase(password, token);
+        console.log("Firebase sign-in successful");
+      } catch (firebaseError) {
+        console.error("Firebase sign-in failed:", firebaseError);
+        // Alert.alert(
+        //   "Firebase Sign-In Failed",
+        //   "Continuing with login process. Some features may be limited."
+        // );
+      }
       await AsyncStorage.setItem('signedIn', 'true');
       setIsSignedIn(true);
       setShowSwirl(true);

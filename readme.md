@@ -40,6 +40,12 @@ To login in to an account use either: <br />
 Username: `Test` or `Test2` <br />
 Password: `Testing123!` <br />
 
+
+## Notification Test:
+```
+https://expo.dev/notifications
+```
+
 # Building:
 To send the build to EAS build run the following commands: <br />
 *Note: You will need the companies Apple login for iOS builds - Contact Tristan in Discord for this*

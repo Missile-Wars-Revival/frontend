@@ -41,6 +41,7 @@ const FriendsPage: React.FC = () => {
   const [locActive, setLocActive] = useState<boolean>(true);
   const isDarkMode = colorScheme === 'dark';
   const [showMissileFiringAnimation, setShowMissileFiringAnimation] = useState(false);
+  const [hasFirebaseUID, setHasFirebaseUID] = useState(false);
 
   const handleUnreadCountUpdate = useCallback(({ count, chatCount }: { count: number, chatCount: number }) => {
     setLocalUnreadCount(count);
@@ -240,6 +241,15 @@ const FriendsPage: React.FC = () => {
     </View>
   );
 
+  useEffect(() => {
+    const checkFirebaseUID = async () => {
+      const firebaseUID = await SecureStore.getItemAsync("firebaseUID");
+      setHasFirebaseUID(!!firebaseUID);
+    };
+
+    checkFirebaseUID();
+  }, []);
+
   return (
     <View style={[styles.container, isDarkMode && styles.containerDark]}>
       <View style={[styles.header, isDarkMode && styles.headerDark]}>
@@ -360,17 +370,19 @@ const FriendsPage: React.FC = () => {
         </View>
       </Modal>
       
-      {/* <TouchableOpacity
-        style={[styles.messageButton, isDarkMode && styles.messageButtonDark]}
-        onPress={() => router.navigate("/msg")}
-      >
-        <Ionicons name="chatbubble-ellipses" size={24} color={isDarkMode ? "#FFF" : "#000"} />
-        {localUnreadChatCount > 0 && (
-          <View style={styles.chatBadge}>
-            <Text style={styles.chatBadgeText}>{localUnreadChatCount}</Text>
-          </View>
-        )}
-      </TouchableOpacity> */}
+      {hasFirebaseUID && (
+        <TouchableOpacity
+          style={[styles.messageButton, isDarkMode && styles.messageButtonDark]}
+          onPress={() => router.navigate("/msg")}
+        >
+          <Ionicons name="chatbubble-ellipses" size={24} color={isDarkMode ? "#FFF" : "#000"} />
+          {localUnreadChatCount > 0 && (
+            <View style={styles.chatBadge}>
+              <Text style={styles.chatBadgeText}>{localUnreadChatCount}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      )}
       {showMissileFiringAnimation && (
         <View style={styles.animationOverlay}>
           <MissileFiringAnimation onAnimationComplete={handleMissileAnimationComplete} />

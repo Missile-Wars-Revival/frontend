@@ -44,3 +44,22 @@ export async function getselfprofile(
         }
     }
 }
+
+export async function startGetSelfProfile(token: string) {
+    try {
+        if (!token) throw new Error("No authentication token found.");
+        const response = await axiosInstance.get(`/api/self-profile/`, { params: { token }, });
+        return response.data;
+    } catch (error) {
+        if (isAxiosError(error)) {
+            console.log("failed to get user profile")
+            return (
+                error.response?.data || { success: false, message: "Request failed" }
+            );
+        } else {
+            console.log("failed to get userprofile")
+            console.error(error);
+            return { success: false, message: "Request failed" };
+        }
+    }
+}

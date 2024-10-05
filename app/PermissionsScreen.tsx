@@ -2,9 +2,10 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform, Dimensions, ImageBackground, Image, SafeAreaView, KeyboardAvoidingView, StatusBar, useColorScheme, ScrollView } from 'react-native';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
-import { MapPin, Bell, Navigation, FileText } from 'lucide-react-native';
+import { MapPin, Bell, FileText, Target } from 'lucide-react-native';
 import { Linking } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { requestTrackingPermissionsAsync, getTrackingPermissionsAsync } from 'expo-tracking-transparency';
+import { getlocation } from '../util/locationreq';
 
 const { width, height } = Dimensions.get('window');
 
@@ -15,22 +16,46 @@ interface PermissionsScreenProps {
 const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGranted }) => {
   const [locationPermission, setLocationPermission] = useState(false);
   const [notificationPermission, setNotificationPermission] = useState(false);
-  const [backgroundLocationPermission, setBackgroundLocationPermission] = useState(false);
   const [privacyPolicyAgreed, setPrivacyPolicyAgreed] = useState(false);
+  const [trackingPermission, setTrackingPermission] = useState(Platform.OS === 'android' ? true : false);
 
   useEffect(() => {
     checkPermissions();
   }, []);
 
   const checkPermissions = async () => {
-    const { status: locationStatus } = await Location.getForegroundPermissionsAsync();
-    setLocationPermission(locationStatus === 'granted');
+    const checks = [
+      { key: 'location', check: Location.getForegroundPermissionsAsync },
+      { key: 'notification', check: Notifications.getPermissionsAsync },
+    ];
 
-    const { status: notificationStatus } = await Notifications.getPermissionsAsync();
-    setNotificationPermission(notificationStatus === 'granted');
+    if (Platform.OS === 'ios') {
+      checks.push({ key: 'tracking', check: getTrackingPermissionsAsync });
+    }
 
-    const { status: backgroundStatus } = await Location.getBackgroundPermissionsAsync();
-    setBackgroundLocationPermission(backgroundStatus === 'granted');
+    for (const { key, check } of checks) {
+      try {
+        const { status } = await check();
+        updatePermission(key as 'location' | 'notification' | 'tracking', status === 'granted');
+      } catch (error) {
+        console.error(`Error checking ${key} permission:`, error);
+        updatePermission(key as 'location' | 'notification' | 'tracking', false);
+      }
+    }
+  };
+
+  const updatePermission = (key: 'location' | 'notification' | 'tracking', granted: boolean) => {
+    switch (key) {
+      case 'location':
+        setLocationPermission(granted);
+        break;
+      case 'notification':
+        setNotificationPermission(granted);
+        break;
+      case 'tracking':
+        setTrackingPermission(granted);
+        break;
+    }
   };
 
   const openAppSettings = () => {
@@ -38,14 +63,14 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGrant
   };
 
   const handlePermissionRequest = async (
-    permissionType: 'location' | 'notification' | 'backgroundLocation',
+    permissionType: 'location' | 'notification',
     requestFunction: () => Promise<{ status: string }>
   ) => {
     const { status } = await requestFunction();
     if (status !== 'granted') {
       Alert.alert(
         'Permission Required',
-        `${permissionType.charAt(0).toUpperCase() + permissionType.slice(1)} permission is required for this feature. Would you like to open app settings?`,
+        `${permissionType.charAt(0).toUpperCase() + permissionType.slice(1)} permission is recommended for this feature. Would you like to open app settings?`,
         [
           { text: 'Cancel', style: 'cancel' },
           { text: 'Open Settings', onPress: openAppSettings }
@@ -60,9 +85,6 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGrant
       case 'notification':
         setNotificationPermission(status === 'granted');
         break;
-      case 'backgroundLocation':
-        setBackgroundLocationPermission(status === 'granted');
-        break;
     }
   };
 
@@ -70,6 +92,7 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGrant
     if (Platform.OS === 'ios') {
       const { status } = await Location.requestForegroundPermissionsAsync();
       setLocationPermission(status === 'granted');
+      await getlocation();
     } else {
       handlePermissionRequest('location', Location.requestForegroundPermissionsAsync);
     }
@@ -79,22 +102,31 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGrant
     handlePermissionRequest('notification', Notifications.requestPermissionsAsync);
   };
 
-  const requestBackgroundLocationPermission = () => {
+  const requestTrackingPermission = async () => {
     if (Platform.OS === 'ios') {
-      Alert.alert(
-        "Background Location Access",
-        "Allows the app to update your location even when it's not actively in use. This improves gameplay experience.",
-        [
-          { text: "Don't Allow", style: "cancel" },
-          { text: "Allow", onPress: () => {
-            handlePermissionRequest('backgroundLocation', Location.requestBackgroundPermissionsAsync);
-            AsyncStorage.setItem('useBackgroundLocation', 'true');
-          }}
-        ]
-      );
+      try {
+        const { status: currentStatus } = await getTrackingPermissionsAsync();
+        if (currentStatus === 'denied') {
+          // If permission was previously denied, show an alert with option to open settings
+          Alert.alert(
+            'Permission Required',
+            'App Tracking permission is recommended for this feature. Would you like to open app settings?',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Open Settings', onPress: openAppSettings }
+            ]
+          );
+        } else {
+          // If not previously denied, request the permission
+          const { status } = await requestTrackingPermissionsAsync();
+          setTrackingPermission(status === 'granted');
+        }
+      } catch (error) {
+        console.error('Error requesting tracking permission:', error);
+      }
     } else {
-      handlePermissionRequest('backgroundLocation', Location.requestBackgroundPermissionsAsync);
-      AsyncStorage.setItem('useBackgroundLocation', 'true');
+      // On Android, we don't need to request this permission
+      setTrackingPermission(true);
     }
   };
 
@@ -103,7 +135,11 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGrant
   };
 
   const agreeToPrivacyPolicy = () => {
-    setPrivacyPolicyAgreed(true);
+    try {
+      setPrivacyPolicyAgreed(true);
+    } catch (error) {
+      console.error('Error agreeing to privacy policy:', error);
+    }
   };
 
   const handleContinue = () => {
@@ -175,15 +211,17 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGrant
                 isDarkMode={isDarkMode}
               />
 
-              {/* <PermissionItem
-                title="Background Location Permission (Optional)"
-                description="Allows the app to update your location even when it's not actively in use."
-                icon={<Navigation size={24} color={isDarkMode ? "#FFFFFF" : "#000000"} />}
-                isGranted={backgroundLocationPermission}
-                onPress={requestBackgroundLocationPermission}
-                styles={styles}
-                isDarkMode={isDarkMode}
-              /> */}
+              {Platform.OS === 'ios' && (
+                <PermissionItem
+                  title="App Tracking Permission (Recommended)"
+                  description="This allows us to show you more relevant ads and helps keep the app free. You can decline without affecting your experience."
+                  icon={<Target size={24} color={isDarkMode ? "#FFFFFF" : "#000000"} />}
+                  isGranted={trackingPermission}
+                  onPress={requestTrackingPermission}
+                  styles={styles}
+                  isDarkMode={isDarkMode}
+                />
+              )}
 
               <PermissionItem
                 title="Agree to Privacy Policy (Required)"

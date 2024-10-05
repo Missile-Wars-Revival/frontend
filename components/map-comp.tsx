@@ -6,7 +6,7 @@ import { AllLandMines } from "./Landmine/map-landmines";
 import { AllMissiles } from "./Missile/map-missile";
 import { AllPlayers } from "./map-players";
 import { loadLastKnownLocation, saveLocation } from '../util/mapstore';
-import { getLocationPermission, getlocation } from "../util/locationreq";
+import { getlocation } from "../util/locationreq";
 import { dispatch } from "../api/dispatch";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCurrentLocation } from "../util/locationreq";
@@ -35,7 +35,6 @@ export const MapComp = (props: MapCompProps) => {
     const otherData = useFetchOther()
     const LandmineData = useFetchLandmines()
 
-    const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(false);
     const [isLoading, setIsLoading] = useState(true);
     const [hasDbConnection, setDbConnection] = useState<boolean>(true);
     const [isAlive, setisAlive] = useState<boolean>(true);
@@ -55,7 +54,7 @@ export const MapComp = (props: MapCompProps) => {
         longitude: 0,
         latitudeDelta: 0.01,
         longitudeDelta: 0.01,
-        pitch: 45,
+        pitch: 0,
         heading: 0
     });
 
@@ -110,9 +109,6 @@ export const MapComp = (props: MapCompProps) => {
                 if (cachedMode !== null) {
                     setMode(cachedMode as 'friends' | 'global');
                 }
-                getLocationPermission();
-                const status = await getLocationPermission();
-                setIsLocationEnabled(status === 'granted');
 
                 // Initial dispatch
                 await dispatchLocation();
@@ -292,7 +288,7 @@ export const MapComp = (props: MapCompProps) => {
                         longitude: location.longitude,
                         latitudeDelta: 0.01,
                         longitudeDelta: 0.01,
-                        pitch: 45,
+                        pitch: 0,
                         heading: 0
                     };
                     await saveLocation(newRegion);
@@ -338,9 +334,9 @@ export const MapComp = (props: MapCompProps) => {
                         <Text style={mainmapstyles.overlaySubText}>Please check wait the designated time or watch an advert!</Text>
                     </View>
                 )}
-                {(!isLocationEnabled || !hasDbConnection) && (
+                {(!hasDbConnection) && (
                     <View style={mainmapstyles.overlay}>
-                        <Text style={mainmapstyles.overlayText}>Map is disabled due to location/database issues.</Text>
+                        <Text style={mainmapstyles.overlayText}>Map is disabled due to database issues.</Text>
                         <Text style={mainmapstyles.overlaySubText}>Please check your settings or try again later.</Text>
                     </View>
                 )}

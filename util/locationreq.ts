@@ -20,33 +20,19 @@ export async function getCurrentLocation(): Promise<location> {
         throw new Error('Location fetching is disabled because the app is not active.');
     }
 
-    let useBackground = await AsyncStorage.getItem('useBackgroundLocation') === 'true';
-    let foregroundStatus, backgroundStatus;
+    let foregroundStatus;
 
     // Check and request foreground permissions
     foregroundStatus = await Location.getForegroundPermissionsAsync();
     if (foregroundStatus.status !== 'granted') {
-        throw new Error('Foreground location access permission was denied');
-    }
-
-    // Check and request background permissions if needed
-    if (useBackground) {
-        if (Platform.OS === 'ios' || (Platform.OS === 'android' && Platform.Version >= 29)) {
-            backgroundStatus = await Location.getBackgroundPermissionsAsync();
-            if (backgroundStatus.status !== 'granted') {
-                backgroundStatus = await Location.requestBackgroundPermissionsAsync();
-                if (backgroundStatus.status !== 'granted') {
-                    console.log('Background location permission not granted');
-                    await AsyncStorage.setItem('useBackgroundLocation', 'false');
-                    useBackground = false;
-                }
-            }
+        foregroundStatus = await Location.requestForegroundPermissionsAsync();
+        if (foregroundStatus.status !== 'granted') {
+            throw new Error('Foreground location access permission was denied');
         }
     }
 
     // Update the permission status in AsyncStorage
     await AsyncStorage.setItem('locationPermissionStatus', foregroundStatus.status);
-    await AsyncStorage.setItem('useBackgroundLocation', useBackground.toString());
 
     // Fetch the current location
     const location = await Location.getCurrentPositionAsync({});
@@ -56,22 +42,6 @@ export async function getCurrentLocation(): Promise<location> {
     };
 }
 
-export const getLocationPermission = async () => {
-    let foregroundStatus = await Location.requestForegroundPermissionsAsync();
-    if (foregroundStatus.status !== 'granted') {
-        return foregroundStatus.status;
-    }
-
-    if (Platform.OS === 'android' && Platform.Version >= 29) {
-        let backgroundStatus = await Location.requestBackgroundPermissionsAsync();
-        if (backgroundStatus.status !== 'granted') {
-            console.log('Background location permission not granted');
-        }
-    }
-
-    return foregroundStatus.status;
-};
-
 export const getlocation = async () => {
     try {
         const location = await getCurrentLocation();
@@ -80,7 +50,7 @@ export const getlocation = async () => {
             longitude: location.longitude,
             latitudeDelta: 0.01,
             longitudeDelta: 0.01,
-            pitch: 45,
+            pitch: 0,
             heading: 0
         };
         await saveLocation(newRegion);

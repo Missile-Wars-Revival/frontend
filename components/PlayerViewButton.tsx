@@ -21,6 +21,7 @@ import { androidCyberpunkMapStyle } from '../map-themes/Android-themes/cyberpunk
 import { androidDefaultMapStyle } from '../map-themes/Android-themes/defaultMapStyle';
 import { androidRadarMapStyle } from '../map-themes/Android-themes/radarMapStyle';
 import { IOSDefaultMapStyle, IOSRadarMapStyle, IOSCherryBlossomMapStyle, IOSCyberpunkMapStyle, IOSColorblindMapStyle } from '../map-themes/IOS-themes/themestemp';
+import FriendAddedAnimation from "../components/Animations/FriendAddedAnimation";
 
 interface Player {
   username: string;
@@ -55,6 +56,7 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const mapRef = useRef<MapView>(null);
   const [currentMapStyle, setCurrentMapStyle] = useState<MapStyle[]>(Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle);
+  const [showAnimation, setShowAnimation] = useState(false);
 
   useEffect(() => {
     if (modalVisible && isInitialLoad) {
@@ -208,7 +210,7 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
             player.username === friendUsername ? { ...player, isFriend: true } : player
           )
         );
-        Alert.alert("Success", "Friend added successfully!");
+        setShowAnimation(true); // Trigger the animation
       } else {
         Alert.alert("Error", result.message || "Failed to add friend.");
       }
@@ -436,6 +438,15 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
           </View>
         </View>
       </Modal>
+
+      {showAnimation && (
+        <FriendAddedAnimation
+          onAnimationComplete={() => {
+            setShowAnimation(false);
+            Alert.alert("Success", "Friend added successfully!");
+          }}
+        />
+      )}
     </View>
   );
 };

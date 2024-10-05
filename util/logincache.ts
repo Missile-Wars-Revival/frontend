@@ -26,7 +26,7 @@ export async function clearCredentials(): Promise<void> {
     await SecureStore.deleteItemAsync("email");
     await SecureStore.deleteItemAsync("token");
     await SecureStore.deleteItemAsync("notifificationToken")
-
+    await SecureStore.deleteItemAsync("firebaseUID")
     // Clearing additional items stored in AsyncStorage
     await AsyncStorage.removeItem("visibilitymode"); //Friends or global map (this may be stored backend eventually)
     await AsyncStorage.removeItem("selectedMapStyle"); //Map theme
