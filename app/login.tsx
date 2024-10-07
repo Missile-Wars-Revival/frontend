@@ -1,7 +1,7 @@
 import { SafeAreaView, Text, View, Image, TouchableHighlight, ScrollView, Dimensions, Modal, TouchableOpacity, Alert, StyleSheet, useColorScheme } from "react-native";
 import { router } from "expo-router";
 import { Input } from "../components/ui/input";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import useLogin from "../hooks/api/useLogin";
 import { User, LockKeyhole, CheckCircle2 } from "lucide-react-native";
 import React from "react";
@@ -12,6 +12,7 @@ import { useAuth } from "../util/Context/authcontext";
 import { requestPasswordReset, requestUsernameReminder, resetPassword } from "../api/changedetails";
 import LoginSwirl from "../components/Animations/loginSwirl";
 import { signInWithFirebase } from "../util/firebase/firebaseAuth";
+import { getlocation } from "../util/locationreq";
 
 const { width, height } = Dimensions.get('window');
 
@@ -27,6 +28,10 @@ export default function Login() {
 
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
+
+  useEffect(() => {
+    getlocation();
+  }, []);
 
   const styles = useMemo(() => StyleSheet.create({
     ...lightStyles,

@@ -40,8 +40,8 @@ export const itemimages: ItemImages = {
   Zippy: require('../assets/missiles/Zippy.png'),
   LootDrop: require('../assets/mapassets/Airdropicon.png'),
   Shield: require('../assets/mapassets/shield.png'),
-  UltraShield: require('../assets/mapassets/shield.png'),
-
+  UltraShield: require('../assets/mapassets/ultrashield.png'),
+  LandmineSweep: require('../assets/mapassets/landminesweeper.png'),
   // Add other missile images here
 };
 

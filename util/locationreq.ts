@@ -9,37 +9,34 @@ export interface location {
 }
 
 export async function getCurrentLocation(): Promise<location> {
-    // Retrieve and parse the isAlive value from AsyncStorage
+    // Retrieve the isAlive value from AsyncStorage
     const isAliveString = await AsyncStorage.getItem('isAlive');
     
-    // Parse the isAlive value if it's not null, otherwise default to an object indicating not alive
-    const isAliveObj = isAliveString ? JSON.parse(isAliveString) : { isAlive: false };
+    // If isAliveString is null or 'true', or if parsed JSON has isAlive as true, proceed with location fetching
+    if (isAliveString === null || isAliveString === 'true' || (isAliveString && JSON.parse(isAliveString).isAlive)) {
+        let foregroundStatus;
 
-    // Check if the app should fetch location (if user is alive)
-    if (!isAliveObj.isAlive) {
+        // Check and request foreground permissions
+        foregroundStatus = await Location.getForegroundPermissionsAsync();
+        if (foregroundStatus.status !== 'granted') {
+            foregroundStatus = await Location.requestForegroundPermissionsAsync();
+            if (foregroundStatus.status !== 'granted') {
+                throw new Error('Foreground location access permission was denied');
+            }
+        }
+
+        // Update the permission status in AsyncStorage
+        await AsyncStorage.setItem('locationPermissionStatus', foregroundStatus.status);
+
+        // Fetch the current location
+        const location = await Location.getCurrentPositionAsync({});
+        return {
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude
+        };
+    } else {
         throw new Error('Location fetching is disabled because the app is not active.');
     }
-
-    let foregroundStatus;
-
-    // Check and request foreground permissions
-    foregroundStatus = await Location.getForegroundPermissionsAsync();
-    if (foregroundStatus.status !== 'granted') {
-        foregroundStatus = await Location.requestForegroundPermissionsAsync();
-        if (foregroundStatus.status !== 'granted') {
-            throw new Error('Foreground location access permission was denied');
-        }
-    }
-
-    // Update the permission status in AsyncStorage
-    await AsyncStorage.setItem('locationPermissionStatus', foregroundStatus.status);
-
-    // Fetch the current location
-    const location = await Location.getCurrentPositionAsync({});
-    return {
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude
-    };
 }
 
 export const getlocation = async () => {
@@ -54,6 +51,9 @@ export const getlocation = async () => {
             heading: 0
         };
         await saveLocation(newRegion);
+        return newRegion; // Return the new region
     } catch (error) {
+        console.error("Error in getlocation:", error);
+        throw error; // Re-throw the error to be handled by the caller
     }
 };

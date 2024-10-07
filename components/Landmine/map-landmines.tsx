@@ -3,8 +3,9 @@ import React from "react";
 import { useUserName } from "../../util/fetchusernameglobal";
 import { GeoLocation, Landmine } from "middle-earth";
 import { View, Image } from "react-native";
-import { LandmineImages } from "./landmine"; 
 import { convertimestampfuture } from "../../util/get-time-difference";
+import { useLandmine } from "../../util/Context/landminecontext";
+import { itemimages } from "../../app/profile";
 
 interface AllLandmineProps {
     landminedata: Landmine[];
@@ -12,16 +13,17 @@ interface AllLandmineProps {
 
 export const AllLandMines = (props: AllLandmineProps) => {
     const userNAME = useUserName();
+    const { showAllLandmines } = useLandmine();
+
     return (
         <>
-        {props.landminedata .filter(landmine => landmine.placedby === userNAME) .map(({ type, location, placedby, placedtime, etaexpiretime }, index) => {
-
-            return (
-            <React.Fragment key={index}>
-                <MapLandmine location={location} type={type} placedby={placedby} placedtime={placedtime} etaexpiretime={etaexpiretime}  />
-            </React.Fragment>
-            );
-        })}
+        {props.landminedata
+            .filter(landmine => showAllLandmines || landmine.placedby === userNAME)
+            .map(({ type, location, placedby, placedtime, etaexpiretime }, index) => (
+                <React.Fragment key={index}>
+                    <MapLandmine location={location} type={type} placedby={placedby} placedtime={placedtime} etaexpiretime={etaexpiretime} />
+                </React.Fragment>
+            ))}
         </>
     );
 }
@@ -35,7 +37,7 @@ interface LandmineProps {
   }
 
 export const MapLandmine = (landmineProps: LandmineProps) => {
-    const resizedlandmineimage = LandmineImages[landmineProps.type];
+    const resizedlandmineimage = itemimages[landmineProps.type];
     const resizedlandmineicon = { width: 50, height: 50 };
 
     const { text } = convertimestampfuture(landmineProps.etaexpiretime);

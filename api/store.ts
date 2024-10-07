@@ -86,7 +86,8 @@ export const mapProductType = (productid: string) => {
     Coins2000_: require('../assets/store/1000coins.png'),
     LootDrop: require('../assets/mapassets/Airdropicon.png'),
     Shield: require('../assets/mapassets/shield.png'),
-    UltraShield: require('../assets/mapassets/shield.png'),
+    UltraShield: require('../assets/mapassets/ultrashield.png'),
+    LandmineSweep: require('../assets/mapassets/landminesweeper.png'),
     default: require('../assets/logo.png'), // Default image if identifier not found
   };
 

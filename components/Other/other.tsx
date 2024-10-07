@@ -6,6 +6,9 @@ import { InventoryItem } from '../../types/types';
 import useFetchInventory from '../../hooks/websockets/inventoryhook';
 import { useColorScheme } from 'react-native';
 import { router } from 'expo-router';
+import { removeItem } from '../../api/add-item';
+import { useLandmine } from '../../util/Context/landminecontext';
+import { itemimages } from '../../app/profile';
 
 const tw = create(require('../../tailwind.config.js'));
 
@@ -48,7 +51,7 @@ const OtherSelector = ({ onSelect, Others }: { onSelect: (Other: string) => void
           onPress={() => onSelect(Other.type)} 
           style={tw`flex-row items-center ${isDarkMode ? 'bg-gray-900' : 'bg-white'} p-2 mb-1 rounded-lg shadow`}
         >
-          <Image source={require("../../assets/mapassets/shield.png")} style={tw`w-8 h-8 mr-2`} />
+          <Image source={itemimages[Other.type]} style={tw`w-8 h-8 mr-2`} />
           <View style={tw`flex-1`}>
             <Text style={tw`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>{Other.type}</Text>
             <Text style={tw`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Quantity: {Other.quantity}</Text>
@@ -65,11 +68,23 @@ export const OtherLibraryView: React.FC<OtherLibraryViewProps> = ({ OtherModalVi
   const OtherLibrary = useOtherLib();
   const [showplacmentPopup, setShowplacementPopup] = useState<boolean>(false);
   const [selectedOther, setSelectedOther] = useState<Other | null>(null);
+  const [showBriefPopup, setShowBriefPopup] = useState<boolean>(false);
   const isDarkMode = useColorScheme() === 'dark';
+  const { activateLandmineSweeper } = useLandmine();
 
   const handleOtherClick = (OtherType: string) => {
-    setSelectedOther({ type: OtherType });
-    setShowplacementPopup(true);
+    if (OtherType === "LandmineSweep") {
+      setShowBriefPopup(true);
+      removeItem("LandmineSweep", 1);
+      activateLandmineSweeper();
+      setTimeout(() => {
+        setShowBriefPopup(false);
+        OtherPlaceHandler(); // Close the library after the popup disappears
+      }, 2000); // Popup will disappear after 2 seconds
+    } else {
+      setSelectedOther({ type: OtherType });
+      setShowplacementPopup(true);
+    }
   };
 
   const handleClosePopup = () => {
@@ -132,6 +147,19 @@ export const OtherLibraryView: React.FC<OtherLibraryViewProps> = ({ OtherModalVi
           selectedOther={selectedOther}
           onOtherPlaced={handleOtherPlaced}
         />
+      )}
+      {showBriefPopup && (
+        <View style={tw`absolute inset-0 flex items-center justify-center bg-black bg-opacity-50`}>
+          <View style={tw`${isDarkMode ? 'bg-gray-800' : 'bg-white'} p-6 rounded-lg items-center`}>
+            <Image 
+              source={require("../../assets/mapassets/landminesweeper.png")} 
+              style={tw`w-16 h-16 mb-4`} 
+            />
+            <Text style={tw`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-black'}`}>
+              Landmine Sweeper used!
+            </Text>
+          </View>
+        </View>
       )}
     </Modal>
   );

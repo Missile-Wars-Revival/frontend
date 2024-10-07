@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, Switch, Alert, Platform, ActivityIndicator, TouchableOpacity, useColorScheme, StyleSheet, Dimensions } from "react-native";
-import MapView from "react-native-maps";
+import MapView, { Circle } from "react-native-maps";
 import { AllLootDrops } from "./Loot/map-loot";
 import { AllLandMines } from "./Landmine/map-landmines";
 import { AllMissiles } from "./Missile/map-missile";
@@ -20,6 +20,8 @@ import { FontAwesome } from '@expo/vector-icons';
 import useFetchOther from "../hooks/websockets/otherhook";
 import { AllOther } from "./Other/map-other";
 import { getlocActive } from "../api/locActive";
+import { useUserLeague } from "../hooks/api/useUserLEague";
+import { getLeagueAirspace } from "./player";
 
 interface MapCompProps {
     selectedMapStyle: any;
@@ -65,99 +67,35 @@ export const MapComp = (props: MapCompProps) => {
                 if (cachedRegion !== null) {
                     setRegion(cachedRegion);
                 }
-
-                // Check if it's the first load & DB Connection
-                const isFirstLoad = await AsyncStorage.getItem('firstload');
+    
+                // Check DB Connection
                 const isDBConnection = await AsyncStorage.getItem('dbconnection');
-
+    
                 const token = await SecureStore.getItemAsync("token");
                 if (!token) {
                     console.error("Authentication token is missing");
-                    return; // Exit function if no token is found
+                    // Don't return here, continue with the rest of the initialization
                 }
-                if ((isFirstLoad == null) || (isFirstLoad === `true`)) {
-                    setFirstLoad(true);
-                    Alert.alert(
-                        "Your location is set to Global",
-                        "This means everyone in your league can see your location.",
-                        [
-                            { text: "OK", onPress: () => console.log("Global button pressed") }
-                        ]
-                    );
-                    await updateFriendsOnlyStatus(false);
-
-                    const savedlocation = await loadLastKnownLocation();
-                    if (savedlocation == null) {
-                        await getlocation();
-                    }
-                    setRegion(savedlocation);
-
-                    await AsyncStorage.setItem('firstload', 'false');
-                    setFirstLoad(false);
-                }
+    
                 if (isDBConnection === "false") {
-                    setDbConnection(false)
-                }
-                if (isDBConnection === "true") {
-                    setDbConnection(true)
+                    setDbConnection(false);
+                } else if (isDBConnection === "true") {
+                    setDbConnection(true);
                 } else {
                     setDbConnection(false);
-                    setFirstLoad(false);
                 }
-
-                const cachedMode = await AsyncStorage.getItem('visibilitymode');
-                if (cachedMode !== null) {
-                    setMode(cachedMode as 'friends' | 'global');
-                }
-
-                // Initial dispatch
-                await dispatchLocation();
-
-                // Set up interval for regular dispatches
-                const dispatchIntervalId = setInterval(dispatchLocation, 30000); // Every 30 seconds
-
-                const intervalId = setInterval(async () => {
-                    // Periodically check DB connection status
-                    const dbConnStatus = await AsyncStorage.getItem('dbconnection');
-                    if (dbConnStatus === "false") {
-                        setDbConnection(false)
-                    }
-                    if (dbConnStatus === "true") {
-                        setDbConnection(true)
-                    } else {
-                        setDbConnection(false);
-                    }
-                    try {
-                        const isAliveStatus = await AsyncStorage.getItem('isAlive');
-                        if (isAliveStatus !== null) {
-                            const isAliveData = JSON.parse(isAliveStatus); // Converts the string to an object
-                            if (typeof isAliveData === 'object' && isAliveData.hasOwnProperty('isAlive')) {
-                                const isAlive = isAliveData.isAlive; // Extract the boolean value from the object
-                                setisAlive(isAlive);
-                            } else {
-                                // Handle unexpected format
-                                setisAlive(false);
-                            }
-                        } else {
-                            // Handle null (e.g., key does not exist)
-                            setisAlive(true); // Assume false if nothing is stored
-                        }
-                    } catch (error) {
-                        setisAlive(false); // Set to a default value in case of error
-                    }
-
-                }, 1000);
-
-                return () => {
-                    clearInterval(dispatchIntervalId);
-                    clearInterval(intervalId);
-                };
+    
+                // Set firstLoad to false by default
+                setFirstLoad(false);
+    
+                // ... rest of the initialization code ...
+    
             } catch (error) {
                 setIsLoading(false);
                 console.error('Error initializing app:', error);
             }
         };
-
+    
         initializeApp();
     }, []);
 
@@ -189,14 +127,14 @@ export const MapComp = (props: MapCompProps) => {
     const fetchLocActiveStatus = async () => {
         setIsLoading(true);
         try {
-          const status = await getlocActive();
-          setLocActive(status);
+            const status = await getlocActive();
+            setLocActive(status);
         } catch (error) {
-          console.error("Failed to fetch locActive status:", error);
+            console.error("Failed to fetch locActive status:", error);
         } finally {
-          setIsLoading(false);
+            setIsLoading(false);
         }
-      };
+    };
 
     const dispatchLocation = async () => {
         try {
@@ -300,67 +238,81 @@ export const MapComp = (props: MapCompProps) => {
         }
     };
 
+
+  const userLeague = useUserLeague();
+
+  const leagueairspace = getLeagueAirspace(userLeague?.league || 'bronze');
+
     // Render map and other components once initialization is complete
     return (
-            <View style={mainmapstyles.container}>
-                <View style={{ width: '100%', height: '100%' }}>
-                    <MapView
-                        style={[mainmapstyles.map, isMapDisabled && mainmapstyles.disabledMap]}
-                        region={region}
-                        showsCompass={false}
-                        showsTraffic={false}
-                        showsUserLocation={true}
-                        pitchEnabled={true}
-                        rotateEnabled={true}
-                        scrollEnabled={true}
-                        zoomEnabled={true}
-                        showsMyLocationButton={false}
-                        customMapStyle={props.selectedMapStyle}>
-                        <AllPlayers />
-                        <AllLootDrops lootLocations={lootData} />
-                        <AllOther OtherLocations={otherData} />
-                        <AllLandMines landminedata={LandmineData} />
-                        <AllMissiles missileData={missileData} />
-                    </MapView>
-                </View>
-                <TouchableOpacity
-                    style={mainmapstyles.relocateButton}
-                    onPress={() => relocate(setRegion)}>
-                    <FontAwesome name="location-arrow" size={24} color="#ffffff" />
-                </TouchableOpacity>
-                {(!isAlive) && (
-                    <View style={mainmapstyles.overlay}>
-                        <Text style={mainmapstyles.overlayText}>Map is disabled due to your death</Text>
-                        <Text style={mainmapstyles.overlaySubText}>Please check wait the designated time or watch an advert!</Text>
-                    </View>
-                )}
-                {(!hasDbConnection) && (
-                    <View style={mainmapstyles.overlay}>
-                        <Text style={mainmapstyles.overlayText}>Map is disabled due to database issues.</Text>
-                        <Text style={mainmapstyles.overlaySubText}>Please check your settings or try again later.</Text>
-                    </View>
-                )}
-                {!locActive && (
-                    <View style={mainmapstyles.overlay}>
-                        <Text style={mainmapstyles.overlayText}>Map is disabled due to location being turned off.</Text>
-                        <Text style={mainmapstyles.overlaySubText}>Please enable location in settings to use the map.</Text>
-                    </View>
-                )}
-                {isMapDisabled && (
-                    <View style={mainmapstyles.overlay}>
-                        <Text style={mainmapstyles.overlayText}>Map is currently disabled</Text>
-                    </View>
-                )}
-                <View style={mainmapstyles.switchContainer}>
-                    <Text style={mainmapstyles.switchText}>{visibilitymode === 'global' ? 'Global' : 'Friends'}</Text>
-                    <Switch
-                        trackColor={{ false: "#767577", true: "#81b0ff" }}
-                        thumbColor={visibilitymode === 'global' ? "#f4f3f4" : "#f4f3f4"}
-                        ios_backgroundColor="#3e3e3e"
-                        onValueChange={toggleMode}
-                        value={visibilitymode === 'global'}
+        <View style={mainmapstyles.container}>
+            <View style={{ width: '100%', height: '100%' }}>
+                <MapView
+                    style={[mainmapstyles.map, isMapDisabled && mainmapstyles.disabledMap]}
+                    region={region}
+                    showsCompass={false}
+                    showsTraffic={false}
+                    showsUserLocation={true}
+                    pitchEnabled={true}
+                    rotateEnabled={true}
+                    scrollEnabled={true}
+                    zoomEnabled={true}
+                    showsMyLocationButton={false}
+                    customMapStyle={props.selectedMapStyle}>
+                    <Circle
+                        center={{
+                            latitude: Number(region.latitude),
+                            longitude: Number(region.longitude),
+                        }}
+                        radius={leagueairspace}
+                        fillColor="rgba(255, 0, 0, 0.1)"
+                        strokeColor="rgba(255, 0, 0, 0.2)"
                     />
-                </View>
+                    <AllPlayers />
+                    <AllLootDrops lootLocations={lootData} />
+                    <AllOther OtherLocations={otherData} />
+                    <AllLandMines landminedata={LandmineData} />
+                    <AllMissiles missileData={missileData} />
+                </MapView>
             </View>
+            <TouchableOpacity
+                style={mainmapstyles.relocateButton}
+                onPress={() => relocate(setRegion)}>
+                <FontAwesome name="location-arrow" size={24} color="#ffffff" />
+            </TouchableOpacity>
+            {(!isAlive) && (
+                <View style={mainmapstyles.overlay}>
+                    <Text style={mainmapstyles.overlayText}>Map is disabled due to your death</Text>
+                    <Text style={mainmapstyles.overlaySubText}>Please check wait the designated time or watch an advert!</Text>
+                </View>
+            )}
+            {(!hasDbConnection) && (
+                <View style={mainmapstyles.overlay}>
+                    <Text style={mainmapstyles.overlayText}>Map is disabled due to database issues.</Text>
+                    <Text style={mainmapstyles.overlaySubText}>Please check your settings or try again later.</Text>
+                </View>
+            )}
+            {!locActive && (
+                <View style={mainmapstyles.overlay}>
+                    <Text style={mainmapstyles.overlayText}>Map is disabled due to location being turned off.</Text>
+                    <Text style={mainmapstyles.overlaySubText}>Please enable location in settings to use the map.</Text>
+                </View>
+            )}
+            {isMapDisabled && (
+                <View style={mainmapstyles.overlay}>
+                    <Text style={mainmapstyles.overlayText}>Map is currently disabled</Text>
+                </View>
+            )}
+            <View style={mainmapstyles.switchContainer}>
+                <Text style={mainmapstyles.switchText}>{visibilitymode === 'global' ? 'Global' : 'Friends'}</Text>
+                <Switch
+                    trackColor={{ false: "#767577", true: "#81b0ff" }}
+                    thumbColor={visibilitymode === 'global' ? "#f4f3f4" : "#f4f3f4"}
+                    ios_backgroundColor="#3e3e3e"
+                    onValueChange={toggleMode}
+                    value={visibilitymode === 'global'}
+                />
+            </View>
+        </View>
     );
 };

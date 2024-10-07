@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableHighlight, Switch, ScrollView, Alert, StyleSheet, Dimensions, TouchableOpacity, Modal, Linking, Platform } from 'react-native';
+import { View, Text, TouchableHighlight, Switch, ScrollView, Alert, StyleSheet, Dimensions, TouchableOpacity, Modal, Linking, Platform, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Input } from "../components/ui/input";
-import { User, LockKeyhole, Mail, ChevronLeft } from "lucide-react-native";
+import { User, LockKeyhole, Mail, ChevronLeft, Shield, MessageCircle, ChevronRight } from "lucide-react-native";
 import * as SecureStore from 'expo-secure-store';
 import { changeEmail, changePassword, changeUsername, deleteAcc } from '../api/changedetails';
 import { updateFriendsOnlyStatus } from '../api/visibility';
@@ -14,6 +14,21 @@ import * as Clipboard from 'expo-clipboard';
 import { clearCredentials } from '../util/logincache';
 import { useAuth } from '../util/Context/authcontext';
 import AppIconChanger from '../components/appiconchanger';
+import { Card } from "../components/card";
+import * as StoreReview from 'expo-store-review';
+import { getNotificationPreferences, updateNotificationPreferences } from '../api/notifications';
+import { RewardedAd, RewardedAdEventType, TestIds } from 'react-native-google-mobile-ads';
+
+
+const adUnitId = __DEV__ ? TestIds.REWARDED : Platform.select({
+  ios: 'ca-app-pub-4035842398612787/8310612855',
+  android: 'ca-app-pub-4035842398612787/27790845794',
+  default: 'ca-app-pub-4035842398612787/2779084579',
+});
+
+const rewarded = RewardedAd.createForAdRequest(adUnitId, {
+  keywords: ['games', 'clothing'], //ads category
+});
 
 const { width } = Dimensions.get('window');
 
@@ -37,12 +52,87 @@ const SettingsPage: React.FC = () => {
   const { setIsSignedIn } = useAuth();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteAccountUsername, setDeleteAccountUsername] = useState('');
+  const [showAccountDetails, setShowAccountDetails] = useState(false);
+  const [showVisibilitySettings, setShowVisibilitySettings] = useState(false);
+  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
+  const [notificationSettings, setNotificationSettings] = useState({
+    incomingEntities: false,
+    entityDamage: false,
+    entitiesInAirspace: false,
+    eliminationReward: false,
+    lootDrops: false,
+    friendRequests: false,
+    leagues: false,
+  });
+  const [slideAnimation] = useState(new Animated.Value(width));
+  const [adLoaded, setAdLoaded] = useState(false);
+  const [showAd, setShowAd] = useState(false);
+
+  const notificationDescriptions = {
+    incomingEntities: "Receive alerts when entities are approaching your location.",
+    entityDamage: "Get notified when you take damage.",
+    entitiesInAirspace: "Be alerted when entities enter your airspace.",
+    eliminationReward: "Receive notifications for elimination rewards and Grace Periods.",
+    lootDrops: "Get alerts for nearby loot drops and loot drop rewards.",
+    friendRequests: "Be notified of new friend requests or friends adding you back.",
+    leagues: "Receive updates about league events and standings.",
+  };
 
   useEffect(() => {
     loadUserData();
     loadSettings();
     fetchLocActiveStatus();
+    fetchNotificationPreferences();
   }, []);
+
+  useEffect(() => {
+    const unsubscribeLoaded = rewarded.addAdEventListener(RewardedAdEventType.LOADED, () => {
+      setAdLoaded(true);
+    });
+    const unsubscribeEarned = rewarded.addAdEventListener(
+      RewardedAdEventType.EARNED_REWARD,
+      reward => {
+        console.log('User earned reward of ', reward);
+      },
+    );
+  
+    // Start loading the rewarded ad straight away
+    rewarded.load();
+  
+    // Unsubscribe from events on unmount
+    return () => {
+      unsubscribeLoaded();
+      unsubscribeEarned();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (showAccountDetails || showVisibilitySettings || showNotificationSettings) {
+      Animated.spring(slideAnimation, {
+        toValue: 0,
+        useNativeDriver: true,
+        friction: 8,
+        tension: 40,
+      }).start();
+    }
+  }, [showAccountDetails, showVisibilitySettings, showNotificationSettings]);
+
+  const closePopup = (setStateFunction: React.Dispatch<React.SetStateAction<boolean>>) => {
+    Animated.spring(slideAnimation, {
+      toValue: width,
+      useNativeDriver: true,
+      friction: 8,
+      tension: 40,
+    }).start(() => {
+      setStateFunction(false);
+      // Reset the animation value for the next opening
+      slideAnimation.setValue(width);
+    });
+  };
+
+  const closeAccountDetails = () => closePopup(setShowAccountDetails);
+  const closeVisibilitySettings = () => closePopup(setShowVisibilitySettings);
+  const closeNotificationSettings = () => closePopup(setShowNotificationSettings);
 
   const loadUserData = async () => {
     const storedUsername = await SecureStore.getItemAsync('username');
@@ -234,6 +324,26 @@ const SettingsPage: React.FC = () => {
 
   const toggleLocActive = async () => {
     const newStatus = !locActive;
+
+    if (!newStatus) { 
+      // If turning off location, attempt to show ad
+      if (adLoaded) {
+        setShowAd(true);
+        rewarded.show();
+        handleLocationToggle(newStatus);
+      } else {
+        // If ad is not loaded, continue anyway
+        console.log("Ad not loaded, continuing without showing ad");
+        handleLocationToggle(newStatus);
+      }
+      
+    } else {
+      // If turning on location, proceed normally
+      handleLocationToggle(newStatus);
+    }
+  };
+
+  const handleLocationToggle = async (newStatus: boolean) => {
     setLocActive(newStatus);
     await updatelocActive(newStatus);
     if (newStatus) {
@@ -286,129 +396,177 @@ const SettingsPage: React.FC = () => {
     setShowDeleteModal(false);
   };
 
-  return (
-    <ScrollView style={[styles.container, isDarkMode && styles.containerDark]}>
-      <SafeAreaView style={[styles.safeArea, isDarkMode && styles.safeAreaDark]}>
-        <TouchableHighlight
-          onPress={() => router.back()}
-          style={styles.backButton}
-          underlayColor={isDarkMode ? '#3D3D3D' : '#E5E5E5'}
+  const handleJoinDiscord = () => {
+    Linking.openURL('https://discord.gg/Gk8jqUnVd3');
+  };
+
+  const handleRateApp = async () => {
+    if (await StoreReview.hasAction()) {
+      StoreReview.requestReview();
+    } else {
+      // Fallback for devices that can't request review
+      if (Platform.OS === 'ios') {
+        Linking.openURL('https://apps.apple.com/app/your-app-id');
+      } else {
+        Linking.openURL('https://play.google.com/store/apps/details?id=your.app.package');
+      }
+    }
+  };
+
+  useEffect(() => {
+    fetchNotificationPreferences();
+  }, []);
+
+  const fetchNotificationPreferences = async () => {
+    try {
+      const preferences = await getNotificationPreferences();
+      setNotificationSettings(preferences);
+    } catch (error) {
+      console.error("Failed to fetch notification preferences:", error);
+      // Optionally, you can show an error message to the user
+    }
+  };
+
+  const toggleNotificationSetting = async (setting: keyof typeof notificationSettings) => {
+    const newSettings = {
+      ...notificationSettings,
+      [setting]: !notificationSettings[setting]
+    };
+    setNotificationSettings(newSettings);
+    
+    try {
+      await updateNotificationPreferences({ [setting]: newSettings[setting] });
+    } catch (error) {
+      console.error("Failed to update notification preference:", error);
+      // Revert the change if the update fails
+      setNotificationSettings(prevSettings => ({
+        ...prevSettings,
+        [setting]: !newSettings[setting]
+      }));
+      // Optionally, show an error message to the user
+      Alert.alert("Error", "Failed to update notification preference. Please try again.");
+    }
+  };
+
+  const renderPopup = (content: React.ReactNode) => (
+    <Animated.View
+      style={[
+        styles.settingsPopup,
+        isDarkMode && styles.settingsPopupDark,
+        { transform: [{ translateX: slideAnimation }] },
+      ]}
+    >
+      {content}
+    </Animated.View>
+  );
+
+  const renderAccountDetails = () => renderPopup(
+    <ScrollView contentContainerStyle={styles.popupScrollContent}>
+      <View style={styles.popupHeader}>
+        <TouchableOpacity
+          style={styles.popupbackButton}
+          onPress={closeAccountDetails}
         >
-          <View style={styles.backButtonContent}>
-            <ChevronLeft size={24} color={isDarkMode ? "#4CAF50" : "#007AFF"} />
-            <Text style={[styles.backButtonText, isDarkMode && styles.backButtonTextDark]}>Back</Text>
-          </View>
-        </TouchableHighlight>
+          <ChevronLeft size={24} color={isDarkMode ? "white" : "black"} />
+        </TouchableOpacity>
+        <Text style={[styles.popupTitle, isDarkMode && styles.popupTitleDark]}>Account Details</Text>
+      </View>
+      
+      <View style={styles.inputContainer}>
+        <User size={24} color={isDarkMode ? "white" : "black"} style={styles.inputIcon} />
+        <Input
+          placeholder={username || "Username"}
+          onChangeText={(text) => {
+            setUsername(text);
+            setUsernameError('');
+          }}
+          style={[styles.input, isDarkMode && styles.inputDark]}
+        />
+      </View>
+      {usernameError ? <Text style={styles.errorText}>{usernameError}</Text> : null}
+      <TouchableHighlight
+        onPress={handleUsernameChange}
+        style={[styles.button, isDarkMode && styles.buttonDark]}
+        underlayColor={isDarkMode ? '#5c2a4f' : '#662d60'}
+      >
+        <Text style={styles.buttonText}>Change Username</Text>
+      </TouchableHighlight>
 
-        <Text style={[styles.title, isDarkMode && styles.titleDark]}>Settings</Text>
+      <View style={styles.inputContainer}>
+        <Mail size={24} color={isDarkMode ? "white" : "black"} style={styles.inputIcon} />
+        <Input
+          placeholder={email || "Email"}
+          onChangeText={(text) => {
+            setEmail(text);
+            setEmailError('');
+          }}
+          style={[styles.input, isDarkMode && styles.inputDark]}
+        />
+      </View>
+      {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
+      <TouchableHighlight
+        onPress={() => handleEmailChange(email)}
+        style={[styles.button, isDarkMode && styles.buttonDark]}
+        underlayColor={isDarkMode ? '#5c2a4f' : '#662d60'}
+      >
+        <Text style={styles.buttonText}>Change Email</Text>
+      </TouchableHighlight>
 
-        <View style={styles.settingsContainer}>
-          <View style={styles.settingGroup}>
-            <Input
-              placeholder={username || "Username"}
-              onChangeText={(text) => {
-                setUsername(text);
-                setUsernameError('');
-              }}
-              icon={
-                <View style={styles.iconContainer}>
-                  <User size={24} color={isDarkMode ? "white" : "black"} />
-                </View>
-              }
-              style={[styles.input, isDarkMode && styles.inputDark]}
-              className="w-[90vw] h-[5vh] rounded-[20px]"
-            />
-            {usernameError ? (
-              <Text style={styles.errorText}>{usernameError}</Text>
-            ) : null}
-            <TouchableHighlight
-              onPress={handleUsernameChange}
-              style={[styles.button, isDarkMode && styles.buttonDark]}
-              underlayColor={isDarkMode ? '#5c2a4f' : '#662d60'}
-            >
-              <Text style={styles.buttonText}>Change Username</Text>
-            </TouchableHighlight>
+      <View style={styles.inputContainer}>
+        <LockKeyhole size={24} color={isDarkMode ? "white" : "black"} style={styles.inputIcon} />
+        <Input
+          placeholder="New Password"
+          value={newPassword}
+          secureTextEntry={true}
+          autoCorrect={false}
+          autoCapitalize="none"
+          onChangeText={(text) => {
+            setNewPassword(text);
+            setPasswordError('');
+          }}
+          style={[styles.input, isDarkMode && styles.inputDark]}
+        />
+      </View>
+      <View style={styles.inputContainer}>
+        <LockKeyhole size={24} color={isDarkMode ? "white" : "black"} style={styles.inputIcon} />
+        <Input
+          placeholder="Confirm New Password"
+          value={confirmPassword}
+          onChangeText={(text) => {
+            setConfirmPassword(text);
+            setPasswordError('');
+          }}
+          secureTextEntry
+          style={[styles.input, isDarkMode && styles.inputDark]}
+        />
+      </View>
+      {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
+      <TouchableHighlight
+        onPress={handlePasswordChange}
+        style={[styles.button, isDarkMode && styles.buttonDark]}
+        underlayColor={isDarkMode ? '#5c2a4f' : '#662d60'}
+      >
+        <Text style={styles.buttonText}>Change Password</Text>
+      </TouchableHighlight>
+    </ScrollView>
+  );
 
-            <View style={styles.settingGroup}>
-              <Input
-                placeholder={email || "Email"}
-                onChangeText={(text) => {
-                  setEmail(text);
-                  setEmailError('');
-                }}
-                icon={
-                  <View style={styles.iconContainer}>
-                    <Mail size={24} color={isDarkMode ? "white" : "black"} />
-                  </View>
-                }
-                style={[styles.input, isDarkMode && styles.inputDark]}
-                className="w-[90vw] h-[5vh] rounded-[20px]"
-              />
-              {emailError ? (
-                <Text style={styles.errorText}>{emailError}</Text>
-              ) : null}
-              <TouchableHighlight
-                onPress={() => handleEmailChange(email)}
-                style={[styles.button, isDarkMode && styles.buttonDark]}
-                underlayColor={isDarkMode ? '#5c2a4f' : '#662d60'}
-              >
-                <Text style={styles.buttonText}>Change Email</Text>
-              </TouchableHighlight>
-            </View>
-
-            <Input
-              placeholder="New Password"
-              value={newPassword}
-              secureTextEntry={true}
-              autoCorrect={false}
-              autoCapitalize="none"
-              onChangeText={(text) => {
-                setNewPassword(text);
-                setPasswordError('');
-              }}
-              icon={
-                <View style={styles.iconContainer}>
-                  <LockKeyhole size={24} color={isDarkMode ? "white" : "black"} />
-                </View>
-              }
-              style={[styles.input, isDarkMode && styles.inputDark]}
-              className="w-[90vw] h-[5vh] rounded-[20px]"
-            />
-            <Input
-              placeholder="Confirm New Password"
-              value={confirmPassword}
-              onChangeText={(text) => {
-                setConfirmPassword(text);
-                setPasswordError('');
-              }}
-              secureTextEntry
-              icon={
-                <View style={styles.iconContainer}>
-                  <LockKeyhole size={24} color={isDarkMode ? "white" : "black"} />
-                </View>
-              }
-              style={[styles.input, isDarkMode && styles.inputDark]}
-              className="w-[90vw] h-[5vh] rounded-[20px]"
-            />
-            {passwordError ? (
-              <Text style={styles.errorText}>{passwordError}</Text>
-            ) : null}
-            <TouchableHighlight
-              onPress={handlePasswordChange}
-              style={[styles.button, isDarkMode && styles.buttonDark]}
-              underlayColor={isDarkMode ? '#5c2a4f' : '#662d60'}
-            >
-              <Text style={styles.buttonText}>Change Password</Text>
-            </TouchableHighlight>
-
-
-            {Platform.OS === 'ios' && <AppIconChanger />}
-
-
-          </View>
-
-          <View style={[styles.visibilityContainer, isDarkMode && styles.visibilityContainerDark]}>
-            <Text style={[styles.visibilityText, isDarkMode && styles.visibilityTextDark]}>Visibility Mode</Text>
+  const renderVisibilitySettings = () => renderPopup(
+    <ScrollView contentContainerStyle={styles.popupScrollContent}>
+      <View style={styles.popupHeader}>
+        <TouchableOpacity
+          style={styles.popupbackButton}
+          onPress={closeVisibilitySettings}
+        >
+          <ChevronLeft size={24} color={isDarkMode ? "white" : "black"} />
+        </TouchableOpacity>
+        <Text style={[styles.popupTitle, isDarkMode && styles.popupTitleDark]}>Visibility Settings</Text>
+      </View>
+      
+      <View style={styles.visibilitySettingsContent}>
+        <View style={[styles.visibilityContainer, isDarkMode && styles.visibilityContainerDark]}>
+          <Text style={[styles.visibilityText, isDarkMode && styles.visibilityTextDark]}>Visibility Mode</Text>
+          <View style={styles.visibilityToggleContainer}>
             <Switch
               value={visibilityMode === 'global'}
               onValueChange={toggleVisibilityMode}
@@ -419,9 +577,11 @@ const SettingsPage: React.FC = () => {
               {visibilityMode === 'global' ? 'Global' : 'Friends Only'}
             </Text>
           </View>
+        </View>
 
-          <View style={[styles.visibilityContainer, isDarkMode && styles.visibilityContainerDark]}>
-            <Text style={[styles.visibilityText, isDarkMode && styles.visibilityTextDark]}>Location Active</Text>
+        <View style={[styles.visibilityContainer, isDarkMode && styles.visibilityContainerDark]}>
+          <Text style={[styles.visibilityText, isDarkMode && styles.visibilityTextDark]}>Location Active</Text>
+          <View style={styles.visibilityToggleContainer}>
             <Switch
               value={locActive}
               onValueChange={toggleLocActive}
@@ -432,6 +592,107 @@ const SettingsPage: React.FC = () => {
               {locActive ? 'On' : 'Off'}
             </Text>
           </View>
+        </View>
+      </View>
+    </ScrollView>
+  );
+
+  const renderNotificationSettings = () => renderPopup(
+    <ScrollView contentContainerStyle={styles.popupScrollContent}>
+      <View style={styles.popupHeader}>
+        <TouchableOpacity
+          style={styles.popupbackButton}
+          onPress={closeNotificationSettings}
+        >
+          <ChevronLeft size={24} color={isDarkMode ? "white" : "black"} />
+        </TouchableOpacity>
+        <Text style={[styles.popupTitle, isDarkMode && styles.popupTitleDark]}>Notification Settings</Text>
+      </View>
+      
+      {Object.entries(notificationSettings).map(([key, value]) => {
+        // Skip 'id' and 'userId' options
+        if (key === 'id' || key === 'userId') return null;
+
+        const title = key.split(/(?=[A-Z])/).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
+        const description = notificationDescriptions[key as keyof typeof notificationDescriptions];
+
+        return (
+          <View key={key} style={[styles.notificationSettingItem, isDarkMode && styles.notificationSettingItemDark]}>
+            <View style={styles.notificationSettingTextContainer}>
+              <Text style={[styles.notificationSettingText, isDarkMode && styles.notificationSettingTextDark]}>
+                {title}
+              </Text>
+              <Text style={[styles.notificationSettingDescription, isDarkMode && styles.notificationSettingDescriptionDark]}>
+                {description}
+              </Text>
+            </View>
+            <Switch
+              value={value}
+              onValueChange={() => toggleNotificationSetting(key as keyof typeof notificationSettings)}
+              trackColor={{ false: "#cbd5e0", true: "#773765" }}
+              thumbColor={value ? "#5c2a4f" : "#ffffff"}
+            />
+          </View>
+        );
+      })}
+    </ScrollView>
+  );
+
+  return (
+    <ScrollView style={[styles.container, isDarkMode && styles.containerDark]}>
+      <SafeAreaView style={[styles.safeArea, isDarkMode && styles.safeAreaDark]}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
+            <ChevronLeft size={24} color={isDarkMode ? "#4CAF50" : "#007AFF"} />
+          </TouchableOpacity>
+          <Text style={[styles.title, isDarkMode && styles.titleDark]}>Settings</Text>
+        </View>
+
+        <View style={styles.settingsContainer}>
+          <TouchableOpacity
+            style={[styles.settingsItem, isDarkMode && styles.settingsItemDark]}
+            onPress={() => setShowAccountDetails(true)}
+          >
+            <Text style={[styles.settingsItemText, isDarkMode && styles.settingsItemTextDark]}>Account Details</Text>
+            <ChevronRight size={24} color={isDarkMode ? "white" : "black"} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.settingsItem, isDarkMode && styles.settingsItemDark]}
+            onPress={() => setShowVisibilitySettings(true)}
+          >
+            <Text style={[styles.settingsItemText, isDarkMode && styles.settingsItemTextDark]}>Visibility</Text>
+            <ChevronRight size={24} color={isDarkMode ? "white" : "black"} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.settingsItem, isDarkMode && styles.settingsItemDark]}
+            onPress={() => setShowNotificationSettings(true)}
+          >
+            <Text style={[styles.settingsItemText, isDarkMode && styles.settingsItemTextDark]}>Notification Settings</Text>
+            <ChevronRight size={24} color={isDarkMode ? "white" : "black"} />
+          </TouchableOpacity>
+
+          {Platform.OS === 'ios' && (
+            <Card title="App Icon" icon={<Shield size={24} color={isDarkMode ? "white" : "black"} />}>
+              <AppIconChanger />
+            </Card>
+          )}
+
+          <Card title="Community & Feedback" icon={<MessageCircle size={24} color={isDarkMode ? "white" : "black"} />}>
+            <TouchableHighlight
+              onPress={handleJoinDiscord}
+              style={[styles.button, isDarkMode && styles.buttonDark]}
+              underlayColor={isDarkMode ? '#5c2a4f' : '#662d60'}
+            >
+              <View style={styles.buttonContent}>
+                <Text style={styles.buttonText}>Join our Discord Community</Text>
+              </View>
+            </TouchableHighlight>
+          </Card>
 
           <TouchableHighlight
             onPress={handleLogout}
@@ -441,7 +702,6 @@ const SettingsPage: React.FC = () => {
             <Text style={styles.signOutButtonText}>Sign Out</Text>
           </TouchableHighlight>
 
-          {/* Update the footer links */}
           <View style={styles.footerLinks}>
             <TouchableOpacity onPress={() => Linking.openURL('https://website.missilewars.dev/privacypolicy')}>
               <Text style={[styles.footerLinkText, isDarkMode && styles.footerLinkTextDark]}>
@@ -485,20 +745,6 @@ const SettingsPage: React.FC = () => {
               </TouchableOpacity>
             </View>
           </View>
-          {/* <View style={styles.debugMenuItem}>
-            <Text style={[styles.debugMenuLabel, isDarkMode && styles.debugMenuLabelDark]}>Cached Token:</Text>
-            <View style={styles.tokenContainer}>
-              <Text style={[styles.debugMenuValue, isDarkMode && styles.debugMenuValueDark]}>{truncateToken(token)}</Text>
-              <TouchableOpacity 
-                style={styles.copyButton} 
-                onPress={() => token && copyToClipboard(token)}
-              >
-                <Text style={styles.copyButtonText}>
-                  {isCopied ? 'Copied!' : 'Copy'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View> */}
           <View style={styles.debugMenuItem}>
             <Text style={[styles.debugMenuLabel, isDarkMode && styles.debugMenuLabelDark]}>Cached Notification Token:</Text>
             <View style={styles.tokenContainer}>
@@ -553,6 +799,10 @@ const SettingsPage: React.FC = () => {
             </View>
           </View>
         </Modal>
+
+        {showAccountDetails && renderAccountDetails()}
+        {showVisibilitySettings && renderVisibilitySettings()}
+        {showNotificationSettings && renderNotificationSettings()}
       </SafeAreaView>
     </ScrollView>
   );
@@ -574,38 +824,22 @@ const styles = StyleSheet.create({
   safeAreaDark: {
     backgroundColor: '#1E1E1E',
   },
-  backButton: {
-    alignSelf: 'flex-start',
-    marginLeft: 20,
-    marginTop: 20,
-    padding: 10,
-    borderRadius: 20,
-  },
-  backButtonContent: {
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
+    width: '100%',
+    paddingHorizontal: 20,
+    marginTop: 20,
+    marginBottom: 20,
   },
-  backButtonText: {
-    fontSize: 18,
-    color: '#007AFF',
-    marginLeft: 5,
-  },
-  backButtonTextDark: {
-    color: '#4CAF50',
-  },
-  iconContainer: {
-    position: 'absolute',
-    left: 1,
-    top: 10,
-    transform: [{ translateY: 2 }],
-    zIndex: 1,
+  backButton: {
+    padding: 10,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    marginBottom: 20,
-    marginTop: 10,
     color: '#2d3748',
+    marginLeft: 10,
   },
   titleDark: {
     color: '#FFF',
@@ -617,18 +851,6 @@ const styles = StyleSheet.create({
   settingGroup: {
     width: width * 1,
     marginBottom: 20,
-  },
-  input: {
-    width: width * 1,
-    height: 50,
-    paddingLeft: 40,
-    borderRadius: 10,
-    marginBottom: 10,
-    paddingHorizontal: 15,
-  },
-  inputDark: {
-    color: '#FFF',
-    paddingLeft: 40,
   },
   errorText: {
     color: '#e53e3e',
@@ -661,34 +883,6 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 14,
     fontWeight: 'bold',
-  },
-  visibilityContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-    padding: 15,
-    borderRadius: 10,
-    width: width * 1,
-    marginBottom: 15,
-  },
-  visibilityContainerDark: {
-    backgroundColor: '#2C2C2C',
-  },
-  visibilityText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#2d3748',
-  },
-  visibilityTextDark: {
-    color: '#FFF',
-  },
-  visibilityModeText: {
-    fontSize: 16,
-    color: '#4a5568',
-  },
-  visibilityModeTextDark: {
-    color: '#B0B0B0',
   },
   debugMenu: {
     marginTop: 20,
@@ -831,6 +1025,162 @@ const styles = StyleSheet.create({
   },
   deleteAccountTextDark: {
     color: '#FF6B6B',
+  },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  settingsItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 15,
+    width: '100%',
+  },
+  settingsItemDark: {
+    backgroundColor: '#2C2C2C',
+  },
+  settingsItemText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2d3748',
+  },
+  settingsItemTextDark: {
+    color: '#FFF',
+  },
+  settingsPopup: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 20,
+    borderBottomLeftRadius: 20,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  settingsPopupDark: {
+    backgroundColor: '#2C2C2C',
+  },
+  popupScrollContent: {
+    padding: 20,
+  },
+  popupHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    marginTop: 40, // Add some top margin to move the header down
+  },
+  popupbackButton: {
+    padding: 10,
+    marginRight: 10,
+  },
+  popupTitle: {
+    fontSize: 24, // Increased font size
+    fontWeight: 'bold',
+    color: '#2d3748',
+  },
+  popupTitleDark: {
+    color: '#FFF',
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
+    overflow: 'hidden',
+  },
+  inputIcon: {
+    padding: 15,
+    width: 54,
+    alignItems: 'center',
+  },
+  input: {
+    flex: 1,
+    height: 50,
+    paddingHorizontal: 10,
+  },
+  inputDark: {
+    color: '#FFF',
+    backgroundColor: '#3C3C3C',
+  },
+  visibilitySettingsContent: {
+    width: '100%',
+  },
+  visibilityContainer: {
+    backgroundColor: '#ffffff',
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 15,
+    width: '100%',
+  },
+  visibilityContainerDark: {
+    backgroundColor: '#2C2C2C',
+  },
+  visibilityText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2d3748',
+    marginBottom: 10,
+  },
+  visibilityTextDark: {
+    color: '#FFF',
+  },
+  visibilityToggleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  visibilityModeText: {
+    fontSize: 16,
+    color: '#4a5568',
+    marginLeft: 10,
+  },
+  visibilityModeTextDark: {
+    color: '#B0B0B0',
+  },
+  notificationSettingItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 15,
+    width: '100%',
+  },
+  notificationSettingItemDark: {
+    backgroundColor: '#2C2C2C',
+  },
+  notificationSettingTextContainer: {
+    flex: 1,
+    marginRight: 10,
+  },
+  notificationSettingText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2d3748',
+    marginBottom: 5,
+  },
+  notificationSettingTextDark: {
+    color: '#FFF',
+  },
+  notificationSettingDescription: {
+    fontSize: 14,
+    color: '#4a5568',
+  },
+  notificationSettingDescriptionDark: {
+    color: '#B0B0B0',
   },
 });
 

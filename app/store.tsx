@@ -10,12 +10,20 @@ import { addmoney } from '../api/money';
 import { additem } from '../api/add-item';
 import { getWeaponTypes, mapProductType, PremProduct, Product, shopimages } from '../api/store';
 import { getShopStyles } from '../map-themes/stylesheet';
+import { Ionicons } from '@expo/vector-icons'; // Add this import for the shopping cart icon
 
 const { width, height } = Dimensions.get('window');
 
 export const getImageForProduct = (identifier: string): ImageSourcePropType => {
   return shopimages[identifier] || shopimages.default;
 };
+
+export const products: Product[] = [
+  // { id: "20", name: 'LootDrop', price: 400, image: require('../assets/mapassets/Airdropicon.png'), description: 'A Loot Drop', type: 'Loot Drops' },
+  // { id: "21", name: 'Shield', price: 2000, image: require('../assets/mapassets/shield.png'), description: 'A Standard Shield', type: 'Other' },
+  // { id: "22", name: 'UltraShield', price: 5000, image: require('../assets/mapassets/shield.png'), description: 'A Ultra Shield', type: 'Other' },
+
+];
 
 
 const StorePage: React.FC = () => {
@@ -27,12 +35,12 @@ const StorePage: React.FC = () => {
   const [premiumProducts, setPremiumProducts] = useState<PremProduct[]>([]);
   const [cartAnimation] = useState(new Animated.Value(0));
   const [weapons, setWeapons] = useState<Product[]>([]);
-  const [selectedWeapon, setSelectedWeapon] = useState<Product | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [animation] = useState(new Animated.Value(0));
   const [isLoadingPremium, setIsLoadingPremium] = useState<boolean>(true);
   const [isPurchasing, setIsPurchasing] = useState<boolean>(false);
   const [cartTotal, setCartTotal] = useState<number>(0);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   const sortedWeapons = React.useMemo(() => {
     return [...weapons].sort((a, b) => a.price - b.price);
@@ -79,7 +87,7 @@ const StorePage: React.FC = () => {
           radius: other.radius,
         }));
 
-        setWeapons([...mappedMissiles, ...mappedLandmines, ...mappedOther]);
+        setWeapons([...mappedMissiles, ...mappedLandmines, ...mappedOther, ...products]);
       } catch (error) {
         console.error('Error fetching weapons:', error);
       }
@@ -290,25 +298,25 @@ const StorePage: React.FC = () => {
   const isDarkMode = colorScheme === 'dark';
   const styles = getShopStyles(isDarkMode ? 'dark' : 'light');
 
-  const getCategoryEmoji = (category: string) => {
-    switch (category) {
-      case 'Missiles':
-        return '🚀';
-      case 'Landmines':
-        return '💣';
-      case 'Loot Drops':
-        return '📦';
-      default:
-        return '🎮';
-    }
-  };
+  // Add these new styles or modify existing ones
+  const updatedStyles = StyleSheet.create({
+    ...styles,
+    productImage: {
+      ...styles.productImage,
+      width: 80,  // Set a fixed width
+      height: 80, // Set a fixed height
+      resizeMode: 'contain', // This ensures the image fits within the dimensions while maintaining aspect ratio
+    },
+    modalImage: {
+      ...styles.modalImage,
+      width: 120, // Larger size for the modal
+      height: 120,
+      resizeMode: 'contain',
+    },
+  });
 
-  const handlePress = (weapon: Product) => {
-    addToCart(weapon);
-  };
-
-  const handleLongPress = (weapon: Product) => {
-    setSelectedWeapon(weapon);
+  const handlePress = (product: Product) => {
+    setSelectedProduct(product);
     setModalVisible(true);
     Animated.spring(animation, {
       toValue: 1,
@@ -323,69 +331,102 @@ const StorePage: React.FC = () => {
       useNativeDriver: true,
     }).start(() => {
       setModalVisible(false);
-      setSelectedWeapon(null);
+      setSelectedProduct(null);
     });
   };
 
-  const renderWeaponDetails = () => {
-    if (!selectedWeapon) return null;
+  const renderProductDetails = () => {
+    if (!selectedProduct) return null;
+
+    const formatDuration = (minutes: number | undefined) => {
+      if (minutes === undefined) return 'N/A';
+      
+      const hours = Math.floor(minutes / 60);
+      const remainingMinutes = minutes % 60;
+      if (hours === 0) {
+        return `${remainingMinutes} mins`;
+      } else if (remainingMinutes === 0) {
+        return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+      } else {
+        return `${hours} ${hours === 1 ? 'hour' : 'hours'} ${remainingMinutes} mins`;
+      }
+    };
 
     return (
-      <ScrollView style={[styles.modalContainer, isDarkMode && styles.modalContainerDark]}>
-        <View style={styles.modalHeader}>
-          <Image source={selectedWeapon.image} style={styles.modalImage} />
-          <View style={styles.modalTitleContainer}>
-            <Text style={[styles.modalTitle, isDarkMode && styles.modalTitleDark]}>{selectedWeapon.name}</Text>
-            <Text style={[styles.modalPrice, isDarkMode && styles.modalPriceDark]}>🪙{selectedWeapon.price}</Text>
+      <ScrollView style={[updatedStyles.modalContainer, isDarkMode && updatedStyles.modalContainerDark]}>
+        <View style={updatedStyles.modalHeader}>
+          <Image source={selectedProduct.image} style={updatedStyles.modalImage} />
+          <View style={updatedStyles.modalTitleContainer}>
+            <Text style={[updatedStyles.modalTitle, isDarkMode && updatedStyles.modalTitleDark]}>{selectedProduct.name}</Text>
+            <Text style={[updatedStyles.modalPrice, isDarkMode && updatedStyles.modalPriceDark]}>🪙{selectedProduct.price}</Text>
           </View>
         </View>
-        <View style={styles.modalContent}>
-          <Text style={[styles.modalDescription, isDarkMode && styles.modalDescriptionDark]}>{selectedWeapon.description}</Text>
-          <View style={styles.modalStatsContainer}>
-            {selectedWeapon.type === 'Missiles' && (
+        <View style={updatedStyles.modalContent}>
+          <Text style={[updatedStyles.modalDescription, isDarkMode && updatedStyles.modalDescriptionDark]}>{selectedProduct.description}</Text>
+          <View style={updatedStyles.modalStatsContainer}>
+            {selectedProduct.type === 'Missiles' && (
               <>
-                <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>Speed: {selectedWeapon.speed} m/s</Text>
-                <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>Radius: {selectedWeapon.radius} m</Text>
-                <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>Fallout: {selectedWeapon.fallout} mins</Text>
-                <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>Damage: {selectedWeapon.damage} per 30 seconds</Text>
+                <Text style={[updatedStyles.modalText, isDarkMode && updatedStyles.modalTextDark]}>Speed: {selectedProduct.speed} m/s</Text>
+                <Text style={[updatedStyles.modalText, isDarkMode && updatedStyles.modalTextDark]}>Radius: {selectedProduct.radius} m</Text>
+                <Text style={[updatedStyles.modalText, isDarkMode && updatedStyles.modalTextDark]}>Fallout: {selectedProduct.fallout} mins</Text>
+                <Text style={[updatedStyles.modalText, isDarkMode && updatedStyles.modalTextDark]}>Damage: {selectedProduct.damage} per 30 seconds</Text>
               </>
             )}
-            {selectedWeapon.type === 'Landmines' && (
+            {selectedProduct.type === 'Landmines' && (
               <>
-              <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>Duration: {selectedWeapon.duration} hours</Text>
-              <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>Damage: {selectedWeapon.damage}</Text>
+                <Text style={[updatedStyles.modalText, isDarkMode && updatedStyles.modalTextDark]}>Duration: {selectedProduct.duration} hours</Text>
+                <Text style={[updatedStyles.modalText, isDarkMode && updatedStyles.modalTextDark]}>Damage: {selectedProduct.damage}</Text>
               </>
             )}
-            {selectedWeapon.type === 'Other' && (
+            {selectedProduct.type === 'Other' && (
               <>
-               <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>Duration: {selectedWeapon.duration} hours</Text>
-               <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>Radius: {selectedWeapon.radius} m</Text>
+                <Text style={[updatedStyles.modalText, isDarkMode && updatedStyles.modalTextDark]}>
+                  Duration: {formatDuration(selectedProduct.duration)}
+                </Text>
+                <Text style={[updatedStyles.modalText, isDarkMode && updatedStyles.modalTextDark]}>
+                  Radius: {selectedProduct.radius !== undefined ? `${selectedProduct.radius} m` : 'N/A'}
+                </Text>
               </>
             )}
           </View>
         </View>
+        <TouchableOpacity 
+          style={[updatedStyles.addToCartButton, isDarkMode && updatedStyles.addToCartButtonDark]} 
+          onPress={() => {
+            addToCart(selectedProduct);
+            closeModal();
+          }}
+        >
+          <Ionicons name="cart" size={24} color={isDarkMode ? "black" : "white"} />
+          <Text style={[updatedStyles.addToCartButtonText, isDarkMode && updatedStyles.addToCartButtonTextDark]}>Add to Cart</Text>
+        </TouchableOpacity>
       </ScrollView>
     );
   };
 
   const renderButton = ({ item }: { item: Product }) => (
     <TouchableOpacity
-      style={styles.productButton}
+      style={updatedStyles.productButton}
       onPress={() => handlePress(item)}
-      onLongPress={() => handleLongPress(item)}
-      delayLongPress={500}
     >
-      <Image source={item.image} style={styles.productImage} />
-      <Text style={[styles.productName, isDarkMode && styles.productNameDark]}>
-        {getCategoryEmoji(item.type)} {item.name}
+      <Image source={item.image} style={updatedStyles.productImage} />
+      <Text style={[updatedStyles.productName, isDarkMode && updatedStyles.productNameDark]}>
+        {item.name}
       </Text>
-      <Text style={[styles.productPrice, isDarkMode && styles.productPriceDark]}>🪙{item.price}</Text>
+      <Text style={[updatedStyles.productPrice, isDarkMode && updatedStyles.productPriceDark]}>🪙{item.price}</Text>
+      <TouchableOpacity 
+        style={[updatedStyles.addToCartButtonSmall, isDarkMode && updatedStyles.addToCartButtonSmallDark]} 
+        onPress={() => addToCart(item)}
+      >
+        <Ionicons name="cart" size={18} color={isDarkMode ? "black" : "white"} />
+        <Text style={[updatedStyles.addToCartButtonTextSmall, isDarkMode && updatedStyles.addToCartButtonTextSmallDark]}>Add to Cart</Text>
+      </TouchableOpacity>
     </TouchableOpacity>
   );
 
   const premrenderButton = ({ item }: { item: PremProduct }) => (
     <TouchableOpacity 
-      style={styles.productButton} 
+      style={updatedStyles.productButton} 
       onPress={() => {
         if (!isPurchasing) {
           buyItem(item).then(result => {
@@ -403,28 +444,28 @@ const StorePage: React.FC = () => {
         <ActivityIndicator size="small" color="#4CAF50" />
       ) : (
         <>
-          <Image source={item.image} style={styles.productImage} />
-          <Text style={[styles.productName, isDarkMode && styles.productNameDark]}>{item.name}</Text>
-          <Text style={[styles.productPrice, isDarkMode && styles.productPriceDark]}>{item.displayprice}</Text>
+          <Image source={item.image} style={updatedStyles.productImage} />
+          <Text style={[updatedStyles.productName, isDarkMode && updatedStyles.productNameDark]}>{item.name}</Text>
+          <Text style={[updatedStyles.productPrice, isDarkMode && updatedStyles.productPriceDark]}>{item.displayprice}</Text>
         </>
       )}
     </TouchableOpacity>
   );
 
   const renderTabs = () => (
-    <View style={styles.tabContainerMissiles}>
+    <View style={updatedStyles.tabContainerMissiles}>
       {['All', 'Missiles', 'Landmines', 'Other'].map((category) => (
         <TouchableOpacity 
           key={category} 
           onPress={() => setSelectedCategory(category)} 
           style={[
-            styles.tabMissiles,
-            selectedCategory === category && styles.selectedTab
+            updatedStyles.tabMissiles,
+            selectedCategory === category && updatedStyles.selectedTab
           ]}
         >
           <Text style={[
-            styles.missileTabText,
-            selectedCategory === category && styles.selectedTabText
+            updatedStyles.missileTabText,
+            selectedCategory === category && updatedStyles.selectedTabText
           ]}>
             {category}
           </Text>
@@ -449,26 +490,26 @@ const StorePage: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={[styles.container, isDarkMode && styles.containerDark]}>
+    <SafeAreaView style={[updatedStyles.container, isDarkMode && updatedStyles.containerDark]}>
       {!isDarkMode && (
-        <ImageBackground source={require('../assets/store/mapbackdrop.png')} style={styles.backgroundImage}>
-          <Image source={require('../assets/MissleWarsTitle.png')} style={styles.titleImage} />
-          <Image source={require('../assets/store/SHOP.png')} style={styles.shopImage} />
-          <View style={styles.headerContainer}>
-            <View style={styles.currencyContainer}>
-              <Text style={[styles.currencyText, isDarkMode && styles.currencyTextDark]}>
+        <ImageBackground source={require('../assets/store/mapbackdrop.png')} style={updatedStyles.backgroundImage}>
+          <Image source={require('../assets/MissleWarsTitle.png')} style={updatedStyles.titleImage} />
+          <Image source={require('../assets/store/SHOP.png')} style={updatedStyles.shopImage} />
+          <View style={updatedStyles.headerContainer}>
+            <View style={updatedStyles.currencyContainer}>
+              <Text style={[updatedStyles.currencyText, isDarkMode && updatedStyles.currencyTextDark]}>
                 🪙{currencyAmount}
               </Text>
             </View>
-            <View style={styles.switchContainer}>
+            <View style={updatedStyles.switchContainer}>
               <TouchableOpacity
                 style={[
-                  styles.toggleButton,
-                  isPremiumStore ? styles.coinsButton : styles.premiumButton,
+                  updatedStyles.toggleButton,
+                  isPremiumStore ? updatedStyles.coinsButton : updatedStyles.premiumButton,
                 ]}
                 onPress={() => setIsPremiumStore(!isPremiumStore)}
               >
-                <Text style={styles.toggleButtonText}>
+                <Text style={updatedStyles.toggleButtonText}>
                   {isPremiumStore ? 'Premium' : 'Coins'}
                 </Text>
               </TouchableOpacity>
@@ -478,7 +519,7 @@ const StorePage: React.FC = () => {
           {!isPremiumStore && (
         <>
           {renderTabs()}
-          <View style={styles.container}>
+          <View style={updatedStyles.container}>
             <FlatList
               data={selectedCategory === 'All' 
                 ? sortedWeapons 
@@ -486,22 +527,22 @@ const StorePage: React.FC = () => {
               keyExtractor={(item) => item.id.toString()}
               renderItem={renderButton}
               numColumns={3}
-              columnWrapperStyle={styles.columnWrapper}
-              contentContainerStyle={styles.contentContainer}
+              columnWrapperStyle={updatedStyles.columnWrapper}
+              contentContainerStyle={updatedStyles.contentContainer}
             />
-            <TouchableOpacity onPress={showCart} style={styles.cartButton}>
-              <Text style={styles.cartButtonText}>Go to Cart</Text>
+            <TouchableOpacity onPress={showCart} style={updatedStyles.cartButton}>
+              <Text style={updatedStyles.cartButtonText}>Go to Cart</Text>
             </TouchableOpacity>
           </View>
         </>
       )}
 
           {isPremiumStore && (
-            <View style={styles.container}>
+            <View style={updatedStyles.container}>
               {isLoadingPremium ? (
-                <View style={styles.loadingContainer}>
+                <View style={updatedStyles.loadingContainer}>
                   <ActivityIndicator size="large" color="#4CAF50" />
-                  <Text style={styles.loadingText}>Loading premium products...</Text>
+                  <Text style={updatedStyles.loadingText}>Loading premium products...</Text>
                 </View>
               ) : (
                 <FlatList
@@ -509,8 +550,8 @@ const StorePage: React.FC = () => {
                   keyExtractor={(item) => item.id.toString()}
                   renderItem={premrenderButton}
                   numColumns={3}
-                  columnWrapperStyle={styles.columnWrapper}
-                  contentContainerStyle={styles.contentContainer}
+                  columnWrapperStyle={updatedStyles.columnWrapper}
+                  contentContainerStyle={updatedStyles.contentContainer}
                 />
               )}
             </View>
@@ -518,7 +559,7 @@ const StorePage: React.FC = () => {
 
           {isCartVisible && (
             <Animated.View style={[
-              styles.cartContainer,
+              updatedStyles.cartContainer,
               {
                 transform: [{
                   translateY: cartAnimation.interpolate({
@@ -529,8 +570,8 @@ const StorePage: React.FC = () => {
               },
             ]}>
               <Cart cart={cart} onRemove={handleRemove} />
-              <TouchableOpacity onPress={hideCart} style={styles.cartButton}>
-                <Text style={styles.cartButtonText}>Back to Products</Text>
+              <TouchableOpacity onPress={hideCart} style={updatedStyles.cartButton}>
+                <Text style={updatedStyles.cartButtonText}>Back to Products</Text>
               </TouchableOpacity>
             </Animated.View>
           )}
@@ -542,7 +583,7 @@ const StorePage: React.FC = () => {
             onRequestClose={closeModal}
           >
             <TouchableOpacity
-              style={styles.modalOverlay}
+              style={updatedStyles.modalOverlay}
               activeOpacity={1}
               onPress={closeModal}
             >
@@ -561,31 +602,31 @@ const StorePage: React.FC = () => {
                   },
                 ]}
               >
-                {renderWeaponDetails()}
+                {renderProductDetails()}
               </Animated.View>
             </TouchableOpacity>
           </Modal>
         </ImageBackground>
       )}
       {isDarkMode && (
-        <View style={styles.containerDark}>
-          <Image source={require('../assets/MissleWarsTitle.png')} style={styles.titleImage} />
-          <Image source={require('../assets/store/SHOP.png')} style={styles.shopImage} />
-          <View style={styles.headerContainer}>
-            <View style={styles.currencyContainer}>
-              <Text style={[styles.currencyText, isDarkMode && styles.currencyTextDark]}>
+        <View style={updatedStyles.containerDark}>
+          <Image source={require('../assets/MissleWarsTitle.png')} style={updatedStyles.titleImage} />
+          <Image source={require('../assets/store/SHOP.png')} style={updatedStyles.shopImage} />
+          <View style={updatedStyles.headerContainer}>
+            <View style={updatedStyles.currencyContainer}>
+              <Text style={[updatedStyles.currencyText, isDarkMode && updatedStyles.currencyTextDark]}>
                 🪙{currencyAmount}
               </Text>
             </View>
-            <View style={styles.switchContainer}>
+            <View style={updatedStyles.switchContainer}>
               <TouchableOpacity
                 style={[
-                  styles.toggleButton,
-                  isPremiumStore ? styles.coinsButton : styles.premiumButton,
+                  updatedStyles.toggleButton,
+                  isPremiumStore ? updatedStyles.coinsButton : updatedStyles.premiumButton,
                 ]}
                 onPress={() => setIsPremiumStore(!isPremiumStore)}
               >
-                <Text style={styles.toggleButtonText}>
+                <Text style={updatedStyles.toggleButtonText}>
                   {isPremiumStore ? 'Premium' : 'Coins'}
                 </Text>
               </TouchableOpacity>
@@ -595,28 +636,28 @@ const StorePage: React.FC = () => {
           {!isPremiumStore && (
             <>
               {renderTabs()}
-              <View style={styles.container}>
+              <View style={updatedStyles.container}>
                 <FlatList
                   data={selectedCategory === 'All' ? sortedWeapons : sortedWeapons.filter(p => p.type === selectedCategory || (selectedCategory === 'Other' && (p.type === 'Other' || p.type === 'Loot Drops')))}
                   keyExtractor={(item) => item.id.toString()}
                   renderItem={renderButton}
                   numColumns={3}
-                  columnWrapperStyle={styles.columnWrapper}
-                  contentContainerStyle={styles.contentContainer}
+                  columnWrapperStyle={updatedStyles.columnWrapper}
+                  contentContainerStyle={updatedStyles.contentContainer}
                 />
-                <TouchableOpacity onPress={showCart} style={styles.cartButton}>
-                  <Text style={styles.cartButtonText}>Go to Cart</Text>
+                <TouchableOpacity onPress={showCart} style={updatedStyles.cartButton}>
+                  <Text style={updatedStyles.cartButtonText}>Go to Cart</Text>
                 </TouchableOpacity>
               </View>
             </>
           )}
 
           {isPremiumStore && (
-            <View style={styles.container}>
+            <View style={updatedStyles.container}>
               {isLoadingPremium ? (
-                <View style={styles.loadingContainer}>
+                <View style={updatedStyles.loadingContainer}>
                   <ActivityIndicator size="large" color="#4CAF50" />
-                  <Text style={styles.loadingText}>Loading premium products...</Text>
+                  <Text style={updatedStyles.loadingText}>Loading premium products...</Text>
                 </View>
               ) : (
                 <FlatList
@@ -624,8 +665,8 @@ const StorePage: React.FC = () => {
                   keyExtractor={(item) => item.id.toString()}
                   renderItem={premrenderButton}
                   numColumns={3}
-                  columnWrapperStyle={styles.columnWrapper}
-                  contentContainerStyle={styles.contentContainer}
+                  columnWrapperStyle={updatedStyles.columnWrapper}
+                  contentContainerStyle={updatedStyles.contentContainer}
                 />
               )}
             </View>
@@ -633,7 +674,7 @@ const StorePage: React.FC = () => {
 
           {isCartVisible && (
             <Animated.View style={[
-              styles.cartContainer,
+              updatedStyles.cartContainer,
               {
                 transform: [{
                   translateY: cartAnimation.interpolate({
@@ -644,8 +685,8 @@ const StorePage: React.FC = () => {
               },
             ]}>
               <Cart cart={cart} onRemove={handleRemove} />
-              <TouchableOpacity onPress={hideCart} style={styles.cartButton}>
-                <Text style={styles.cartButtonText}>Back to Products</Text>
+              <TouchableOpacity onPress={hideCart} style={updatedStyles.cartButton}>
+                <Text style={updatedStyles.cartButtonText}>Back to Products</Text>
               </TouchableOpacity>
             </Animated.View>
           )}
@@ -657,7 +698,7 @@ const StorePage: React.FC = () => {
             onRequestClose={closeModal}
           >
             <TouchableOpacity
-              style={styles.modalOverlay}
+              style={updatedStyles.modalOverlay}
               activeOpacity={1}
               onPress={closeModal}
             >
@@ -676,7 +717,7 @@ const StorePage: React.FC = () => {
                   },
                 ]}
               >
-                {renderWeaponDetails()}
+                {renderProductDetails()}
               </Animated.View>
             </TouchableOpacity>
           </Modal>
@@ -685,5 +726,4 @@ const StorePage: React.FC = () => {
     </SafeAreaView>
   );
 }
-
 export default StorePage;

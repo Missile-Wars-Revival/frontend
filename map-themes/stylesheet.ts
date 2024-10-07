@@ -275,7 +275,7 @@ export const getShopStyles = (colorScheme: 'light' | 'dark') => StyleSheet.creat
       borderRadius: 20,
       width: '90%',
       maxHeight: '80%',
-      overflow: 'hidden',
+      padding: 20,
     },
     modalContainerDark: {
       backgroundColor: '#2C2C2C',
@@ -283,14 +283,13 @@ export const getShopStyles = (colorScheme: 'light' | 'dark') => StyleSheet.creat
     modalHeader: {
       flexDirection: 'row',
       alignItems: 'center',
-      padding: 20,
-      borderBottomWidth: 1,
-      borderBottomColor: colorScheme === 'dark' ? '#444' : '#e0e0e0',
+      marginBottom: 20,
     },
     modalImage: {
-      width: 80,
-      height: 80,
+      width: 100,
+      height: 100,
       marginRight: 15,
+      resizeMode: 'contain',
     },
     modalTitleContainer: {
       flex: 1,
@@ -300,6 +299,7 @@ export const getShopStyles = (colorScheme: 'light' | 'dark') => StyleSheet.creat
       fontWeight: 'bold',
       color: '#000',
       marginBottom: 5,
+      flexWrap: 'wrap',
     },
     modalTitleDark: {
       color: '#FFF',
@@ -313,7 +313,7 @@ export const getShopStyles = (colorScheme: 'light' | 'dark') => StyleSheet.creat
       color: '#81C784',
     },
     modalContent: {
-      padding: 20,
+      flex: 1,
     },
     modalDescription: {
       fontSize: 16,
@@ -327,6 +327,7 @@ export const getShopStyles = (colorScheme: 'light' | 'dark') => StyleSheet.creat
       backgroundColor: colorScheme === 'dark' ? '#3D3D3D' : '#f5f5f5',
       borderRadius: 10,
       padding: 15,
+      marginBottom: 15,
     },
     modalText: {
       fontSize: 16,
@@ -507,6 +508,48 @@ export const getShopStyles = (colorScheme: 'light' | 'dark') => StyleSheet.creat
       color: '#ffffff',
       fontSize: 20,
       fontWeight: 'bold',
+    },
+    addToCartButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: '#4CAF50',
+      padding: 10,
+      borderRadius: 5,
+      marginTop: 10,
+    },
+    addToCartButtonDark: {
+      backgroundColor: '#45a049',
+    },
+    addToCartButtonText: {
+      color: 'white',
+      marginLeft: 10,
+      fontSize: 16,
+      fontWeight: 'bold',
+    },
+    addToCartButtonTextDark: {
+      color: 'black',
+    },
+    addToCartButtonSmall: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: '#4CAF50',
+      padding: 5,
+      borderRadius: 5,
+      marginTop: 5,
+    },
+    addToCartButtonSmallDark: {
+      backgroundColor: '#45a049',
+    },
+    addToCartButtonTextSmall: {
+      color: 'white',
+      marginLeft: 5,
+      fontSize: 12,
+      fontWeight: 'bold',
+    },
+    addToCartButtonTextSmallDark: {
+      color: 'black',
     },
   });
 

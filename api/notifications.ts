@@ -1,3 +1,4 @@
+import { AxiosResponse } from "axios";
 import axiosInstance from "./axios-instance";
 import * as SecureStore from "expo-secure-store";
 
@@ -42,9 +43,9 @@ export const markNotificationAsRead = async (notificationId: string): Promise<vo
 			throw new Error('Authentication token not found');
 		}
 
-		await axiosInstance.patch("/api/markNotificationAsRead", { 
+		await axiosInstance.patch("/api/markNotificationAsRead", {
 			notificationId,
-			token 
+			token
 		});
 	} catch (error) {
 		console.error("Failed to mark notification as read:", error);
@@ -59,7 +60,7 @@ export const markMessageNotificationAsRead = async (): Promise<void> => {
 			throw new Error('Authentication token not found');
 		}
 
-		await axiosInstance.delete("/api/deleteMessageNotifications", { 
+		await axiosInstance.delete("/api/deleteMessageNotifications", {
 			data: { token }
 		});
 	} catch (error) {
@@ -70,16 +71,79 @@ export const markMessageNotificationAsRead = async (): Promise<void> => {
 
 export const deleteNotification = async (notificationId: string) => {
 	try {
-	  const token = await SecureStore.getItemAsync("token");
-	  if (!token) {
-		throw new Error('Authentication token not found');
-	  }
-  
-	  await axiosInstance.delete("/api/deleteNotification", { 
-		data: { token, notificationId }
-	  });
+		const token = await SecureStore.getItemAsync("token");
+		if (!token) {
+			throw new Error('Authentication token not found');
+		}
+
+		await axiosInstance.delete("/api/deleteNotification", {
+			data: { token, notificationId }
+		});
 	} catch (error) {
-	  console.error("Failed to delete notification:", error);
-	  throw error;
+		console.error("Failed to delete notification:", error);
+		throw error;
 	}
-  };
+};
+
+interface NotificationPreferences {
+	id: number;
+	userId: number;
+	incomingEntities: boolean;
+	entityDamage: boolean;
+	entitiesInAirspace: boolean;
+	eliminationReward: boolean;
+	lootDrops: boolean;
+	friendRequests: boolean;
+	leagues: boolean;
+}
+
+interface NotificationPreferencesResponse {
+	preferences: NotificationPreferences;
+}
+
+interface UpdatePreferencesResponse {
+	message: string;
+	preferences: NotificationPreferences;
+}
+
+
+export const getNotificationPreferences = async (): Promise<NotificationPreferences> => {
+	try {
+		const token = await SecureStore.getItemAsync("token");
+		if (!token) {
+			console.log('Token not found');
+			throw new Error('Authentication token not found');
+		}
+
+		const response: AxiosResponse<NotificationPreferencesResponse> = await axiosInstance.get("/api/notificationPreferences", {
+			params: { token },
+		});
+
+		return response.data.preferences;
+	} catch (error) {
+		console.error("Failed to fetch notification preferences:", error);
+		throw error;
+	}
+};
+
+export const updateNotificationPreferences = async (
+	preferences: Partial<NotificationPreferences>
+): Promise<NotificationPreferences> => {
+	try {
+		const token = await SecureStore.getItemAsync("token");
+		if (!token) {
+			console.log('Token not found');
+			throw new Error('Authentication token not found');
+		}
+
+		const response: AxiosResponse<UpdatePreferencesResponse> = await axiosInstance.patch(
+			"/api/notificationPreferences",
+			{ token, preferences }
+		);
+
+		return response.data.preferences;
+	} catch (error) {
+		console.error("Failed to update notification preferences:", error);
+		throw error;
+	}
+};

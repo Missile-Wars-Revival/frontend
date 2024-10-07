@@ -6,6 +6,7 @@ import { InventoryItem } from '../../types/types';
 import useFetchInventory from '../../hooks/websockets/inventoryhook';
 import { useColorScheme } from 'react-native';
 import { router } from 'expo-router';
+import { itemimages } from '../../app/profile';
 
 const tw = create(require('../../tailwind.config.js'));
 
@@ -40,14 +41,6 @@ const useLandmineLib = (): LandmineType[] => {
   return landmineLibrary;
 };
 
-//landmine images for both map and library
-export const LandmineImages: LandmineImages = {
-  BigBertha: require('../../assets/missiles/BigBertha.png'),
-  Bombabom: require('../../assets/missiles/Bombabom.png'),
-  BunkerBlocker: require('../../assets/missiles/BunkerBlocker.png'),
-  // ... other landmine images
-};
-
 const LandmineSelector = ({ onSelect, landmines }: { onSelect: (landmine: string) => void, landmines: LandmineType[] }) => {
   const isDarkMode = useColorScheme() === 'dark';
 
@@ -60,7 +53,7 @@ const LandmineSelector = ({ onSelect, landmines }: { onSelect: (landmine: string
           onPress={() => onSelect(landmine.type)} 
           style={tw`flex-row items-center ${isDarkMode ? 'bg-gray-900' : 'bg-white'} p-2 mb-1 rounded-lg shadow`}
         >
-          <Image source={LandmineImages[landmine.type]} style={tw`w-8 h-8 mr-2`} />
+          <Image source={itemimages[landmine.type]} style={tw`w-8 h-8 mr-2`} />
           <View style={tw`flex-1`}>
             <Text style={tw`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>{landmine.type}</Text>
             <Text style={tw`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Quantity: {landmine.quantity}</Text>

@@ -31,17 +31,17 @@ import { router } from "expo-router";
 import HealthBar from "../components/healthbar";
 import { getisAlive, setHealth, updateisAlive } from "../api/health";
 import { playDeathSound } from "../util/sounds/deathsound";
-import { RewardedAd, RewardedAdEventType } from "react-native-google-mobile-ads";
+import { RewardedAd, RewardedAdEventType, TestIds } from "react-native-google-mobile-ads";
 import useFetchHealth from "../hooks/websockets/healthhook";
 import { getlocActive } from "../api/locActive";
 import PlayerViewButton from "../components/PlayerViewButton";
 import { MissileLibrary } from "../components/Missile/missile";
 import MissileFiringAnimation from "../components/Animations/MissileFiring";
 
-const adUnitId = Platform.select({
+const adUnitId = __DEV__ ? TestIds.REWARDED : Platform.select({
   ios: 'ca-app-pub-4035842398612787/8310612855',
-  android: 'ca-app-pub-4035842398612787~8146111264',
-  default: 'ca-app-pub-4035842398612787~8146111264',
+  android: 'ca-app-pub-4035842398612787/2779084579',
+  default: 'ca-app-pub-4035842398612787/2779084579',
 });
 
 const rewarded = RewardedAd.createForAdRequest(adUnitId, {

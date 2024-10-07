@@ -18,6 +18,7 @@ import { Notification } from "./notifications";
 import PermissionsCheck from '../components/PermissionsCheck';
 import Purchases from 'react-native-purchases';
 import * as ExpoSplashScreen from 'expo-splash-screen';
+import { LandmineProvider } from '../util/Context/landminecontext';
 
 const WebSocketProvider = ({ children }: WebSocketProviderProps) => {
   const { data, missiledata, landminedata, lootdata, otherdata, healthdata, friendsdata, inventorydata, playerlocations, leaguesData, sendWebsocket } = useWebSocket();
@@ -146,9 +147,11 @@ export default function RootLayout() {
       <CountdownProvider>
         <AuthProvider>
           <WebSocketProvider>
+          <LandmineProvider>
             <PermissionsCheck>
               <RootLayoutNav />
             </PermissionsCheck>
+            </LandmineProvider>
           </WebSocketProvider>
         </AuthProvider>
       </CountdownProvider>

@@ -8,6 +8,7 @@ import { create } from 'twrnc';
 import useFetchInventory from "../../hooks/websockets/inventoryhook";
 import { InventoryItem } from '../../types/types';
 import { router } from 'expo-router';
+import { itemimages } from "../../app/profile";
 
 const tw = create(require('../../tailwind.config.js'));
 
@@ -44,23 +45,6 @@ const useMissileLib = (): Missilelib[] => {
 interface MissileImages {
   [key: string]: any;
 }
-// For Missile Images for both markers and library
-export const missileImages: MissileImages = {
-  Amplifier: require('../../assets/missiles/Amplifier.png'),
-  Ballista: require('../../assets/missiles/Ballista.png'),
-  BigBertha: require('../../assets/missiles/BigBertha.png'),
-  Bombabom: require('../../assets/missiles/Bombabom.png'),
-  BunkerBlocker: require('../../assets/missiles/BunkerBlocker.png'),
-  Buzzard: require('../../assets/missiles/Buzzard.png'),
-  ClusterBomb: require('../../assets/missiles/ClusterBomb.png'),
-  CorporateRaider: require('../../assets/missiles/CorporateRaider.png'),
-  GutShot: require('../../assets/missiles/GutShot.png'),
-  TheNuke: require('../../assets/missiles/TheNuke.png'),
-  ShieldBreaker: require('../../assets/missiles/Yokozuna.png'),
-  Zippy: require('../../assets/missiles/Zippy.png'),
-
-  // Add other missile images here
-};
 
 const MissileSelector = ({ onSelect, missiles, onClose }: { onSelect: (missile: string) => void, missiles: Missilelib[], onClose: () => void }) => {
   const isDarkMode = useColorScheme() === 'dark';
@@ -92,7 +76,7 @@ const MissileSelector = ({ onSelect, missiles, onClose }: { onSelect: (missile: 
           onPress={() => onSelect(missile.type)} 
           style={tw`flex-row items-center ${isDarkMode ? 'bg-gray-900' : 'bg-white'} p-2 mb-1 rounded-lg shadow`}
         >
-          <Image source={missileImages[missile.type]} style={tw`w-8 h-8 mr-2`} />
+          <Image source={itemimages[missile.type]} style={tw`w-8 h-8 mr-2`} />
           <View style={tw`flex-1`}>
             <Text style={tw`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>{missile.type}</Text>
             <Text style={tw`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Quantity: {missile.quantity}</Text>
@@ -146,7 +130,7 @@ export const MissileLibrary = ({ playerName, onMissileFired, onClose }: { player
             <Text style={tw`text-lg font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Confirm Missile Launch</Text>
             <Text style={tw`${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Target: {playerName}</Text>
             <Text style={tw`${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Missile Type: {selectedMissile}</Text>
-            <Image source={missileImages[selectedMissile || ""]} style={tw`w-24 h-24 mx-auto my-4`} />
+            <Image source={itemimages[selectedMissile || ""]} style={tw`w-24 h-24 mx-auto my-4`} />
             <View style={tw`flex-row justify-around w-full mt-4`}>
               <TouchableOpacity style={tw`bg-red-500 px-6 py-2 rounded-lg`} onPress={handleFire}>
                 <Text style={tw`text-white font-bold`}>Fire</Text>

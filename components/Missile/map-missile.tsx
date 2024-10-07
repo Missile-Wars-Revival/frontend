@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { View, Image, Platform, ScrollView, Text, useColorScheme, Modal, TouchableOpacity, Dimensions } from "react-native";
 import { Circle, Marker, Polyline } from "react-native-maps";
-import { missileImages } from "./missile";
 import { GeoLocation, Missile } from "middle-earth";
 import { convertimestampfuturemissile } from "../../util/get-time-difference";
 import { getWeaponTypes, Product } from "../../api/store";
 import { getImageForProduct } from "../../app/store";
 import { getShopStyles } from "../../map-themes/stylesheet";
+import { itemimages } from "../../app/profile";
 
 interface AllMissilesProps {
     missileData: Missile[];
@@ -121,7 +121,7 @@ export const MapMissile = (missileProps: MissileProps) => {
         longitude: Number(coord.longitude)
     }));
 
-    const resizedmissileimage = missileImages[missileProps.type];
+    const resizedmissileimage = itemimages[missileProps.type];
     const resizedmissileicon = { width: 50, height: 50 }; // Custom size for image
 
     // Convert timestamp to a future time in a readable format
@@ -160,7 +160,7 @@ export const MapMissile = (missileProps: MissileProps) => {
                 <ScrollView>
                     <View style={styles.modalHeader}>
                         <Image 
-                            source={missileImages[selectedMissile.type] || fallbackImage} 
+                            source={itemimages[selectedMissile.type] || fallbackImage} 
                             style={styles.modalImage}
                             defaultSource={fallbackImage}
                         />

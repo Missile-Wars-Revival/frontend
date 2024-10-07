@@ -12,7 +12,6 @@ import { isInactiveFor12Hours, getTimeDifference, convertimestampfuturemissile }
 import { useRouter } from "expo-router";
 import useFetchMissiles from '../hooks/websockets/missilehook';
 import { Missile } from "middle-earth";
-import { missileImages } from "./Missile/missile";
 import MapView, { Marker } from 'react-native-maps';
 import { MapStyle } from '../types/types';
 import { androidCherryBlossomMapStyle } from '../map-themes/Android-themes/cherryBlossomMapStyle';
@@ -22,6 +21,7 @@ import { androidDefaultMapStyle } from '../map-themes/Android-themes/defaultMapS
 import { androidRadarMapStyle } from '../map-themes/Android-themes/radarMapStyle';
 import { IOSDefaultMapStyle, IOSRadarMapStyle, IOSCherryBlossomMapStyle, IOSCyberpunkMapStyle, IOSColorblindMapStyle } from '../map-themes/IOS-themes/themestemp';
 import FriendAddedAnimation from "../components/Animations/FriendAddedAnimation";
+import { itemimages } from '../app/profile';
 
 interface Player {
   username: string;
@@ -301,7 +301,7 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
       onPress={() => setSelectedMissile(item)}
     >
       <Image 
-        source={missileImages[item.type] || require('../assets/logo.png')} 
+        source={itemimages[item.type] || require('../assets/logo.png')} 
         style={styles.missileImage} 
       />
       <View style={styles.playerInfo}>
@@ -327,7 +327,7 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
           <Text style={[styles.backButtonText, isDarkMode && styles.backButtonTextDark]}>← Back</Text>
         </TouchableOpacity>
         <Image 
-          source={missileImages[selectedMissile.type] || require('../assets/logo.png')} 
+          source={itemimages[selectedMissile.type] || require('../assets/logo.png')} 
           style={styles.missileDetailImage} 
         />
         <Text style={[styles.missileDetailTitle, isDarkMode && styles.missileDetailTitleDark]}>{selectedMissile.type}</Text>
@@ -374,7 +374,7 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
   };
 
   return (
-    <View>
+    <View style={styles.container}>
       <TouchableOpacity
         style={[
           styles.playerViewButton,
@@ -436,17 +436,19 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
               )}
             </Animated.View>
           </View>
+          
+          {showAnimation && (
+            <View style={styles.animationOverlay}>
+              <FriendAddedAnimation
+                onAnimationComplete={() => {
+                  setShowAnimation(false);
+                  Alert.alert("Success", "Friend added successfully!");
+                }}
+              />
+            </View>
+          )}
         </View>
       </Modal>
-
-      {showAnimation && (
-        <FriendAddedAnimation
-          onAnimationComplete={() => {
-            setShowAnimation(false);
-            Alert.alert("Success", "Friend added successfully!");
-          }}
-        />
-      )}
     </View>
   );
 };
@@ -669,6 +671,19 @@ const styles = StyleSheet.create({
   contentContainer: {
     height: height * 0.6, // Set a fixed height for the content area
     justifyContent: 'center',
+  },
+  container: {
+    position: 'relative',
+  },
+  animationOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent background
   },
 });
 

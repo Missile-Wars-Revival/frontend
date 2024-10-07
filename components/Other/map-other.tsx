@@ -3,8 +3,9 @@ import { View, Image } from "react-native";
 import { Marker, Circle } from "react-native-maps";
 import { GeoLocation, Other } from "middle-earth";
 import { convertimestampfuture } from "../../util/get-time-difference";
-const resizedOtherimage = require("../../assets/mapassets/shield.png"); // Your custom image path
-const resizedOthericon = { width: 50, height: 50 }; // Custom size for image
+import { itemimages } from "../../app/profile";
+
+const fallbackImage = require('../../assets/logo.png');
 
 interface AllOtherProps {
     OtherLocations: Other[];
@@ -33,6 +34,10 @@ export const AllOther = (props: AllOtherProps) => {
 
 export const OtherDrop = (props: OtherProps) => {
     const { text } = convertimestampfuture(props.expiretime);
+
+    const resizedotherimage = itemimages[props.type];
+    const resizedothericon = { width: 50, height: 50 };
+
     return (
         <View>
             <Circle
@@ -52,7 +57,7 @@ export const OtherDrop = (props: OtherProps) => {
                 title={`${props.type}`}
                 description={`${text}`}
             >
-                <Image source={resizedOtherimage} style={resizedOthericon} />
+                <Image source={resizedotherimage} style={resizedothericon} />
             </Marker>
         </View>
     )

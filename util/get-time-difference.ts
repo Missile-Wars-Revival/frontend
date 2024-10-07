@@ -41,21 +41,29 @@ export const convertimestampfuture = (timestamp: string | number | Date) => {
   const currentTime = new Date().getTime();
   const eventTime = new Date(timestamp).getTime();
   const differenceInMilliseconds = eventTime - currentTime;
-  const differenceInSeconds = Math.floor(
-    differenceInMilliseconds / 1000
-  );
-
+  const differenceInSeconds = Math.floor(differenceInMilliseconds / 1000);
   const differenceInMinutes = Math.floor(differenceInSeconds / 60);
   const differenceInHours = Math.floor(differenceInMinutes / 60);
 
   if (differenceInMilliseconds < 0) {
-    return { text: `Expired` }; // Handle past timestamps if needed
-  } else if (differenceInHours < 1) {
+    return { text: `Expired` };
+  } else if (differenceInMinutes < 60) {
     return { text: `Expires in: ${differenceInMinutes} min` };
-  } else if (differenceInHours === 1) {
-    return { text: `Expires in: 1 hour` };
+  } else if (differenceInHours < 24) {
+    const remainingMinutes = differenceInMinutes % 60;
+    if (remainingMinutes === 0) {
+      return { text: `Expires in: ${differenceInHours} hour${differenceInHours > 1 ? 's' : ''}` };
+    } else {
+      return { text: `Expires in: ${differenceInHours} hour${differenceInHours > 1 ? 's' : ''} ${remainingMinutes} min` };
+    }
   } else {
-    return { text: `Expires in: ${differenceInHours} hours` };
+    const days = Math.floor(differenceInHours / 24);
+    const remainingHours = differenceInHours % 24;
+    if (remainingHours === 0) {
+      return { text: `Expires in: ${days} day${days > 1 ? 's' : ''}` };
+    } else {
+      return { text: `Expires in: ${days} day${days > 1 ? 's' : ''} ${remainingHours} hour${remainingHours > 1 ? 's' : ''}` };
+    }
   }
 };
 //missile

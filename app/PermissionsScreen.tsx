@@ -81,6 +81,7 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGrant
     switch (permissionType) {
       case 'location':
         setLocationPermission(status === 'granted');
+        getlocation();
         break;
       case 'notification':
         setNotificationPermission(status === 'granted');
@@ -92,7 +93,7 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGrant
     if (Platform.OS === 'ios') {
       const { status } = await Location.requestForegroundPermissionsAsync();
       setLocationPermission(status === 'granted');
-      await getlocation();
+      getlocation();
     } else {
       handlePermissionRequest('location', Location.requestForegroundPermissionsAsync);
     }

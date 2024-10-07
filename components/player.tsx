@@ -5,6 +5,7 @@ import { MissileLibrary } from "./Missile/missile";
 import { Players } from "./map-players";
 import { useUserName } from "../util/fetchusernameglobal";
 import { fetchAndCacheImage } from "../util/imagecache";
+import { useUserLeague } from "../hooks/api/useUserLEague";
 
 const resizedplayerimage = require("../assets/mapassets/Female_Avatar_PNG.png");
 // const carImage = require("../assets/transport/car.png");
@@ -126,6 +127,17 @@ interface PlayerProps {
   transportStatus: string;
   index: number;
 }
+
+export const getLeagueAirspace = (league: string): number => {
+  switch (league.toLowerCase()) {
+    case 'bronze': return 30;
+    case 'silver': return 40;
+    case 'gold': return 50;
+    case 'diamond': return 70;
+    case 'legend': return 100;
+    default: return 20; 
+  }
+};
 
 export const PlayerComp = (props: PlayerProps) => {
   const [selectedMarkerIndex, setSelectedMarkerIndex] = useState<number | null>(null);

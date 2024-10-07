@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchTopLeagues, fetchCurrentLeague, fetchLeaguePlayers, top100Players } from '../api/league';
 import { fetchAndCacheImage } from '../util/imagecache'; 
+import { getLeagueAirspace } from '../components/player';
 
 const DEFAULT_IMAGE = require('../assets/mapassets/Female_Avatar_PNG.png');
 
@@ -21,10 +22,6 @@ interface Player {
   points: number;
   isCurrentUser: boolean;
   profileImageUrl?: string;
-}
-
-interface LeaguePlayersResponse {
-  players: Player[];
 }
 
 interface League {
@@ -157,6 +154,15 @@ const LeagueRankingPage: React.FC = () => {
                     <Text style={styles.currentLeagueDivision}>Division {currentLeague.division}</Text>
                   </View>
                 </View>
+
+                <View style={styles.spacer} />
+
+                <Text style={styles.leagueAirspace}>
+                  Your current airspace: {getLeagueAirspace(currentLeague.league)} m
+                </Text>
+                <Text style={styles.airspaceDescription}>
+                  Airspace is a zone around you that gives you sooner alerts when a missile is approaching or passing nearby.
+                </Text>
               </View>
             )}
             <View style={styles.section}>
@@ -337,6 +343,26 @@ const lightStyles = StyleSheet.create({
     color: '#666',
     marginTop: 5,
   },
+  spacer: {
+    height: 10,
+  },
+  leagueDescription: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 10,
+    marginBottom: 5,
+  },
+  leagueAirspace: {
+    fontSize: 14,
+    color: '#4a90e2',
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  airspaceDescription: {
+    fontSize: 12,
+    color: '#888',
+    fontStyle: 'italic',
+  },
 });
 
 const darkStyles = StyleSheet.create({
@@ -467,6 +493,23 @@ const darkStyles = StyleSheet.create({
     fontSize: 18,
     color: '#B0B0B0',
     marginTop: 5,
+  },
+  leagueDescription: {
+    fontSize: 14,
+    color: '#B0B0B0',
+    marginTop: 10,
+    marginBottom: 5,
+  },
+  leagueAirspace: {
+    fontSize: 14,
+    color: '#4CAF50',
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  airspaceDescription: {
+    fontSize: 12,
+    color: '#888',
+    fontStyle: 'italic',
   },
 });
 
