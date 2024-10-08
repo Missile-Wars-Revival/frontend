@@ -14,8 +14,8 @@ export const useUserLeague = () => {
     const getUserLeague = async () => {
       try {
         const leagueData = await fetchCurrentLeague();
-        if (leagueData && leagueData.success) {
-          setUserLeague(leagueData);
+        if (leagueData.league && leagueData.success) {
+          setUserLeague(leagueData.league);
         }
       } catch (error) {
         console.error('Error fetching user league:', error);

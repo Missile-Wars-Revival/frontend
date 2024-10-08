@@ -14,15 +14,11 @@ export async function getCurrentLocation(): Promise<location> {
     
     // If isAliveString is null or 'true', or if parsed JSON has isAlive as true, proceed with location fetching
     if (isAliveString === null || isAliveString === 'true' || (isAliveString && JSON.parse(isAliveString).isAlive)) {
-        let foregroundStatus;
 
         // Check and request foreground permissions
-        foregroundStatus = await Location.getForegroundPermissionsAsync();
+        const foregroundStatus = await Location.getForegroundPermissionsAsync();
         if (foregroundStatus.status !== 'granted') {
-            foregroundStatus = await Location.requestForegroundPermissionsAsync();
-            if (foregroundStatus.status !== 'granted') {
-                throw new Error('Foreground location access permission was denied');
-            }
+            throw new Error('Foreground location access permission is not granted');
         }
 
         // Update the permission status in AsyncStorage
@@ -57,3 +53,19 @@ export const getlocation = async () => {
         throw error; // Re-throw the error to be handled by the caller
     }
 };
+
+// Haversine formula for distance calculation
+export function calculateDistance(point1: location, point2: location): number {
+    const R = 6371e3; // Earth's radius in meters
+    const φ1 = point1.latitude * Math.PI / 180;
+    const φ2 = point2.latitude * Math.PI / 180;
+    const Δφ = (point2.latitude - point1.latitude) * Math.PI / 180;
+    const Δλ = (point2.longitude - point1.longitude) * Math.PI / 180;
+  
+    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  
+    return R * c; // Distance in meters
+  }

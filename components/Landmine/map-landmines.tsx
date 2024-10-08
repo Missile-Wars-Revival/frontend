@@ -1,11 +1,14 @@
 import { Circle, Marker } from "react-native-maps";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useUserName } from "../../util/fetchusernameglobal";
 import { GeoLocation, Landmine } from "middle-earth";
 import { View, Image } from "react-native";
 import { convertimestampfuture } from "../../util/get-time-difference";
 import { useLandmine } from "../../util/Context/landminecontext";
 import { itemimages } from "../../app/profile";
+import { getLeagueAirspace } from "../player";
+import { useUserLeague } from "../../hooks/api/useUserLEague";
+import { calculateDistance, getCurrentLocation, location } from "../../util/locationreq";
 
 interface AllLandmineProps {
     landminedata: Landmine[];
@@ -14,11 +17,32 @@ interface AllLandmineProps {
 export const AllLandMines = (props: AllLandmineProps) => {
     const userNAME = useUserName();
     const { showAllLandmines } = useLandmine();
+    const userLeague = useUserLeague();
+    const leagueairspace = getLeagueAirspace(userLeague?.league || 'bronze');
+
+    const [userLocation, setUserLocation] = useState<location | null>(null);
+
+    useEffect(() => {
+        (async () => {
+            let location = await getCurrentLocation();
+            setUserLocation({
+                latitude: location.latitude,
+                longitude: location.longitude
+            });
+        })();
+    }, []);
+
+    if (!userLocation) {
+        return null; // Or a loading indicator
+    }
 
     return (
         <>
         {props.landminedata
-            .filter(landmine => showAllLandmines || landmine.placedby === userNAME)
+            .filter(landmine => {
+                const distance = calculateDistance(userLocation, landmine.location);
+                return (showAllLandmines && distance <= leagueairspace) || landmine.placedby === userNAME;
+            })
             .map(({ type, location, placedby, placedtime, etaexpiretime }, index) => (
                 <React.Fragment key={index}>
                     <MapLandmine location={location} type={type} placedby={placedby} placedtime={placedtime} etaexpiretime={etaexpiretime} />
@@ -58,7 +82,7 @@ export const MapLandmine = (landmineProps: LandmineProps) => {
                     longitude: Number(landmineProps.location.longitude)
                 }}
                 title={`Landmine: ${landmineProps.type}`}
-                description={`${text}`}
+                description={`Placed by ${landmineProps.placedby} with ${text} left`}
             >
                 <Image source={resizedlandmineimage} style={resizedlandmineicon} />
             </Marker>

@@ -6,7 +6,7 @@ import { AllLandMines } from "./Landmine/map-landmines";
 import { AllMissiles } from "./Missile/map-missile";
 import { AllPlayers } from "./map-players";
 import { loadLastKnownLocation, saveLocation } from '../util/mapstore';
-import { getlocation } from "../util/locationreq";
+import { getlocation, location } from "../util/locationreq";
 import { dispatch } from "../api/dispatch";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCurrentLocation } from "../util/locationreq";
@@ -44,6 +44,7 @@ export const MapComp = (props: MapCompProps) => {
     const [visibilitymode, setMode] = useState<'friends' | 'global'>('global');
     const [locActive, setLocActive] = useState<boolean>(true);
     const [isMapDisabled, setIsMapDisabled] = useState(false);
+    const [userLocation, setUserLocation] = useState<location | null>(null);
 
     const colorScheme = useColorScheme();
     const isDarkMode = colorScheme === 'dark';
@@ -88,14 +89,59 @@ export const MapComp = (props: MapCompProps) => {
                 // Set firstLoad to false by default
                 setFirstLoad(false);
     
-                // ... rest of the initialization code ...
-    
+                const cachedMode = await AsyncStorage.getItem('visibilitymode');
+                if (cachedMode !== null) {
+                    setMode(cachedMode as 'friends' | 'global');
+                }
+
+                // Initial dispatch
+                await dispatchLocation();
+
+                // Set up interval for regular dispatches
+                const dispatchIntervalId = setInterval(dispatchLocation, 30000); // Every 30 seconds
+
+                const intervalId = setInterval(async () => {
+                    // Periodically check DB connection status
+                    const dbConnStatus = await AsyncStorage.getItem('dbconnection');
+                    if (dbConnStatus === "false") {
+                        setDbConnection(false)
+                    }
+                    if (dbConnStatus === "true") {
+                        setDbConnection(true)
+                    } else {
+                        setDbConnection(false);
+                    }
+                    try {
+                        const isAliveStatus = await AsyncStorage.getItem('isAlive');
+                        if (isAliveStatus !== null) {
+                            const isAliveData = JSON.parse(isAliveStatus); // Converts the string to an object
+                            if (typeof isAliveData === 'object' && isAliveData.hasOwnProperty('isAlive')) {
+                                const isAlive = isAliveData.isAlive; // Extract the boolean value from the object
+                                setisAlive(isAlive);
+                            } else {
+                                // Handle unexpected format
+                                setisAlive(false);
+                            }
+                        } else {
+                            // Handle null (e.g., key does not exist)
+                            setisAlive(true); // Assume false if nothing is stored
+                        }
+                    } catch (error) {
+                        setisAlive(true); 
+                    }
+
+                }, 1000);
+
+                return () => {
+                    clearInterval(dispatchIntervalId);
+                    clearInterval(intervalId);
+                };
             } catch (error) {
                 setIsLoading(false);
                 console.error('Error initializing app:', error);
             }
         };
-    
+
         initializeApp();
     }, []);
 
@@ -139,6 +185,10 @@ export const MapComp = (props: MapCompProps) => {
     const dispatchLocation = async () => {
         try {
             const location = await getCurrentLocation();
+            setUserLocation({
+                latitude: location.latitude,
+                longitude: location.longitude
+            });
             getlocation()
             const token = await SecureStore.getItemAsync("token");
             if (token && location.latitude && location.longitude) {
@@ -261,8 +311,8 @@ export const MapComp = (props: MapCompProps) => {
                     customMapStyle={props.selectedMapStyle}>
                     <Circle
                         center={{
-                            latitude: Number(region.latitude),
-                            longitude: Number(region.longitude),
+                            latitude: Number(userLocation?.latitude),
+                            longitude: Number(userLocation?.longitude),
                         }}
                         radius={leagueairspace}
                         fillColor="rgba(255, 0, 0, 0.1)"
