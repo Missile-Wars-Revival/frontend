@@ -19,7 +19,7 @@ import useFetchLandmines from "../hooks/websockets/landminehook";
 import { FontAwesome } from '@expo/vector-icons';
 import useFetchOther from "../hooks/websockets/otherhook";
 import { AllOther } from "./Other/map-other";
-import { getlocActive } from "../api/locActive";
+import { getlocActive } from "../api/locationOptions";
 import { useUserLeague } from "../hooks/api/useUserLEague";
 import { getLeagueAirspace } from "./player";
 
@@ -44,7 +44,6 @@ export const MapComp = (props: MapCompProps) => {
     const [visibilitymode, setMode] = useState<'friends' | 'global'>('global');
     const [locActive, setLocActive] = useState<boolean>(true);
     const [isMapDisabled, setIsMapDisabled] = useState(false);
-    const [userLocation, setUserLocation] = useState<location | null>(null);
 
     const colorScheme = useColorScheme();
     const isDarkMode = colorScheme === 'dark';
@@ -94,12 +93,6 @@ export const MapComp = (props: MapCompProps) => {
                     setMode(cachedMode as 'friends' | 'global');
                 }
 
-                // Initial dispatch
-                await dispatchLocation();
-
-                // Set up interval for regular dispatches
-                const dispatchIntervalId = setInterval(dispatchLocation, 30000); // Every 30 seconds
-
                 const intervalId = setInterval(async () => {
                     // Periodically check DB connection status
                     const dbConnStatus = await AsyncStorage.getItem('dbconnection');
@@ -133,7 +126,6 @@ export const MapComp = (props: MapCompProps) => {
                 }, 1000);
 
                 return () => {
-                    clearInterval(dispatchIntervalId);
                     clearInterval(intervalId);
                 };
             } catch (error) {
@@ -179,26 +171,6 @@ export const MapComp = (props: MapCompProps) => {
             console.error("Failed to fetch locActive status:", error);
         } finally {
             setIsLoading(false);
-        }
-    };
-
-    const dispatchLocation = async () => {
-        try {
-            const location = await getCurrentLocation();
-            setUserLocation({
-                latitude: location.latitude,
-                longitude: location.longitude
-            });
-            getlocation()
-            const token = await SecureStore.getItemAsync("token");
-            if (token && location.latitude && location.longitude) {
-                await dispatch(token, location.latitude, location.longitude);
-                console.log("Location dispatched successfully");
-            } else {
-                console.log("Invalid token or location data", token, location);
-            }
-        } catch (error) {
-            console.log("Failed to dispatch location", error);
         }
     };
 
@@ -311,12 +283,12 @@ export const MapComp = (props: MapCompProps) => {
                     customMapStyle={props.selectedMapStyle}>
                     <Circle
                         center={{
-                            latitude: Number(userLocation?.latitude),
-                            longitude: Number(userLocation?.longitude),
+                            latitude: typeof region?.latitude === 'number' ? region.latitude : 0, // Default to 0 if invalid
+                            longitude: typeof region?.longitude === 'number' ? region.longitude : 0, // Default to 0 if invalid
                         }}
-                        radius={leagueairspace}
-                        fillColor="rgba(255, 0, 0, 0.1)"
-                        strokeColor="rgba(255, 0, 0, 0.2)"
+                        radius={typeof leagueairspace === 'number' ? leagueairspace : 0} // Default to 0 if invalid
+                        fillColor="rgba(0, 0, 0, 0)"
+                        strokeColor="rgba(0, 255, 0, 0.5)"
                     />
                     <AllPlayers />
                     <AllLootDrops lootLocations={lootData} />

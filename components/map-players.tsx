@@ -10,6 +10,7 @@ export interface Players {
   updatedAt: string;
   health: number;
   transportStatus: string;
+  randomlocation: boolean;
 }
 
 export const AllPlayers = () => {
@@ -30,7 +31,7 @@ export const AllPlayers = () => {
 
           return (
             <React.Fragment key={index}>
-              <PlayerComp index={index} player={player} location={location} timestamp={text} health={player.health} transportStatus={player.transportStatus} ></PlayerComp> 
+              <PlayerComp index={index} player={player} location={location} timestamp={text} health={player.health} transportStatus={player.transportStatus} randomlocation={player.randomlocation} ></PlayerComp> 
             </React.Fragment>
           );
         })}

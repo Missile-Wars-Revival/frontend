@@ -20,7 +20,8 @@ const useFetchPlayerlocations = (): Players[] => {
                         updatedAt: item.updatedAt,
                         deletedAt: item.deletedAt,
                         health: item.health,
-                        transportStatus: item.transportStatus
+                        transportStatus: item.transportStatus,
+                        randomlocation: item.randomlocation
                     })));
                 }
             } else {

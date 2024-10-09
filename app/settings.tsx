@@ -9,7 +9,7 @@ import { changeEmail, changePassword, changeUsername, deleteAcc } from '../api/c
 import { updateFriendsOnlyStatus } from '../api/visibility';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColorScheme } from 'react-native';
-import { updatelocActive, getlocActive } from '../api/locActive';
+import { updatelocActive, getlocActive, getrandomLocation, randomLocation } from '../api/locationOptions';
 import * as Clipboard from 'expo-clipboard';
 import { clearCredentials } from '../util/logincache';
 import { useAuth } from '../util/Context/authcontext';
@@ -55,6 +55,7 @@ const SettingsPage: React.FC = () => {
   const [showAccountDetails, setShowAccountDetails] = useState(false);
   const [showVisibilitySettings, setShowVisibilitySettings] = useState(false);
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
+  const [showCredits, setShowCredits] = useState(false);
   const [notificationSettings, setNotificationSettings] = useState({
     incomingEntities: false,
     entityDamage: false,
@@ -67,6 +68,7 @@ const SettingsPage: React.FC = () => {
   const [slideAnimation] = useState(new Animated.Value(width));
   const [adLoaded, setAdLoaded] = useState(false);
   const [showAd, setShowAd] = useState(false);
+  const [randomLocActive, setRandomLocActive] = useState<boolean>(false);
 
   const notificationDescriptions = {
     incomingEntities: "Receive alerts when entities are approaching your location.",
@@ -83,6 +85,7 @@ const SettingsPage: React.FC = () => {
     loadSettings();
     fetchLocActiveStatus();
     fetchNotificationPreferences();
+    fetchRandomLocActiveStatus(); // Call the new function in useEffect
   }, []);
 
   useEffect(() => {
@@ -163,6 +166,15 @@ const SettingsPage: React.FC = () => {
       console.error("Failed to fetch locActive status:", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchRandomLocActiveStatus = async () => {
+    try {
+      const status = await getrandomLocation();
+      setRandomLocActive(status);
+    } catch (error) {
+      console.error("Failed to fetch random location status:", error);
     }
   };
 
@@ -340,6 +352,38 @@ const SettingsPage: React.FC = () => {
     } else {
       // If turning on location, proceed normally
       handleLocationToggle(newStatus);
+    }
+  };
+
+  const toggleRandomLocActive = async () => {
+    const newStatus = !randomLocActive;
+
+    if (!newStatus) { 
+        if (adLoaded) {
+            setShowAd(true);
+            rewarded.show();
+            await randomLocation(newStatus); 
+            Alert.alert(
+                "Random Location Deactivated", // Changed from "Activated" to "Deactivated"
+                `Your random location will now be Diffused.`, // Changed from "Accurate" to "Diffused"
+                [{ text: "OK" }]
+            );
+        } else {
+            console.log("Ad not loaded, continuing without showing ad");
+            await randomLocation(newStatus);
+            Alert.alert(
+                "Random Location Deactivated", // Changed from "Activated" to "Deactivated"
+                `Your random location will now be Diffused.`, // Changed from "Accurate" to "Diffused"
+                [{ text: "OK" }]
+            );
+        }
+    } else {
+        await randomLocation(newStatus);
+        Alert.alert(
+            "Random Location Activated", // Changed from "Deactivated" to "Activated"
+            `Your random location will now be Accurate.`, // Changed from "Diffused" to "Accurate"
+            [{ text: "OK" }]
+        );
     }
   };
 
@@ -593,6 +637,21 @@ const SettingsPage: React.FC = () => {
             </Text>
           </View>
         </View>
+
+        <View style={[styles.visibilityContainer, isDarkMode && styles.visibilityContainerDark]}>
+          <Text style={[styles.visibilityText, isDarkMode && styles.visibilityTextDark]}>Random Location</Text>
+          <View style={styles.visibilityToggleContainer}>
+            <Switch
+              value={randomLocActive}
+              onValueChange={toggleRandomLocActive}
+              trackColor={{ false: "#cbd5e0", true: "#773765" }}
+              thumbColor={randomLocActive ? "#5c2a4f" : "#ffffff"}
+            />
+            <Text style={[styles.visibilityModeText, isDarkMode && styles.visibilityModeTextDark]}>
+              {randomLocActive ? 'On' : 'Off'}
+            </Text>
+          </View>
+        </View>
       </View>
     </ScrollView>
   );
@@ -638,6 +697,34 @@ const SettingsPage: React.FC = () => {
     </ScrollView>
   );
 
+  const renderCredits = () => (
+    <View style={styles.creditsContainer}>
+      <Text style={styles.creditsTitle}>Credits</Text>
+      <Text style={styles.creditsSubtitle}>This game was developed by One Studio One Game, LLC</Text>
+      
+      <Text style={styles.creditsSubtitle}>Frontend was developed by:</Text>
+      <View style={styles.creditsList}>
+        <Text style={styles.creditsText}>Tristan</Text>
+        <Text style={styles.creditsText}>NightSpark</Text>
+        <Text style={styles.creditsText}>TheVin</Text>
+        <Text style={styles.creditsText}>Luc</Text>
+      </View>
+
+      <Text style={styles.creditsSubtitle}>Backend was developed by:</Text>
+      <View style={styles.creditsList}>
+        <Text style={styles.creditsText}>Tristan</Text>
+        <Text style={styles.creditsText}>Clxud</Text>
+        <Text style={styles.creditsText}>SwissArmywrench</Text>
+      </View>
+
+      <Text style={styles.creditsSubtitle}>Concept & UI work by:</Text>
+      <View style={styles.creditsList}>
+        <Text style={styles.creditsText}>Gubb0</Text>
+        <Text style={styles.creditsText}>ryaaab</Text>
+      </View>
+    </View>
+  );
+
   return (
     <ScrollView style={[styles.container, isDarkMode && styles.containerDark]}>
       <SafeAreaView style={[styles.safeArea, isDarkMode && styles.safeAreaDark]}>
@@ -673,6 +760,14 @@ const SettingsPage: React.FC = () => {
             onPress={() => setShowNotificationSettings(true)}
           >
             <Text style={[styles.settingsItemText, isDarkMode && styles.settingsItemTextDark]}>Notification Settings</Text>
+            <ChevronRight size={24} color={isDarkMode ? "white" : "black"} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.settingsItem, isDarkMode && styles.settingsItemDark]}
+            onPress={() => setShowCredits(true)} // Open Credits page
+          >
+            <Text style={[styles.settingsItemText, isDarkMode && styles.settingsItemTextDark]}>Credits</Text>
             <ChevronRight size={24} color={isDarkMode ? "white" : "black"} />
           </TouchableOpacity>
 
@@ -723,7 +818,7 @@ const SettingsPage: React.FC = () => {
           </View>
         </View>
 
-        <View style={[styles.debugMenu, isDarkMode && styles.debugMenuDark]}>
+        {/* <View style={[styles.debugMenu, isDarkMode && styles.debugMenuDark]}>
           <Text style={[styles.debugMenuTitle, isDarkMode && styles.debugMenuTitleDark]}>Debug Menu</Text>
           <View style={styles.debugMenuItem}>
             <Text style={[styles.debugMenuLabel, isDarkMode && styles.debugMenuLabelDark]}>Cached Username:</Text>
@@ -761,7 +856,7 @@ const SettingsPage: React.FC = () => {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </View> */}
 
         <Modal
           visible={showDeleteModal}
@@ -796,6 +891,27 @@ const SettingsPage: React.FC = () => {
                   <Text style={styles.modalButtonText}>Delete</Text>
                 </TouchableHighlight>
               </View>
+            </View>
+          </View>
+        </Modal>
+
+        <Modal
+          visible={showCredits}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setShowCredits(false)} // Close modal on back press
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, isDarkMode && styles.modalContentDark]}>
+              <Text style={[styles.modalTitle, isDarkMode && styles.modalTitleDark]}>Credits</Text>
+              {renderCredits()}
+              <TouchableHighlight
+                onPress={() => setShowCredits(false)}
+                style={[styles.modalButton, styles.cancelButton]}
+                underlayColor="#DDDDDD"
+              >
+                <Text style={styles.modalButtonText}>Close</Text>
+              </TouchableHighlight>
             </View>
           </View>
         </Modal>
@@ -1181,6 +1297,42 @@ const styles = StyleSheet.create({
   },
   notificationSettingDescriptionDark: {
     color: '#B0B0B0',
+  },
+  creditsContainer: {
+    padding: 20,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  creditsTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#2d3748',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  creditsSubtitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#4a5568',
+    marginTop: 15,
+    marginBottom: 5,
+  },
+  creditsList: {
+    marginLeft: 10,
+    marginBottom: 15,
+  },
+  creditsText: {
+    fontSize: 16,
+    color: '#2d3748',
+    marginBottom: 3,
+    paddingVertical: 2,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
   },
 });
 

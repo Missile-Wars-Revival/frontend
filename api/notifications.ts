@@ -137,7 +137,7 @@ export const updateNotificationPreferences = async (
 		}
 
 		const response: AxiosResponse<UpdatePreferencesResponse> = await axiosInstance.patch(
-			"/api/notificationPreferences",
+			"/api/changeNotificationPreferences",
 			{ token, preferences }
 		);
 

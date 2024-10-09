@@ -33,7 +33,7 @@ import { getisAlive, setHealth, updateisAlive } from "../api/health";
 import { playDeathSound } from "../util/sounds/deathsound";
 import { RewardedAd, RewardedAdEventType, TestIds } from "react-native-google-mobile-ads";
 import useFetchHealth from "../hooks/websockets/healthhook";
-import { getlocActive } from "../api/locActive";
+import { getlocActive } from "../api/locationOptions";
 import PlayerViewButton from "../components/PlayerViewButton";
 import { MissileLibrary } from "../components/Missile/missile";
 import MissileFiringAnimation from "../components/Animations/MissileFiring";

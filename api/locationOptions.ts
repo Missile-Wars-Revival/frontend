@@ -44,3 +44,45 @@ export async function getlocActive() {
         throw error; // Propagate the error to be handled by the caller
     }
 }
+
+export const randomLocation = async (randomlocation: boolean) => {
+    try {
+        const token = await SecureStore.getItemAsync("token");
+        if (!token) throw new Error("No authentication token found.");
+        await AsyncStorage.setItem('randomlocation', JSON.stringify(randomlocation));
+        // Including the token as part of the URL query parameters
+        const url = `/api/randomLocation?token=${encodeURIComponent(token)}`;
+        await axiosInstance.patch(url, {
+            randomlocation
+        });
+        console.log("randomlocation status updated successfully to:", randomlocation);
+        if (randomlocation === false) {
+        }
+
+    } catch (error) {
+        console.error("Failed to update randomlocation status:", error);
+        throw new Error('Failed to update randomlocation mode.');
+    }
+};
+
+//get loActive status
+export async function getrandomLocation() {
+    try {
+        const token = await SecureStore.getItemAsync("token");
+        if (!token) throw new Error("No authentication token found.");
+        
+        const response = await axiosInstance.get(`/api/getrandomLocation?token=${encodeURIComponent(token)}`);
+        const randomlocation = response.data.randomlocation;
+        
+        console.log("Received randomlocation status:", randomlocation);
+        
+        await AsyncStorage.setItem('randomlocation', JSON.stringify(randomlocation));
+        return randomlocation;
+    } catch (error) {
+        console.error("Error in getrandomLocation:", error);
+        if (isAxiosError(error)) {
+            console.error("Response data:", error.response?.data);
+        }
+        throw error; // Propagate the error to be handled by the caller
+    }
+}

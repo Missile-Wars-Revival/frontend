@@ -19,6 +19,8 @@ import PermissionsCheck from '../components/PermissionsCheck';
 import Purchases from 'react-native-purchases';
 import * as ExpoSplashScreen from 'expo-splash-screen';
 import { LandmineProvider } from '../util/Context/landminecontext';
+import { getCurrentLocation, getlocation } from '../util/locationreq';
+import { WebSocketMessage, WSMsg } from 'middle-earth';
 
 const WebSocketProvider = ({ children }: WebSocketProviderProps) => {
   const { data, missiledata, landminedata, lootdata, otherdata, healthdata, friendsdata, inventorydata, playerlocations, leaguesData, sendWebsocket } = useWebSocket();
@@ -50,7 +52,6 @@ export default function RootLayout() {
   const [appState, setAppState] = useState(AppState.currentState);
   const [lastActiveTime, setLastActiveTime] = useState(Date.now());
   const router = useRouter();
-
   const BACKGROUND_THRESHOLD = 2 * 60 * 1000; // 2 minutes in milliseconds
 
   const configurePurchases = useCallback(async () => {
@@ -165,6 +166,53 @@ function NavBar({ unreadCount }: { unreadCount: number }) {
   const [selectedTab, setSelectedTab] = useState(pathname);
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
+  const { sendWebsocket } = useWebSocket();
+
+  const lastUpdateTimeRef = useRef<number>(0);
+  const updateIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const updateAndSendLocation = useCallback(async () => {
+    const now = Date.now();
+    if (now - lastUpdateTimeRef.current < 25000) {  // Prevent updates more frequent than every 25 seconds
+      // console.log('Skipping update, too soon since last update');
+      return;
+    }
+
+    try {
+      const newLocation = await getCurrentLocation();
+      getlocation();
+      if (newLocation) {
+        const locationData = {
+          latitude: newLocation.latitude,
+          longitude: newLocation.longitude
+        };
+
+        const locationMsg = new WSMsg("playerLocation", locationData);
+        const message = new WebSocketMessage([locationMsg]);
+        sendWebsocket(message);
+        console.log('Location sent');
+
+        lastUpdateTimeRef.current = now;
+      }
+    } catch (error) {
+      console.error('Error updating location:', error);
+    }
+  }, [sendWebsocket]);
+
+  useEffect(() => {
+    // Initial update
+    updateAndSendLocation();
+  
+    // Set up interval for repeated updates
+    updateIntervalRef.current = setInterval(updateAndSendLocation, 30000); // 30 seconds
+  
+    // Cleanup function
+    return () => {
+      if (updateIntervalRef.current) {
+        clearInterval(updateIntervalRef.current);
+      }
+    };
+  }, [updateAndSendLocation]);
 
   const getTabForPath = useMemo(() => (path: string) => {
     if (path === '/notifications' || path === '/add-friends') {

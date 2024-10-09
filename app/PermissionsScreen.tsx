@@ -302,7 +302,7 @@ const PermissionItem = ({ title, description, icon, isGranted, onPress, styles, 
         styles.permissionButtonText,
         isGranted ? styles.grantedPermissionButtonText : (isDarkMode ? styles.darkModePermissionButtonText : styles.lightModePermissionButtonText)
       ]}>
-        {isGranted ? 'Granted' : 'Grant Permission'}
+        {isGranted ? 'Granted' : 'Continue'}
       </Text>
     </TouchableOpacity>
   </View>

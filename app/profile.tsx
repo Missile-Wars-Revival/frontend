@@ -711,7 +711,7 @@ const ProfilePage: React.FC = () => {
         </TouchableWithoutFeedback>
       </Modal>
 
-      {statistics && statistics.badges.includes('Staff') && (
+      {statistics && statistics.badges.includes('Debug') && (
         <TouchableOpacity onPress={() => setIsDebugMenuVisible(!isDebugMenuVisible)}>
           <Text style={styles.debugMenuToggle}>Toggle Debug Menu</Text>
         </TouchableOpacity>

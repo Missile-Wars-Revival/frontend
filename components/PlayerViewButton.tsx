@@ -5,7 +5,7 @@ import { fetchAndCacheImage } from "../util/imagecache";
 import * as SecureStore from 'expo-secure-store';
 import { addFriend } from "../api/friends";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getlocActive } from "../api/locActive";
+import { getlocActive } from "../api/locationOptions";
 import useFetchFriends from '../hooks/websockets/friendshook'; 
 import useFetchPlayerlocations from '../hooks/websockets/playerlochook';
 import { isInactiveFor12Hours, getTimeDifference, convertimestampfuturemissile } from '../util/get-time-difference';

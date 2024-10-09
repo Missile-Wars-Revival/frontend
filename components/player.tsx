@@ -5,29 +5,28 @@ import { MissileLibrary } from "./Missile/missile";
 import { Players } from "./map-players";
 import { useUserName } from "../util/fetchusernameglobal";
 import { fetchAndCacheImage } from "../util/imagecache";
-import { useUserLeague } from "../hooks/api/useUserLEague";
 
 const resizedplayerimage = require("../assets/mapassets/Female_Avatar_PNG.png");
-// const carImage = require("../assets/transport/car.png");
-// const planeImage = require("../assets/transport/plane.png");
-// const trainImage = require("../assets/transport/train.png");
-// //const bicycleImage = require("../assets/transport/bicycle.png");
-// //const shipImage = require("../assets/transport/ship.png");
-// const boatImage = require("../assets/transport/boat.png");
-// //const walkingImage = require("../assets/transport/walking.png");
+const carImage = require("../assets/transport/car.png");
+const planeImage = require("../assets/transport/plane.png");
+const trainImage = require("../assets/transport/train.png");
+//const bicycleImage = require("../assets/transport/bicycle.png");
+//const shipImage = require("../assets/transport/ship.png");
+const boatImage = require("../assets/transport/boat.png");
+// const walkingImage = require("../assets/transport/walking.png");
 
-// const getTransportImage = (status: string) => {
-//   switch (status) {
-//     case 'plane': return planeImage;
-//     case 'highspeed': return trainImage;
-//     case 'car': return carImage;
-//     //case 'bicycle': return bicycleImage;
-//     //case 'ship': return shipImage;
-//     case 'boat': return boatImage;
-//     //case 'walking': return walkingImage;
-//     default: return null;
-//   }
-// };
+const getTransportImage = (status: string) => {
+  switch (status) {
+    case 'plane': return planeImage;
+    case 'highspeed': return trainImage;
+    case 'car': return carImage;
+    //case 'bicycle': return bicycleImage;
+    //case 'ship': return shipImage;
+    case 'boat': return boatImage;
+    //case 'walking': return walkingImage;
+    default: return null;
+  }
+};
 
 const styles = StyleSheet.create({
   profileImage: {
@@ -126,6 +125,7 @@ interface PlayerProps {
   health: number;
   transportStatus: string;
   index: number;
+  randomlocation: boolean;
 }
 
 export const getLeagueAirspace = (league: string): number => {
@@ -137,6 +137,17 @@ export const getLeagueAirspace = (league: string): number => {
     case 'legend': return 120;
     default: return 20; 
   }
+};
+
+const getRandomLocation = (latitude: number, longitude: number, radius: number) => {
+  const earthRadius = 6371000; // Radius of the Earth in meters
+  const randomAngle = Math.random() * 2 * Math.PI; // Random angle
+  const randomDistance = Math.random() * radius; // Random distance within the radius
+
+  const newLatitude = latitude + (randomDistance / earthRadius) * (180 / Math.PI);
+  const newLongitude = longitude + (randomDistance / earthRadius) * (180 / Math.PI) / Math.cos(latitude * Math.PI / 180);
+
+  return { latitude: newLatitude, longitude: newLongitude };
 };
 
 export const PlayerComp = (props: PlayerProps) => {
@@ -180,31 +191,51 @@ export const PlayerComp = (props: PlayerProps) => {
     }
   };
 
+  const transportImage = getTransportImage(props.transportStatus); // Get the transport image based on status
+
+  const { latitude, longitude } = props.location;
+  const circleRadius = props.randomlocation ? 50 : 6; // Set radius to 50m if randomlocation is true
+  const markerLocation = props.randomlocation ? getRandomLocation(latitude, longitude, 50) : { latitude, longitude }; // Get random location if randomlocation is true
+
   return (
     <View>
       <Circle
         center={{
-          latitude: Number(props.location.latitude),
-          longitude: Number(props.location.longitude),
+          latitude: markerLocation.latitude,
+          longitude: markerLocation.longitude,
         }}
-        radius={6}
+        radius={circleRadius}
         fillColor="rgba(0, 255, 0, 0.2)"
         strokeColor="rgba(0, 255, 0, 0.8)"
       />
       <Marker
         coordinate={{
-          latitude: Number(props.location.latitude),
-          longitude: Number(props.location.longitude),
+          latitude: markerLocation.latitude,
+          longitude: markerLocation.longitude,
         }}
         title={props.player.username}
         description={props.timestamp}
         onPress={handleMarkerPress} // Use the new handler
       >
-        <View style={{ alignItems: 'center' }}>
+        <View style={{ alignItems: 'center', position: 'relative' }}>
           <Image 
             source={profileImageUrl ? { uri: profileImageUrl } : resizedplayerimage} 
             style={styles.profileImage} 
           />
+          {transportImage && ( // Render the transport image layered on top of the player icon if available
+            <Image 
+              source={transportImage} 
+              style={{ 
+                width: 40, 
+                height: 40, 
+                position: 'absolute', 
+                top: 15, // Adjusted to move the transport image down
+                left: 0, // Adjust as needed to position correctly
+                right: 5, // Adjust as needed to position correctly
+              }}
+              resizeMode="contain" 
+            />
+          )}
           <Text style={styles.username}>{props.player.username}</Text>
 
           {selectedMarkerIndex !== null && selectedMarkerIndex === props.index && props.player.username !== userName && (

@@ -29,10 +29,6 @@ export default function Login() {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
 
-  useEffect(() => {
-    getlocation();
-  }, []);
-
   const styles = useMemo(() => StyleSheet.create({
     ...lightStyles,
     ...(isDarkMode ? darkStyles : {}),

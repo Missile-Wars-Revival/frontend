@@ -10,7 +10,7 @@ import { fetchAndCacheImage } from "../util/imagecache";
 import { useNotifications, notificationEmitter } from "../components/Notifications/useNotifications";
 import useFetchFriends from "../hooks/websockets/friendshook";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getlocActive } from "../api/locActive";
+import { getlocActive } from "../api/locationOptions";
 import { Ionicons } from '@expo/vector-icons'; 
 import MissileFiringAnimation from "../components/Animations/MissileFiring";
 

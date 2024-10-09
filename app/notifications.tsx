@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { MissileLibrary } from '../components/Missile/missile';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getlocActive } from '../api/locActive';
+import { getlocActive } from '../api/locationOptions';
 
 export interface Notification {
 	id: string;

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { unzip, WebSocketMessage, zip } from "middle-earth";
+import { unzip, WebSocketMessage, WSMsg, zip } from "middle-earth";
 import * as SecureStore from "expo-secure-store";
 import { useAuth } from "../../util/Context/authcontext";
 
@@ -176,16 +176,23 @@ const useWebSocket = () => {
     }, [isSignedIn]);
 
     const sendWebsocket = async (data: WebSocketMessage) => {
+        const isSignedIn = await AsyncStorage.getItem('signedIn');
+        
+        if (isSignedIn !== 'true') {
+            console.log("User is not signed in. Skipping websocket message.");
+            return;
+        }
+
         if (websocket && websocket.readyState === WebSocket.OPEN) {
             try {
                 const encodedData = zip(data);
                 console.log("Sending data to websocket", data);
                 websocket.send(encodedData);
             } catch (error) {
-                console.error("Error sending websocket request",);
+                console.error("Error sending websocket request:", error);
             }
         } else {
-            console.error("WebSocket is not open. Unable to send message.");
+            console.log("WebSocket is not open. Unable to send message.");
         }
     };
 
