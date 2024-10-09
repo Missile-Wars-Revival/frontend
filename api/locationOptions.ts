@@ -45,41 +45,43 @@ export async function getlocActive() {
     }
 }
 
-export const randomLocation = async (randomlocation: boolean) => {
+export const randomLocation = async (randomLocation: boolean) => {
     try {
         const token = await SecureStore.getItemAsync("token");
         if (!token) throw new Error("No authentication token found.");
-        await AsyncStorage.setItem('randomlocation', JSON.stringify(randomlocation));
+        await AsyncStorage.setItem('randomLocation', JSON.stringify(randomLocation));
         // Including the token as part of the URL query parameters
         const url = `/api/randomLocation?token=${encodeURIComponent(token)}`;
-        await axiosInstance.patch(url, {
-            randomlocation
+        const response = await axiosInstance.patch(url, {
+            randomLocation
         });
-        console.log("randomlocation status updated successfully to:", randomlocation);
-        if (randomlocation === false) {
-        }
-
+        console.log("randomLocation API response:", response.data);
+        return response.data;
     } catch (error) {
-        console.error("Failed to update randomlocation status:", error);
-        throw new Error('Failed to update randomlocation mode.');
+        console.error("Failed to update randomLocation status:", error);
+        if (isAxiosError(error)) {
+            console.error("Response data:", error.response?.data);
+            throw new Error(`Failed to update randomLocation mode. Server response: ${JSON.stringify(error.response?.data)}`);
+        }
+        throw new Error('Failed to update randomLocation mode.');
     }
 };
 
-//get loActive status
-export async function getrandomLocation() {
+//get randomLocation status
+export async function getRandomLocation() {
     try {
         const token = await SecureStore.getItemAsync("token");
         if (!token) throw new Error("No authentication token found.");
         
         const response = await axiosInstance.get(`/api/getrandomLocation?token=${encodeURIComponent(token)}`);
-        const randomlocation = response.data.randomlocation;
+        const randomLocation = response.data.randomLocation;
         
-        console.log("Received randomlocation status:", randomlocation);
+        console.log("Received randomLocation status:", randomLocation);
         
-        await AsyncStorage.setItem('randomlocation', JSON.stringify(randomlocation));
-        return randomlocation;
+        await AsyncStorage.setItem('randomLocation', JSON.stringify(randomLocation));
+        return randomLocation;
     } catch (error) {
-        console.error("Error in getrandomLocation:", error);
+        console.error("Error in getRandomLocation:", error);
         if (isAxiosError(error)) {
             console.error("Response data:", error.response?.data);
         }

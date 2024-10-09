@@ -3,13 +3,13 @@ import { View, Text, TouchableHighlight, Switch, ScrollView, Alert, StyleSheet, 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Input } from "../components/ui/input";
-import { User, LockKeyhole, Mail, ChevronLeft, Shield, MessageCircle, ChevronRight } from "lucide-react-native";
+import { User, LockKeyhole, Mail, ChevronLeft, Shield, MessageCircle, ChevronRight, Heart } from "lucide-react-native";
 import * as SecureStore from 'expo-secure-store';
 import { changeEmail, changePassword, changeUsername, deleteAcc } from '../api/changedetails';
 import { updateFriendsOnlyStatus } from '../api/visibility';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColorScheme } from 'react-native';
-import { updatelocActive, getlocActive, getrandomLocation, randomLocation } from '../api/locationOptions';
+import { updatelocActive, getlocActive, getRandomLocation, randomLocation } from '../api/locationOptions';
 import * as Clipboard from 'expo-clipboard';
 import { clearCredentials } from '../util/logincache';
 import { useAuth } from '../util/Context/authcontext';
@@ -85,7 +85,7 @@ const SettingsPage: React.FC = () => {
     loadSettings();
     fetchLocActiveStatus();
     fetchNotificationPreferences();
-    fetchRandomLocActiveStatus(); // Call the new function in useEffect
+    fetchRandomLocActiveStatus();
   }, []);
 
   useEffect(() => {
@@ -110,7 +110,12 @@ const SettingsPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (showAccountDetails || showVisibilitySettings || showNotificationSettings) {
+    if (
+      showAccountDetails || 
+      showVisibilitySettings || 
+      showNotificationSettings || 
+      showCredits // Include showCredits here
+    ) {
       Animated.spring(slideAnimation, {
         toValue: 0,
         useNativeDriver: true,
@@ -118,7 +123,7 @@ const SettingsPage: React.FC = () => {
         tension: 40,
       }).start();
     }
-  }, [showAccountDetails, showVisibilitySettings, showNotificationSettings]);
+  }, [showAccountDetails, showVisibilitySettings, showNotificationSettings, showCredits]); // Add showCredits to dependencies
 
   const closePopup = (setStateFunction: React.Dispatch<React.SetStateAction<boolean>>) => {
     Animated.spring(slideAnimation, {
@@ -171,7 +176,7 @@ const SettingsPage: React.FC = () => {
 
   const fetchRandomLocActiveStatus = async () => {
     try {
-      const status = await getrandomLocation();
+      const status = await getRandomLocation();
       setRandomLocActive(status);
     } catch (error) {
       console.error("Failed to fetch random location status:", error);
@@ -357,33 +362,36 @@ const SettingsPage: React.FC = () => {
 
   const toggleRandomLocActive = async () => {
     const newStatus = !randomLocActive;
+    setRandomLocActive(newStatus); // Update state immediately for responsive UI
 
-    if (!newStatus) { 
+    try {
+      if (!newStatus) { 
         if (adLoaded) {
-            setShowAd(true);
-            rewarded.show();
-            await randomLocation(newStatus); 
-            Alert.alert(
-                "Random Location Deactivated", // Changed from "Activated" to "Deactivated"
-                `Your random location will now be Diffused.`, // Changed from "Accurate" to "Diffused"
-                [{ text: "OK" }]
-            );
+          setShowAd(true);
+          rewarded.show();
         } else {
-            console.log("Ad not loaded, continuing without showing ad");
-            await randomLocation(newStatus);
-            Alert.alert(
-                "Random Location Deactivated", // Changed from "Activated" to "Deactivated"
-                `Your random location will now be Diffused.`, // Changed from "Accurate" to "Diffused"
-                [{ text: "OK" }]
-            );
+          console.log("Ad not loaded, continuing without showing ad");
         }
-    } else {
-        await randomLocation(newStatus);
-        Alert.alert(
-            "Random Location Activated", // Changed from "Deactivated" to "Activated"
-            `Your random location will now be Accurate.`, // Changed from "Diffused" to "Accurate"
-            [{ text: "OK" }]
-        );
+      }
+      
+      const result = await randomLocation(newStatus);
+      console.log("API response:", result); // Log the API response
+
+      Alert.alert(
+        newStatus ? "Random Location Activated" : "Random Location Deactivated",
+        `Your random location will now be ${newStatus ? "Diffused" : "Accurate"}.`,
+        [{ text: "OK" }]
+      );
+    } catch (error) {
+      console.error("Failed to update random location status:", error);
+      setRandomLocActive(!newStatus); // Revert state if API call fails
+      
+      let errorMessage = "Failed to update random location status. Please try again.";
+      if (error instanceof Error) {
+        errorMessage += ` Error: ${error.message}`;
+      }
+      
+      Alert.alert("Error", errorMessage);
     }
   };
 
@@ -621,6 +629,11 @@ const SettingsPage: React.FC = () => {
               {visibilityMode === 'global' ? 'Global' : 'Friends Only'}
             </Text>
           </View>
+          <Text style={[styles.visibilityDescription, isDarkMode && styles.visibilityDescriptionDark]}>
+            {visibilityMode === 'global' 
+              ? 'You are visible to friends and players in your league' 
+              : 'You are only visible to your friends'}
+          </Text>
         </View>
 
         <View style={[styles.visibilityContainer, isDarkMode && styles.visibilityContainerDark]}>
@@ -636,10 +649,15 @@ const SettingsPage: React.FC = () => {
               {locActive ? 'On' : 'Off'}
             </Text>
           </View>
+          <Text style={[styles.visibilityDescription, isDarkMode && styles.visibilityDescriptionDark]}>
+            {locActive 
+              ? 'Your location is being used to update your position on the map' 
+              : 'You are not visible to other players and your location is not being updated'}
+          </Text>
         </View>
 
         <View style={[styles.visibilityContainer, isDarkMode && styles.visibilityContainerDark]}>
-          <Text style={[styles.visibilityText, isDarkMode && styles.visibilityTextDark]}>Random Location</Text>
+          <Text style={[styles.visibilityText, isDarkMode && styles.visibilityTextDark]}>Diffused Location</Text>
           <View style={styles.visibilityToggleContainer}>
             <Switch
               value={randomLocActive}
@@ -651,6 +669,11 @@ const SettingsPage: React.FC = () => {
               {randomLocActive ? 'On' : 'Off'}
             </Text>
           </View>
+          <Text style={[styles.visibilityDescription, isDarkMode && styles.visibilityDescriptionDark]}>
+            {randomLocActive 
+              ? 'Your location is diffused, making it less precise' 
+              : 'Your location is accurate'}
+          </Text>
         </View>
       </View>
     </ScrollView>
@@ -697,32 +720,53 @@ const SettingsPage: React.FC = () => {
     </ScrollView>
   );
 
-  const renderCredits = () => (
-    <View style={styles.creditsContainer}>
-      <Text style={styles.creditsTitle}>Credits</Text>
-      <Text style={styles.creditsSubtitle}>This game was developed by One Studio One Game, LLC</Text>
+  const renderCredits = () => renderPopup(
+    <ScrollView contentContainerStyle={styles.popupScrollContent}>
+      <View style={styles.popupHeader}>
+        <TouchableOpacity
+          style={styles.popupbackButton}
+          onPress={() => closePopup(setShowCredits)}
+        >
+          <ChevronLeft size={24} color={isDarkMode ? "white" : "black"} />
+        </TouchableOpacity>
+        <Text style={[styles.popupTitle, isDarkMode && styles.popupTitleDark]}>Credits</Text>
+      </View>
       
-      <Text style={styles.creditsSubtitle}>Frontend was developed by:</Text>
-      <View style={styles.creditsList}>
-        <Text style={styles.creditsText}>Tristan</Text>
-        <Text style={styles.creditsText}>NightSpark</Text>
-        <Text style={styles.creditsText}>TheVin</Text>
-        <Text style={styles.creditsText}>Luc</Text>
-      </View>
+      <View style={styles.creditsContent}>
+        <Text style={[styles.creditsSubtitle, isDarkMode && styles.creditsSubtitleDark]}>
+          This game was developed by One Studio One Game, LLC
+        </Text>
+        
+        <Text style={[styles.creditsSectionTitle, isDarkMode && styles.creditsSectionTitleDark]}>Frontend Developers:</Text>
+        <View style={styles.creditsList}>
+          <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>Tristan</Text>
+          <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>NightSpark</Text>
+          <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>TheVin</Text>
+          <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>Luc</Text>
+        </View>
 
-      <Text style={styles.creditsSubtitle}>Backend was developed by:</Text>
-      <View style={styles.creditsList}>
-        <Text style={styles.creditsText}>Tristan</Text>
-        <Text style={styles.creditsText}>Clxud</Text>
-        <Text style={styles.creditsText}>SwissArmywrench</Text>
-      </View>
+        <Text style={[styles.creditsSectionTitle, isDarkMode && styles.creditsSectionTitleDark]}>Backend Developers:</Text>
+        <View style={styles.creditsList}>
+          <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>Tristan</Text>
+          <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>Clxud</Text>
+          <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>SwissArmywrench</Text>
+        </View>
 
-      <Text style={styles.creditsSubtitle}>Concept & UI work by:</Text>
-      <View style={styles.creditsList}>
-        <Text style={styles.creditsText}>Gubb0</Text>
-        <Text style={styles.creditsText}>ryaaab</Text>
+        <Text style={[styles.creditsSectionTitle, isDarkMode && styles.creditsSectionTitleDark]}>Concept & UI work:</Text>
+        <View style={styles.creditsList}>
+          <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>Gubb0</Text>
+          <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>ryaaab</Text>
+        </View>
+
+        <TouchableOpacity
+          style={[styles.donateButton, isDarkMode && styles.donateButtonDark]}
+          onPress={() => Linking.openURL('https://donate.stripe.com/fZe6r884h6e59Ww288')}
+        >
+          <Heart size={20} color="#FFFFFF" style={styles.donateIcon} />
+          <Text style={styles.donateButtonText}>Donate to support the game!</Text>
+        </TouchableOpacity>
       </View>
-    </View>
+    </ScrollView>
   );
 
   return (
@@ -765,7 +809,7 @@ const SettingsPage: React.FC = () => {
 
           <TouchableOpacity
             style={[styles.settingsItem, isDarkMode && styles.settingsItemDark]}
-            onPress={() => setShowCredits(true)} // Open Credits page
+            onPress={() => setShowCredits(true)}
           >
             <Text style={[styles.settingsItemText, isDarkMode && styles.settingsItemTextDark]}>Credits</Text>
             <ChevronRight size={24} color={isDarkMode ? "white" : "black"} />
@@ -895,30 +939,10 @@ const SettingsPage: React.FC = () => {
           </View>
         </Modal>
 
-        <Modal
-          visible={showCredits}
-          transparent={true}
-          animationType="fade"
-          onRequestClose={() => setShowCredits(false)} // Close modal on back press
-        >
-          <View style={styles.modalOverlay}>
-            <View style={[styles.modalContent, isDarkMode && styles.modalContentDark]}>
-              <Text style={[styles.modalTitle, isDarkMode && styles.modalTitleDark]}>Credits</Text>
-              {renderCredits()}
-              <TouchableHighlight
-                onPress={() => setShowCredits(false)}
-                style={[styles.modalButton, styles.cancelButton]}
-                underlayColor="#DDDDDD"
-              >
-                <Text style={styles.modalButtonText}>Close</Text>
-              </TouchableHighlight>
-            </View>
-          </View>
-        </Modal>
-
         {showAccountDetails && renderAccountDetails()}
         {showVisibilitySettings && renderVisibilitySettings()}
         {showNotificationSettings && renderNotificationSettings()}
+        {showCredits && renderCredits()}
       </SafeAreaView>
     </ScrollView>
   );
@@ -1298,41 +1322,68 @@ const styles = StyleSheet.create({
   notificationSettingDescriptionDark: {
     color: '#B0B0B0',
   },
-  creditsContainer: {
-    padding: 20,
-    backgroundColor: '#f9f9f9',
-    borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  creditsTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2d3748',
-    marginBottom: 10,
-    textAlign: 'center',
+  creditsContent: {
+    width: '100%',
+    paddingHorizontal: 20,
   },
   creditsSubtitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 16,
     color: '#4a5568',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  creditsSubtitleDark: {
+    color: '#B0B0B0',
+  },
+  creditsSectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2d3748',
     marginTop: 15,
-    marginBottom: 5,
+    marginBottom: 10,
+  },
+  creditsSectionTitleDark: {
+    color: '#FFF',
   },
   creditsList: {
     marginLeft: 10,
-    marginBottom: 15,
+    marginBottom: 20,
   },
   creditsText: {
     fontSize: 16,
-    color: '#2d3748',
-    marginBottom: 3,
-    paddingVertical: 2,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    color: '#4a5568',
+    marginBottom: 5,
+  },
+  creditsTextDark: {
+    color: '#B0B0B0',
+  },
+  visibilityDescription: {
+    fontSize: 14,
+    color: '#4a5568',
+    marginTop: 5,
+  },
+  visibilityDescriptionDark: {
+    color: '#B0B0B0',
+  },
+  donateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#773765',
+    borderRadius: 10,
+    padding: 15,
+    marginTop: 20,
+  },
+  donateButtonDark: {
+    backgroundColor: '#5c2a4f',
+  },
+  donateIcon: {
+    marginRight: 10,
+  },
+  donateButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 

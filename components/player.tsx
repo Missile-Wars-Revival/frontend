@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Button, View, Image, Text, Modal, Dimensions, StyleSheet, TouchableOpacity, useColorScheme } from "react-native";
 import { Circle, Marker } from "react-native-maps";
 import { MissileLibrary } from "./Missile/missile";
@@ -139,13 +139,26 @@ export const getLeagueAirspace = (league: string): number => {
   }
 };
 
+// Function to get a random offset location for the circle center
+const getOffsetLocation = (latitude: number, longitude: number, offsetRadius: number) => {
+  const earthRadius = 6371000; // Radius of the Earth in meters
+  const randomAngle = Math.random() * 2 * Math.PI; // Random angle
+  const randomDistance = Math.random() * offsetRadius; // Random distance within the offset radius
+
+  const offsetLatitude = latitude + (randomDistance / earthRadius) * (180 / Math.PI) * Math.cos(randomAngle);
+  const offsetLongitude = longitude + (randomDistance / earthRadius) * (180 / Math.PI) * Math.sin(randomAngle) / Math.cos(latitude * Math.PI / 180);
+
+  return { latitude: offsetLatitude, longitude: offsetLongitude };
+};
+
+// Function to get a random location within a given radius
 const getRandomLocation = (latitude: number, longitude: number, radius: number) => {
   const earthRadius = 6371000; // Radius of the Earth in meters
   const randomAngle = Math.random() * 2 * Math.PI; // Random angle
   const randomDistance = Math.random() * radius; // Random distance within the radius
 
-  const newLatitude = latitude + (randomDistance / earthRadius) * (180 / Math.PI);
-  const newLongitude = longitude + (randomDistance / earthRadius) * (180 / Math.PI) / Math.cos(latitude * Math.PI / 180);
+  const newLatitude = latitude + (randomDistance / earthRadius) * (180 / Math.PI) * Math.cos(randomAngle);
+  const newLongitude = longitude + (randomDistance / earthRadius) * (180 / Math.PI) * Math.sin(randomAngle) / Math.cos(latitude * Math.PI / 180);
 
   return { latitude: newLatitude, longitude: newLongitude };
 };
@@ -194,28 +207,48 @@ export const PlayerComp = (props: PlayerProps) => {
   const transportImage = getTransportImage(props.transportStatus); // Get the transport image based on status
 
   const { latitude, longitude } = props.location;
-  const circleRadius = props.randomlocation ? 50 : 6; // Set radius to 50m if randomlocation is true
-  const markerLocation = props.randomlocation ? getRandomLocation(latitude, longitude, 50) : { latitude, longitude }; // Get random location if randomlocation is true
+
+  // Define radii
+  const baseRadius = 6; // Default radius when randomlocation is false
+  const randomRadius = 50; // Radius when randomlocation is true
+  const circleRadius = props.randomlocation ? randomRadius : baseRadius;
+
+  // Define offset radius for the circle center when randomlocation is true
+  const offsetRadius = props.randomlocation ? 100 : 0; // Adjust as needed
+
+  // Compute circle center with offset when randomlocation is true
+  const circleCenter = useMemo(() => {
+    if (props.randomlocation) {
+      return getOffsetLocation(latitude, longitude, offsetRadius);
+    }
+    return { latitude, longitude };
+  }, [props.randomlocation, latitude, longitude]);
+
+  // Compute marker location
+  const markerLocation = useMemo(() => {
+    if (props.randomlocation) {
+      return getRandomLocation(circleCenter.latitude, circleCenter.longitude, circleRadius);
+    }
+    return { latitude, longitude };
+  }, [props.randomlocation, circleCenter, circleRadius]);
+
+  // Define dynamic colors based on randomlocation
+  const circleFillColor = props.randomlocation ? "rgba(0, 255, 0, 0.1)" : "rgba(0, 255, 0, 0.2)";
+  const circleStrokeColor = props.randomlocation ? "rgba(0, 255, 0, 0.6)" : "rgba(0, 255, 0, 0.8)";
 
   return (
     <View>
       <Circle
-        center={{
-          latitude: markerLocation.latitude,
-          longitude: markerLocation.longitude,
-        }}
+        center={circleCenter}
         radius={circleRadius}
-        fillColor="rgba(0, 255, 0, 0.2)"
-        strokeColor="rgba(0, 255, 0, 0.8)"
+        fillColor={circleFillColor}
+        strokeColor={circleStrokeColor}
       />
       <Marker
-        coordinate={{
-          latitude: markerLocation.latitude,
-          longitude: markerLocation.longitude,
-        }}
+        coordinate={markerLocation}
         title={props.player.username}
         description={props.timestamp}
-        onPress={handleMarkerPress} // Use the new handler
+        onPress={handleMarkerPress}
       >
         <View style={{ alignItems: 'center', position: 'relative' }}>
           <Image 
