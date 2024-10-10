@@ -5,6 +5,7 @@ import { MissileLibrary } from "./Missile/missile";
 import { Players } from "./map-players";
 import { useUserName } from "../util/fetchusernameglobal";
 import { fetchAndCacheImage } from "../util/imagecache";
+import useFetchFriends from "../hooks/websockets/friendshook";
 
 const resizedplayerimage = require("../assets/mapassets/Female_Avatar_PNG.png");
 const carImage = require("../assets/transport/car.png");
@@ -171,6 +172,7 @@ export const PlayerComp = (props: PlayerProps) => {
   const userName = useUserName();
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
+  const friends = useFetchFriends(); // Use the friends hook
 
   useEffect(() => {
     const loadProfileImage = async () => {
@@ -211,30 +213,37 @@ export const PlayerComp = (props: PlayerProps) => {
   // Define radii
   const baseRadius = 6; // Default radius when randomlocation is false
   const randomRadius = 50; // Radius when randomlocation is true
-  const circleRadius = props.randomlocation ? randomRadius : baseRadius;
 
-  // Define offset radius for the circle center when randomlocation is true
-  const offsetRadius = props.randomlocation ? 100 : 0; // Adjust as needed
+  // Check if the player is a friend
+  const isFriend = friends.some(friend => friend.username === props.player.username);
 
-  // Compute circle center with offset when randomlocation is true
+  // Determine if we should use random location
+  const useRandomLocation = props.randomlocation && !isFriend;
+
+  const circleRadius = useRandomLocation ? randomRadius : baseRadius;
+
+  // Define offset radius for the circle center when using random location
+  const offsetRadius = useRandomLocation ? 100 : 0;
+
+  // Compute circle center with offset when using random location
   const circleCenter = useMemo(() => {
-    if (props.randomlocation) {
+    if (useRandomLocation) {
       return getOffsetLocation(latitude, longitude, offsetRadius);
     }
     return { latitude, longitude };
-  }, [props.randomlocation, latitude, longitude]);
+  }, [useRandomLocation, latitude, longitude]);
 
   // Compute marker location
   const markerLocation = useMemo(() => {
-    if (props.randomlocation) {
+    if (useRandomLocation) {
       return getRandomLocation(circleCenter.latitude, circleCenter.longitude, circleRadius);
     }
     return { latitude, longitude };
-  }, [props.randomlocation, circleCenter, circleRadius]);
+  }, [useRandomLocation, circleCenter, circleRadius]);
 
-  // Define dynamic colors based on randomlocation
-  const circleFillColor = props.randomlocation ? "rgba(0, 255, 0, 0.1)" : "rgba(0, 255, 0, 0.2)";
-  const circleStrokeColor = props.randomlocation ? "rgba(0, 255, 0, 0.6)" : "rgba(0, 255, 0, 0.8)";
+  // Define dynamic colors based on useRandomLocation
+  const circleFillColor = useRandomLocation ? "rgba(0, 255, 0, 0.1)" : "rgba(0, 255, 0, 0.2)";
+  const circleStrokeColor = useRandomLocation ? "rgba(0, 255, 0, 0.6)" : "rgba(0, 255, 0, 0.8)";
 
   return (
     <View>

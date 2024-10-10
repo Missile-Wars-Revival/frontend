@@ -10,7 +10,6 @@ import { updateFriendsOnlyStatus } from '../api/visibility';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColorScheme } from 'react-native';
 import { updatelocActive, getlocActive, getRandomLocation, randomLocation } from '../api/locationOptions';
-import * as Clipboard from 'expo-clipboard';
 import { clearCredentials } from '../util/logincache';
 import { useAuth } from '../util/Context/authcontext';
 import AppIconChanger from '../components/appiconchanger';
@@ -69,6 +68,8 @@ const SettingsPage: React.FC = () => {
   const [adLoaded, setAdLoaded] = useState(false);
   const [showAd, setShowAd] = useState(false);
   const [randomLocActive, setRandomLocActive] = useState<boolean>(false);
+  const [isConfirmingEmail, setIsConfirmingEmail] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
 
   const notificationDescriptions = {
     incomingEntities: "Receive alerts when entities are approaching your location.",
@@ -183,18 +184,6 @@ const SettingsPage: React.FC = () => {
     }
   };
 
-  const copyToClipboard = async (text: string) => {
-    await Clipboard.setStringAsync(text);
-    setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 2000);
-  };
-
-  const truncateToken = (token: string | null) => {
-    if (!token) return 'No token';
-    if (token.length <= 20) return token;
-    return `${token.substring(0, 10)}...${token.substring(token.length - 10)}`;
-  };
-
   const validateEmail = (email: string) => {
     return email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
   };
@@ -238,35 +227,27 @@ const SettingsPage: React.FC = () => {
     );
   };
 
-  const handleEmailChange = async (email: string) => {
+  const handleEmailChange = (email: string) => {
     setEmailError('');
     if (!validateEmail(email)) {
       setEmailError('Invalid email address');
       return;
     }
-    Alert.alert(
-      "Confirm Email Change",
-      `Are you sure you want to change your email to "${email}"?`,
-      [
-        {
-          text: "Cancel",
-          style: "cancel"
-        },
-        {
-          text: "Confirm",
-          onPress: async () => {
-            try {
-              await changeEmail(email);
-              await SecureStore.setItemAsync('email', email);
-              Alert.alert("Success", "Email changed successfully");
-            } catch (error) {
-              console.error("Error changing email:", error);
-              Alert.alert("Error", "Failed to change email. Please try again.");
-            }
-          }
-        }
-      ]
-    );
+    setNewEmail(email);
+    setIsConfirmingEmail(true);
+  };
+
+  const confirmEmailChange = async () => {
+    try {
+      await changeEmail(newEmail);
+      await SecureStore.setItemAsync('email', newEmail);
+      setIsConfirmingEmail(false);
+      Alert.alert("Success", "Email changed successfully. Please sign in again.");
+      handleLogout();
+    } catch (error) {
+      console.error("Error changing email:", error);
+      Alert.alert("Error", "Failed to change email. Please try again.");
+    }
   };
 
   const handlePasswordChange = async () => {
@@ -556,13 +537,36 @@ const SettingsPage: React.FC = () => {
         />
       </View>
       {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
-      <TouchableHighlight
-        onPress={() => handleEmailChange(email)}
-        style={[styles.button, isDarkMode && styles.buttonDark]}
-        underlayColor={isDarkMode ? '#5c2a4f' : '#662d60'}
-      >
-        <Text style={styles.buttonText}>Change Email</Text>
-      </TouchableHighlight>
+      
+      {isConfirmingEmail ? (
+        <View style={styles.confirmationContainer}>
+          <Text style={[styles.confirmationText, isDarkMode && styles.confirmationTextDark]}>
+            Are you sure you want to change your email to {newEmail}? You will be required to sign back in after changing.
+          </Text>
+          <View style={styles.confirmationButtons}>
+            <TouchableOpacity
+              onPress={() => setIsConfirmingEmail(false)}
+              style={[styles.confirmationButton, styles.cancelButton]}
+            >
+              <Text style={styles.confirmationButtonText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={confirmEmailChange}
+              style={[styles.confirmationButton, styles.confirmButton]}
+            >
+              <Text style={styles.confirmationButtonText}>Confirm</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      ) : (
+        <TouchableHighlight
+          onPress={() => handleEmailChange(email)}
+          style={[styles.button, isDarkMode && styles.buttonDark]}
+          underlayColor={isDarkMode ? '#5c2a4f' : '#662d60'}
+        >
+          <Text style={styles.buttonText}>Change Email</Text>
+        </TouchableHighlight>
+      )}
 
       <View style={styles.inputContainer}>
         <LockKeyhole size={24} color={isDarkMode ? "white" : "black"} style={styles.inputIcon} />
@@ -736,7 +740,11 @@ const SettingsPage: React.FC = () => {
         <Text style={[styles.creditsSubtitle, isDarkMode && styles.creditsSubtitleDark]}>
           This game was developed by One Studio One Game, LLC
         </Text>
-        
+        <Text style={[styles.creditsSectionTitle, isDarkMode && styles.creditsSectionTitleDark]}>Lead Developers:</Text>
+        <View style={styles.creditsList}>
+          <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>Tristan</Text>
+          <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>Clxud</Text>
+        </View>
         <Text style={[styles.creditsSectionTitle, isDarkMode && styles.creditsSectionTitleDark]}>Frontend Developers:</Text>
         <View style={styles.creditsList}>
           <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>Tristan</Text>
@@ -758,6 +766,12 @@ const SettingsPage: React.FC = () => {
           <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>ryaaab</Text>
         </View>
 
+        <Text style={[styles.creditsSectionTitle, isDarkMode && styles.creditsSectionTitleDark]}>Staff:</Text>
+        <View style={styles.creditsList}>
+          <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>Sophie</Text>
+          <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>ToxicSans</Text>
+          <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>Nero</Text>
+        </View> 
         <TouchableOpacity
           style={[styles.donateButton, isDarkMode && styles.donateButtonDark]}
           onPress={() => Linking.openURL('https://donate.stripe.com/fZe6r884h6e59Ww288')}
@@ -861,46 +875,6 @@ const SettingsPage: React.FC = () => {
             </TouchableOpacity>
           </View>
         </View>
-
-        {/* <View style={[styles.debugMenu, isDarkMode && styles.debugMenuDark]}>
-          <Text style={[styles.debugMenuTitle, isDarkMode && styles.debugMenuTitleDark]}>Debug Menu</Text>
-          <View style={styles.debugMenuItem}>
-            <Text style={[styles.debugMenuLabel, isDarkMode && styles.debugMenuLabelDark]}>Cached Username:</Text>
-            <Text style={[styles.debugMenuValue, isDarkMode && styles.debugMenuValueDark]}>{username || 'Not set'}</Text>
-          </View>
-          <View style={styles.debugMenuItem}>
-            <Text style={[styles.debugMenuLabel, isDarkMode && styles.debugMenuLabelDark]}>Cached Firebase Token:</Text>
-            <View style={styles.tokenContainer}>
-              <Text style={[styles.debugMenuValue, isDarkMode && styles.debugMenuValueDark]}>
-                {truncateToken(firebaseToken)}
-              </Text>
-              <TouchableOpacity
-                style={styles.copyButton}
-                onPress={() => firebaseToken && copyToClipboard(firebaseToken)}
-              >
-                <Text style={styles.copyButtonText}>
-                  {isCopied ? 'Copied!' : 'Copy'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-          <View style={styles.debugMenuItem}>
-            <Text style={[styles.debugMenuLabel, isDarkMode && styles.debugMenuLabelDark]}>Cached Notification Token:</Text>
-            <View style={styles.tokenContainer}>
-              <Text style={[styles.debugMenuValue, isDarkMode && styles.debugMenuValueDark]}>
-                {truncateToken(notificationToken)}
-              </Text>
-              <TouchableOpacity
-                style={styles.copyButton}
-                onPress={() => notificationToken && copyToClipboard(notificationToken)}
-              >
-                <Text style={styles.copyButtonText}>
-                  {isCopied ? 'Copied!' : 'Copy'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View> */}
 
         <Modal
           visible={showDeleteModal}
@@ -1124,6 +1098,9 @@ const styles = StyleSheet.create({
   },
   confirmDeleteButton: {
     backgroundColor: '#DC3545',
+  },
+  confirmButton: {
+    backgroundColor: '#28A745',
   },
   modalButtonText: {
     color: '#FFFFFF',
@@ -1383,6 +1360,36 @@ const styles = StyleSheet.create({
   donateButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
+    fontWeight: 'bold',
+  },
+  confirmationContainer: {
+    marginTop: 10,
+    marginBottom: 20,
+    padding: 15,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 10,
+  },
+  confirmationText: {
+    fontSize: 14,
+    color: '#333',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  confirmationTextDark: {
+    color: '#B0B0B0',
+  },
+  confirmationButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  confirmationButton: {
+    padding: 10,
+    borderRadius: 5,
+    width: '45%',
+    alignItems: 'center',
+  },
+  confirmationButtonText: {
+    color: '#FFFFFF',
     fontWeight: 'bold',
   },
 });

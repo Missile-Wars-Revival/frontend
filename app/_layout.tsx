@@ -215,7 +215,7 @@ function NavBar({ unreadCount }: { unreadCount: number }) {
   }, [updateAndSendLocation]);
 
   const getTabForPath = useMemo(() => (path: string) => {
-    if (path === '/notifications' || path === '/add-friends') {
+    if (path === '/notifications' || path === '/add-friends'|| path === '/msg') {
       return '/friends';
     } else if (path === '/settings') {
       return '/profile';
@@ -407,7 +407,7 @@ function RootLayoutNav() {
           />
           <Stack.Screen name="register" options={{ headerShown: false, gestureEnabled: true }} />
           <Stack.Screen name="PermissionsScreen" options={{ headerShown: false, animation: 'slide_from_bottom' }} />
-          <Stack.Screen name="msg" options={{ headerShown: false }} />
+          <Stack.Screen name="msg" options={{ headerShown: false, animation: 'slide_from_bottom' }} />
           <Stack.Screen name="store" options={{ headerShown: false }} />
           <Stack.Screen name="league" options={{ headerShown: false }} />
           <Stack.Screen name="friends" options={{ headerShown: false }} />
