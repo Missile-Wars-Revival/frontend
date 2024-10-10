@@ -3,7 +3,7 @@ import { View, Text, TouchableHighlight, Switch, ScrollView, Alert, StyleSheet, 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Input } from "../components/ui/input";
-import { User, LockKeyhole, Mail, ChevronLeft, Shield, MessageCircle, ChevronRight, Heart } from "lucide-react-native";
+import { User, LockKeyhole, Mail, ChevronLeft, Shield, MessageCircle, ChevronRight, Heart, Star } from "lucide-react-native";
 import * as SecureStore from 'expo-secure-store';
 import { changeEmail, changePassword, changeUsername, deleteAcc } from '../api/changedetails';
 import { updateFriendsOnlyStatus } from '../api/visibility';
@@ -14,14 +14,15 @@ import { clearCredentials } from '../util/logincache';
 import { useAuth } from '../util/Context/authcontext';
 import AppIconChanger from '../components/appiconchanger';
 import { Card } from "../components/card";
-import * as StoreReview from 'expo-store-review';
+import Purchases, { PurchasesPackage, PACKAGE_TYPE } from 'react-native-purchases';
+//import * as StoreReview from 'expo-store-review';
 import { getNotificationPreferences, updateNotificationPreferences } from '../api/notifications';
 import { RewardedAd, RewardedAdEventType, TestIds } from 'react-native-google-mobile-ads';
 
 
 const adUnitId = __DEV__ ? TestIds.REWARDED : Platform.select({
   ios: 'ca-app-pub-4035842398612787/8310612855',
-  android: 'ca-app-pub-4035842398612787/27790845794',
+  android: 'ca-app-pub-4035842398612787/2779084579',
   default: 'ca-app-pub-4035842398612787/2779084579',
 });
 
@@ -70,6 +71,8 @@ const SettingsPage: React.FC = () => {
   const [randomLocActive, setRandomLocActive] = useState<boolean>(false);
   const [isConfirmingEmail, setIsConfirmingEmail] = useState(false);
   const [newEmail, setNewEmail] = useState('');
+  const [isAdFree, setIsAdFree] = useState<boolean>(false);
+  const [offerings, setOfferings] = useState<any | null>(null);
 
   const notificationDescriptions = {
     incomingEntities: "Receive alerts when entities are approaching your location.",
@@ -87,6 +90,8 @@ const SettingsPage: React.FC = () => {
     fetchLocActiveStatus();
     fetchNotificationPreferences();
     fetchRandomLocActiveStatus();
+    checkAdFreeStatus();
+    fetchOfferings();
   }, []);
 
   useEffect(() => {
@@ -99,10 +104,10 @@ const SettingsPage: React.FC = () => {
         console.log('User earned reward of ', reward);
       },
     );
-  
+
     // Start loading the rewarded ad straight away
     rewarded.load();
-  
+
     // Unsubscribe from events on unmount
     return () => {
       unsubscribeLoaded();
@@ -112,9 +117,9 @@ const SettingsPage: React.FC = () => {
 
   useEffect(() => {
     if (
-      showAccountDetails || 
-      showVisibilitySettings || 
-      showNotificationSettings || 
+      showAccountDetails ||
+      showVisibilitySettings ||
+      showNotificationSettings ||
       showCredits // Include showCredits here
     ) {
       Animated.spring(slideAnimation, {
@@ -181,6 +186,59 @@ const SettingsPage: React.FC = () => {
       setRandomLocActive(status);
     } catch (error) {
       console.error("Failed to fetch random location status:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchOfferings();
+  }, []);
+
+  const fetchOfferings = async () => {
+    try {
+      const offerings = await Purchases.getOfferings();
+      if (offerings.current !== null) {
+        // console.log('Current offerings:', offerings.current.availablePackages);
+        const adFreePackage = offerings.current.availablePackages.find(
+          (pkg) => pkg.identifier === 'ad_free'
+        );
+        if (adFreePackage) {
+          // console.log('Ad-free package found:', adFreePackage);
+          setOfferings([adFreePackage]); // Set as an array with only the ad_free package
+        } else {
+          // console.log('Ad-free package not found in the current offering');
+          setOfferings([]); // Set an empty array if no ad_free package is found
+        }
+      } else {
+        // console.log('No current offering available');
+        setOfferings([]);
+      }
+    } catch (e) {
+      // console.error('Error fetching offerings:', e);
+      setOfferings([]);
+    }
+  };
+
+  const handlePurchase = async (pkg: PurchasesPackage) => {
+    try {
+      const { customerInfo } = await Purchases.purchasePackage(pkg);
+      if (typeof customerInfo.entitlements.active['ad_free'] !== "undefined") {
+        console.log("User has ad-free access");
+        setIsAdFree(true);
+        await AsyncStorage.setItem('isAdFree', 'true');
+        Alert.alert('Success', 'You now have ad-free access!');
+      }
+    } catch (e) {
+      if (e instanceof Error) {
+        console.error('Error processing purchase:', (e as Error).message);
+        if ('code' in e && (e as any).code === (Purchases as any).ErrorCode.PURCHASE_CANCELLED_ERROR) {
+          console.log('User cancelled the purchase');
+        } else {
+          Alert.alert('Purchase Error', (e as Error).message);
+        }
+      } else {
+        console.error('Unexpected error during purchase:', e);
+        Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+      }
     }
   };
 
@@ -323,8 +381,8 @@ const SettingsPage: React.FC = () => {
   const toggleLocActive = async () => {
     const newStatus = !locActive;
 
-    if (!newStatus) { 
-      // If turning off location, attempt to show ad
+    if (!newStatus && !isAdFree) {
+      // If turning off location and not ad-free, attempt to show ad
       if (adLoaded) {
         setShowAd(true);
         rewarded.show();
@@ -334,9 +392,8 @@ const SettingsPage: React.FC = () => {
         console.log("Ad not loaded, continuing without showing ad");
         handleLocationToggle(newStatus);
       }
-      
     } else {
-      // If turning on location, proceed normally
+      // If turning on location or ad-free, proceed normally
       handleLocationToggle(newStatus);
     }
   };
@@ -346,7 +403,8 @@ const SettingsPage: React.FC = () => {
     setRandomLocActive(newStatus); // Update state immediately for responsive UI
 
     try {
-      if (!newStatus) { 
+      if (newStatus && !isAdFree) {
+        // If turning off location and not ad-free, attempt to show ad 
         if (adLoaded) {
           setShowAd(true);
           rewarded.show();
@@ -354,7 +412,7 @@ const SettingsPage: React.FC = () => {
           console.log("Ad not loaded, continuing without showing ad");
         }
       }
-      
+
       const result = await randomLocation(newStatus);
       console.log("API response:", result); // Log the API response
 
@@ -365,14 +423,15 @@ const SettingsPage: React.FC = () => {
       );
     } catch (error) {
       console.error("Failed to update random location status:", error);
-      setRandomLocActive(!newStatus); // Revert state if API call fails
-      
+      setRandomLocActive(newStatus); // Revert state if API call fails
+
       let errorMessage = "Failed to update random location status. Please try again.";
       if (error instanceof Error) {
         errorMessage += ` Error: ${error.message}`;
       }
-      
+
       Alert.alert("Error", errorMessage);
+      setRandomLocActive(newStatus); // Revert state if API call fails
     }
   };
 
@@ -433,18 +492,18 @@ const SettingsPage: React.FC = () => {
     Linking.openURL('https://discord.gg/Gk8jqUnVd3');
   };
 
-  const handleRateApp = async () => {
-    if (await StoreReview.hasAction()) {
-      StoreReview.requestReview();
-    } else {
-      // Fallback for devices that can't request review
-      if (Platform.OS === 'ios') {
-        Linking.openURL('https://apps.apple.com/app/your-app-id');
-      } else {
-        Linking.openURL('https://play.google.com/store/apps/details?id=your.app.package');
-      }
-    }
-  };
+  // const handleRateApp = async () => {
+  //   if (await StoreReview.hasAction()) {
+  //     StoreReview.requestReview();
+  //   } else {
+  //     // Fallback for devices that can't request review
+  //     if (Platform.OS === 'ios') {
+  //       Linking.openURL('https://apps.apple.com/app/your-app-id');
+  //     } else {
+  //       Linking.openURL('https://play.google.com/store/apps/details?id=your.app.package');
+  //     }
+  //   }
+  // };
 
   useEffect(() => {
     fetchNotificationPreferences();
@@ -466,7 +525,7 @@ const SettingsPage: React.FC = () => {
       [setting]: !notificationSettings[setting]
     };
     setNotificationSettings(newSettings);
-    
+
     try {
       await updateNotificationPreferences({ [setting]: newSettings[setting] });
     } catch (error) {
@@ -504,7 +563,7 @@ const SettingsPage: React.FC = () => {
         </TouchableOpacity>
         <Text style={[styles.popupTitle, isDarkMode && styles.popupTitleDark]}>Account Details</Text>
       </View>
-      
+
       <View style={styles.inputContainer}>
         <User size={24} color={isDarkMode ? "white" : "black"} style={styles.inputIcon} />
         <Input
@@ -537,7 +596,7 @@ const SettingsPage: React.FC = () => {
         />
       </View>
       {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
-      
+
       {isConfirmingEmail ? (
         <View style={styles.confirmationContainer}>
           <Text style={[styles.confirmationText, isDarkMode && styles.confirmationTextDark]}>
@@ -618,7 +677,7 @@ const SettingsPage: React.FC = () => {
         </TouchableOpacity>
         <Text style={[styles.popupTitle, isDarkMode && styles.popupTitleDark]}>Visibility Settings</Text>
       </View>
-      
+
       <View style={styles.visibilitySettingsContent}>
         <View style={[styles.visibilityContainer, isDarkMode && styles.visibilityContainerDark]}>
           <Text style={[styles.visibilityText, isDarkMode && styles.visibilityTextDark]}>Visibility Mode</Text>
@@ -634,8 +693,8 @@ const SettingsPage: React.FC = () => {
             </Text>
           </View>
           <Text style={[styles.visibilityDescription, isDarkMode && styles.visibilityDescriptionDark]}>
-            {visibilityMode === 'global' 
-              ? 'You are visible to friends and players in your league' 
+            {visibilityMode === 'global'
+              ? 'You are visible to friends and players in your league'
               : 'You are only visible to your friends'}
           </Text>
         </View>
@@ -654,8 +713,8 @@ const SettingsPage: React.FC = () => {
             </Text>
           </View>
           <Text style={[styles.visibilityDescription, isDarkMode && styles.visibilityDescriptionDark]}>
-            {locActive 
-              ? 'Your location is being used to update your position on the map' 
+            {locActive
+              ? 'Your location is being used to update your position on the map'
               : 'You are not visible to other players and your location is not being updated'}
           </Text>
         </View>
@@ -674,8 +733,8 @@ const SettingsPage: React.FC = () => {
             </Text>
           </View>
           <Text style={[styles.visibilityDescription, isDarkMode && styles.visibilityDescriptionDark]}>
-            {randomLocActive 
-              ? 'Your location is diffused, making it less precise' 
+            {randomLocActive
+              ? 'Your location is diffused, making it less precise'
               : 'Your location is accurate'}
           </Text>
         </View>
@@ -694,7 +753,7 @@ const SettingsPage: React.FC = () => {
         </TouchableOpacity>
         <Text style={[styles.popupTitle, isDarkMode && styles.popupTitleDark]}>Notification Settings</Text>
       </View>
-      
+
       {Object.entries(notificationSettings).map(([key, value]) => {
         // Skip 'id' and 'userId' options
         if (key === 'id' || key === 'userId') return null;
@@ -735,7 +794,7 @@ const SettingsPage: React.FC = () => {
         </TouchableOpacity>
         <Text style={[styles.popupTitle, isDarkMode && styles.popupTitleDark]}>Credits</Text>
       </View>
-      
+
       <View style={styles.creditsContent}>
         <Text style={[styles.creditsSubtitle, isDarkMode && styles.creditsSubtitleDark]}>
           This game was developed by One Studio One Game, LLC
@@ -771,7 +830,7 @@ const SettingsPage: React.FC = () => {
           <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>Sophie</Text>
           <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>ToxicSans</Text>
           <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>Nero</Text>
-        </View> 
+        </View>
         <TouchableOpacity
           style={[styles.donateButton, isDarkMode && styles.donateButtonDark]}
           onPress={() => Linking.openURL('https://donate.stripe.com/fZe6r884h6e59Ww288')}
@@ -782,6 +841,41 @@ const SettingsPage: React.FC = () => {
       </View>
     </ScrollView>
   );
+
+  const checkAdFreeStatus = async () => {
+    try {
+      const storedAdFreeStatus = await AsyncStorage.getItem('isAdFree');
+      if (storedAdFreeStatus !== null) {
+        setIsAdFree(JSON.parse(storedAdFreeStatus));
+      }
+    } catch (error) {
+      console.error('Error fetching ad-free status:', error);
+    }
+  };
+
+  const renderPurchaseOptions = () => {
+    if (!offerings || offerings.length === 0) return null;
+  
+    return (
+      <Card title="In-App Purchases" icon={<Star size={24} color={isDarkMode ? "white" : "black"} />}>
+        {offerings.map((pkg: PurchasesPackage) => (
+          <TouchableHighlight
+            key={pkg.identifier}
+            onPress={() => handlePurchase(pkg)}
+            style={[styles.button, isDarkMode && styles.buttonDark]}
+            underlayColor={isDarkMode ? '#5c2a4f' : '#662d60'}
+          >
+            <View style={styles.buttonContent}>
+              <Text style={styles.buttonText}>
+                {pkg.packageType === PACKAGE_TYPE.LIFETIME ? 'Buy ' : 'Subscribe to '}
+                {pkg.product.title} - {pkg.product.priceString}
+              </Text>
+            </View>
+          </TouchableHighlight>
+        ))}
+      </Card>
+    );
+  };
 
   return (
     <ScrollView style={[styles.container, isDarkMode && styles.containerDark]}>
@@ -834,6 +928,8 @@ const SettingsPage: React.FC = () => {
               <AppIconChanger />
             </Card>
           )}
+
+          {renderPurchaseOptions()}
 
           <Card title="Community & Feedback" icon={<MessageCircle size={24} color={isDarkMode ? "white" : "black"} />}>
             <TouchableHighlight

@@ -21,6 +21,8 @@ import * as ExpoSplashScreen from 'expo-splash-screen';
 import { LandmineProvider } from '../util/Context/landminecontext';
 import { getCurrentLocation, getlocation } from '../util/locationreq';
 import { WebSocketMessage, WSMsg } from 'middle-earth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import PermissionsScreen from './PermissionsScreen';
 
 const WebSocketProvider = ({ children }: WebSocketProviderProps) => {
   const { data, missiledata, landminedata, lootdata, otherdata, healthdata, friendsdata, inventorydata, playerlocations, leaguesData, sendWebsocket } = useWebSocket();
@@ -49,6 +51,7 @@ const CountdownProvider: React.FC<CountdownProviderProps> = ({ children }) => {
 export default function RootLayout() {
   const queryClient = new QueryClient();
   const [isSplashVisible, setIsSplashVisible] = useState(true);
+  const [isFirstLaunch, setIsFirstLaunch] = useState(true);
   const [appState, setAppState] = useState(AppState.currentState);
   const [lastActiveTime, setLastActiveTime] = useState(Date.now());
   const router = useRouter();
@@ -81,14 +84,48 @@ export default function RootLayout() {
     }
   }, []);
 
+  const checkAdFreeStatus = async () => {
+    try {
+      const customerInfo = await Purchases.getCustomerInfo();
+      const adFreeStatus = customerInfo.entitlements.active['ad_free'] !== undefined;
+      console.log('Ad-free status:', adFreeStatus);
+      await AsyncStorage.setItem('isAdFree', JSON.stringify(adFreeStatus));
+    } catch (error) {
+      console.error('Error checking ad-free status:', error);
+    }
+  };
+
   const isConfigured = useRef(false);
 
   useEffect(() => {
     if (!isConfigured.current) {
       console.log('Calling configurePurchases...');
       configurePurchases();
+      checkAdFreeStatus();
       isConfigured.current = true;
     }
+  }, []);
+
+  useEffect(() => {
+    const checkFirstLaunch = async () => {
+      try {
+        const value = await AsyncStorage.getItem('alreadyLaunched');
+        if (value === null) {
+          await AsyncStorage.setItem('alreadyLaunched', 'true');
+          setIsFirstLaunch(true);
+        } else {
+          setIsFirstLaunch(false);
+        }
+      } catch (error) {
+        console.error('Error checking first launch:', error);
+      }
+    };
+
+    checkFirstLaunch();
+  }, []);
+
+  const handlePermissionGranted = useCallback(() => {
+    setIsFirstLaunch(false);
   }, []);
 
   const handleSplashFinish = useCallback(() => {
@@ -143,6 +180,10 @@ export default function RootLayout() {
     return <SplashScreen onFinish={handleSplashFinish} />;
   }
 
+  if (isFirstLaunch) {
+    return <PermissionsScreen onPermissionGranted={handlePermissionGranted} />;
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <CountdownProvider>
@@ -190,7 +231,7 @@ function NavBar({ unreadCount }: { unreadCount: number }) {
         const locationMsg = new WSMsg("playerLocation", locationData);
         const message = new WebSocketMessage([locationMsg]);
         sendWebsocket(message);
-        console.log('Location sent');
+        // console.log('Location sent');
 
         lastUpdateTimeRef.current = now;
       }

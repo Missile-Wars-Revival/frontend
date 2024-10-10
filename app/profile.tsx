@@ -3,7 +3,7 @@ import { SafeAreaView, StyleSheet, Text, View, TouchableOpacity, Switch, Modal, 
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from "expo-secure-store";
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import useFetchInventory from '../hooks/websockets/inventoryhook';
 import { getselfprofile } from '../api/getprofile';
@@ -13,8 +13,9 @@ import { fetchAndCacheImage } from '../util/imagecache';
 import useFetchFriends from '../hooks/websockets/friendshook';
 import { useColorScheme } from 'react-native';
 import { editUser } from '../api/editUser';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
+import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
+import { Platform } from 'react-native';
 
 const DEFAULT_IMAGE = require('../assets/mapassets/Female_Avatar_PNG.png');
 
@@ -72,6 +73,12 @@ const badgeImages: { [key: string]: any } = {
   Legend: require('../assets/leagues/legend.png'),
 };
 
+const bannerAdUnitId = __DEV__ ? TestIds.BANNER : Platform.select({
+  ios: 'ca-app-pub-4035842398612787/5646222776',
+  android: 'ca-app-pub-4035842398612787/8536109994',
+  default: 'ca-app-pub-4035842398612787/8536109994',
+});
+
 const ProfilePage: React.FC = () => {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
@@ -100,6 +107,9 @@ const ProfilePage: React.FC = () => {
   const [isCopied, setIsCopied] = useState(false);
   const [notificationToken, setNotificationToken] = useState<string | null>(null);
   const [firebaseToken, setFirebaseToken] = useState<string | null>(null);
+  const [isAdFree, setIsAdFree] = useState(false);
+  const [showAd, setShowAd] = useState(true);
+  const [adLoaded, setAdLoaded] = useState(false);
 
   useEffect(() => {
     const fetchUsername = async () => {
@@ -115,6 +125,20 @@ const ProfilePage: React.FC = () => {
     fetchUsername();
   }, []);
 
+  useEffect(() => {
+    checkAdFreeStatus();
+  }, []);
+
+  const checkAdFreeStatus = async () => {
+    try {
+      const storedAdFreeStatus = await AsyncStorage.getItem('isAdFree');
+      if (storedAdFreeStatus !== null) {
+        setIsAdFree(JSON.parse(storedAdFreeStatus));
+      }
+    } catch (error) {
+      console.error('Error fetching ad-free status:', error);
+    }
+  };
 
   const filteredInventory = useMemo(() => {
     return inventory.filter(item => item.quantity > 0);
@@ -711,6 +735,28 @@ const ProfilePage: React.FC = () => {
         </TouchableWithoutFeedback>
       </Modal>
 
+      {!isAdFree && showAd && (
+        <View style={styles.footerAdContainer}>
+          <BannerAd
+            unitId={bannerAdUnitId}
+            size={BannerAdSize.BANNER}
+            requestOptions={{
+              requestNonPersonalizedAdsOnly: true,
+            }}
+            onAdLoaded={() => setAdLoaded(true)}
+            onAdFailedToLoad={(error) => console.error("Banner ad failed to load: ", error)}
+          />
+          {adLoaded && (
+            <TouchableOpacity 
+              style={styles.dismissAdButton} 
+              onPress={() => setShowAd(false)}
+            >
+              <Ionicons name="close-circle" size={24} color="white" />
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+
       {statistics && statistics.badges.includes('Debug') && (
         <TouchableOpacity onPress={() => setIsDebugMenuVisible(!isDebugMenuVisible)}>
           <Text style={styles.debugMenuToggle}>Toggle Debug Menu</Text>
@@ -1159,6 +1205,21 @@ const styles = StyleSheet.create({
   copyButtonText: {
     color: '#FFF',
     fontSize: 12,
+  },
+  footerAdContainer: {
+    width: '100%',
+    height: 50, // Adjust based on your banner ad size
+    backgroundColor: 'transparent',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'absolute',
+    bottom: 0,
+  },
+  dismissAdButton: {
+    position: 'absolute',
+    right: 5,
+    top: 5,
+    zIndex: 1,
   },
 });
 

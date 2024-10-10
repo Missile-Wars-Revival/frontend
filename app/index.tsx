@@ -5,6 +5,7 @@ import * as SecureStore from "expo-secure-store";
 import axiosInstance from "../api/axios-instance";
 import axios from "axios";
 import { Ionicons } from '@expo/vector-icons';
+import { RewardedAd, RewardedAdEventType, BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 
 // Android Themes
 import { androidDefaultMapStyle } from "../map-themes/Android-themes/defaultMapStyle";
@@ -31,21 +32,28 @@ import { router } from "expo-router";
 import HealthBar from "../components/healthbar";
 import { getisAlive, setHealth, updateisAlive } from "../api/health";
 import { playDeathSound } from "../util/sounds/deathsound";
-import { RewardedAd, RewardedAdEventType, TestIds } from "react-native-google-mobile-ads";
 import useFetchHealth from "../hooks/websockets/healthhook";
 import { getlocActive } from "../api/locationOptions";
 import PlayerViewButton from "../components/PlayerViewButton";
 import { MissileLibrary } from "../components/Missile/missile";
 import MissileFiringAnimation from "../components/Animations/MissileFiring";
+import * as Location from 'expo-location';
 
-const adUnitId = __DEV__ ? TestIds.REWARDED : Platform.select({
+const bannerAdUnitId = __DEV__ ? TestIds.BANNER : Platform.select({
+  ios: 'ca-app-pub-4035842398612787/5646222776',
+  android: 'ca-app-pub-4035842398612787/8536109994',
+  default: 'ca-app-pub-4035842398612787/8536109994',
+});
+
+const rewardedAdUnitId = __DEV__ ? TestIds.REWARDED : Platform.select({
   ios: 'ca-app-pub-4035842398612787/8310612855',
   android: 'ca-app-pub-4035842398612787/2779084579',
   default: 'ca-app-pub-4035842398612787/2779084579',
 });
 
-const rewarded = RewardedAd.createForAdRequest(adUnitId, {
-  keywords: ['games', 'clothing'], //ads category
+const rewarded = RewardedAd.createForAdRequest(rewardedAdUnitId, {
+  requestNonPersonalizedAdsOnly: true,
+  keywords: ['game', 'action'],
 });
 
 const { width, height } = Dimensions.get('window');
@@ -58,12 +66,15 @@ export default function Map() {
   const [deathsoundPlayed, setdeathSoundPlayed] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const health = useFetchHealth()//WS hook
-  const [locationPermission, setLocationPermission] = useState(false);
   const [locActive, setLocActive] = useState<boolean>(true);
+  const [locPermsActive, setLocPermsActive] = useState<boolean>(false);
   const [showMissileLibrary, setShowMissileLibrary] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState("");
   const [showMissileFiringAnimation, setShowMissileFiringAnimation] = useState(false);
-
+  const [showHeaderAd, setShowHeaderAd] = useState(true);
+  const [isAdFree, setIsAdFree] = useState(false);
+  const [adLoaded, setAdLoaded] = useState(false);
+  const [rewardedAdLoaded, setRewardedAdLoaded] = useState(false);
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
 
@@ -91,9 +102,11 @@ export default function Map() {
     };
 
     fetchCredentials();
+    checkAdFreeStatus();
+    loadRewardedAd();
   }, []);
-  
-  
+
+
   useEffect(() => {
     const addCurrencyAmount = async () => {
       const lastRewardedDate = await AsyncStorage.getItem('lastRewardedDate');
@@ -151,7 +164,7 @@ export default function Map() {
     };
     getisAliveeffect();
 
-    const intervalId = setInterval(getisAliveeffect, 5000); 
+    const intervalId = setInterval(getisAliveeffect, 5000);
     return () => clearInterval(intervalId);
   }, []);
 
@@ -182,49 +195,98 @@ export default function Map() {
 
     return () => clearInterval(intervalId);
   }, [deathsoundPlayed]);
-    
-  useEffect(() => {
-      const unsubscribeLoaded = rewarded.addAdEventListener(RewardedAdEventType.LOADED, () => {
-        setLoaded(true);
-      });
-      const unsubscribeEarned = rewarded.addAdEventListener(
-        RewardedAdEventType.EARNED_REWARD,
-        reward => {
-          console.log('User earned reward of ', reward);
-        },
-      );
-  
-      // Start loading the rewarded ad straight away
-      rewarded.load();
-  
-      // Unsubscribe from events on unmount
-      return () => {
-        unsubscribeLoaded();
-        unsubscribeEarned();
-      };
-    }, []);
 
-    useEffect(() => {
-      // Fetch immediately on component mount
-      fetchLocActiveStatus();
-      // Set up interval to fetch every 30 seconds (adjust as needed)
-      const intervalId = setInterval(fetchLocActiveStatus, 30000);
-  
-      // Clean up interval on component unmount
-      return () => {
-        clearInterval(intervalId);
-      };
-    }, []);
-    
-    const fetchLocActiveStatus = async () => {
-      try {
-        const status = await getlocActive();
-        setLocActive(status);
-      } catch (error) {
-        console.error("Failed to fetch locActive status:", error);
-      } finally {
-      }
+  useEffect(() => {
+    const unsubscribeLoaded = rewarded.addAdEventListener(RewardedAdEventType.LOADED, () => {
+      setRewardedAdLoaded(true);
+    });
+    const unsubscribeEarned = rewarded.addAdEventListener(
+      RewardedAdEventType.EARNED_REWARD,
+      reward => {
+        console.log('User earned reward of ', reward);
+        // Handle the reward here (e.g., respawn the player)
+        handleRespawn();
+      },
+    );
+
+    // Load the rewarded ad
+    rewarded.load();
+
+    return () => {
+      unsubscribeLoaded();
+      unsubscribeEarned();
     };
+  }, []);
+
+  useEffect(() => {
+    // Fetch immediately on component mount
+    fetchLocActiveStatus();
+    // Set up interval to fetch every 30 seconds (adjust as needed)
+    const intervalId = setInterval(fetchLocActiveStatus, 30000);
+
+    // Clean up interval on component unmount
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, []);
+
+  const fetchLocActiveStatus = async () => {
+    try {
+      const status = await getlocActive();
+      setLocActive(status);
+    } catch (error) {
+      console.error("Failed to fetch locActive status:", error);
+    } finally {
+    }
+  };
+
+  useEffect(() => {
+    checkPermissions();
+    const intervalId = setInterval(checkPermissions, 30000);
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, []);
+
+  const checkPermissions = async () => {
+    const { status } = await Location.getForegroundPermissionsAsync();
+    if (status === 'granted') {
+      setLocPermsActive(true);
+    } else {
+      setLocPermsActive(false);
+    }
+  };
+
+  const checkAdFreeStatus = async () => {
+    try {
+      const storedAdFreeStatus = await AsyncStorage.getItem('isAdFree');
+      if (storedAdFreeStatus !== null) {
+        setIsAdFree(JSON.parse(storedAdFreeStatus));
+      }
+    } catch (error) {
+      console.error('Error fetching ad-free status:', error);
+    }
+  };
+
+  const loadRewardedAd = () => {
+    const unsubscribeLoaded = rewarded.addAdEventListener(RewardedAdEventType.LOADED, () => {
+      setRewardedAdLoaded(true);
+    });
+    const unsubscribeEarned = rewarded.addAdEventListener(
+      RewardedAdEventType.EARNED_REWARD,
+      reward => {
+        console.log('User earned reward of ', reward);
+        // Handle the reward here
+      },
+    );
+
+    rewarded.load();
+
+    return () => {
+      unsubscribeLoaded();
+      unsubscribeEarned();
+    };
+  };
 
   const showPopup = () => {
     setThemePopupVisible(true);
@@ -259,19 +321,30 @@ export default function Map() {
     setSelectedMapStyle(selectedStyle);
     storeMapStyle(style);
   };
-  const respawn = async () => {
-    const token = SecureStore.getItem("token");
-  
+
+  const handleRespawn = async () => {
+    const token = await SecureStore.getItemAsync("token");
+
     if (!token) {
       console.error("Token is null, cannot proceed with setting items");
-      return; // Stop execution if token is null
+      return;
     }
-  
+
     await AsyncStorage.setItem(`isAlive`, `true`);
     updateisAlive(token, true);
     await AsyncStorage.setItem('health', '100');
     setHealth(token, 100);
-    rewarded.show();
+    setisAlive(true);
+    setdeathSoundPlayed(false);
+  };
+
+  const respawn = async () => {
+    if (rewardedAdLoaded) {
+      rewarded.show();
+    } else {
+      console.log('Rewarded ad not loaded yet');
+      handleRespawn();
+    }
   };
 
   const handleFireMissile = (username: string) => {
@@ -307,30 +380,79 @@ export default function Map() {
             onSelect={selectMapStyle}
           />
           {locActive && (
-          <View style={styles.fireSelectorContainer}>
-            <FireSelector
-              selectedMapStyle={selectedMapStyle}
-              getStoredMapStyle={getStoredMapStyle}
-              selectMapStyle={selectMapStyle}
-            />
-          </View>
+            <View style={styles.fireSelectorContainer}>
+              <FireSelector
+                selectedMapStyle={selectedMapStyle}
+                getStoredMapStyle={getStoredMapStyle}
+                selectMapStyle={selectMapStyle}
+              />
+            </View>
           )}
           {locActive && (
-          <View style={styles.switchContainer}>
-            <PlayerViewButton onFireMissile={handleFireMissile} />
-          </View>
+            <View style={styles.switchContainer}>
+              <PlayerViewButton onFireMissile={handleFireMissile} />
+            </View>
+          )}
+          {!isAdFree && showHeaderAd && (
+            <View style={styles.footerAdContainer}>
+              <BannerAd
+                unitId={bannerAdUnitId}
+                size={BannerAdSize.BANNER}
+                requestOptions={{
+                  requestNonPersonalizedAdsOnly: true,
+                }}
+                onAdLoaded={() => setAdLoaded(true)}
+                onAdFailedToLoad={(error) => console.error("Banner ad failed to load: ", error)}
+              />
+              {adLoaded && (
+                <TouchableOpacity
+                  style={styles.dismissAdButton}
+                  onPress={() => setShowHeaderAd(false)}
+                >
+                  <Ionicons name="close-circle" size={24} color="white" />
+                </TouchableOpacity>
+              )}
+            </View>
           )}
         </>
       )}
       {(!isAlive) && (
         <View style={[styles.containerdeath, isDarkMode && styles.containerdeathDark]}>
+          {/* Top non-dismissable banner ad */}
+          <View style={styles.topAdContainer}>
+            <BannerAd
+              unitId={bannerAdUnitId}
+              size={BannerAdSize.LARGE_BANNER}
+              requestOptions={{
+                requestNonPersonalizedAdsOnly: true,
+              }}
+            />
+          </View>
+
           <TouchableOpacity
             onPress={() => respawn()}
-            style={styles.bannerdeath}
+            style={styles.bannerdeathContainer}
             activeOpacity={0.7}
           >
             <Image source={require('../assets/deathscreen.jpg')} style={styles.bannerdeath} />
+            <View style={styles.respawnTextContainer}>
+              <Text style={[styles.respawnText, isDarkMode && styles.respawnTextDark]}>
+                Tap here to respawn
+              </Text>
+            </View>
           </TouchableOpacity>
+
+          {/* Bottom banner ad */}
+          <View style={styles.bottomAdContainer}>
+            <BannerAd
+              unitId={bannerAdUnitId}
+              size={BannerAdSize.LARGE_BANNER}
+              requestOptions={{
+                requestNonPersonalizedAdsOnly: true,
+              }}
+            />
+          </View>
+
           <TouchableOpacity
             onPress={() => Linking.openURL('https://discord.gg/Gk8jqUnVd3')}
             style={[styles.retryButton, isDarkMode && styles.retryButtonDark]}
@@ -340,8 +462,12 @@ export default function Map() {
           </TouchableOpacity>
         </View>
       )}
-      {(isAlive && !locActive) && (
-        <View style={[styles.permissionContainer, isDarkMode && styles.permissionContainerDark]}>
+      {(isAlive && !locActive || !locPermsActive) && (
+        <View style={[
+          styles.permissionContainer, 
+          isDarkMode && styles.permissionContainerDark,
+          styles.fullScreenOverlay // Add this new style
+        ]}>
           <Ionicons name="location-outline" size={80} color={isDarkMode ? "#FFF" : "#007AFF"} />
           <Text style={[styles.permissionTitle, isDarkMode && styles.permissionTitleDark]}>
             Location Access Required
@@ -352,15 +478,16 @@ export default function Map() {
           <Text style={[styles.permissionSubText, isDarkMode && styles.permissionSubTextDark]}>
             Please enable location services for this app in your device settings.
           </Text>
+          {(!locActive &&
           <TouchableOpacity
             style={[styles.permissionButton, isDarkMode && styles.permissionButtonDark]}
             onPress={() => router.navigate('/settings')}
           >
             <Text style={styles.permissionButtonText}>Grant Permission</Text>
           </TouchableOpacity>
+          )}
         </View>
       )}
-
       <Modal
         animationType="slide"
         transparent={true}
@@ -377,11 +504,11 @@ export default function Map() {
               <Text style={styles.doneButtonText}>Done</Text>
             </TouchableOpacity>
           </View>
-            <MissileLibrary 
-              playerName={selectedPlayer} 
-              onMissileFired={handleMissileFired}
-              onClose={() => setShowMissileLibrary(false)}
-            />
+          <MissileLibrary
+            playerName={selectedPlayer}
+            onMissileFired={handleMissileFired}
+            onClose={() => setShowMissileLibrary(false)}
+          />
         </View>
       </Modal>
 
@@ -415,29 +542,76 @@ const styles = StyleSheet.create({
   },
   fireSelectorContainer: {
     position: 'absolute',
-    bottom: height * 0.0001, 
-    left: width * 0.000001, 
+    bottom: height * 0.0001,
+    left: width * 0.000001,
   },
   containerdeath: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: 'white',
+    paddingVertical: 10,
   },
   containerdeathDark: {
     backgroundColor: '#1E1E1E',
   },
+  bannerdeathContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',  // Add this
+  },
   bannerdeath: {
     width: width * 0.9,
-    height: height * 0.6,
+    height: height * 0.5,
     resizeMode: 'contain',
+  },
+  fullScreenOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1000, 
+  },
+  respawnTextContainer: {
+    position: 'absolute',
+    bottom: 20,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingVertical: 10,
+  },
+  respawnText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: -1, height: 1 },
+    textShadowRadius: 10
+  },
+  respawnTextDark: {
+    color: '#FFF',
+  },
+  topAdContainer: {
+    width: '100%',
+    alignItems: 'center',
+    marginTop: 100,
+  },
+  bottomAdContainer: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 40
   },
   retryButton: {
     backgroundColor: 'red',
     padding: 10,
-    marginTop: height * 0.02,
     borderRadius: 5,
     width: width * 0.5,
+    marginTop: 10,
+    marginBottom: 10, // Add some space below the button
   },
   retryButtonDark: {
     backgroundColor: '#FF4136',
@@ -558,5 +732,33 @@ const styles = StyleSheet.create({
     zIndex: 1000,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  footerAdContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 50, // Adjust based on your banner ad size
+    backgroundColor: 'transparent',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dismissAdButton: {
+    position: 'absolute',
+    right: 5,
+    top: 5,
+    zIndex: 1,
+  },
+  rewardedAdButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: '#4CAF50',
+    padding: 10,
+    borderRadius: 5,
+  },
+  rewardedAdButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
   },
 });

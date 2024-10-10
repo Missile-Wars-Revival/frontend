@@ -67,21 +67,13 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGrant
     requestFunction: () => Promise<{ status: string }>
   ) => {
     const { status } = await requestFunction();
-    if (status !== 'granted') {
-      Alert.alert(
-        'Permission Required',
-        `${permissionType.charAt(0).toUpperCase() + permissionType.slice(1)} permission is recommended for this feature. Would you like to open app settings?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Open Settings', onPress: openAppSettings }
-        ]
-      );
-    }
-    // Update the corresponding state
+    // Update the corresponding state without showing an alert
     switch (permissionType) {
       case 'location':
         setLocationPermission(status === 'granted');
-        getlocation();
+        if (status === 'granted') {
+          getlocation();
+        }
         break;
       case 'notification':
         setNotificationPermission(status === 'granted');
@@ -90,13 +82,7 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGrant
   };
 
   const requestLocationPermission = async () => {
-    if (Platform.OS === 'ios') {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      setLocationPermission(status === 'granted');
-      getlocation();
-    } else {
-      handlePermissionRequest('location', Location.requestForegroundPermissionsAsync);
-    }
+    handlePermissionRequest('location', Location.requestForegroundPermissionsAsync);
   };
 
   const requestNotificationPermission = () => {
@@ -106,22 +92,8 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGrant
   const requestTrackingPermission = async () => {
     if (Platform.OS === 'ios') {
       try {
-        const { status: currentStatus } = await getTrackingPermissionsAsync();
-        if (currentStatus === 'denied') {
-          // If permission was previously denied, show an alert with option to open settings
-          Alert.alert(
-            'Permission Required',
-            'App Tracking permission is recommended for this feature. Would you like to open app settings?',
-            [
-              { text: 'Cancel', style: 'cancel' },
-              { text: 'Open Settings', onPress: openAppSettings }
-            ]
-          );
-        } else {
-          // If not previously denied, request the permission
-          const { status } = await requestTrackingPermissionsAsync();
-          setTrackingPermission(status === 'granted');
-        }
+        const { status } = await requestTrackingPermissionsAsync();
+        setTrackingPermission(status === 'granted');
       } catch (error) {
         console.error('Error requesting tracking permission:', error);
       }
@@ -144,10 +116,10 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGrant
   };
 
   const handleContinue = () => {
-    if (locationPermission && privacyPolicyAgreed) {
+    if (privacyPolicyAgreed) {
       onPermissionGranted();
     } else {
-      Alert.alert('Required Permissions', 'You must grant location permission and agree to the Privacy Policy to use this app.');
+      Alert.alert('Required Agreement', 'You must agree to the Privacy Policy to use this app.');
     }
   };
 
@@ -193,7 +165,7 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGrant
           >
             <View style={styles.permissionsContainer}>
               <PermissionItem
-                title="Location Permission (Required)"
+                title="Location Permission"
                 description="Needed to show your position on the map and interact with other players."
                 icon={<MapPin size={24} color={isDarkMode ? "#FFFFFF" : "#000000"} />}
                 isGranted={locationPermission}
@@ -203,7 +175,7 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGrant
               />
 
               <PermissionItem
-                title="Notification Permission (Recommended)"
+                title="Notification Permission"
                 description="Allows us to send you important game updates and alerts."
                 icon={<Bell size={24} color={isDarkMode ? "#FFFFFF" : "#000000"} />}
                 isGranted={notificationPermission}
@@ -214,7 +186,7 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGrant
 
               {Platform.OS === 'ios' && (
                 <PermissionItem
-                  title="App Tracking Permission (Recommended)"
+                  title="App Tracking Permission"
                   description="This allows us to show you more relevant ads and helps keep the app free. You can decline without affecting your experience."
                   icon={<Target size={24} color={isDarkMode ? "#FFFFFF" : "#000000"} />}
                   isGranted={trackingPermission}
@@ -249,16 +221,16 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGrant
             <TouchableOpacity 
               style={[
                 styles.continueButton, 
-                (!locationPermission || !privacyPolicyAgreed) && styles.disabledButton, 
+                !privacyPolicyAgreed && styles.disabledButton, 
                 isDarkMode && styles.continueButtonDark,
-                isDarkMode && (!locationPermission || !privacyPolicyAgreed) && styles.disabledButtonDark
+                isDarkMode && !privacyPolicyAgreed && styles.disabledButtonDark
               ]} 
               onPress={handleContinue}
-              disabled={!locationPermission || !privacyPolicyAgreed}
+              disabled={!privacyPolicyAgreed}
             >
               <Text style={[
                 styles.continueButtonText,
-                isDarkMode && (!locationPermission || !privacyPolicyAgreed) && styles.disabledButtonTextDark
+                isDarkMode && !privacyPolicyAgreed && styles.disabledButtonTextDark
               ]}>
                 Agree & Continue
               </Text>
@@ -311,7 +283,6 @@ const PermissionItem = ({ title, description, icon, isGranted, onPress, styles, 
 const lightStyles = StyleSheet.create({
   container: {
     flex: 1,
-    // Remove the backgroundColor property from here
   },
   logo: {
     width: width,

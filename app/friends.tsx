@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { View, Text, TouchableOpacity, FlatList, Modal, Alert, RefreshControl, Image, TextInput, StyleSheet, useColorScheme } from "react-native";
+import { View, Text, TouchableOpacity, FlatList, Modal, Alert, RefreshControl, Image, TextInput, StyleSheet, useColorScheme, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import { useUserName } from "../util/fetchusernameglobal";
 import * as SecureStore from 'expo-secure-store';
@@ -13,11 +13,18 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getlocActive } from "../api/locationOptions";
 import { Ionicons } from '@expo/vector-icons'; 
 import MissileFiringAnimation from "../components/Animations/MissileFiring";
+import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 
 interface Friend {
   username: string;
   profileImageUrl: string;
 }
+
+const bannerAdUnitId = __DEV__ ? TestIds.BANNER : Platform.select({
+  ios: 'ca-app-pub-4035842398612787/8310612855',
+  android: 'ca-app-pub-4035842398612787/2779084579',
+  default: 'ca-app-pub-4035842398612787/2779084579',
+});
 
 const FriendsPage: React.FC = () => {
   const friends = useFetchFriends() //WS
@@ -42,6 +49,9 @@ const FriendsPage: React.FC = () => {
   const isDarkMode = colorScheme === 'dark';
   const [showMissileFiringAnimation, setShowMissileFiringAnimation] = useState(false);
   const [hasFirebaseUID, setHasFirebaseUID] = useState(false);
+  const [isAdFree, setIsAdFree] = useState(false);
+  const [showAd, setShowAd] = useState(true);
+  const [adLoaded, setAdLoaded] = useState(false);
 
   const handleUnreadCountUpdate = useCallback(({ count, chatCount }: { count: number, chatCount: number }) => {
     setLocalUnreadCount(count);
@@ -250,6 +260,21 @@ const FriendsPage: React.FC = () => {
     checkFirebaseUID();
   }, []);
 
+  useEffect(() => {
+    checkAdFreeStatus();
+  }, []);
+
+  const checkAdFreeStatus = async () => {
+    try {
+      const storedAdFreeStatus = await AsyncStorage.getItem('isAdFree');
+      if (storedAdFreeStatus !== null) {
+        setIsAdFree(JSON.parse(storedAdFreeStatus));
+      }
+    } catch (error) {
+      console.error('Error fetching ad-free status:', error);
+    }
+  };
+
   return (
     <View style={[styles.container, isDarkMode && styles.containerDark]}>
       <View style={[styles.header, isDarkMode && styles.headerDark]}>
@@ -386,6 +411,27 @@ const FriendsPage: React.FC = () => {
       {showMissileFiringAnimation && (
         <View style={styles.animationOverlay}>
           <MissileFiringAnimation onAnimationComplete={handleMissileAnimationComplete} />
+        </View>
+      )}
+      {!isAdFree && showAd && (
+        <View style={styles.footerAdContainer}>
+          <BannerAd
+            unitId={bannerAdUnitId}
+            size={BannerAdSize.BANNER}
+            requestOptions={{
+              requestNonPersonalizedAdsOnly: true,
+            }}
+            onAdLoaded={() => setAdLoaded(true)}
+            onAdFailedToLoad={(error) => console.error("Banner ad failed to load: ", error)}
+          />
+          {adLoaded && (
+            <TouchableOpacity 
+              style={styles.dismissAdButton} 
+              onPress={() => setShowAd(false)}
+            >
+              <Ionicons name="close-circle" size={24} color="white" />
+            </TouchableOpacity>
+          )}
         </View>
       )}
     </View>
@@ -677,6 +723,21 @@ const styles = StyleSheet.create({
     zIndex: 1000,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  footerAdContainer: {
+    width: '100%',
+    height: 50, // Adjust based on your banner ad size
+    backgroundColor: 'transparent',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'absolute',
+    bottom: 0,
+  },
+  dismissAdButton: {
+    position: 'absolute',
+    right: 5,
+    top: 5,
+    zIndex: 1,
   },
 });
 

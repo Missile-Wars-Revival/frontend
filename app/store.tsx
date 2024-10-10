@@ -10,7 +10,7 @@ import { addmoney } from '../api/money';
 import { additem } from '../api/add-item';
 import { getWeaponTypes, mapProductType, PremProduct, Product, shopimages } from '../api/store';
 import { getShopStyles } from '../map-themes/stylesheet';
-import { Ionicons } from '@expo/vector-icons'; // Add this import for the shopping cart icon
+import { Ionicons } from '@expo/vector-icons';
 
 const { width, height } = Dimensions.get('window');
 

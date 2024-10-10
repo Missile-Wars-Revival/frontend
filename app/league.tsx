@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text, ScrollView, TouchableOpacity, Image, SafeAreaView, useColorScheme, ImageSourcePropType } from 'react-native';
+import { View, StyleSheet, Text, ScrollView, TouchableOpacity, Image, SafeAreaView, useColorScheme, ImageSourcePropType, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchTopLeagues, fetchCurrentLeague, fetchLeaguePlayers, top100Players } from '../api/league';
 import { fetchAndCacheImage } from '../util/imagecache'; 
 import { getLeagueAirspace } from '../components/player';
+import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const DEFAULT_IMAGE = require('../assets/mapassets/Female_Avatar_PNG.png');
 
@@ -29,6 +31,12 @@ interface League {
   playerCount: number;
 }
 
+const bannerAdUnitId = __DEV__ ? TestIds.BANNER : Platform.select({
+  ios: 'ca-app-pub-4035842398612787/5646222776',
+  android: 'ca-app-pub-4035842398612787/8536109994',
+  default: 'ca-app-pub-4035842398612787/8536109994',
+});
+
 const LeagueRankingPage: React.FC = () => {
   const [topLeagues, setTopLeagues] = useState<League[]>([]);
   const [leaguePlayers, setLeaguePlayers] = useState<Player[]>([]);
@@ -36,6 +44,9 @@ const LeagueRankingPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<'players' | 'leagues'>('leagues');
   const [isLoading, setIsLoading] = useState(true);
   const [top100, setTop100] = useState<Player[]>([]);
+  const [isAdFree, setIsAdFree] = useState(false);
+  const [showAd, setShowAd] = useState(true);
+  const [adLoaded, setAdLoaded] = useState(false);
   
   const scheme = useColorScheme() || 'light';
   const styles = StyleSheet.create({
@@ -86,7 +97,19 @@ const LeagueRankingPage: React.FC = () => {
     };
 
     fetchData();
+    checkAdFreeStatus();
   }, []);
+
+  const checkAdFreeStatus = async () => {
+    try {
+      const storedAdFreeStatus = await AsyncStorage.getItem('isAdFree');
+      if (storedAdFreeStatus !== null) {
+        setIsAdFree(JSON.parse(storedAdFreeStatus));
+      }
+    } catch (error) {
+      console.error('Error fetching ad-free status:', error);
+    }
+  };
 
   const navigateToProfile = (username: string) => {
     router.navigate({
@@ -205,6 +228,27 @@ const LeagueRankingPage: React.FC = () => {
           </View>
         )}
       </ScrollView>
+      {!isAdFree && showAd && (
+        <View style={styles.footerAdContainer}>
+          <BannerAd
+            unitId={bannerAdUnitId}
+            size={BannerAdSize.BANNER}
+            requestOptions={{
+              requestNonPersonalizedAdsOnly: true,
+            }}
+            onAdLoaded={() => setAdLoaded(true)}
+            onAdFailedToLoad={(error) => console.error("Banner ad failed to load: ", error)}
+          />
+          {adLoaded && (
+            <TouchableOpacity 
+              style={styles.dismissAdButton} 
+              onPress={() => setShowAd(false)}
+            >
+              <Ionicons name="close-circle" size={24} color="white" />
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
     </SafeAreaView>
   );
 };
@@ -363,6 +407,20 @@ const lightStyles = StyleSheet.create({
     color: '#888',
     fontStyle: 'italic',
   },
+  footerAdContainer: {
+    width: '100%',
+    height: 50, // Adjust based on your banner ad size
+    backgroundColor: 'transparent',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  dismissAdButton: {
+    position: 'absolute',
+    right: 5,
+    top: 5,
+    zIndex: 1,
+  },
 });
 
 const darkStyles = StyleSheet.create({
@@ -510,6 +568,20 @@ const darkStyles = StyleSheet.create({
     fontSize: 12,
     color: '#888',
     fontStyle: 'italic',
+  },
+  footerAdContainer: {
+    width: '100%',
+    height: 50, // Adjust based on your banner ad size
+    backgroundColor: 'transparent',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  dismissAdButton: {
+    position: 'absolute',
+    right: 5,
+    top: 5,
+    zIndex: 1,
   },
 });
 
