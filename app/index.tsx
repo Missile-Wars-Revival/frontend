@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Platform, Alert, Image, StyleSheet, TouchableOpacity, Text, Linking, Dimensions, useColorScheme, Modal } from "react-native";
+import { View, Platform, Alert, Image, StyleSheet, TouchableOpacity, Text, Linking, Dimensions, useColorScheme, Modal, ImageBackground } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
 import axiosInstance from "../api/axios-instance";
@@ -62,7 +62,7 @@ export default function Map() {
   const [selectedMapStyle, setSelectedMapStyle] = useState<MapStyle[]>(Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle);
   const [themePopupVisible, setThemePopupVisible] = useState(false);
   const [userNAME, setUsername] = useState("");
-  const [isAlive, setisAlive] = useState(true);
+  const [isAlive, setIsAlive] = useState<boolean | null>(null);
   const [deathsoundPlayed, setdeathSoundPlayed] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const health = useFetchHealth()//WS hook
@@ -177,15 +177,16 @@ export default function Map() {
 
           if (!isAliveStatus.isAlive && !deathsoundPlayed) {
             playDeathSound();
-            setdeathSoundPlayed(true); // Ensure the sound is played only once
+            setdeathSoundPlayed(true);
           }
 
-          setisAlive(isAliveStatus.isAlive);
+          setIsAlive(isAliveStatus.isAlive);
         } else {
-          setisAlive(true); // Default to true if no status is found
+          setIsAlive(true); // Default to true if no status is found
         }
       } catch (error) {
         console.error('Error initializing app:', error);
+        setIsAlive(true); // Default to true in case of error
       }
     };
 
@@ -218,18 +219,6 @@ export default function Map() {
     };
   }, []);
 
-  useEffect(() => {
-    // Fetch immediately on component mount
-    fetchLocActiveStatus();
-    // Set up interval to fetch every 30 seconds (adjust as needed)
-    const intervalId = setInterval(fetchLocActiveStatus, 30000);
-
-    // Clean up interval on component unmount
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, []);
-
   const fetchLocActiveStatus = async () => {
     try {
       const status = await getlocActive();
@@ -241,10 +230,14 @@ export default function Map() {
   };
 
   useEffect(() => {
+    fetchLocActiveStatus();
     checkPermissions();
-    const intervalId = setInterval(checkPermissions, 30000);
+    const locActiveIntervalId = setInterval(fetchLocActiveStatus, 3000);
+    const permsIntervalId = setInterval(checkPermissions, 3000);
+
     return () => {
-      clearInterval(intervalId);
+      clearInterval(locActiveIntervalId);
+      clearInterval(permsIntervalId);
     };
   }, []);
 
@@ -334,7 +327,7 @@ export default function Map() {
     updateisAlive(token, true);
     await AsyncStorage.setItem('health', '100');
     setHealth(token, 100);
-    setisAlive(true);
+    setIsAlive(true);
     setdeathSoundPlayed(false);
   };
 
@@ -364,7 +357,12 @@ export default function Map() {
 
   return (
     <View style={[styles.container, isDarkMode && styles.containerDark]}>
-      {(isAlive && locActive) && (
+      {isAlive === null ? (
+        <View style={[styles.loadingContainer, isDarkMode && styles.loadingContainerDark]}>
+          <Text style={[styles.loadingText, isDarkMode && styles.loadingTextDark]}>Loading for the first time...</Text>
+        </View>
+      ) : isAlive ? (
+        // Render the map and game UI when the user is alive
         <>
           <MapComp selectedMapStyle={selectedMapStyle} />
           <View style={styles.healthBarContainer}>
@@ -415,8 +413,8 @@ export default function Map() {
             </View>
           )}
         </>
-      )}
-      {(!isAlive) && (
+      ) : (
+        // Render the death screen when the user is not alive
         <View style={[styles.containerdeath, isDarkMode && styles.containerdeathDark]}>
           {/* Top non-dismissable banner ad */}
           <View style={styles.topAdContainer}>
@@ -434,7 +432,15 @@ export default function Map() {
             style={styles.bannerdeathContainer}
             activeOpacity={0.7}
           >
-            <Image source={require('../assets/deathscreen.jpg')} style={styles.bannerdeath} />
+            <ImageBackground 
+              source={require('../assets/deathscreen.png')} 
+              style={styles.bannerdeath}
+              resizeMode="contain"
+            >
+              <View style={styles.deathTextContainer}>
+                <Text style={styles.deathText}>You Died!!</Text>
+              </View>
+            </ImageBackground>
             <View style={styles.respawnTextContainer}>
               <Text style={[styles.respawnText, isDarkMode && styles.respawnTextDark]}>
                 Tap here to respawn
@@ -564,7 +570,8 @@ const styles = StyleSheet.create({
   bannerdeath: {
     width: width * 0.9,
     height: height * 0.5,
-    resizeMode: 'contain',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   fullScreenOverlay: {
     position: 'absolute',
@@ -760,5 +767,35 @@ const styles = StyleSheet.create({
   rewardedAdButtonText: {
     color: 'white',
     fontWeight: 'bold',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  loadingContainerDark: {
+    backgroundColor: '#1E1E1E',
+  },
+  loadingText: {
+    fontSize: 18,
+    color: '#333333',
+  },
+  loadingTextDark: {
+    color: '#FFFFFF',
+  },
+  deathTextContainer: {
+    position: 'absolute',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deathText: {
+    fontSize: 40,
+    fontWeight: 'bold',
+    color: 'red',
+    textAlign: 'center',
+    textShadowColor: 'black',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 3,
   },
 });

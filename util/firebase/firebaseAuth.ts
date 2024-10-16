@@ -3,7 +3,6 @@ import { initializeApp, getApps, FirebaseApp } from "firebase/app";
 import { firebaseConfig } from "./config";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
-import { Alert } from "react-native";
 import { startGetSelfProfile } from "../../api/getprofile";
 import { ApiResponse } from "../../app/profile";
 

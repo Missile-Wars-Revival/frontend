@@ -1,4 +1,4 @@
-import { Dimensions, Modal, StyleSheet, View, Text, TouchableOpacity, Image } from "react-native";
+import { Modal, View, Text, TouchableOpacity } from "react-native";
 import React from "react";
 import { MissilefireposLibrary } from "./missile";
 import { useColorScheme } from 'react-native';

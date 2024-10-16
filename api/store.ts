@@ -1,6 +1,7 @@
 import axiosInstance from "./axios-instance";
 import { isAxiosError } from "axios";
 import * as SecureStore from "expo-secure-store";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface WeaponTypesResponse {
   landmineTypes: any[];
@@ -67,7 +68,10 @@ export const mapProductType = (productid: string) => {
     }
   };
 
-  export const shopimages: any = {
+export const getImages = async () => {
+  const imagePreference = await AsyncStorage.getItem('imagepref');
+
+  const shopimages: Record<string, any> = {
     Amplifier: require('../assets/missiles/Amplifier.png'),
     Ballista: require('../assets/missiles/Ballista.png'),
     BigBertha: require('../assets/missiles/BigBertha.png'),
@@ -90,6 +94,89 @@ export const mapProductType = (productid: string) => {
     LandmineSweep: require('../assets/mapassets/landminesweeper.png'),
     default: require('../assets/logo.png'), // Default image if identifier not found
   };
+
+  const fruitandvegimages: Record<string, any> = {
+    Amplifier: require('../assets/fruitandveg/lemon.png'),
+    Ballista: require('../assets/fruitandveg/strawberry.png'),
+    BigBertha: require('../assets/fruitandveg/watermelon.png'),
+    Bombabom: require('../assets/fruitandveg/melon.png'),
+    BunkerBlocker: require('../assets/fruitandveg/pineapple.png'),
+    Buzzard: require('../assets/fruitandveg/potato.png'),
+    ClusterBomb: require('../assets/fruitandveg/tomato.png'),
+    CorporateRaider: require('../assets/fruitandveg/onion.png'),
+    GutShot: require('../assets/fruitandveg/cabbage.png'),
+    TheNuke: require('../assets/fruitandveg/chili.png'),
+    Yokozuna: require('../assets/missiles/Yokozuna.png'),
+    ShieldBreaker: require('../assets/fruitandveg/chopper.png'),
+    Zippy: require('../assets/fruitandveg/carrot.png'),
+    Coins500_: require('../assets/store/500coins.png'),
+    Coins1000_: require('../assets/store/1000coins.png'),
+    Coins2000_: require('../assets/store/1000coins.png'),
+    LootDrop: require('../assets/fruitandveg/goldenapple.png'),
+    Shield: require('../assets/mapassets/shield.png'),
+    UltraShield: require('../assets/mapassets/ultrashield.png'),
+    LandmineSweep: require('../assets/fruitandveg/pitchfork.png'),
+    default: require('../assets/logo.png'), // Default image if identifier not found
+  };
+  const halloweenimages: Record<string, any> = {
+    // Amplifier: require('../assets/halloween/lemon.png'),
+    // Ballista: require('../assets/halloween/strawberry.png'),
+    // BigBertha: require('../assets/halloween/watermelon.png'),
+    // Bombabom: require('../assets/halloween/melon.png'),
+    // BunkerBlocker: require('../assets/halloween/pineapple.png'),
+    // Buzzard: require('../assets/halloween/potato.png'),
+    // ClusterBomb: require('../assets/halloween/tomato.png'),
+    // CorporateRaider: require('../assets/halloween/onion.png'),
+    // GutShot: require('../assets/halloween/cabbage.png'),
+    // TheNuke: require('../assets/halloween/chili.png'),
+    // Yokozuna: require('../assets/halloween/Yokozuna.png'),
+    // ShieldBreaker: require('../assets/halloween/chopper.png'),
+    // Zippy: require('../assets/halloween/carrot.png'),
+    // Coins500_: require('../assets/store/500coins.png'),
+    // Coins1000_: require('../assets/store/1000coins.png'),
+    // Coins2000_: require('../assets/store/1000coins.png'),
+    // LootDrop: require('../assets/halloween/goldenapple.png'),
+    // Shield: require('../assets/halloween/shield.png'),
+    // UltraShield: require('../assets/halloween/ultrashield.png'),
+    // LandmineSweep: require('../assets/halloween/pitchfork.png'),
+    // default: require('../assets/logo.png'), // Default image if identifier not found
+    Amplifier: require('../assets/missiles/Amplifier.png'),
+    Ballista: require('../assets/missiles/Ballista.png'),
+    BigBertha: require('../assets/missiles/BigBertha.png'),
+    Bombabom: require('../assets/missiles/Bombabom.png'),
+    BunkerBlocker: require('../assets/missiles/BunkerBlocker.png'),
+    Buzzard: require('../assets/missiles/Buzzard.png'),
+    ClusterBomb: require('../assets/missiles/ClusterBomb.png'),
+    CorporateRaider: require('../assets/missiles/CorporateRaider.png'),
+    GutShot: require('../assets/missiles/GutShot.png'),
+    TheNuke: require('../assets/missiles/TheNuke.png'),
+    Yokozuna: require('../assets/missiles/Yokozuna.png'),
+    ShieldBreaker: require('../assets/missiles/Yokozuna.png'),
+    Zippy: require('../assets/missiles/Zippy.png'),
+    Coins500_: require('../assets/store/500coins.png'),
+    Coins1000_: require('../assets/store/1000coins.png'),
+    Coins2000_: require('../assets/store/1000coins.png'),
+    LootDrop: require('../assets/mapassets/Airdropicon.png'),
+    Shield: require('../assets/mapassets/shield.png'),
+    UltraShield: require('../assets/mapassets/ultrashield.png'),
+    LandmineSweep: require('../assets/mapassets/landminesweeper.png'),
+    default: require('../assets/logo.png'), // Default image if identifier not found
+  };
+  return (imageName: string) => {
+    let selectedImages;
+    switch (imagePreference) {
+      case 'fruitandveg':
+        selectedImages = fruitandvegimages;
+        break;
+      case 'halloween':
+        selectedImages = halloweenimages;
+        break;
+      default:
+        selectedImages = shopimages;
+    }
+    return selectedImages[imageName] || selectedImages.default || require('../assets/logo.png');
+  };
+};
 
 export async function getWeaponTypes(): Promise<WeaponTypesResponse> {
   try {

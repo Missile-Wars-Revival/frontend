@@ -4,9 +4,8 @@ import { Circle, Marker, Polyline } from "react-native-maps";
 import { GeoLocation, Missile } from "middle-earth";
 import { convertimestampfuturemissile } from "../../util/get-time-difference";
 import { getWeaponTypes, Product } from "../../api/store";
-import { getImageForProduct } from "../../app/store";
+import { getImages } from "../../api/store";
 import { getShopStyles } from "../../map-themes/stylesheet";
-import { itemimages } from "../../app/profile";
 
 interface AllMissilesProps {
     missileData: Missile[];
@@ -65,8 +64,15 @@ export const MapMissile = (missileProps: MissileProps) => {
     const [selectedMissile, setSelectedMissile] = useState<MissileProps | null>(null);
     const [missileDetails, setMissileDetails] = useState<Product | null>(null);
     const [modalVisible, setModalVisible] = useState(false);
-    const screenWidth = Dimensions.get('window').width;
-    const screenHeight = Dimensions.get('window').height;
+    const [getImageForProduct, setGetImageForProduct] = useState<(imageName: string) => any>(() => () => require('../../assets/logo.png'));
+
+    useEffect(() => {
+        const loadImages = async () => {
+            const imageGetter = await getImages();
+            setGetImageForProduct(() => imageGetter);
+        };
+        loadImages();
+    }, []);
 
     useEffect(() => {
         const fetchWeapons = async () => {
@@ -121,8 +127,8 @@ export const MapMissile = (missileProps: MissileProps) => {
         longitude: Number(coord.longitude)
     }));
 
-    const resizedmissileimage = itemimages[missileProps.type];
-    const resizedmissileicon = { width: 50, height: 50 }; // Custom size for image
+    const resizedmissileimage = getImageForProduct(missileProps.type);
+    const standardMissileSize = { width: 50, height: 50 }; // Fixed size for all missile images
 
     // Convert timestamp to a future time in a readable format
 
@@ -132,10 +138,6 @@ export const MapMissile = (missileProps: MissileProps) => {
         const { text } = convertimestampfuturemissile(missileProps.etatimetoimpact);
         description += ` ETA: ${text}`;
     }
-    // if (missileProps.status === "Hit") {
-    //     const { text } = convertimestampfuturemissile(missileProps.etatimetoimpact);
-    //     description += ` Fallout: ${text}`;
-    // }
 
     const isAndroid = Platform.OS === 'android';
 
@@ -160,7 +162,7 @@ export const MapMissile = (missileProps: MissileProps) => {
                 <ScrollView>
                     <View style={styles.modalHeader}>
                         <Image 
-                            source={itemimages[selectedMissile.type] || fallbackImage} 
+                            source={getImageForProduct(selectedMissile.type) || fallbackImage} 
                             style={styles.modalImage}
                             defaultSource={fallbackImage}
                         />
@@ -242,7 +244,11 @@ export const MapMissile = (missileProps: MissileProps) => {
                 description={description}
                 onPress={handleMarkerPress}
             >
-                <Image source={resizedmissileimage} style={resizedmissileicon} />
+                <Image 
+                    source={resizedmissileimage} 
+                    style={standardMissileSize} 
+                    resizeMode="contain"
+                />
             </Marker>
             {/* Render trajectory line */}
             <Polyline
@@ -306,4 +312,3 @@ const additionalStyles = {
         textAlign: 'center',
     },
 };
-

@@ -315,6 +315,39 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
     </TouchableOpacity>
   );
 
+  const renderMissileList = () => {
+    const myMissiles = missiles.filter(missile => missile.sentbyusername === currentUsername);
+    const otherMissiles = missiles.filter(missile => missile.sentbyusername !== currentUsername);
+
+    return (
+      <>
+        <FlatList
+          data={[
+            ...myMissiles,
+            { type: 'separator', id: 'separator' },
+            ...otherMissiles
+          ]}
+          renderItem={({ item }) => {
+            if (item.type === 'separator') {
+              return (
+                <View style={[styles.separatorContainer, isDarkMode && styles.separatorContainerDark]}>
+                  <Text style={[styles.separatorText, isDarkMode && styles.separatorTextDark]}>
+                    ---- All Missiles ----
+                  </Text>
+                </View>
+              );
+            }
+            return renderMissileItem({ item: item as Missile });
+          }}
+          keyExtractor={(item, index) => 
+            item.type === 'separator' ? 'separator' : `${item.type}-${index}`
+          }
+          extraData={missiles}
+        />
+      </>
+    );
+  };
+
   const renderMissileDetails = () => {
     if (!selectedMissile) return null;
 
@@ -427,12 +460,7 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
               ) : selectedMissile ? (
                 renderMissileDetails()
               ) : (
-                <FlatList
-                  data={missiles.filter(missile => missile.sentbyusername === currentUsername)}
-                  renderItem={renderMissileItem}
-                  keyExtractor={(item, index) => `${item.type}-${index}`}
-                  extraData={missiles}
-                />
+                renderMissileList()
               )}
             </Animated.View>
           </View>
@@ -684,6 +712,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent background
+  },
+  separatorContainer: {
+    padding: 10,
+    alignItems: 'center', // Center the text horizontally
+    backgroundColor: 'transparent', // Make the container transparent
+  },
+  separatorContainerDark: {
+    // Remove the background color for dark mode
+  },
+  separatorText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#4a5568',
+  },
+  separatorTextDark: {
+    color: '#B0B0B0',
   },
 });
 

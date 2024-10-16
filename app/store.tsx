@@ -8,15 +8,11 @@ import axios from 'axios';
 import Purchases from 'react-native-purchases';
 import { addmoney } from '../api/money';
 import { additem } from '../api/add-item';
-import { getWeaponTypes, mapProductType, PremProduct, Product, shopimages } from '../api/store';
+import { getWeaponTypes, mapProductType, PremProduct, Product, getImages } from '../api/store';
 import { getShopStyles } from '../map-themes/stylesheet';
 import { Ionicons } from '@expo/vector-icons';
 
 const { width, height } = Dimensions.get('window');
-
-export const getImageForProduct = (identifier: string): ImageSourcePropType => {
-  return shopimages[identifier] || shopimages.default;
-};
 
 export const products: Product[] = [
   // { id: "20", name: 'LootDrop', price: 400, image: require('../assets/mapassets/Airdropicon.png'), description: 'A Loot Drop', type: 'Loot Drops' },
@@ -41,6 +37,15 @@ const StorePage: React.FC = () => {
   const [isPurchasing, setIsPurchasing] = useState<boolean>(false);
   const [cartTotal, setCartTotal] = useState<number>(0);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [getImageForProduct, setGetImageForProduct] = useState<(imageName: string) => any>(() => () => require('../assets/logo.png'));
+
+useEffect(() => {
+  const loadImages = async () => {
+    const imageGetter = await getImages();
+    setGetImageForProduct(() => imageGetter);
+  };
+  loadImages();
+}, []);
 
   const sortedWeapons = React.useMemo(() => {
     return [...weapons].sort((a, b) => a.price - b.price);
@@ -94,7 +99,7 @@ const StorePage: React.FC = () => {
     };
 
     fetchWeapons();
-  }, []);
+  }, [getImageForProduct]);
 
   // fetch items in store
   useEffect(() => {

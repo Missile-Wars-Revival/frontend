@@ -1,6 +1,7 @@
 import * as SecureStore from "expo-secure-store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { logout } from "../api/login";
+import { signOut } from "firebase/auth";
 
 export async function saveCredentials(
   username: string,
@@ -26,7 +27,7 @@ export async function clearCredentials(): Promise<void> {
     await SecureStore.deleteItemAsync("email");
     await SecureStore.deleteItemAsync("token");
     await SecureStore.deleteItemAsync("notifificationToken")
-    await SecureStore.deleteItemAsync("firebaseUID")
+    await SecureStore.deleteItemAsync("firebaseUID");
     // Clearing additional items stored in AsyncStorage
     await AsyncStorage.removeItem("visibilitymode"); //Friends or global map (this may be stored backend eventually)
     await AsyncStorage.removeItem("selectedMapStyle"); //Map theme

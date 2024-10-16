@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal, View, TouchableOpacity, FlatList, Text, Image } from 'react-native';
 import { LandminePlacementPopup } from './landmineplacement';
 import { create } from 'twrnc';
@@ -6,7 +6,7 @@ import { InventoryItem } from '../../types/types';
 import useFetchInventory from '../../hooks/websockets/inventoryhook';
 import { useColorScheme } from 'react-native';
 import { router } from 'expo-router';
-import { itemimages } from '../../app/profile';
+import { getImages } from '../../api/store';
 
 const tw = create(require('../../tailwind.config.js'));
 
@@ -43,6 +43,15 @@ const useLandmineLib = (): LandmineType[] => {
 
 const LandmineSelector = ({ onSelect, landmines }: { onSelect: (landmine: string) => void, landmines: LandmineType[] }) => {
   const isDarkMode = useColorScheme() === 'dark';
+  const [getImageForProduct, setGetImageForProduct] = useState<(imageName: string) => any>(() => () => require('../../assets/logo.png'));
+
+  useEffect(() => {
+    const loadImages = async () => {
+      const imageGetter = await getImages();
+      setGetImageForProduct(() => imageGetter);
+    };
+    loadImages();
+  }, []);
 
   return (
     <FlatList
@@ -53,7 +62,7 @@ const LandmineSelector = ({ onSelect, landmines }: { onSelect: (landmine: string
           onPress={() => onSelect(landmine.type)} 
           style={tw`flex-row items-center ${isDarkMode ? 'bg-gray-900' : 'bg-white'} p-2 mb-1 rounded-lg shadow`}
         >
-          <Image source={itemimages[landmine.type]} style={tw`w-8 h-8 mr-2`} />
+          <Image source={getImageForProduct(landmine.type)} style={tw`w-8 h-8 mr-2`} />
           <View style={tw`flex-1`}>
             <Text style={tw`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>{landmine.type}</Text>
             <Text style={tw`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Quantity: {landmine.quantity}</Text>

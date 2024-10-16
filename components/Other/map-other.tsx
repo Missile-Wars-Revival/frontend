@@ -1,9 +1,9 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { View, Image } from "react-native";
 import { Marker, Circle } from "react-native-maps";
 import { GeoLocation, Other } from "middle-earth";
 import { convertimestampfuture } from "../../util/get-time-difference";
-import { itemimages } from "../../app/profile";
+import { getImages } from "../../api/store";
 
 const fallbackImage = require('../../assets/logo.png');
 
@@ -34,8 +34,17 @@ export const AllOther = (props: AllOtherProps) => {
 
 export const OtherDrop = (props: OtherProps) => {
     const { text } = convertimestampfuture(props.expiretime);
+    const [getImageForProduct, setGetImageForProduct] = useState<(imageName: string) => any>(() => () => require('../../assets/logo.png'));
 
-    const resizedotherimage = itemimages[props.type];
+    useEffect(() => {
+        const loadImages = async () => {
+            const imageGetter = await getImages();
+            setGetImageForProduct(() => imageGetter);
+        };
+        loadImages();
+    }, []);
+
+    const resizedotherimage = getImageForProduct(props.type);
     const resizedothericon = { width: 50, height: 50 };
 
     return (

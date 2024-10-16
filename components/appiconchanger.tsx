@@ -36,7 +36,7 @@ const AppIconChanger: React.FC = () => {
   const changeAppIcon = async (iconName: string) => {
     try {
       if (iconName === 'default') {
-        await AlternateAppIcon.resetAppIcon();
+        await AlternateAppIcon.setAlternateAppIcon(null);
       } else {
         await AlternateAppIcon.setAlternateAppIcon(iconName);
       }

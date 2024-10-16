@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableHighlight, Switch, ScrollView, Alert, StyleSheet, Dimensions, TouchableOpacity, Modal, Linking, Platform, Animated } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, TouchableHighlight, Switch, ScrollView, Alert, StyleSheet, Dimensions, TouchableOpacity, Modal, Linking, Platform, Animated, PanResponder } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Input } from "../components/ui/input";
@@ -15,9 +15,10 @@ import { useAuth } from '../util/Context/authcontext';
 import AppIconChanger from '../components/appiconchanger';
 import { Card } from "../components/card";
 import Purchases, { PurchasesPackage, PACKAGE_TYPE } from 'react-native-purchases';
-//import * as StoreReview from 'expo-store-review';
+import * as StoreReview from 'expo-store-review';
 import { getNotificationPreferences, updateNotificationPreferences } from '../api/notifications';
 import { RewardedAd, RewardedAdEventType, TestIds } from 'react-native-google-mobile-ads';
+import { LinearGradient } from 'expo-linear-gradient';
 
 
 const adUnitId = __DEV__ ? TestIds.REWARDED : Platform.select({
@@ -73,6 +74,9 @@ const SettingsPage: React.FC = () => {
   const [newEmail, setNewEmail] = useState('');
   const [isAdFree, setIsAdFree] = useState<boolean>(false);
   const [offerings, setOfferings] = useState<any | null>(null);
+  const [imagePreference, setImagePreference] = useState('default');
+  const [currentPosition, setCurrentPosition] = useState(0);
+  const sliderPosition = useRef(new Animated.Value(0)).current;
 
   const notificationDescriptions = {
     incomingEntities: "Receive alerts when entities are approaching your location.",
@@ -130,6 +134,24 @@ const SettingsPage: React.FC = () => {
       }).start();
     }
   }, [showAccountDetails, showVisibilitySettings, showNotificationSettings, showCredits]); // Add showCredits to dependencies
+
+  useEffect(() => {
+    const loadImagePreference = async () => {
+      const pref = await AsyncStorage.getItem('imagepref');
+      setImagePreference(pref || 'default');
+      sliderPosition.setValue(getSliderPosition(pref || 'default'));
+    };
+    loadImagePreference();
+  }, []);
+
+  const getSliderPosition = (pref: string) => {
+    switch (pref) {
+      case 'default': return 0;
+      case 'fruitandveg': return 1;
+      case 'halloween': return 2;
+      default: return 0;
+    }
+  };
 
   const closePopup = (setStateFunction: React.Dispatch<React.SetStateAction<boolean>>) => {
     Animated.spring(slideAnimation, {
@@ -492,18 +514,18 @@ const SettingsPage: React.FC = () => {
     Linking.openURL('https://discord.gg/Gk8jqUnVd3');
   };
 
-  // const handleRateApp = async () => {
-  //   if (await StoreReview.hasAction()) {
-  //     StoreReview.requestReview();
-  //   } else {
-  //     // Fallback for devices that can't request review
-  //     if (Platform.OS === 'ios') {
-  //       Linking.openURL('https://apps.apple.com/app/your-app-id');
-  //     } else {
-  //       Linking.openURL('https://play.google.com/store/apps/details?id=your.app.package');
-  //     }
-  //   }
-  // };
+  const handleRateApp = async () => {
+    if (await StoreReview.hasAction()) {
+      StoreReview.requestReview();
+    } else {
+      // Fallback for devices that can't request review
+      if (Platform.OS === 'ios') {
+        Linking.openURL('https://apps.apple.com/app/missile-wars-revival/id6590602456');
+      } else {
+        Linking.openURL('https://play.google.com/store/apps/details?id=com.longtimenoc.missilewars');
+      }
+    }
+  };
 
   useEffect(() => {
     fetchNotificationPreferences();
@@ -524,17 +546,13 @@ const SettingsPage: React.FC = () => {
       ...notificationSettings,
       [setting]: !notificationSettings[setting]
     };
-    setNotificationSettings(newSettings);
-
+    
     try {
-      await updateNotificationPreferences({ [setting]: newSettings[setting] });
+      const updatedPreferences = await updateNotificationPreferences(newSettings);
+      setNotificationSettings(updatedPreferences);
+      console.log("Updated notification settings:", updatedPreferences);
     } catch (error) {
       console.error("Failed to update notification preference:", error);
-      // Revert the change if the update fails
-      setNotificationSettings(prevSettings => ({
-        ...prevSettings,
-        [setting]: !newSettings[setting]
-      }));
       // Optionally, show an error message to the user
       Alert.alert("Error", "Failed to update notification preference. Please try again.");
     }
@@ -551,6 +569,69 @@ const SettingsPage: React.FC = () => {
       {content}
     </Animated.View>
   );
+
+  const renderImagePreferenceToggle = () => {
+    const options = [
+      { value: 'default', label: 'Default', icon: '🚀' },
+      { value: 'fruitandveg', label: 'Veggie', icon: '🥕' },
+      { value: 'halloween', label: 'Halloween', icon: '🎃' },
+    ];
+  
+    const containerWidth = width * 0.9; // Assuming the container width is 90% of the screen width
+    const optionWidth = (containerWidth - 29) / 3; // Subtracting 24 for padding (8 on each side)
+  
+    return (
+      <View style={[styles.visibilityContainer, isDarkMode && styles.visibilityContainerDark]}>
+        <Text style={[styles.visibilityText, isDarkMode && styles.visibilityTextDark]}>Image Preference</Text>
+        <View style={styles.toggleContainer}>
+          {options.map((option, index) => (
+            <TouchableOpacity
+              key={option.value}
+              style={[
+                styles.toggleOption,
+                { width: optionWidth },
+                imagePreference === option.value && styles.toggleOptionActive,
+                isDarkMode && styles.toggleOptionDark,
+                imagePreference === option.value && isDarkMode && styles.toggleOptionActiveDark,
+              ]}
+              onPress={() => {
+                setImagePreference(option.value);
+                AsyncStorage.setItem('imagepref', option.value);
+              }}
+            >
+              <Text style={styles.toggleOptionIcon}>{option.icon}</Text>
+              <Text style={[
+                styles.toggleOptionLabel,
+                imagePreference === option.value && styles.toggleOptionLabelActive,
+                isDarkMode && styles.toggleOptionLabelDark,
+              ]}>
+                {option.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+          <LinearGradient
+            colors={isDarkMode ? ['#5c2a4f', '#773765'] : ['#773765', '#9d4b87']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={[
+              styles.toggleIndicator,
+              {
+                width: optionWidth,
+                transform: [{ translateX: optionWidth * options.findIndex(o => o.value === imagePreference) }],
+              },
+            ]}
+          />
+        </View>
+        <Text style={[styles.visibilityDescription, isDarkMode && styles.visibilityDescriptionDark]}>
+          {imagePreference === 'default'
+            ? 'Using default game images'
+            : imagePreference === 'fruitandveg'
+            ? 'Using fruit and vegetable themed images'
+            : 'Using Halloween themed images'}
+        </Text>
+      </View>
+    );
+  };
 
   const renderAccountDetails = () => renderPopup(
     <ScrollView contentContainerStyle={styles.popupScrollContent}>
@@ -738,6 +819,7 @@ const SettingsPage: React.FC = () => {
               : 'Your location is accurate'}
           </Text>
         </View>
+        {renderImagePreferenceToggle()}
       </View>
     </ScrollView>
   );
@@ -817,6 +899,7 @@ const SettingsPage: React.FC = () => {
           <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>Tristan</Text>
           <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>Clxud</Text>
           <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>SwissArmywrench</Text>
+          <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>manaf941</Text>
         </View>
 
         <Text style={[styles.creditsSectionTitle, isDarkMode && styles.creditsSectionTitleDark]}>Concept & UI work:</Text>
@@ -923,11 +1006,9 @@ const SettingsPage: React.FC = () => {
             <ChevronRight size={24} color={isDarkMode ? "white" : "black"} />
           </TouchableOpacity>
 
-          {Platform.OS === 'ios' && (
             <Card title="App Icon" icon={<Shield size={24} color={isDarkMode ? "white" : "black"} />}>
               <AppIconChanger />
             </Card>
-          )}
 
           {renderPurchaseOptions()}
 
@@ -939,6 +1020,24 @@ const SettingsPage: React.FC = () => {
             >
               <View style={styles.buttonContent}>
                 <Text style={styles.buttonText}>Join our Discord Community</Text>
+              </View>
+            </TouchableHighlight>
+            <TouchableHighlight
+            onPress={handleRateApp}
+            style={[styles.button, isDarkMode && styles.buttonDark]}
+            underlayColor={isDarkMode ? '#5c2a4f' : '#662d60'}
+          >
+              <View style={styles.buttonContent}>
+                <Text style={styles.buttonText}>Rate and Review Our App!</Text>
+              </View>
+            </TouchableHighlight>
+            <TouchableHighlight
+            onPress={() => Linking.openURL('https://donate.stripe.com/fZe6r884h6e59Ww288')}
+            style={[styles.button, isDarkMode && styles.buttonDark]}
+            underlayColor={isDarkMode ? '#5c2a4f' : '#662d60'}
+          >
+              <View style={styles.buttonContent}>
+                <Text style={styles.buttonText}>Donate to support the game!</Text>
               </View>
             </TouchableHighlight>
           </Card>
@@ -1331,14 +1430,13 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   visibilityContainer: {
-    backgroundColor: '#ffffff',
     padding: 15,
     borderRadius: 10,
     marginBottom: 15,
     width: '100%',
   },
   visibilityContainerDark: {
-    backgroundColor: '#2C2C2C',
+    backgroundColor: 'transparent',
   },
   visibilityText: {
     fontSize: 16,
@@ -1487,6 +1585,54 @@ const styles = StyleSheet.create({
   confirmationButtonText: {
     color: '#FFFFFF',
     fontWeight: 'bold',
+  },
+  toggleContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#E2E8F0',
+    borderRadius: 15,
+    padding: 4,
+    position: 'relative',
+    marginVertical: 10,
+    width: '100%',
+  },
+  toggleOption: {
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+  toggleOptionDark: {
+    backgroundColor: 'transparent',
+  },
+  toggleOptionActive: {
+    backgroundColor: 'transparent',
+  },
+  toggleOptionActiveDark: {
+    backgroundColor: 'transparent',
+  },
+  toggleOptionIcon: {
+    fontSize: 20,
+    marginBottom: 2,
+  },
+  toggleOptionLabel: {
+    fontSize: 10,
+    color: '#4A5568',
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  toggleOptionLabelActive: {
+    color: '#FFFFFF',
+  },
+  toggleOptionLabelDark: {
+    color: '#B0B0B0',
+  },
+  toggleIndicator: {
+    position: 'absolute',
+    top: 4,
+    bottom: 4,
+    borderRadius: 12,
+    zIndex: 0,
   },
 });
 

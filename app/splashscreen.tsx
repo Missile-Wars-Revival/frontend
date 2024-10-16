@@ -5,6 +5,7 @@ import { getlocation } from '../util/locationreq';
 import { initializeApp } from "firebase/app";
 import { firebaseConfig } from '../util/firebase/config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getAuth } from 'firebase/auth';
 
 mobileAds()
   .initialize()
@@ -25,11 +26,10 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
     const initializeAppLoad = async () => {
       try {
         getlocation();
-        initializeApp(firebaseConfig);
+        const app =initializeApp(firebaseConfig);
+        const auth = getAuth(app);
 
         await initializeAsyncStorageValues();
-
-        // ... existing animation and timer logic ...
       } catch (error) {
         console.error("Error during app initialization:", error);
       }

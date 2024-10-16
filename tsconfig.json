@@ -13,6 +13,9 @@
     "resolveJsonModule": true, // Enable importing of JSON modules
 
     /* Misc */
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "paths": {
+      "@firebase/auth": ["./node_modules/@firebase/auth/dist/index.rn.d"]
+    }
   }
 }

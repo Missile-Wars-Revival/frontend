@@ -136,10 +136,18 @@ export const updateNotificationPreferences = async (
 			throw new Error('Authentication token not found');
 		}
 
+		// First, get the current preferences
+		const currentPreferences = await getNotificationPreferences();
+
+		// Merge the current preferences with the new partial preferences
+		const updatedPreferences = { ...currentPreferences, ...preferences };
+
 		const response: AxiosResponse<UpdatePreferencesResponse> = await axiosInstance.patch(
 			"/api/changeNotificationPreferences",
-			{ token, preferences }
+			{ token, preferences: updatedPreferences }
 		);
+
+		console.log("Updated preferences:", response.data.preferences);
 
 		return response.data.preferences;
 	} catch (error) {

@@ -17,7 +17,8 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGrant
   const [locationPermission, setLocationPermission] = useState(false);
   const [notificationPermission, setNotificationPermission] = useState(false);
   const [privacyPolicyAgreed, setPrivacyPolicyAgreed] = useState(false);
-  const [trackingPermission, setTrackingPermission] = useState(Platform.OS === 'android' ? true : false);
+  // Change this line to initialize tracking permission as false for both iOS and Android
+  const [trackingPermission, setTrackingPermission] = useState(false);
 
   useEffect(() => {
     checkPermissions();
@@ -29,8 +30,12 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGrant
       { key: 'notification', check: Notifications.getPermissionsAsync },
     ];
 
+    // Always check tracking permission on iOS
     if (Platform.OS === 'ios') {
       checks.push({ key: 'tracking', check: getTrackingPermissionsAsync });
+    } else {
+      // For Android, set tracking permission to true
+      setTrackingPermission(true);
     }
 
     for (const { key, check } of checks) {
@@ -94,6 +99,8 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGrant
       try {
         const { status } = await requestTrackingPermissionsAsync();
         setTrackingPermission(status === 'granted');
+        // Add a console.log to check if this function is being called
+        console.log('Tracking permission status:', status);
       } catch (error) {
         console.error('Error requesting tracking permission:', error);
       }

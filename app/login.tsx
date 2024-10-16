@@ -34,6 +34,10 @@ export default function Login() {
     ...(isDarkMode ? darkStyles : {}),
   }), [isDarkMode]);
 
+  useEffect(() => {
+    getlocation();
+  }, []);
+  
   return (
     <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
       <SafeAreaView style={[styles.container, isDarkMode && styles.containerDark]}>

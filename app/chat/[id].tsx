@@ -11,10 +11,10 @@ import { generateUID } from '../../util/uidGenerator';
 import FastImage from 'react-native-fast-image';
 import * as FileSystem from 'expo-file-system';
 import useFetchInventory from '../../hooks/websockets/inventoryhook';
-import { itemimages } from '../profile';
 import { receiveItem, removeItem } from '../../api/add-item';
 import { notificationEmitter } from '../../components/Notifications/useNotifications';
 import ItemCollectAnimation from '../../components/Animations/itemCollect';
+import { getImages } from '../../api/store';
 
 type Message = {
   id: string;
@@ -123,6 +123,7 @@ export default function ChatScreen() {
   const [collectingItem, setCollectingItem] = useState<InventoryMessageItem | null>(null);
   const [inputHeight, setInputHeight] = useState(40);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [getImageForProduct, setGetImageForProduct] = useState<(imageName: string) => any>(() => () => require('../../assets/logo.png'));
 
   const inventory = useFetchInventory();
 
@@ -159,6 +160,14 @@ export default function ChatScreen() {
       keyboardWillShowListener.remove();
       keyboardWillHideListener.remove();
     };
+  }, []);
+
+  useEffect(() => {
+    const loadImages = async () => {
+      const imageGetter = await getImages();
+      setGetImageForProduct(() => imageGetter);
+    };
+    loadImages();
   }, []);
 
   useEffect(() => {
@@ -524,11 +533,11 @@ export default function ChatScreen() {
         ))}
         {item.imageUrl && (
           <TouchableOpacity onPress={() => handleImagePress(item.imageUrl!)}>
-           <Image
-            source={{ uri: item.imageUrl }}
-            style={styles.messageImage}
-            resizeMode="cover"
-          />
+            <Image
+              source={{ uri: item.imageUrl }}
+              style={styles.messageImage}
+              resizeMode="cover"
+            />
           </TouchableOpacity>
         )}
         {item.inventoryItem && (
@@ -542,7 +551,7 @@ export default function ChatScreen() {
               senderUsername: item.senderUsername
             })}
           >
-            <Image source={itemimages[item.inventoryItem.name]} style={styles.inventoryMessageItemImage} />
+            <Image source={getImageForProduct(item.inventoryItem.name)} style={styles.inventoryMessageItemImage} />
             <View style={styles.inventoryMessageItemContent}>
               <Text style={styles.inventoryMessageItemText} numberOfLines={1} ellipsizeMode="tail">
                 {item.inventoryItem.name}
@@ -564,7 +573,7 @@ export default function ChatScreen() {
         )}
       </View>
     );
-  }, [username, isDarkMode]);
+  }, [username, isDarkMode, getImageForProduct]);
 
   const renderHeader = () => (
     <View style={[styles.header, isDarkMode && styles.headerDark]}>
@@ -625,7 +634,7 @@ export default function ChatScreen() {
               data={inventory}
               renderItem={({ item }) => (
                 <TouchableOpacity onPress={() => handleSelectInventoryItem(item)} style={[styles.inventoryItem, isDarkMode && styles.inventoryItemDark]}>
-                  <Image source={itemimages[item.name]} style={styles.inventoryItemImage} />
+                  <Image source={getImageForProduct(item.name)} style={styles.inventoryItemImage} />
                   <Text style={[styles.inventoryItemName, isDarkMode && styles.inventoryItemNameDark]}>{item.name}</Text>
                   <Text style={[styles.inventoryItemQuantity, isDarkMode && styles.inventoryItemQuantityDark]}>x{item.quantity}</Text>
                 </TouchableOpacity>

@@ -16,6 +16,7 @@ import { editUser } from '../api/editUser';
 import * as Clipboard from 'expo-clipboard';
 import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 import { Platform } from 'react-native';
+import { getImages } from '../api/store';
 
 const DEFAULT_IMAGE = require('../assets/mapassets/Female_Avatar_PNG.png');
 
@@ -24,27 +25,6 @@ interface ItemImages {
 }
 
 const { width } = Dimensions.get('window');
-
-export const itemimages: ItemImages = {
-  Amplifier: require('../assets/missiles/Amplifier.png'),
-  Ballista: require('../assets/missiles/Ballista.png'),
-  BigBertha: require('../assets/missiles/BigBertha.png'),
-  Bombabom: require('../assets/missiles/Bombabom.png'),
-  BunkerBlocker: require('../assets/missiles/BunkerBlocker.png'),
-  Buzzard: require('../assets/missiles/Buzzard.png'),
-  ClusterBomb: require('../assets/missiles/ClusterBomb.png'),
-  CorporateRaider: require('../assets/missiles/CorporateRaider.png'),
-  GutShot: require('../assets/missiles/GutShot.png'),
-  TheNuke: require('../assets/missiles/TheNuke.png'),
-  Yokozuna: require('../assets/missiles/Yokozuna.png'),
-  ShieldBreaker: require('../assets/missiles/Yokozuna.png'),
-  Zippy: require('../assets/missiles/Zippy.png'),
-  LootDrop: require('../assets/mapassets/Airdropicon.png'),
-  Shield: require('../assets/mapassets/shield.png'),
-  UltraShield: require('../assets/mapassets/ultrashield.png'),
-  LandmineSweep: require('../assets/mapassets/landminesweeper.png'),
-  // Add other missile images here
-};
 
 interface SelfProfile {
   username: string;
@@ -110,6 +90,7 @@ const ProfilePage: React.FC = () => {
   const [isAdFree, setIsAdFree] = useState(false);
   const [showAd, setShowAd] = useState(true);
   const [adLoaded, setAdLoaded] = useState(false);
+  const [getImageForProduct, setGetImageForProduct] = useState<(imageName: string) => any>(() => () => require('../assets/logo.png'));
 
   useEffect(() => {
     const fetchUsername = async () => {
@@ -127,6 +108,14 @@ const ProfilePage: React.FC = () => {
 
   useEffect(() => {
     checkAdFreeStatus();
+  }, []);
+
+  useEffect(() => {
+    const loadImages = async () => {
+      const imageGetter = await getImages();
+      setGetImageForProduct(() => imageGetter);
+    };
+    loadImages();
   }, []);
 
   const checkAdFreeStatus = async () => {
@@ -654,7 +643,7 @@ const ProfilePage: React.FC = () => {
             {filteredInventory.map(item => (
               <TouchableOpacity key={item.id} onPress={() => setModalVisible(true)} style={styles.sliderItem}>
                 <Image
-                  source={itemimages[item.name]}
+                  source={getImageForProduct(item.name)}
                   style={styles.itemImage}
                 />
                 <Text style={[styles.itemName, isDarkMode && styles.itemNameDark]}>{item.name}</Text>
@@ -700,7 +689,7 @@ const ProfilePage: React.FC = () => {
                 renderItem={({ item }) => (
                   <View style={[styles.inventoryItem, isDarkMode && styles.inventoryItemDark]}>
                     <Image
-                      source={itemimages[item.name]}
+                      source={getImageForProduct(item.name)}
                       style={styles.inventoryItemImage}
                     />
                     <View style={styles.inventoryItemDetails}>
