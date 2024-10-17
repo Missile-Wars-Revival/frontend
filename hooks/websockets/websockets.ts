@@ -186,7 +186,7 @@ const useWebSocket = () => {
         if (websocket && websocket.readyState === WebSocket.OPEN) {
             try {
                 const encodedData = zip(data);
-                console.log("Sending data to websocket", data);
+                // console.log("Sending data to websocket", data);
                 websocket.send(encodedData);
             } catch (error) {
                 console.error("Error sending websocket request:", error);

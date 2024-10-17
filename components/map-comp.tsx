@@ -151,28 +151,12 @@ export const MapComp = (props: MapCompProps) => {
     }, [visibilitymode]);
 
     useEffect(() => {
-        fetchLocActiveStatus();
-    }, []);
-
-    useEffect(() => {
         const checkMapStatus = async () => {
             const status = await AsyncStorage.getItem('mapDisabled');
             setIsMapDisabled(status === 'true');
         };
         checkMapStatus();
     }, []);
-
-    const fetchLocActiveStatus = async () => {
-        setIsLoading(true);
-        try {
-            const status = await getlocActive();
-            setLocActive(status);
-        } catch (error) {
-            console.error("Failed to fetch locActive status:", error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
 
     const toggleMode = async () => {
         const newMode = visibilitymode === 'friends' ? 'global' : 'friends';

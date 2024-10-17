@@ -6,7 +6,7 @@ import { View, Text, TouchableOpacity, StyleSheet, AppStateStatus, AppState, Pla
 import { useRouter, usePathname, useRootNavigationState, Stack } from 'expo-router';
 import SplashScreen from './splashscreen';
 import { FontAwesome } from '@expo/vector-icons';
-import useWebSocket, { } from "../hooks/websockets/websockets"; 
+import useWebSocket, { } from "../hooks/websockets/websockets";
 import { WebSocketContext, WebSocketProviderProps } from "../util/Context/websocket";
 import { CountdownContext, CountdownProviderProps } from "../util/Context/countdown";
 import CountdownTimer from '../components/countdown';
@@ -23,6 +23,8 @@ import { getCurrentLocation, getlocation } from '../util/locationreq';
 import { WebSocketMessage, WSMsg } from 'middle-earth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import PermissionsScreen from './PermissionsScreen';
+import { LocationProvider } from '../util/Context/LocationContext';
+import { useLocationUpdates } from '../hooks/useLocationUpdates';
 
 const WebSocketProvider = ({ children }: WebSocketProviderProps) => {
   const { data, missiledata, landminedata, lootdata, otherdata, healthdata, friendsdata, inventorydata, playerlocations, leaguesData, sendWebsocket } = useWebSocket();
@@ -61,7 +63,7 @@ export default function RootLayout() {
     try {
       console.log('Configuring RevenueCat...');
       Purchases.setDebugLogsEnabled(true); // Enable debug logs
-      
+
       let apiKey;
       if (Platform.OS === 'ios') {
         apiKey = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_APPLE; // iOS API Key
@@ -139,19 +141,19 @@ export default function RootLayout() {
       if (now - lastActiveTime > BACKGROUND_THRESHOLD) {
         // App was in background for more than 2 minutes
         console.log('App was in background for more than 2 minutes, reloading...');
-        
+
         // Show splash screen
         await ExpoSplashScreen.preventAutoHideAsync();
-        
+
         // Reset the app state
         setIsSplashVisible(true);
-        
+
         // Clear any existing state or caches if necessary
         // For example: queryClient.clear();
-        
+
         // Navigate to the splash screen
         router.replace('/');
-        
+
         // Simulate a delay for the splash screen
         setTimeout(async () => {
           await ExpoSplashScreen.hideAsync();
@@ -189,10 +191,12 @@ export default function RootLayout() {
       <CountdownProvider>
         <AuthProvider>
           <WebSocketProvider>
-          <LandmineProvider>
-            <PermissionsCheck>
-              <RootLayoutNav />
-            </PermissionsCheck>
+            <LandmineProvider>
+              <LocationProvider>
+                <PermissionsCheck>
+                  <RootLayoutNav />
+                </PermissionsCheck>
+              </LocationProvider>
             </LandmineProvider>
           </WebSocketProvider>
         </AuthProvider>
@@ -212,51 +216,51 @@ function NavBar({ unreadCount }: { unreadCount: number }) {
   const lastUpdateTimeRef = useRef<number>(0);
   const updateIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const updateAndSendLocation = useCallback(async () => {
-    const now = Date.now();
-    if (now - lastUpdateTimeRef.current < 25000) {  // Prevent updates more frequent than every 25 seconds
-      // console.log('Skipping update, too soon since last update');
-      return;
-    }
+  // const updateAndSendLocation = useCallback(async () => {
+  //   const now = Date.now();
+  //   if (now - lastUpdateTimeRef.current < 25000) {  // Prevent updates more frequent than every 25 seconds
+  //     // console.log('Skipping update, too soon since last update');
+  //     return;
+  //   }
 
-    try {
-      const newLocation = await getCurrentLocation();
-      getlocation();
-      if (newLocation) {
-        const locationData = {
-          latitude: newLocation.latitude,
-          longitude: newLocation.longitude
-        };
+  //   try {
+  //     const newLocation = await getCurrentLocation();
+  //     getlocation();
+  //     if (newLocation) {
+  //       const locationData = {
+  //         latitude: newLocation.latitude,
+  //         longitude: newLocation.longitude
+  //       };
 
-        const locationMsg = new WSMsg("playerLocation", locationData);
-        const message = new WebSocketMessage([locationMsg]);
-        sendWebsocket(message);
-        // console.log('Location sent');
+  //       const locationMsg = new WSMsg("playerLocation", locationData);
+  //       const message = new WebSocketMessage([locationMsg]);
+  //       sendWebsocket(message);
+  //       // console.log('Location sent');
 
-        lastUpdateTimeRef.current = now;
-      }
-    } catch (error) {
-      console.error('Error updating location:', error);
-    }
-  }, [sendWebsocket]);
+  //       lastUpdateTimeRef.current = now;
+  //     }
+  //   } catch (error) {
+  //     console.error('Error updating location:', error);
+  //   }
+  // }, [sendWebsocket]);
 
-  useEffect(() => {
-    // Initial update
-    updateAndSendLocation();
-  
-    // Set up interval for repeated updates
-    updateIntervalRef.current = setInterval(updateAndSendLocation, 30000); // 30 seconds
-  
-    // Cleanup function
-    return () => {
-      if (updateIntervalRef.current) {
-        clearInterval(updateIntervalRef.current);
-      }
-    };
-  }, [updateAndSendLocation]);
+  // useEffect(() => {
+  //   // Initial update
+  //   updateAndSendLocation();
+
+  //   // Set up interval for repeated updates
+  //   updateIntervalRef.current = setInterval(updateAndSendLocation, 30000); // 30 seconds
+
+  //   // Cleanup function
+  //   return () => {
+  //     if (updateIntervalRef.current) {
+  //       clearInterval(updateIntervalRef.current);
+  //     }
+  //   };
+  // }, [updateAndSendLocation]);
 
   const getTabForPath = useMemo(() => (path: string) => {
-    if (path === '/notifications' || path === '/add-friends'|| path === '/msg') {
+    if (path === '/notifications' || path === '/add-friends' || path === '/msg') {
       return '/friends';
     } else if (path === '/settings') {
       return '/profile';
@@ -271,12 +275,12 @@ function NavBar({ unreadCount }: { unreadCount: number }) {
     const newTab = getTabForPath(pathname);
     setSelectedTab(newTab);
   }, [pathname, getTabForPath]);
-  
+
   const handlePress = (tab: string) => {
     if (getTabForPath(pathname) !== tab) {
       router.navigate(tab);
     }
-  };  
+  };
 
   const { notifications } = useNotifications();
   const [countdownActive, setCountdownActive] = useState(false);
@@ -292,7 +296,7 @@ function NavBar({ unreadCount }: { unreadCount: number }) {
     const checkRecentDamageNotifications = () => {
       const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
       const recentDamageNotification = localNotifications.find(
-        (notification) => 
+        (notification) =>
           (notification.title === 'Missile Damage!' || notification.title === 'Landmine Damage!') &&
           new Date(notification.timestamp) > twoMinutesAgo
       );
@@ -334,9 +338,9 @@ function NavBar({ unreadCount }: { unreadCount: number }) {
       isDarkMode && styles.navBarDark
     ]}>
       {[
-        '/', 
-        '/store', 
-        '/league', 
+        '/',
+        '/store',
+        '/league',
         '/friends',
         '/profile'
       ].map((tab, index) => (
@@ -397,24 +401,24 @@ function RootLayoutNav() {
   useEffect(() => {
     setUnreadCount(initialUnreadCount);
     setUnreadChatCount(initialUnreadChatCount);
-  
+
     const handleUnreadCountUpdated = ({ count, chatCount }: { count: number, chatCount: number }) => {
       setUnreadCount(count);
       setUnreadChatCount(chatCount);
     };
-  
+
     notificationEmitter.on('unreadCountUpdated', handleUnreadCountUpdated);
-  
+
     const intervalId = setInterval(() => {
       fetchNotifications();
     }, 30000); // Fetch every 30 seconds
-  
+
     const subscription = AppState.addEventListener('change', (nextAppState) => {
       if (nextAppState === 'active') {
         fetchNotifications();
       }
     });
-  
+
     return () => {
       notificationEmitter.off('unreadCountUpdated', handleUnreadCountUpdated);
       clearInterval(intervalId);
@@ -434,17 +438,17 @@ function RootLayoutNav() {
             gestureDirection: 'horizontal',
           }}
         >
-          <Stack.Screen 
-            name="index" 
+          <Stack.Screen
+            name="index"
             options={{
               animation: navigationState?.routes[navigationState?.index ?? 0 - 1]?.name === 'store' || 'league' || 'friends' || 'notificaitons' || 'add-friends' || 'profile' || 'user-profile' || 'settings'
-                ? 'slide_from_left' 
+                ? 'slide_from_left'
                 : 'slide_from_right',
-            }} 
+            }}
           />
-          <Stack.Screen 
-            name="login" 
-            options={{ headerShown: false, gestureEnabled: false, animation: 'slide_from_bottom' }} 
+          <Stack.Screen
+            name="login"
+            options={{ headerShown: false, gestureEnabled: false, animation: 'slide_from_bottom' }}
           />
           <Stack.Screen name="register" options={{ headerShown: false, gestureEnabled: true }} />
           <Stack.Screen name="PermissionsScreen" options={{ headerShown: false, animation: 'slide_from_bottom' }} />

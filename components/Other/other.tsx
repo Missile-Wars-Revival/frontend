@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Modal, View, TouchableOpacity, FlatList, Text, Image } from 'react-native';
 import { OtherPlacementPopup } from './otherplacement';
 import { create } from 'twrnc';
@@ -8,7 +8,7 @@ import { useColorScheme } from 'react-native';
 import { router } from 'expo-router';
 import { removeItem } from '../../api/add-item';
 import { useLandmine } from '../../util/Context/landminecontext';
-import { itemimages } from '../../app/profile';
+import { getImages } from "../../api/store";
 
 const tw = create(require('../../tailwind.config.js'));
 
@@ -41,6 +41,15 @@ const useOtherLib = (): OtherType[] => {
 
 const OtherSelector = ({ onSelect, Others }: { onSelect: (Other: string) => void, Others: OtherType[] }) => {
   const isDarkMode = useColorScheme() === 'dark';
+  const [getImageForProduct, setGetImageForProduct] = useState<(imageName: string) => any>(() => () => require('../../assets/logo.png'));
+
+  useEffect(() => {
+    const loadImages = async () => {
+      const imageGetter = await getImages();
+      setGetImageForProduct(() => imageGetter);
+    };
+    loadImages();
+  }, []);
 
   return (
     <FlatList
@@ -51,7 +60,7 @@ const OtherSelector = ({ onSelect, Others }: { onSelect: (Other: string) => void
           onPress={() => onSelect(Other.type)} 
           style={tw`flex-row items-center ${isDarkMode ? 'bg-gray-900' : 'bg-white'} p-2 mb-1 rounded-lg shadow`}
         >
-          <Image source={itemimages[Other.type]} style={tw`w-8 h-8 mr-2`} />
+          <Image source={getImageForProduct(Other.type)} style={tw`w-8 h-8 mr-2`} />
           <View style={tw`flex-1`}>
             <Text style={tw`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>{Other.type}</Text>
             <Text style={tw`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Quantity: {Other.quantity}</Text>

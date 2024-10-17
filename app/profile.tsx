@@ -627,6 +627,7 @@ const ProfilePage: React.FC = () => {
           {statistics ? (
             <View style={styles.statisticsContainer}>
               <Text style={[styles.statItem, isDarkMode && styles.statItemDark]}>Deaths: {statistics.numDeaths}</Text>
+              <Text style={[styles.statItem, isDarkMode && styles.statItemDark]}>Kills: {statistics.numKills}</Text>
               <Text style={[styles.statItem, isDarkMode && styles.statItemDark]}>Missiles Fired: {statistics.numMissilesPlaced}</Text>
               <Text style={[styles.statItem, isDarkMode && styles.statItemDark]}>Landmines Placed: {statistics.numLandminesPlaced}</Text>
               <Text style={[styles.statItem, isDarkMode && styles.statItemDark]}>Loot Placed: {statistics.numLootPlaced}</Text>

@@ -19,6 +19,8 @@ import * as StoreReview from 'expo-store-review';
 import { getNotificationPreferences, updateNotificationPreferences } from '../api/notifications';
 import { RewardedAd, RewardedAdEventType, TestIds } from 'react-native-google-mobile-ads';
 import { LinearGradient } from 'expo-linear-gradient';
+import { AppState, AppStateStatus } from 'react-native';
+import * as ExpoSplashScreen from 'expo-splash-screen';
 
 
 const adUnitId = __DEV__ ? TestIds.REWARDED : Platform.select({
@@ -579,6 +581,42 @@ const SettingsPage: React.FC = () => {
   
     const containerWidth = width * 0.9; // Assuming the container width is 90% of the screen width
     const optionWidth = (containerWidth - 29) / 3; // Subtracting 24 for padding (8 on each side)
+
+    const handleImagePreferenceChange = async (newValue: string) => {
+      if (newValue !== imagePreference) {
+        try {
+          await AsyncStorage.setItem('imagepref', newValue);
+          setImagePreference(newValue);
+          
+          Alert.alert(
+            "Preference Updated",
+            "The app will now restart to apply the new theme.",
+            [
+              {
+                text: "OK",
+                onPress: () => {
+                  // Navigate to the home screen (or any initial screen)
+                  router.replace('/');
+                  
+                  // Force a reload of the app
+                  if (__DEV__) {
+                    // In development, we can use DevSettings
+                    const DevSettings = require('react-native').DevSettings;
+                    DevSettings.reload();
+                  } else {
+                    // In production, we navigate to force a refresh
+                    router.replace('/');
+                  }
+                }
+              }
+            ]
+          );
+        } catch (error) {
+          console.error("Failed to save image preference:", error);
+          Alert.alert("Error", "Failed to save preference. Please try again.");
+        }
+      }
+    };
   
     return (
       <View style={[styles.visibilityContainer, isDarkMode && styles.visibilityContainerDark]}>
@@ -594,10 +632,7 @@ const SettingsPage: React.FC = () => {
                 isDarkMode && styles.toggleOptionDark,
                 imagePreference === option.value && isDarkMode && styles.toggleOptionActiveDark,
               ]}
-              onPress={() => {
-                setImagePreference(option.value);
-                AsyncStorage.setItem('imagepref', option.value);
-              }}
+              onPress={() => handleImagePreferenceChange(option.value)}
             >
               <Text style={styles.toggleOptionIcon}>{option.icon}</Text>
               <Text style={[

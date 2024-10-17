@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, FlatList, Text, TouchableOpacity, Image, ImageBackground, ImageSourcePropType, SafeAreaView, StyleSheet, useColorScheme, Dimensions, Animated, Modal, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import Cart from '../components/Store/cart';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -38,14 +38,23 @@ const StorePage: React.FC = () => {
   const [cartTotal, setCartTotal] = useState<number>(0);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [getImageForProduct, setGetImageForProduct] = useState<(imageName: string) => any>(() => () => require('../assets/logo.png'));
+  const [imagesLoaded, setImagesLoaded] = useState(false);
 
-useEffect(() => {
-  const loadImages = async () => {
-    const imageGetter = await getImages();
-    setGetImageForProduct(() => imageGetter);
-  };
-  loadImages();
-}, []);
+  useEffect(() => {
+    const loadImages = async () => {
+      const imageGetter = await getImages();
+      setGetImageForProduct(() => imageGetter);
+      setImagesLoaded(true);
+    };
+    loadImages();
+  }, []);
+
+  const getImageSource = useCallback((imageName: string) => {
+    if (!imagesLoaded) {
+      return require('../assets/logo.png'); // Default while loading
+    }
+    return getImageForProduct(imageName);
+  }, [imagesLoaded, getImageForProduct]);
 
   const sortedWeapons = React.useMemo(() => {
     return [...weapons].sort((a, b) => a.price - b.price);
@@ -53,6 +62,7 @@ useEffect(() => {
 
   useEffect(() => {
     const fetchWeapons = async () => {
+      if (!imagesLoaded) return; // Wait for images to load
       try {
         const response = await getWeaponTypes();
         const { landmineTypes, missileTypes, otherTypes } = response;
@@ -62,7 +72,7 @@ useEffect(() => {
           name: landmine.name,
           type: 'Landmines',
           price: landmine.price,
-          image: getImageForProduct(landmine.name),
+          image: getImageSource(landmine.name),
           description: landmine.description,
           damage: landmine.damage,
           duration: landmine.duration,
@@ -73,7 +83,7 @@ useEffect(() => {
           name: missile.name,
           type: 'Missiles',
           price: missile.price,
-          image: getImageForProduct(missile.name),
+          image: getImageSource(missile.name),
           description: missile.description,
           speed: missile.speed,
           radius: missile.radius,
@@ -86,7 +96,7 @@ useEffect(() => {
           name: other.name,
           type: 'Other',
           price: other.price,
-          image: getImageForProduct(other.name),
+          image: getImageSource(other.name),
           description: other.description,
           duration: other.duration,
           radius: other.radius,
@@ -99,7 +109,7 @@ useEffect(() => {
     };
 
     fetchWeapons();
-  }, [getImageForProduct]);
+  }, [imagesLoaded, getImageSource]);
 
   // fetch items in store
   useEffect(() => {
@@ -114,7 +124,7 @@ useEffect(() => {
             type: mapProductType(pkg.product.identifier),
             price: pkg.product.price,
             displayprice: pkg.product.priceString,
-            image: getImageForProduct(pkg.product.identifier),
+            image: getImageSource(pkg.product.identifier),
             description: pkg.product.description,
             sku: pkg.product.identifier,
           }));
@@ -130,7 +140,7 @@ useEffect(() => {
     };
 
     fetchProducts();
-  }, []);
+  }, [getImageSource]);
 
   useEffect(() => {
     const loadCart = async () => {
@@ -414,7 +424,11 @@ useEffect(() => {
       style={updatedStyles.productButton}
       onPress={() => handlePress(item)}
     >
-      <Image source={item.image} style={updatedStyles.productImage} />
+      <Image 
+        source={getImageSource(item.name)} 
+        style={updatedStyles.productImage} 
+        defaultSource={require('../assets/logo.png')}
+      />
       <Text style={[updatedStyles.productName, isDarkMode && updatedStyles.productNameDark]}>
         {item.name}
       </Text>
@@ -449,7 +463,11 @@ useEffect(() => {
         <ActivityIndicator size="small" color="#4CAF50" />
       ) : (
         <>
-          <Image source={item.image} style={updatedStyles.productImage} />
+          <Image 
+            source={item.image} 
+            style={updatedStyles.productImage}
+            defaultSource={require('../assets/logo.png')}
+          />
           <Text style={[updatedStyles.productName, isDarkMode && updatedStyles.productNameDark]}>{item.name}</Text>
           <Text style={[updatedStyles.productPrice, isDarkMode && updatedStyles.productPriceDark]}>{item.displayprice}</Text>
         </>

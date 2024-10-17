@@ -25,6 +25,7 @@ const badgeImages = {
 export interface Statistics {
   badges: string[];
   numDeaths: number;
+  numKills: number;
   numLootPlaced: number;
   numLandminesPlaced: number;
   numMissilesPlaced: number;
@@ -213,6 +214,7 @@ const UserProfilePage: React.FC = () => {
           <Text style={[styles.sectionTitle, isDarkMode && styles.sectionTitleDark]}>Statistics</Text>
           <View style={styles.statisticsContainer}>
               <Text style={[styles.statItem, isDarkMode && styles.statItemDark]}>Deaths: {userProfile.statistics.numDeaths}</Text>
+              <Text style={[styles.statItem, isDarkMode && styles.statItemDark]}>Kills: {userProfile.statistics.numKills}</Text>
               <Text style={[styles.statItem, isDarkMode && styles.statItemDark]}>Missiles Fired: {userProfile.statistics.numMissilesPlaced}</Text>
               <Text style={[styles.statItem, isDarkMode && styles.statItemDark]}>Landmines Placed: {userProfile.statistics.numLandminesPlaced}</Text>
               <Text style={[styles.statItem, isDarkMode && styles.statItemDark]}>Loot Placed: {userProfile.statistics.numLootPlaced}</Text>

@@ -147,21 +147,6 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
     loadStoredMapStyle();
   }, []);
 
-  useEffect(() => {
-    fetchLocActiveStatus();
-    const intervalId = setInterval(fetchLocActiveStatus, 30000);
-    return () => clearInterval(intervalId);
-  }, []);
-
-  const fetchLocActiveStatus = async () => {
-    try {
-      const status = await getlocActive();
-      setLocActive(status);
-    } catch (error) {
-      console.error("Failed to fetch locActive status:", error);
-    }
-  };
-
   const processPlayerData = async () => {
     try {
       const currentUserUsername = await SecureStore.getItemAsync("username");

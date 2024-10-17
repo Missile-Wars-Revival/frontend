@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Modal, View, TouchableOpacity, FlatList, Text, Image } from 'react-native';
 import { LootPlacementPopup } from './lootplacement';
 import { create } from 'twrnc';
@@ -6,6 +6,7 @@ import { InventoryItem } from '../../types/types';
 import useFetchInventory from '../../hooks/websockets/inventoryhook';
 import { useColorScheme } from 'react-native';
 import { router } from 'expo-router';
+import { getImages } from '../../api/store';
 
 const tw = create(require('../../tailwind.config.js'));
 
@@ -38,6 +39,15 @@ const useLootLib = (): LootType[] => {
 
 const LootSelector = ({ onSelect, loots }: { onSelect: (loot: string) => void, loots: LootType[] }) => {
   const isDarkMode = useColorScheme() === 'dark';
+  const [getImageForProduct, setGetImageForProduct] = useState<(imageName: string) => any>(() => () => require('../../assets/logo.png'));
+
+  useEffect(() => {
+    const loadImages = async () => {
+      const imageGetter = await getImages();
+            setGetImageForProduct(() => imageGetter);
+        };
+        loadImages();
+    }, []);
 
   return (
     <FlatList
@@ -48,7 +58,7 @@ const LootSelector = ({ onSelect, loots }: { onSelect: (loot: string) => void, l
           onPress={() => onSelect(loot.type)} 
           style={tw`flex-row items-center ${isDarkMode ? 'bg-gray-900' : 'bg-white'} p-2 mb-1 rounded-lg shadow`}
         >
-          <Image source={require("../../assets/mapassets/Airdropicon.png")} style={tw`w-8 h-8 mr-2`} />
+          <Image source={getImageForProduct("LootDrop")} style={tw`w-8 h-8 mr-2`} />
           <View style={tw`flex-1`}>
             <Text style={tw`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>{loot.type}</Text>
             <Text style={tw`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Quantity: {loot.quantity}</Text>
