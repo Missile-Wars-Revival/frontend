@@ -1,7 +1,6 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Image, StyleSheet, Animated, Easing, useColorScheme } from 'react-native';
-import { itemimages } from '../../app/profile';
-import { Product } from '../../api/store';
+import { getImages, Product } from '../../api/store';
 
 type CartPurchaseAnimationProps = {
   cartItems: { product: Product; quantity: number }[];
@@ -13,6 +12,15 @@ const CartPurchaseAnimation: React.FC<CartPurchaseAnimationProps> = ({ cartItems
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const sparkleAnims = useRef(Array(6).fill(null).map(() => new Animated.Value(0))).current;
   const colorScheme = useColorScheme();
+  const [getImageForProduct, setGetImageForProduct] = useState<(imageName: string) => any>(() => () => require('../../assets/logo.png'));
+
+  useEffect(() => {
+    const loadImages = async () => {
+      const imageGetter = await getImages();
+      setGetImageForProduct(() => imageGetter);
+    };
+    loadImages();
+  }, []);
 
   useEffect(() => {
     Animated.parallel([
@@ -65,7 +73,7 @@ const CartPurchaseAnimation: React.FC<CartPurchaseAnimationProps> = ({ cartItems
         {cartItems.map((item, index) => (
           <Image 
             key={index} 
-            source={itemimages[item.product.name]} 
+            source={getImageForProduct(item.product.name)} 
             style={[styles.itemImage, { transform: [{ rotate: `${index * (360 / cartItems.length)}deg` }, { translateY: -50 }] }]} 
           />
         ))}

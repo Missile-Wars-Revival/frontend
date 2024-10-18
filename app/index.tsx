@@ -164,7 +164,7 @@ export default function Map() {
     };
     getisAliveeffect();
 
-    const intervalId = setInterval(getisAliveeffect, 30000);
+    const intervalId = setInterval(getisAliveeffect, 5000);
     return () => clearInterval(intervalId);
   }, []);
 
@@ -232,7 +232,7 @@ export default function Map() {
   useEffect(() => {
     fetchLocActiveStatus();
     checkPermissions();
-    const locActiveIntervalId = setInterval(fetchLocActiveStatus, 6000);
+    const locActiveIntervalId = setInterval(fetchLocActiveStatus, 3000);
     const permsIntervalId = setInterval(checkPermissions, 6000);
 
     return () => {

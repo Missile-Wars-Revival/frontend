@@ -23,8 +23,6 @@ import { getCurrentLocation, getlocation } from '../util/locationreq';
 import { WebSocketMessage, WSMsg } from 'middle-earth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import PermissionsScreen from './PermissionsScreen';
-import { LocationProvider } from '../util/Context/LocationContext';
-import { useLocationUpdates } from '../hooks/useLocationUpdates';
 
 const WebSocketProvider = ({ children }: WebSocketProviderProps) => {
   const { data, missiledata, landminedata, lootdata, otherdata, healthdata, friendsdata, inventorydata, playerlocations, leaguesData, sendWebsocket } = useWebSocket();
@@ -192,11 +190,9 @@ export default function RootLayout() {
         <AuthProvider>
           <WebSocketProvider>
             <LandmineProvider>
-              <LocationProvider>
                 <PermissionsCheck>
                   <RootLayoutNav />
                 </PermissionsCheck>
-              </LocationProvider>
             </LandmineProvider>
           </WebSocketProvider>
         </AuthProvider>
@@ -216,48 +212,48 @@ function NavBar({ unreadCount }: { unreadCount: number }) {
   const lastUpdateTimeRef = useRef<number>(0);
   const updateIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // const updateAndSendLocation = useCallback(async () => {
-  //   const now = Date.now();
-  //   if (now - lastUpdateTimeRef.current < 25000) {  // Prevent updates more frequent than every 25 seconds
-  //     // console.log('Skipping update, too soon since last update');
-  //     return;
-  //   }
+  const updateAndSendLocation = useCallback(async () => {
+    const now = Date.now();
+    if (now - lastUpdateTimeRef.current < 25000) {  // Prevent updates more frequent than every 25 seconds
+      // console.log('Skipping update, too soon since last update');
+      return;
+    }
 
-  //   try {
-  //     const newLocation = await getCurrentLocation();
-  //     getlocation();
-  //     if (newLocation) {
-  //       const locationData = {
-  //         latitude: newLocation.latitude,
-  //         longitude: newLocation.longitude
-  //       };
+    try {
+      const newLocation = await getCurrentLocation();
+      getlocation();
+      if (newLocation) {
+        const locationData = {
+          latitude: newLocation.latitude,
+          longitude: newLocation.longitude
+        };
 
-  //       const locationMsg = new WSMsg("playerLocation", locationData);
-  //       const message = new WebSocketMessage([locationMsg]);
-  //       sendWebsocket(message);
-  //       // console.log('Location sent');
+        const locationMsg = new WSMsg("playerLocation", locationData);
+        const message = new WebSocketMessage([locationMsg]);
+        sendWebsocket(message);
+        // console.log('Location sent');
 
-  //       lastUpdateTimeRef.current = now;
-  //     }
-  //   } catch (error) {
-  //     console.error('Error updating location:', error);
-  //   }
-  // }, [sendWebsocket]);
+        lastUpdateTimeRef.current = now;
+      }
+    } catch (error) {
+      console.error('Error updating location:', error);
+    }
+  }, [sendWebsocket]);
 
-  // useEffect(() => {
-  //   // Initial update
-  //   updateAndSendLocation();
+  useEffect(() => {
+    // Initial update
+    updateAndSendLocation();
 
-  //   // Set up interval for repeated updates
-  //   updateIntervalRef.current = setInterval(updateAndSendLocation, 30000); // 30 seconds
+    // Set up interval for repeated updates
+    updateIntervalRef.current = setInterval(updateAndSendLocation, 30000); // 30 seconds
 
-  //   // Cleanup function
-  //   return () => {
-  //     if (updateIntervalRef.current) {
-  //       clearInterval(updateIntervalRef.current);
-  //     }
-  //   };
-  // }, [updateAndSendLocation]);
+    // Cleanup function
+    return () => {
+      if (updateIntervalRef.current) {
+        clearInterval(updateIntervalRef.current);
+      }
+    };
+  }, [updateAndSendLocation]);
 
   const getTabForPath = useMemo(() => (path: string) => {
     if (path === '/notifications' || path === '/add-friends' || path === '/msg') {

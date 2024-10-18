@@ -1,6 +1,6 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Image, StyleSheet, Animated, Easing, useColorScheme } from 'react-native';
-import { itemimages } from '../../app/profile';
+import { getImages } from '../../api/store';
 
 type ItemCollectAnimationProps = {
   itemName: string;
@@ -12,6 +12,15 @@ const ItemCollectAnimation: React.FC<ItemCollectAnimationProps> = ({ itemName, o
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const sparkleAnims = useRef(Array(6).fill(null).map(() => new Animated.Value(0))).current;
   const colorScheme = useColorScheme();
+  const [getImageForProduct, setGetImageForProduct] = useState<(imageName: string) => any>(() => () => require('../../assets/logo.png'));
+
+  useEffect(() => {
+    const loadImages = async () => {
+      const imageGetter = await getImages();
+      setGetImageForProduct(() => imageGetter);
+    };
+    loadImages();
+  }, []);
 
   useEffect(() => {
     Animated.parallel([
@@ -61,7 +70,7 @@ const ItemCollectAnimation: React.FC<ItemCollectAnimationProps> = ({ itemName, o
       { backgroundColor: colorScheme === 'dark' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }
     ]}>
       <Animated.View style={[styles.itemContainer, { opacity: opacityAnim, transform: [{ scale: scaleAnim }] }]}>
-        <Image source={itemimages[itemName]} style={styles.itemImage} />
+        <Image source={getImageForProduct(itemName)} style={styles.itemImage} />
         {sparkleAnims.map((anim, index) => (
           <Animated.View
             key={index}

@@ -21,6 +21,7 @@ import { RewardedAd, RewardedAdEventType, TestIds } from 'react-native-google-mo
 import { LinearGradient } from 'expo-linear-gradient';
 import { AppState, AppStateStatus } from 'react-native';
 import * as ExpoSplashScreen from 'expo-splash-screen';
+import * as Updates from 'expo-updates';
 
 
 const adUnitId = __DEV__ ? TestIds.REWARDED : Platform.select({
@@ -598,15 +599,21 @@ const SettingsPage: React.FC = () => {
                   // Navigate to the home screen (or any initial screen)
                   router.replace('/');
                   
-                  // Force a reload of the app
-                  if (__DEV__) {
-                    // In development, we can use DevSettings
-                    const DevSettings = require('react-native').DevSettings;
-                    DevSettings.reload();
-                  } else {
-                    // In production, we navigate to force a refresh
-                    router.replace('/');
-                  }
+                  // Use a timeout to allow the navigation to complete
+                  setTimeout(() => {
+                    if (__DEV__) {
+                      // In development, we can use DevSettings
+                      const DevSettings = require('react-native').DevSettings;
+                      DevSettings.reload();
+                    } else {
+                      // In production, we can use the Expo updates API
+                      import('expo-updates').then(Updates => {
+                        Updates.reloadAsync();
+                      }).catch(error => {
+                        console.error('Failed to reload the app:', error);
+                      });
+                    }
+                  }, 100);
                 }
               }
             ]

@@ -2,10 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Image, Animated, useColorScheme } from 'react-native';
 import mobileAds from 'react-native-google-mobile-ads';
 import { getlocation } from '../util/locationreq';
-import { initializeApp } from "firebase/app";
+import { getApps, initializeApp } from "firebase/app";
 import { firebaseConfig } from '../util/firebase/config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getAuth } from 'firebase/auth';
 
 mobileAds()
   .initialize()
@@ -26,8 +25,13 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
     const initializeAppLoad = async () => {
       try {
         getlocation();
-        const app =initializeApp(firebaseConfig);
-        const auth = getAuth(app);
+
+        let app;
+        if (getApps().length === 0) {
+          app = initializeApp(firebaseConfig);
+        } else {
+          app = getApps()[0];
+        }
 
         await initializeAsyncStorageValues();
       } catch (error) {
