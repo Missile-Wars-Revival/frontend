@@ -1098,6 +1098,11 @@ const SettingsPage: React.FC = () => {
                 Privacy Policy
               </Text>
             </TouchableOpacity>
+            <TouchableOpacity onPress={() => Linking.openURL('https://website.missilewars.dev/eula')}>
+              <Text style={[styles.footerLinkText, isDarkMode && styles.footerLinkTextDark]}>
+                EULA Agreement
+              </Text>
+            </TouchableOpacity>
             <Text style={[styles.footerLinkText, isDarkMode && styles.footerLinkTextDark]}> | </Text>
             <TouchableOpacity onPress={() => Linking.openURL('https://discord.gg/Gk8jqUnVd3')}>
               <Text style={[styles.footerLinkText, isDarkMode && styles.footerLinkTextDark]}>

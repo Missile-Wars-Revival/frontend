@@ -16,7 +16,7 @@ interface PermissionsScreenProps {
 const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGranted }) => {
   const [locationPermission, setLocationPermission] = useState(false);
   const [notificationPermission, setNotificationPermission] = useState(false);
-  const [privacyPolicyAgreed, setPrivacyPolicyAgreed] = useState(false);
+  const [privacyPolicyAndEulaAgreed, setPrivacyPolicyAndEulaAgreed] = useState(false);
   // Change this line to initialize tracking permission as false for both iOS and Android
   const [trackingPermission, setTrackingPermission] = useState(false);
 
@@ -114,19 +114,23 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGrant
     Linking.openURL('https://website.missilewars.dev/privacypolicy');
   };
 
-  const agreeToPrivacyPolicy = () => {
+  const openEula = () => {
+    Linking.openURL('https://website.missilewars.dev/eula');
+  };
+
+  const agreeToPrivacyPolicyAndEula = () => {
     try {
-      setPrivacyPolicyAgreed(true);
+      setPrivacyPolicyAndEulaAgreed(true);
     } catch (error) {
-      console.error('Error agreeing to privacy policy:', error);
+      console.error('Error agreeing to privacy policy and EULA:', error);
     }
   };
 
   const handleContinue = () => {
-    if (privacyPolicyAgreed) {
+    if (privacyPolicyAndEulaAgreed) {
       onPermissionGranted();
     } else {
-      Alert.alert('Required Agreement', 'You must agree to the Privacy Policy to use this app.');
+      Alert.alert('Required Agreement', 'You must agree to the Privacy Policy and EULA to use this app.');
     }
   };
 
@@ -204,22 +208,32 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGrant
               )}
 
               <PermissionItem
-                title="Agree to Privacy Policy (Required)"
-                description="You must agree to our Privacy Policy to use this app."
+                title="Agree to Privacy Policy and EULA (Required)"
+                description="You must agree to our Privacy Policy and End User License Agreement (EULA) to use this app."
                 icon={<FileText size={24} color={isDarkMode ? "#FFFFFF" : "#000000"} />}
-                isGranted={privacyPolicyAgreed}
-                onPress={agreeToPrivacyPolicy}
+                isGranted={privacyPolicyAndEulaAgreed}
+                onPress={agreeToPrivacyPolicyAndEula}
                 styles={styles}
                 isDarkMode={isDarkMode}
               >
-                <TouchableOpacity 
-                  style={[styles.privacyPolicyButton, isDarkMode && styles.privacyPolicyButtonDark]} 
-                  onPress={openPrivacyPolicy}
-                >
-                  <Text style={[styles.privacyPolicyButtonText, isDarkMode && styles.privacyPolicyButtonTextDark]}>
-                    Read Privacy Policy
-                  </Text>
-                </TouchableOpacity>
+                <View style={styles.legalButtonsContainer}>
+                  <TouchableOpacity 
+                    style={[styles.legalButton, isDarkMode && styles.legalButtonDark]} 
+                    onPress={openPrivacyPolicy}
+                  >
+                    <Text style={[styles.legalButtonText, isDarkMode && styles.legalButtonTextDark]}>
+                      Read Privacy Policy
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={[styles.legalButton, isDarkMode && styles.legalButtonDark]} 
+                    onPress={openEula}
+                  >
+                    <Text style={[styles.legalButtonText, isDarkMode && styles.legalButtonTextDark]}>
+                      Read EULA
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </PermissionItem>
             </View>
           </ScrollView>
@@ -228,16 +242,16 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGrant
             <TouchableOpacity 
               style={[
                 styles.continueButton, 
-                !privacyPolicyAgreed && styles.disabledButton, 
+                !privacyPolicyAndEulaAgreed && styles.disabledButton, 
                 isDarkMode && styles.continueButtonDark,
-                isDarkMode && !privacyPolicyAgreed && styles.disabledButtonDark
+                isDarkMode && !privacyPolicyAndEulaAgreed && styles.disabledButtonDark
               ]} 
               onPress={handleContinue}
-              disabled={!privacyPolicyAgreed}
+              disabled={!privacyPolicyAndEulaAgreed}
             >
               <Text style={[
                 styles.continueButtonText,
-                isDarkMode && !privacyPolicyAgreed && styles.disabledButtonTextDark
+                isDarkMode && !privacyPolicyAndEulaAgreed && styles.disabledButtonTextDark
               ]}>
                 Agree & Continue
               </Text>
@@ -424,6 +438,23 @@ const lightStyles = StyleSheet.create({
     color: '#773765',
     fontWeight: 'bold',
   },
+  legalButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  legalButton: {
+    backgroundColor: '#E0E0E0',
+    borderRadius: 10,
+    padding: 10,
+    alignItems: 'center',
+    flex: 1,
+    marginHorizontal: 5,
+  },
+  legalButtonText: {
+    color: '#773765',
+    fontWeight: 'bold',
+  },
 });
 
 const darkStyles = StyleSheet.create({
@@ -468,6 +499,12 @@ const darkStyles = StyleSheet.create({
   },
   disabledButtonTextDark: {
     color: '#666666', // Darker text for disabled state in dark mode
+  },
+  legalButtonDark: {
+    backgroundColor: '#444444',
+  },
+  legalButtonTextDark: {
+    color: '#4CAF50',
   },
 });
 
