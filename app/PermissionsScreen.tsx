@@ -115,7 +115,7 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGrant
   };
 
   const openEula = () => {
-    Linking.openURL('https://website.missilewars.dev/eula');
+    Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/');
   };
 
   const agreeToPrivacyPolicyAndEula = () => {

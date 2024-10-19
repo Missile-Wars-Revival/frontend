@@ -1098,7 +1098,7 @@ const SettingsPage: React.FC = () => {
                 Privacy Policy
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => Linking.openURL('https://website.missilewars.dev/eula')}>
+            <TouchableOpacity onPress={() => Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')}>
               <Text style={[styles.footerLinkText, isDarkMode && styles.footerLinkTextDark]}>
                 EULA Agreement
               </Text>
