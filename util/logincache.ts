@@ -37,6 +37,7 @@ export async function clearCredentials(): Promise<void> {
     await AsyncStorage.removeItem('signedIn');
     await AsyncStorage.removeItem('locActive');
     await AsyncStorage.removeItem('notificaitonToken');
+    await AsyncStorage.removeItem('onboardingComplete');
     console.log("All credentials and settings successfully cleared.");
   } catch (error) {
     console.error("Failed to clear credentials and settings:", error);

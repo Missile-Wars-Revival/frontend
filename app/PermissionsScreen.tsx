@@ -137,7 +137,7 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGrant
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
 
-  const backgroundImage = require('../assets/concept/Map.png'); 
+  const backgroundImage = require('../assets/concept/map.png'); 
 
   const styles = useMemo(() => StyleSheet.create({
     ...lightStyles,

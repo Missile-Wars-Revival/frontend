@@ -23,6 +23,7 @@ import { getCurrentLocation, getlocation } from '../util/locationreq';
 import { WebSocketMessage, WSMsg } from 'middle-earth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import PermissionsScreen from './PermissionsScreen';
+import { OnboardingProvider } from '../util/Context/onboardingContext';
 
 const WebSocketProvider = ({ children }: WebSocketProviderProps) => {
   const { data, missiledata, landminedata, lootdata, otherdata, healthdata, friendsdata, inventorydata, playerlocations, leaguesData, sendWebsocket } = useWebSocket();
@@ -190,9 +191,11 @@ export default function RootLayout() {
         <AuthProvider>
           <WebSocketProvider>
             <LandmineProvider>
+              <OnboardingProvider>
                 <PermissionsCheck>
                   <RootLayoutNav />
                 </PermissionsCheck>
+              </OnboardingProvider>
             </LandmineProvider>
           </WebSocketProvider>
         </AuthProvider>

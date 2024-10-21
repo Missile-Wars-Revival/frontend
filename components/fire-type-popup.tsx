@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { Modal, View, Text, TouchableOpacity, StyleSheet, useColorScheme, Dimensions } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
+import { useOnboarding } from '../util/Context/onboardingContext';
+import OnboardingOverlay from "./OnboardingOverlay";
 
 const { width, height } = Dimensions.get('window');
 
@@ -15,9 +17,13 @@ export const FireType = (props: FireTypeProps) => {
   const [FirepopupVisible, setFirePopupVisible] = useState(false);
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
+  const { currentStep, moveToNextStep, isOnboardingComplete } = useOnboarding();
 
   const FireshowPopup = () => {
     setFirePopupVisible(true);
+    if (currentStep === 'fire') {
+      moveToNextStep();
+    }
   };
 
   const FireclosePopup = () => {
@@ -29,6 +35,9 @@ export const FireType = (props: FireTypeProps) => {
     switch (style) {
       case "firelandmine":
         props.landmineFireHandler();
+        if (currentStep === 'fire_landmine') {
+          moveToNextStep();
+        }
         break;
       case "firemissile":
         props.missileFireHandler();
@@ -79,6 +88,7 @@ export const FireTypeStyle = ({
   onSelect,
   isDarkMode,
 }: MapStylePopupProps) => {
+  const { currentStep, moveToNextStep, isOnboardingComplete } = useOnboarding();
   return (
     <Modal
       animationType="slide"
@@ -123,6 +133,9 @@ export const FireTypeStyle = ({
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
+      {!isOnboardingComplete && (currentStep === 'fire_landmine') && (
+        <OnboardingOverlay />
+      )}
     </Modal>
   );
 };

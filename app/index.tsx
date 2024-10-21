@@ -6,6 +6,7 @@ import axiosInstance from "../api/axios-instance";
 import axios from "axios";
 import { Ionicons } from '@expo/vector-icons';
 import { RewardedAd, RewardedAdEventType, BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
+import * as Location from 'expo-location';
 
 // Android Themes
 import { androidDefaultMapStyle } from "../map-themes/Android-themes/defaultMapStyle";
@@ -37,7 +38,8 @@ import { getlocActive } from "../api/locationOptions";
 import PlayerViewButton from "../components/PlayerViewButton";
 import { MissileLibrary } from "../components/Missile/missile";
 import MissileFiringAnimation from "../components/Animations/MissileFiring";
-import * as Location from 'expo-location';
+import { useOnboarding } from '../util/Context/onboardingContext';
+import OnboardingOverlay from '../components/OnboardingOverlay';
 
 const bannerAdUnitId = __DEV__ ? TestIds.BANNER : Platform.select({
   ios: 'ca-app-pub-4035842398612787/5646222776',
@@ -76,6 +78,7 @@ export default function Map() {
   const [adLoaded, setAdLoaded] = useState(false);
   const [rewardedAdLoaded, setRewardedAdLoaded] = useState(false);
   const colorScheme = useColorScheme();
+  const { isOnboardingComplete, currentStep } = useOnboarding();
   const isDarkMode = colorScheme === 'dark';
 
   useEffect(() => {
@@ -522,6 +525,9 @@ export default function Map() {
         <View style={styles.animationOverlay}>
           <MissileFiringAnimation onAnimationComplete={handleMissileAnimationComplete} />
         </View>
+      )}
+      {!isOnboardingComplete && (currentStep === 'fire' || currentStep === 'store' || currentStep === "playermenu" || currentStep === "friends" ) && (
+        <OnboardingOverlay />
       )}
     </View>
   );

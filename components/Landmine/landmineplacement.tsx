@@ -25,6 +25,8 @@ import { androidCherryBlossomMapStyle } from '../../map-themes/Android-themes/ch
 import { androidColorblindMapStyle } from '../../map-themes/Android-themes/colourblindstyle';
 import { androidCyberpunkMapStyle } from '../../map-themes/Android-themes/cyberpunkstyle';
 import { androidRadarMapStyle } from '../../map-themes/Android-themes/radarMapStyle';
+import { useOnboarding } from '../../util/Context/onboardingContext';
+import OnboardingOverlay from '../OnboardingOverlay';
 
 const GOOGLE_PLACES_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 
@@ -56,6 +58,7 @@ export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ 
   const userName = useUserName();
   const mapRef = useRef<MapView>(null);
   const [currentMapStyle, setCurrentMapStyle] = useState<MapStyle[]>(Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle);
+  const { currentStep, moveToNextStep, isOnboardingComplete } = useOnboarding();
 
   useEffect(() => {
     const loadStoredMapStyle = async () => {
@@ -191,6 +194,11 @@ export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ 
           // Optionally, you can show an error message to the user here
         });
     }
+
+    if (currentStep === 'place_landmine') {
+      moveToNextStep();
+    }
+
   };
 
   const handlePlaceSelected = (data: any, details: any = null) => {
@@ -204,6 +212,21 @@ export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ 
       setRegion(newRegion);
       setMarker(newRegion);
       mapRef.current?.animateToRegion(newRegion, 1000);
+    }
+  };
+
+  const handleMapPress = (e: any) => {
+    const newMarker = {
+      latitude: e.nativeEvent.coordinate.latitude,
+      longitude: e.nativeEvent.coordinate.longitude,
+      latitudeDelta: 0.001,
+      longitudeDelta: 0.001
+    };
+    setMarker(newMarker);
+    
+    // Move to the next step in onboarding if the current step is 'selectlandmine_location'
+    if (currentStep === 'selectlandmine_location' && !isOnboardingComplete) {
+      moveToNextStep();
     }
   };
 
@@ -296,12 +319,7 @@ export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ 
             scrollEnabled={true}
             zoomEnabled={true}
             customMapStyle={currentMapStyle}
-            onPress={(e) => setMarker({
-              latitude: e.nativeEvent.coordinate.latitude,
-              longitude: e.nativeEvent.coordinate.longitude,
-              latitudeDelta: 0.001,
-              longitudeDelta: 0.001
-            })}
+            onPress={handleMapPress}
           >
             {marker && (
               <Circle
@@ -350,6 +368,9 @@ export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ 
           </View>
         </View>
       </View>
+      {!isOnboardingComplete && (currentStep === 'place_landmine' || 'selectlandmine_location' ) && (
+        <OnboardingOverlay />
+      )}
     </Modal>
   );
 };

@@ -1,13 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, Switch, Alert, Platform, ActivityIndicator, TouchableOpacity, useColorScheme, StyleSheet, Dimensions } from "react-native";
+import { View, Text, Switch, Alert, ActivityIndicator, TouchableOpacity, useColorScheme, StyleSheet, Dimensions } from "react-native";
 import MapView, { Circle } from "react-native-maps";
 import { AllLootDrops } from "./Loot/map-loot";
 import { AllLandMines } from "./Landmine/map-landmines";
 import { AllMissiles } from "./Missile/map-missile";
 import { AllPlayers } from "./map-players";
 import { loadLastKnownLocation, saveLocation } from '../util/mapstore';
-import { getlocation, location } from "../util/locationreq";
-import { dispatch } from "../api/dispatch";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCurrentLocation } from "../util/locationreq";
 import { getMainMapStyles } from "../map-themes/stylesheet";
@@ -19,7 +17,6 @@ import useFetchLandmines from "../hooks/websockets/landminehook";
 import { FontAwesome } from '@expo/vector-icons';
 import useFetchOther from "../hooks/websockets/otherhook";
 import { AllOther } from "./Other/map-other";
-import { getlocActive } from "../api/locationOptions";
 import { useUserLeague } from "../hooks/api/useUserLEague";
 import { getLeagueAirspace } from "./player";
 

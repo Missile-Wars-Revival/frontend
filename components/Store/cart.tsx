@@ -6,6 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from "expo-router";
 import { Product } from '../../api/store';
 import CartPurchaseAnimation from '../Animations/CartPurchaseAnimation';
+import { useOnboarding } from '../../util/Context/onboardingContext';
 
 interface CartItem {
   product: Product;
@@ -20,6 +21,7 @@ interface CartProps {
 const Cart: React.FC<CartProps> = ({ cart, onRemove }) => {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
+  const { isOnboardingComplete, currentStep, setCurrentStep, moveToNextStep } = useOnboarding();
 
   const totalPrice = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
 
@@ -70,7 +72,10 @@ const Cart: React.FC<CartProps> = ({ cart, onRemove }) => {
       money: totalPrice,
     })
       .then(async response => {
-        setShowAnimation(true); // Show the animation
+        setShowAnimation(true);
+        if (currentStep === 'checkout') {
+          moveToNextStep();
+        }
       })
       .catch(error => {
         Alert.alert("Checkout Failed", error.response?.data.message || "An error occurred during checkout.");
@@ -81,6 +86,7 @@ const Cart: React.FC<CartProps> = ({ cart, onRemove }) => {
   const handleAnimationComplete = async () => {
     setShowAnimation(false);
     await AsyncStorage.removeItem('cartitems');
+    setCurrentStep('fire')
     router.navigate("/");
     Alert.alert("Success", "Checkout successful!");
   };

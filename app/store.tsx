@@ -11,6 +11,9 @@ import { additem } from '../api/add-item';
 import { getWeaponTypes, mapProductType, PremProduct, Product, getImages } from '../api/store';
 import { getShopStyles } from '../map-themes/stylesheet';
 import { Ionicons } from '@expo/vector-icons';
+import { useOnboarding } from '../util/Context/onboardingContext';
+import OnboardingOverlay from '../components/OnboardingOverlay';
+
 
 const { width, height } = Dimensions.get('window');
 
@@ -39,6 +42,7 @@ const StorePage: React.FC = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [getImageForProduct, setGetImageForProduct] = useState<(imageName: string) => any>(() => () => require('../assets/logo.png'));
   const [imagesLoaded, setImagesLoaded] = useState(false);
+  const { currentStep, moveToNextStep, isOnboardingComplete } = useOnboarding();
 
   useEffect(() => {
     const loadImages = async () => {
@@ -48,6 +52,12 @@ const StorePage: React.FC = () => {
     };
     loadImages();
   }, []);
+
+  useEffect(() => {
+    if (currentStep === 'store') {
+      moveToNextStep();
+    }
+  }, [currentStep, moveToNextStep]);
 
   const getImageSource = useCallback((imageName: string) => {
     if (!imagesLoaded) {
@@ -419,6 +429,53 @@ const StorePage: React.FC = () => {
     );
   };
 
+  const handleCategorySelect = (category: string) => {
+    setSelectedCategory(category);
+    if (currentStep === 'filter_missiles' && category === 'Missiles') {
+      moveToNextStep();
+    } else if (currentStep === 'filter_landmines' && category === 'Landmines') {
+      moveToNextStep();
+    }
+  };
+
+  const handleAddToCart = (product: Product) => {
+    addToCart(product);
+    if (currentStep === 'buy_missile' && product.type === 'Missiles') {
+      moveToNextStep();
+    } else if (currentStep === 'buy_landmine' && product.type === 'Landmines') {
+      moveToNextStep();
+    }
+  };
+
+  const handleShowCart = () => {
+    showCart();
+    if (currentStep === 'go_to_cart') {
+      moveToNextStep();
+    }
+  };
+
+  const renderTabs = () => (
+    <View style={updatedStyles.tabContainerMissiles}>
+      {['All', 'Missiles', 'Landmines', 'Other'].map((category) => (
+        <TouchableOpacity 
+          key={category} 
+          onPress={() => handleCategorySelect(category)} 
+          style={[
+            updatedStyles.tabMissiles,
+            selectedCategory === category && updatedStyles.selectedTab
+          ]}
+        >
+          <Text style={[
+            updatedStyles.missileTabText,
+            selectedCategory === category && updatedStyles.selectedTabText
+          ]}>
+            {category}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+
   const renderButton = ({ item }: { item: Product }) => (
     <TouchableOpacity
       style={updatedStyles.productButton}
@@ -435,7 +492,7 @@ const StorePage: React.FC = () => {
       <Text style={[updatedStyles.productPrice, isDarkMode && updatedStyles.productPriceDark]}>🪙{item.price}</Text>
       <TouchableOpacity 
         style={[updatedStyles.addToCartButtonSmall, isDarkMode && updatedStyles.addToCartButtonSmallDark]} 
-        onPress={() => addToCart(item)}
+        onPress={() => handleAddToCart(item)}
       >
         <Ionicons name="cart" size={18} color={isDarkMode ? "black" : "white"} />
         <Text style={[updatedStyles.addToCartButtonTextSmall, isDarkMode && updatedStyles.addToCartButtonTextSmallDark]}>Add to Cart</Text>
@@ -473,28 +530,6 @@ const StorePage: React.FC = () => {
         </>
       )}
     </TouchableOpacity>
-  );
-
-  const renderTabs = () => (
-    <View style={updatedStyles.tabContainerMissiles}>
-      {['All', 'Missiles', 'Landmines', 'Other'].map((category) => (
-        <TouchableOpacity 
-          key={category} 
-          onPress={() => setSelectedCategory(category)} 
-          style={[
-            updatedStyles.tabMissiles,
-            selectedCategory === category && updatedStyles.selectedTab
-          ]}
-        >
-          <Text style={[
-            updatedStyles.missileTabText,
-            selectedCategory === category && updatedStyles.selectedTabText
-          ]}>
-            {category}
-          </Text>
-        </TouchableOpacity>
-      ))}
-    </View>
   );
 
   const showCart = () => {
@@ -553,7 +588,7 @@ const StorePage: React.FC = () => {
               columnWrapperStyle={updatedStyles.columnWrapper}
               contentContainerStyle={updatedStyles.contentContainer}
             />
-            <TouchableOpacity onPress={showCart} style={updatedStyles.cartButton}>
+            <TouchableOpacity onPress={handleShowCart} style={updatedStyles.cartButton}>
               <Text style={updatedStyles.cartButtonText}>Go to Cart</Text>
             </TouchableOpacity>
           </View>
@@ -668,7 +703,7 @@ const StorePage: React.FC = () => {
                   columnWrapperStyle={updatedStyles.columnWrapper}
                   contentContainerStyle={updatedStyles.contentContainer}
                 />
-                <TouchableOpacity onPress={showCart} style={updatedStyles.cartButton}>
+                <TouchableOpacity onPress={handleShowCart} style={updatedStyles.cartButton}>
                   <Text style={updatedStyles.cartButtonText}>Go to Cart</Text>
                 </TouchableOpacity>
               </View>
@@ -745,6 +780,17 @@ const StorePage: React.FC = () => {
             </TouchableOpacity>
           </Modal>
         </View>
+      )}
+      {!isOnboardingComplete && (
+        currentStep === 'store' || 
+        currentStep === 'filter_missiles' || 
+        currentStep === 'buy_missile' || 
+        currentStep === 'filter_landmines' || 
+        currentStep === 'buy_landmine' || 
+        currentStep === 'go_to_cart' || 
+        currentStep === 'checkout'
+      ) && (
+        <OnboardingOverlay />
       )}
     </SafeAreaView>
   );

@@ -5,7 +5,6 @@ import { fetchAndCacheImage } from "../util/imagecache";
 import * as SecureStore from 'expo-secure-store';
 import { addFriend } from "../api/friends";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getlocActive } from "../api/locationOptions";
 import useFetchFriends from '../hooks/websockets/friendshook'; 
 import useFetchPlayerlocations from '../hooks/websockets/playerlochook';
 import { isInactiveFor12Hours, getTimeDifference, convertimestampfuturemissile } from '../util/get-time-difference';
@@ -21,7 +20,9 @@ import { androidDefaultMapStyle } from '../map-themes/Android-themes/defaultMapS
 import { androidRadarMapStyle } from '../map-themes/Android-themes/radarMapStyle';
 import { IOSDefaultMapStyle, IOSRadarMapStyle, IOSCherryBlossomMapStyle, IOSCyberpunkMapStyle, IOSColorblindMapStyle } from '../map-themes/IOS-themes/themestemp';
 import FriendAddedAnimation from "../components/Animations/FriendAddedAnimation";
-import { itemimages } from '../app/profile';
+import { getImages } from '../api/store';
+import { useOnboarding } from '../util/Context/onboardingContext';
+import OnboardingOverlay from './OnboardingOverlay';
 
 interface Player {
   username: string;
@@ -57,6 +58,16 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
   const mapRef = useRef<MapView>(null);
   const [currentMapStyle, setCurrentMapStyle] = useState<MapStyle[]>(Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle);
   const [showAnimation, setShowAnimation] = useState(false);
+  const [getImageForProduct, setGetImageForProduct] = useState<(imageName: string) => any>(() => () => require('../assets/logo.png'));
+  const { currentStep, moveToNextStep, isOnboardingComplete } = useOnboarding();
+
+    useEffect(() => {
+        const loadImages = async () => {
+            const imageGetter = await getImages();
+            setGetImageForProduct(() => imageGetter);
+        };
+        loadImages();
+    }, []);
 
   useEffect(() => {
     if (modalVisible && isInitialLoad) {
@@ -259,6 +270,9 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
               onPress={(e) => {
                 e.stopPropagation();
                 fireMissile(item.username);
+                if (currentStep === 'fireplayermenu') {
+                  moveToNextStep();
+                }
               }}
             >
               <Text style={styles.actionButtonText}>ENGAGE</Text>
@@ -286,7 +300,7 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
       onPress={() => setSelectedMissile(item)}
     >
       <Image 
-        source={itemimages[item.type] || require('../assets/logo.png')} 
+        source={getImageForProduct(item.type) || require('../assets/logo.png')} 
         style={styles.missileImage} 
       />
       <View style={styles.playerInfo}>
@@ -345,7 +359,7 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
           <Text style={[styles.backButtonText, isDarkMode && styles.backButtonTextDark]}>← Back</Text>
         </TouchableOpacity>
         <Image 
-          source={itemimages[selectedMissile.type] || require('../assets/logo.png')} 
+          source={getImageForProduct(selectedMissile.type) || require('../assets/logo.png')} 
           style={styles.missileDetailImage} 
         />
         <Text style={[styles.missileDetailTitle, isDarkMode && styles.missileDetailTitleDark]}>{selectedMissile.type}</Text>
@@ -399,7 +413,12 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
           isDarkMode && styles.playerViewButtonDark,
           styles.responsiveButton
         ]}
-        onPress={() => setModalVisible(true)}
+        onPress={() => {
+          if (currentStep === 'playermenu') {
+            moveToNextStep();
+          }
+          setModalVisible(true)
+        }}
       >
         <Ionicons name="clipboard-outline" size={24} color={isDarkMode ? '#FFFFFF' : '#000000'} />
       </TouchableOpacity>
@@ -461,6 +480,9 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
             </View>
           )}
         </View>
+        {!isOnboardingComplete && (currentStep === 'fireplayermenu' ) && (
+          <OnboardingOverlay />
+        )}
       </Modal>
     </View>
   );

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { FireType } from "../components/fire-type-popup";
 import { MissileFireConfirmationPopup, MissileLibraryView } from "./Missile/missile-confirmation-popup";
 import { View } from "react-native";

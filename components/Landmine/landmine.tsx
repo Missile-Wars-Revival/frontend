@@ -7,6 +7,8 @@ import useFetchInventory from '../../hooks/websockets/inventoryhook';
 import { useColorScheme } from 'react-native';
 import { router } from 'expo-router';
 import { getImages } from '../../api/store';
+import { useOnboarding } from '../../util/Context/onboardingContext';
+import OnboardingOverlay from '../OnboardingOverlay';
 
 const tw = create(require('../../tailwind.config.js'));
 
@@ -80,9 +82,13 @@ export const LandmineLibraryView: React.FC<LandmineLibraryViewProps> = ({ Landmi
   const [showplacmentPopup, setShowplacementPopup] = useState<boolean>(false);
   const [selectedLandmine, setSelectedLandmine] = useState<Landmine | null>(null);
   const isDarkMode = useColorScheme() === 'dark';
+  const { currentStep, moveToNextStep, isOnboardingComplete } = useOnboarding();
 
   const handleLandmineClick = (landmineType: string) => {
     setSelectedLandmine({ type: landmineType });
+    if (currentStep === 'choosefire_landmine') {
+      moveToNextStep();
+    }
     setShowplacementPopup(true);
   };
 
@@ -143,6 +149,9 @@ export const LandmineLibraryView: React.FC<LandmineLibraryViewProps> = ({ Landmi
             landminePlaceHandler(); // This should close the entire library
           }}
         />
+      )}
+      {!isOnboardingComplete && (currentStep === 'choosefire_landmine' ) && (
+        <OnboardingOverlay />
       )}
     </Modal>
   );

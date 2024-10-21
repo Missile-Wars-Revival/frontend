@@ -1098,6 +1098,7 @@ const SettingsPage: React.FC = () => {
                 Privacy Policy
               </Text>
             </TouchableOpacity>
+            <Text style={[styles.footerLinkText, isDarkMode && styles.footerLinkTextDark]}> | </Text>
             <TouchableOpacity onPress={() => Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')}>
               <Text style={[styles.footerLinkText, isDarkMode && styles.footerLinkTextDark]}>
                 EULA Agreement

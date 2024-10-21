@@ -8,6 +8,8 @@ import useFetchInventory from "../../hooks/websockets/inventoryhook";
 import { InventoryItem } from '../../types/types';
 import { router } from 'expo-router';
 import { getImages } from "../../api/store";
+import { useOnboarding } from "../../util/Context/onboardingContext";
+import OnboardingOverlay from "../OnboardingOverlay";
 
 const tw = create(require('../../tailwind.config.js'));
 
@@ -40,10 +42,6 @@ const useMissileLib = (): Missilelib[] => {
 
   return missileLibrary;
 };
-
-interface MissileImages {
-  [key: string]: any;
-}
 
 const MissileSelector = ({ onSelect, missiles, onClose }: { onSelect: (missile: string) => void, missiles: Missilelib[], onClose: () => void }) => {
   const isDarkMode = useColorScheme() === 'dark';
@@ -101,6 +99,7 @@ export const MissileLibrary = ({ playerName, onMissileFired, onClose }: { player
   const [showPopup, setShowPopup] = useState(false);
   const isDarkMode = useColorScheme() === 'dark';
   const [getImageForProduct, setGetImageForProduct] = useState<(imageName: string) => any>(() => () => require('../../assets/logo.png'));
+  const { currentStep, isOnboardingComplete, moveToNextStep } = useOnboarding();
 
   useEffect(() => {
     const loadImages = async () => {
@@ -111,6 +110,9 @@ export const MissileLibrary = ({ playerName, onMissileFired, onClose }: { player
   }, []);
 
   const handleMissileClick = (missileType: string) => {
+    if (currentStep === 'choosemissile_fireplayermenu') {
+      moveToNextStep();
+    }
     setSelectedMissile(missileType);
     setShowPopup(true);
   };
@@ -130,6 +132,9 @@ export const MissileLibrary = ({ playerName, onMissileFired, onClose }: { player
             // Optionally, you can show an error message to the user here
           });
       }
+    }
+    if (currentStep === 'confirmmissile_fireplayermenu') {
+      moveToNextStep();
     }
   };
 
@@ -156,9 +161,15 @@ export const MissileLibrary = ({ playerName, onMissileFired, onClose }: { player
                 <Text style={tw`text-white font-bold`}>Cancel</Text>
               </TouchableOpacity>
             </View>
+            {!isOnboardingComplete && (currentStep ===  'confirmmissile_fireplayermenu' ) && (
+              <OnboardingOverlay />
+            )}
           </View>
         </View>
       </Modal>
+      {!isOnboardingComplete && (currentStep === 'choosemissile_fireplayermenu' ) && (
+        <OnboardingOverlay />
+      )}
     </View>
   );
 };

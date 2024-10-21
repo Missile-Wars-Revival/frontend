@@ -14,6 +14,8 @@ import { getlocActive } from "../api/locationOptions";
 import { Ionicons } from '@expo/vector-icons'; 
 import MissileFiringAnimation from "../components/Animations/MissileFiring";
 import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
+import { useOnboarding } from '../util/Context/onboardingContext';
+import OnboardingOverlay from '../components/OnboardingOverlay';
 
 interface Friend {
   username: string;
@@ -52,6 +54,7 @@ const FriendsPage: React.FC = () => {
   const [isAdFree, setIsAdFree] = useState(false);
   const [showAd, setShowAd] = useState(true);
   const [adLoaded, setAdLoaded] = useState(false);
+  const { isOnboardingComplete, currentStep, moveToNextStep } = useOnboarding();
 
   const handleUnreadCountUpdate = useCallback(({ count, chatCount }: { count: number, chatCount: number }) => {
     setLocalUnreadCount(count);
@@ -89,6 +92,9 @@ const FriendsPage: React.FC = () => {
     useEffect(() => {
       // Fetch immediately on component mount
       fetchLocActiveStatus();
+      if (currentStep === 'friends') {
+        moveToNextStep();
+      }
       // Set up interval to fetch every 30 seconds (adjust as needed)
       const intervalId = setInterval(fetchLocActiveStatus, 30000);
   
@@ -433,6 +439,9 @@ const FriendsPage: React.FC = () => {
             </TouchableOpacity>
           )}
         </View>
+      )}
+      {!isOnboardingComplete && currentStep === 'friends' && (
+        <OnboardingOverlay />
       )}
     </View>
   );
