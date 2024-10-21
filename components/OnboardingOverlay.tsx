@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Dimensions, Animated } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, Animated, SafeAreaView } from 'react-native';
 import { useOnboarding } from '../util/Context/onboardingContext';
 
 const { width, height } = Dimensions.get('window');
@@ -108,7 +108,7 @@ const OnboardingOverlay: React.FC = () => {
             case 'confirmmissile_fireplayermenu':
                 return "Press Confirm to fire your missile";
             case 'friends':
-                return "WGo to the Friends menu and use Quick Add to find nearby players.";
+                return "Go to the Friends menu and use Quick Add to find nearby players.";
             default:
                 return "";
         }
@@ -121,10 +121,35 @@ const OnboardingOverlay: React.FC = () => {
         outputRange: [0, -20],
     });
 
+    const getTextPosition = (arrowPosition: { x: number; y: number }) => {
+        const padding = 20;
+        const textWidth = 200;
+        const textHeight = 100; // Approximate height, adjust as needed
+
+        let left = arrowPosition.x - textWidth / 2;
+        let top = arrowPosition.y - textHeight - 50; // Position above the arrow by default
+
+        // Ensure left edge is on screen
+        left = Math.max(padding, left);
+        // Ensure right edge is on screen
+        left = Math.min(width - textWidth - padding, left);
+
+        // If too close to top, position to the left of the arrow instead
+        if (top < padding) {
+            top = Math.max(padding, arrowPosition.y - textHeight / 2);
+            left = Math.max(padding, arrowPosition.x - textWidth - 50);
+        }
+
+        // Ensure bottom edge is on screen
+        top = Math.min(height - textHeight - padding, top);
+
+        return { left, top };
+    };
+
     return (
-        <View style={styles.container} pointerEvents="box-none">
+        <SafeAreaView style={styles.container} pointerEvents="box-none">
             <Animated.View style={[styles.overlay, { opacity: fadeAnim }]} pointerEvents="none">
-                <View style={[styles.textContainer, { left: arrowPosition.x - 100, top: arrowPosition.y - 100 }]}>
+                <View style={[styles.textContainer, getTextPosition(arrowPosition)]}>
                     <Text style={styles.text}>{getStepContent()}</Text>
                 </View>
                 <Animated.View
@@ -143,7 +168,7 @@ const OnboardingOverlay: React.FC = () => {
                     <View style={styles.arrowHead} />
                 </Animated.View>
             </Animated.View>
-        </View>
+        </SafeAreaView>
     );
 };
 
@@ -161,14 +186,23 @@ const styles = StyleSheet.create({
     },
     textContainer: {
         position: 'absolute',
-        backgroundColor: 'white',
-        padding: 10,
-        borderRadius: 5,
-        maxWidth: '80%',
+        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+        padding: 15,
+        borderRadius: 10,
+        maxWidth: 200,
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
     },
     text: {
-        fontSize: 14,
+        fontSize: 16,
         textAlign: 'center',
+        color: '#333',
     },
     arrowContainer: {
         position: 'absolute',
