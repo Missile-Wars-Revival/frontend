@@ -22,9 +22,9 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
   const isDarkMode = colorScheme === 'dark';
 
   useEffect(() => {
+    getlocation();
     const initializeAppLoad = async () => {
       try {
-        getlocation();
 
         let app;
         if (getApps().length === 0) {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Modal, Text, View, Dimensions, Alert, StyleSheet, TouchableOpacity, Platform } from 'react-native';
-import MapView, { Marker, Circle } from 'react-native-maps';
+import MapView, { Marker, Circle, Polygon } from 'react-native-maps';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
@@ -27,6 +27,7 @@ import { androidCyberpunkMapStyle } from '../../map-themes/Android-themes/cyberp
 import { androidRadarMapStyle } from '../../map-themes/Android-themes/radarMapStyle';
 import { useOnboarding } from '../../util/Context/onboardingContext';
 import OnboardingOverlay from '../OnboardingOverlay';
+import { getLeagueAirspace } from '../player'; // Import the airspace calculation function
 
 const GOOGLE_PLACES_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 
@@ -59,6 +60,8 @@ export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ 
   const mapRef = useRef<MapView>(null);
   const [currentMapStyle, setCurrentMapStyle] = useState<MapStyle[]>(Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle);
   const { currentStep, moveToNextStep, isOnboardingComplete } = useOnboarding();
+  const [userLeague, setUserLeague] = useState<string>('bronze'); // Default to bronze
+  const [isValidPlacement, setIsValidPlacement] = useState<boolean>(false);
 
   useEffect(() => {
     const loadStoredMapStyle = async () => {
@@ -66,7 +69,7 @@ export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ 
         const storedStyle = await AsyncStorage.getItem('selectedMapStyle');
         if (storedStyle) {
           console.log('Stored style:', storedStyle);
-          
+
           // Check if the stored value is a simple string (like "default")
           if (['default', 'radar', 'cherry', 'cyber', 'colourblind'].includes(storedStyle)) {
             // Convert the string to the corresponding map style
@@ -178,7 +181,7 @@ export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ 
   }, []);
 
   const handleLandminePlacement = () => {
-    if (marker && currentLocation) {
+    if (marker && currentLocation && isValidPlacement) {
       // Close the popup and trigger callback immediately
       onLandminePlaced();
       onClose();
@@ -222,11 +225,15 @@ export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ 
       latitudeDelta: 0.001,
       longitudeDelta: 0.001
     };
-    setMarker(newMarker);
-    
-    // Move to the next step in onboarding if the current step is 'selectlandmine_location'
-    if (currentStep === 'selectlandmine_location' && !isOnboardingComplete) {
-      moveToNextStep();
+
+    const isValid = currentLocation ? isWithinAirspace(newMarker, currentLocation) : false;
+    setIsValidPlacement(isValid);
+
+    if (isValid) {
+      setMarker(newMarker);
+      if (currentStep === 'selectlandmine_location' && !isOnboardingComplete) {
+        moveToNextStep();
+      }
     }
   };
 
@@ -235,6 +242,25 @@ export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ 
   const lootData = useFetchLoot()
   const otherData = useFetchOther()
   const LandmineData = useFetchLandmines()
+
+  // Add this function to check if a point is within the airspace
+  const isWithinAirspace = (point: Region, center: Region): boolean => {
+    if (!center) return false;
+
+    const R = 6371e3; // Earth's radius in meters
+    const φ1 = point.latitude * Math.PI / 180;
+    const φ2 = center.latitude * Math.PI / 180;
+    const Δφ = (center.latitude - point.latitude) * Math.PI / 180;
+    const Δλ = (center.longitude - point.longitude) * Math.PI / 180;
+
+    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+      Math.cos(φ1) * Math.cos(φ2) *
+      Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c;
+
+    return distance <= getLeagueAirspace(userLeague);
+  };
 
   return (
     <Modal
@@ -308,44 +334,82 @@ export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ 
               );
             }}
           />
-          <MapView
-            ref={mapRef}
-            style={styles.map}
-            initialRegion={region ?? undefined}
-            showsUserLocation={true}
-            showsMyLocationButton={true}
-            pitchEnabled={true}
-            rotateEnabled={true}
-            scrollEnabled={true}
-            zoomEnabled={true}
-            customMapStyle={currentMapStyle}
-            onPress={handleMapPress}
-          >
-            {marker && (
-              <Circle
-                center={marker}
-                radius={10}
-                fillColor="rgba(128, 128, 128, 0.3)"
-                strokeColor="rgba(128, 128, 128, 0.8)"
-              />
-            )}
-            {marker && (
-              <Marker
-                coordinate={marker}
-                draggable
-                onDragEnd={(e) => setMarker(prevMarker => ({
-                  ...e.nativeEvent.coordinate,
-                  latitudeDelta: prevMarker?.latitudeDelta || 0.001,
-                  longitudeDelta: prevMarker?.longitudeDelta || 0.001
-                }))}
-              />
-            )}
-            <AllLootDrops lootLocations={lootData} />
-            <AllOther OtherLocations={otherData} />
-            <AllLandMines landminedata={LandmineData} />
-            <AllMissiles missileData={missileData} />
-            <AllPlayers />
-          </MapView>
+        <MapView
+  ref={mapRef}
+  style={styles.map}
+  initialRegion={region ?? undefined}
+  showsUserLocation={true}
+  showsMyLocationButton={true}
+  pitchEnabled={true}
+  rotateEnabled={true}
+  scrollEnabled={true}
+  zoomEnabled={true}
+  customMapStyle={currentMapStyle}
+  onPress={handleMapPress}
+>
+  {currentLocation && (
+    <>
+      {/* Green border circle */}
+      <Circle
+        center={currentLocation}
+        radius={getLeagueAirspace(userLeague)}
+        fillColor="rgba(0, 0, 0, 0)"
+        strokeColor="green"
+      />
+
+      {/* Dimmed overlay with a circular hole in the center */}
+      <Polygon
+  coordinates={[
+    // Outer large rectangle coordinates, expanded to be off-screen
+    { latitude: currentLocation.latitude + 10, longitude: currentLocation.longitude - 10 },
+    { latitude: currentLocation.latitude + 10, longitude: currentLocation.longitude + 10 },
+    { latitude: currentLocation.latitude - 10, longitude: currentLocation.longitude + 10 },
+    { latitude: currentLocation.latitude - 10, longitude: currentLocation.longitude - 10 },
+  ]}
+  holes={[
+    // Circular hole coordinates
+    Array.from({ length: 360 }).map((_, index) => {
+      const angle = (index * Math.PI * 2) / 360; // Full 360 degrees
+      const latitudeOffset = (getLeagueAirspace(userLeague) / 111320) * Math.cos(angle);
+      const longitudeOffset = (getLeagueAirspace(userLeague) / (111320 * Math.cos(currentLocation.latitude * Math.PI / 180))) * Math.sin(angle);
+
+      return {
+        latitude: currentLocation.latitude + latitudeOffset,
+        longitude: currentLocation.longitude + longitudeOffset,
+      };
+    }),
+  ]}
+  fillColor="rgba(0, 0, 0, 0.5)" // Semi-transparent black
+  strokeWidth={0} // No border
+  strokeColor="transparent" // Ensure border is transparent
+/>
+    </>
+  )}
+  {marker && (
+    <Circle
+      center={marker}
+      radius={10}
+      fillColor="rgba(128, 128, 128, 0.3)"
+      strokeColor="rgba(128, 128, 128, 0.8)"
+    />
+  )}
+  {marker && (
+    <Marker
+      coordinate={marker}
+      draggable
+      onDragEnd={(e) => setMarker(prevMarker => ({
+        ...e.nativeEvent.coordinate,
+        latitudeDelta: prevMarker?.latitudeDelta || 0.001,
+        longitudeDelta: prevMarker?.longitudeDelta || 0.001,
+      }))}
+    />
+  )}
+  <AllLootDrops lootLocations={lootData} />
+  <AllOther OtherLocations={otherData} />
+  <AllLandMines landminedata={LandmineData} />
+  <AllMissiles missileData={missileData} />
+  <AllPlayers />
+</MapView>
           {(!isLocationEnabled || !hasDbConnection) && (
             <View style={[styles.overlay, isDarkMode && styles.overlayDark]}>
               <Text style={[styles.overlayText, isDarkMode && styles.overlayTextDark]}>Map is disabled due to location/database issues.</Text>
@@ -362,13 +426,21 @@ export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ 
             <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={onClose}>
               <Text style={styles.buttonText}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.button, styles.placeButton]} onPress={handleLandminePlacement}>
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.placeButton,
+                !isValidPlacement && styles.disabledButton
+              ]}
+              onPress={handleLandminePlacement}
+              disabled={!isValidPlacement}
+            >
               <Text style={styles.buttonText}>Place</Text>
             </TouchableOpacity>
           </View>
         </View>
       </View>
-      {!isOnboardingComplete && (currentStep === 'place_landmine' || 'selectlandmine_location' ) && (
+      {!isOnboardingComplete && (currentStep === 'place_landmine' || 'selectlandmine_location') && (
         <OnboardingOverlay />
       )}
     </Modal>
@@ -447,5 +519,9 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  disabledButton: {
+    backgroundColor: '#cccccc',
+    opacity: 0.5,
   },
 });

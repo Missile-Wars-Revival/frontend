@@ -131,11 +131,11 @@ interface PlayerProps {
 
 export const getLeagueAirspace = (league: string): number => {
   switch (league.toLowerCase()) {
-    case 'bronze': return 40;
-    case 'silver': return 60;
-    case 'gold': return 80;
-    case 'diamond': return 100;
-    case 'legend': return 120;
+    case 'bronze': return 60;
+    case 'silver': return 80;
+    case 'gold': return 120;
+    case 'diamond': return 140;
+    case 'legend': return 200;
     default: return 20; 
   }
 };

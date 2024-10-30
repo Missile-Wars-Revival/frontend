@@ -57,6 +57,11 @@ export const MapComp = (props: MapCompProps) => {
         heading: 0
     });
 
+    const [userLocation, setUserLocation] = useState({
+        latitude: 0,
+        longitude: 0
+    });
+
     useEffect(() => {
         const initializeApp = async () => {
             try {
@@ -205,6 +210,35 @@ export const MapComp = (props: MapCompProps) => {
         console.log("Mode changed to:", visibilitymode);
     };
 
+    useEffect(() => {
+        let isSubscribed = true;
+        
+        const updateLocation = async () => {
+            try {
+                const location = await getCurrentLocation();
+                if (isSubscribed) {
+                    setUserLocation({
+                        latitude: location.latitude,
+                        longitude: location.longitude
+                    });
+                }
+            } catch (error) {
+                console.error('Error updating location:', error);
+            }
+        };
+
+        // Initial location update
+        updateLocation();
+
+        // Set up interval for periodic updates
+        const intervalId = setInterval(updateLocation, 1000);
+
+        return () => {
+            isSubscribed = false;
+            clearInterval(intervalId);
+        };
+    }, []);
+
     if (firstLoad === true) {
         return (
             <View style={mainmapstyles.loaderContainer}>
@@ -264,10 +298,10 @@ export const MapComp = (props: MapCompProps) => {
                     customMapStyle={props.selectedMapStyle}>
                     <Circle
                         center={{
-                            latitude: typeof region?.latitude === 'number' ? region.latitude : 0, // Default to 0 if invalid
-                            longitude: typeof region?.longitude === 'number' ? region.longitude : 0, // Default to 0 if invalid
+                            latitude: userLocation.latitude,
+                            longitude: userLocation.longitude,
                         }}
-                        radius={typeof leagueairspace === 'number' ? leagueairspace : 0} // Default to 0 if invalid
+                        radius={typeof leagueairspace === 'number' ? leagueairspace : 0}
                         fillColor="rgba(0, 0, 0, 0)"
                         strokeColor="rgba(0, 255, 0, 0.5)"
                     />

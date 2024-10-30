@@ -948,6 +948,7 @@ const SettingsPage: React.FC = () => {
         <View style={styles.creditsList}>
           <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>Gubb0</Text>
           <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>ryaaab</Text>
+          <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>arapeggio</Text>
         </View>
 
         <Text style={[styles.creditsSectionTitle, isDarkMode && styles.creditsSectionTitleDark]}>Staff:</Text>

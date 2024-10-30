@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Dimensions, Animated, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, Animated, SafeAreaView, Platform, Image } from 'react-native';
 import { useOnboarding } from '../util/Context/onboardingContext';
 
 const { width, height } = Dimensions.get('window');
@@ -8,6 +8,10 @@ const OnboardingOverlay: React.FC = () => {
     const { currentStep } = useOnboarding();
     const [fadeAnim] = useState(new Animated.Value(0));
     const [bounceAnim] = useState(new Animated.Value(0));
+
+    // Add responsive sizing helpers
+    const isTablet = width >= 768; // Common tablet breakpoint
+    const scale = Math.min(width / 375, height / 812); // Base scale from iPhone X dimensions
 
     useEffect(() => {
         Animated.timing(fadeAnim, {
@@ -33,9 +37,18 @@ const OnboardingOverlay: React.FC = () => {
     }, [currentStep]);
 
     const updateArrowPosition = () => {
+        // Use more reliable positioning based on percentages and safe areas
+        const safeTop = Platform.OS === 'ios' ? 44 : 0;
+        const safeBottom = Platform.OS === 'ios' ? 34 : 0;
+        
+        const safeHeight = height - safeTop - safeBottom;
+        
         switch (currentStep) {
             case 'store':
-                return { x: width * 0.31, y: height * 0.82 }; // Point to the store title
+                return {
+                    x: width * (isTablet ? 0.25 : 0.31),
+                    y: safeHeight * 0.82 + safeTop
+                };
             case 'filter_missiles':
                 return { x: width * 0.3, y: height * 0.24 }; // Point to the Missiles filter
             case 'buy_missile':
@@ -55,7 +68,7 @@ const OnboardingOverlay: React.FC = () => {
             case 'choosefire_landmine':
                 return { x: width * 0.68, y: height * 0.34 }; // choose a lanmdine
             case 'selectlandmine_location':
-                return { x: width * 0.68, y: height * 0.34 }; // choose a location
+                return { x: width * 0.55, y: height * 0.4 }; // choose a location
             case 'place_landmine':
                 return { x: width * 0.75, y: height * 0.75 }; // palce the landmine
             case 'playermenu':
@@ -76,41 +89,92 @@ const OnboardingOverlay: React.FC = () => {
     const getStepContent = () => {
         switch (currentStep) {
             case 'store':
-                return "Welcome to the Missile Wars! Lets head to the store. Here you can buy weapons and items.";
+                return {
+                    message: "Hey recruit! I'm Commander Sarah, and I'll be your guide. Let's gear up at the store - we've got some seriously cool weapons waiting for you! 🚀",
+                    emotion: 'excited'
+                };
             case 'filter_missiles':
-                return "Let's start by looking at missiles. Tap the 'Missiles' filter.";
+                return {
+                    message: "These babies pack quite a punch! Tap the 'Missiles' filter and let's check out our arsenal. Trust me, you're gonna love this part! 💥",
+                    emotion: 'confident'
+                };
             case 'buy_missile':
-                return "Great! Now let's buy a missile. Tap on the first missile to add it to your cart.";
+                return {
+                    message: "Perfect! Select the first missile to add it to your cart.",
+                    emotion: 'neutral'
+                };
             case 'filter_landmines':
-                return "Now let's check out landmines. Tap the 'Landmines' filter.";
+                return {
+                    message: "Next, let's look at our landmines. Tap the 'Landmines' filter.",
+                    emotion: 'neutral'
+                };
             case 'buy_landmine':
-                return "Good! Now add a landmine to your cart by tapping on the first landmine.";
+                return {
+                    message: "Excellent! Select the first landmine to add it to your cart.",
+                    emotion: 'neutral'
+                };
             case 'go_to_cart':
-                return "You've added items to your cart. Let's check out! Tap the 'Go to Cart' button.";
+                return {
+                    message: "Your items are ready! Tap 'Go to Cart' to proceed to checkout.",
+                    emotion: 'excited'
+                };
             case 'checkout':
-                return "Review your items and tap 'Checkout All Items' to complete your purchase.";
+                return {
+                    message: "Review your selected items and tap 'Checkout All Items' to complete your purchase.",
+                    emotion: 'neutral'
+                };
             case 'fire':
-                return "Great job! Now let's go back to the map and use the fire entity menu to use your items.";
+                return {
+                    message: "Excellent! Return to the map and open the fire menu to use your new items.",
+                    emotion: 'confident'
+                };
             case 'fire_landmine':
-                return "Select Landmine to place the landmine you bought on the map";
+                return {
+                    message: "Select 'Landmine' to deploy your newly purchased landmine on the map.",
+                    emotion: 'neutral'
+                };
             case 'choosefire_landmine':
-                return "Choose the landmine you purchased to place it on the map";
+                return {
+                    message: "Select which landmine you'd like to deploy.",
+                    emotion: 'neutral'
+                };
             case 'selectlandmine_location':
-                return "Select a location to place the landmine";
+                return {
+                    message: "Choose where you'd like to place your landmine on the map.",
+                    emotion: 'neutral'
+                };
             case 'place_landmine':
-                return "Now Place!";
+                return {
+                    message: "Tap to deploy your landmine!",
+                    emotion: 'excited'
+                };
             case 'playermenu':
-                return "Open this menu to show online players!";
+                return {
+                    message: "Open this menu to view all online players.",
+                    emotion: 'neutral'
+                };
             case 'fireplayermenu':
-                return "Press Engage to fire a missile at the selected player";
+                return {
+                    message: "Select 'Engage' to launch a missile at your target.",
+                    emotion: 'confident'
+                };
             case 'choosemissile_fireplayermenu':
-                return "Choose your missile to fire at the selected player";
+                return {
+                    message: "Select which missile you'd like to launch at your target.",
+                    emotion: 'confident'
+                };
             case 'confirmmissile_fireplayermenu':
-                return "Press Confirm to fire your missile";
+                return {
+                    message: "Tap 'Confirm' to launch your missile!",
+                    emotion: 'neutral'
+                };
             case 'friends':
-                return "Go to the Friends menu and use Quick Add to find nearby players.";
+                return {
+                    message: "Time to build your squad! Head to the Friends menu and use Quick Add to connect with nearby operatives. Remember, the best strategies come from teamwork! 🤝",
+                    emotion: 'friendly'
+                };
             default:
-                return "";
+                return { message: "", emotion: 'neutral' };
         }
     };
 
@@ -122,35 +186,44 @@ const OnboardingOverlay: React.FC = () => {
     });
 
     const getTextPosition = (arrowPosition: { x: number; y: number }) => {
-        const padding = 20;
-        const textWidth = 200;
-        const textHeight = 100; // Approximate height, adjust as needed
+        const padding = 10;
+        const textWidth = 380;  // Updated to accommodate avatar inside the container
+        const textHeight = 110; // Approximate height including avatar, adjust as needed
 
         let left = arrowPosition.x - textWidth / 2;
-        let top = arrowPosition.y - textHeight - 50; // Position above the arrow by default
+        let top = arrowPosition.y - textHeight - 50;
 
         // Ensure left edge is on screen
         left = Math.max(padding, left);
-        // Ensure right edge is on screen
         left = Math.min(width - textWidth - padding, left);
 
-        // If too close to top, position to the left of the arrow instead
-        if (top < padding) {
-            top = Math.max(padding, arrowPosition.y - textHeight / 2);
-            left = Math.max(padding, arrowPosition.x - textWidth - 50);
-        }
-
+        // Ensure top edge is on screen
+        const safeTopBoundary = height * 0.12; // Adjust to ensure text doesn't go too high
+        top = Math.max(safeTopBoundary, top);
         // Ensure bottom edge is on screen
         top = Math.min(height - textHeight - padding, top);
 
-        return { left, top };
+        return {
+            left,
+            top,
+        };
     };
+
+    const textPosition = getTextPosition(arrowPosition);
 
     return (
         <SafeAreaView style={styles.container} pointerEvents="box-none">
             <Animated.View style={[styles.overlay, { opacity: fadeAnim }]} pointerEvents="none">
-                <View style={[styles.textContainer, getTextPosition(arrowPosition)]}>
-                    <Text style={styles.text}>{getStepContent()}</Text>
+                <View style={[styles.messageContainer, { left: textPosition.left, top: textPosition.top }]}>
+                    <Image
+                        source={require('../assets/mapassets/marinefemale.png')}
+                        style={styles.avatar}
+                    />
+                    <View style={styles.speechBubble}>
+                        <Text style={[styles.text, { fontSize: scale * 16 }]}>
+                            {getStepContent().message}
+                        </Text>
+                    </View>
                 </View>
                 <Animated.View
                     style={[
@@ -158,9 +231,7 @@ const OnboardingOverlay: React.FC = () => {
                         {
                             left: arrowPosition.x - 20,
                             top: arrowPosition.y,
-                            transform: [
-                                { translateY: bounceInterpolation },
-                            ],
+                            transform: [{ translateY: bounceInterpolation }],
                         },
                     ]}
                 >
@@ -187,9 +258,7 @@ const styles = StyleSheet.create({
     textContainer: {
         position: 'absolute',
         backgroundColor: 'rgba(255, 255, 255, 0.9)',
-        padding: 15,
         borderRadius: 10,
-        maxWidth: 200,
         shadowColor: "#000",
         shadowOffset: {
             width: 0,
@@ -224,6 +293,34 @@ const styles = StyleSheet.create({
         borderLeftColor: 'transparent',
         borderRightColor: 'transparent',
         borderTopColor: 'red',
+    },
+    messageContainer: {
+        position: 'absolute',
+        flexDirection: 'row',
+        alignItems: 'center',
+        maxWidth: width * 0.8,
+    },
+    avatar: {
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        borderWidth: 2,
+        borderColor: '#FFD700',
+    },
+    speechBubble: {
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        borderRadius: 15,
+        padding: 15,
+        marginLeft: 10,
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+        borderBottomLeftRadius: 5,
     },
 });
 

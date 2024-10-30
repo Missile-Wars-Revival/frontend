@@ -45,7 +45,7 @@ export const OtherDrop = (props: OtherProps) => {
     }, []);
 
     const resizedotherimage = getImageForProduct(props.type);
-    const resizedothericon = { width: 50, height: 50 };
+    const resizedothericon = { width: 40, height: 40 };
 
     return (
         <View>
