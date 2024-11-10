@@ -65,6 +65,7 @@ export const OtherDrop = (props: OtherProps) => {
                 }}
                 title={`${props.type}`}
                 description={`${text}`}
+                zIndex={1} // Same priority as missiles
             >
                 <Image source={resizedotherimage} style={resizedothericon} />
             </Marker>

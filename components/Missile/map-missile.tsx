@@ -243,6 +243,7 @@ export const MapMissile = (missileProps: MissileProps) => {
                 title={`Missile: ${missileProps.type}`}
                 description={description}
                 onPress={handleMarkerPress}
+                zIndex={1}
             >
                 <Image 
                     source={resizedmissileimage} 

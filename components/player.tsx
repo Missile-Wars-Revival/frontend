@@ -258,6 +258,7 @@ export const PlayerComp = (props: PlayerProps) => {
         title={props.player.username}
         description={props.timestamp}
         onPress={handleMarkerPress}
+        zIndex={2} // Higher zIndex for players
       >
         <View style={{ alignItems: 'center', position: 'relative' }}>
           <Image 

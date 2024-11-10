@@ -62,6 +62,7 @@ export const LootDrop = (props: LootProps) => {
                 }}
                 title={`Loot Rarity: ${props.rarity}`}
                 description={`${text}`}
+                zIndex={1} // Same priority as missiles
             >
                 <Image source={getImageForProduct("LootDrop")} style={resizedlooticon} />
             </Marker>

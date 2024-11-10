@@ -100,6 +100,7 @@ export const MapLandmine = (landmineProps: LandmineProps) => {
                 }}
                 title={`Landmine: ${landmineProps.type}`}
                 description={`Placed by ${landmineProps.placedby} with ${text} left`}
+                zIndex={1} // Same priority as missiles
             >
                 <Image source={resizedlandmineimage} style={resizedlandmineicon} />
             </Marker>
