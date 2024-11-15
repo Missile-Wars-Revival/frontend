@@ -15,9 +15,16 @@ npm i
 Make sure to run the backend server before running!
 
 ## Update the .env
-Update this with your ip address:
+Update this with your backends ip address and other api:
 ```
-EXPO_PUBLIC_WEBSOCKET_URL
+EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=""
+
+EXPO_PUBLIC_BACKEND_URL=https://api.example.dev
+
+EXPO_PUBLIC_WEBSOCKET_URL =wss://api.example.dev
+
+EXPO_PUBLIC_REVENUECAT_API_KEY_APPLE=""
+EXPO_PUBLIC_REVENUECAT_API_KEY_GOOGLE=""
 ```
 
 ## To build and run:

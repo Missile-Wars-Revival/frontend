@@ -1,0 +1,148 @@
+{
+  "expo": {
+    "name": "Missile Wars",
+    "slug": "missilewars",
+    "scheme": "missile-wars",
+    "version": "0.1.6",
+    "orientation": "portrait",
+    "icon": "./assets/logo.png",
+    "userInterfaceStyle": "automatic",
+    "extra": {
+      "privacyPolicyUrl": "https://website.missilewars.dev/privacypolicy",
+      "eulaUrl": "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
+      "dotenv": ".env",
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": ""
+      },
+      "googleMapsApiKey": ""
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "runtimeVersion": "0.1.6",
+      "buildNumber": "1",
+      "bundleIdentifier": "",
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Your location is used to show your position on the game map and enable gameplay features like player interaction and loot collection!",
+        "NSSupportsLiveActivities": true,
+        "LSMinimumSystemVersion": "12.0",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "runtimeVersion": "0.1.6",
+      "versionCode": 49,
+      "permissions": [
+        "RECEIVE_BOOT_COMPLETED",
+        "SCHEDULE_EXACT_ALARM",
+        "com.android.vending.BILLING",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "INTERNET",
+        "NOTIFICATIONS",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION"
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/logo.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "",
+      "googleServicesFile": "./google-services.json",
+      "config": {
+        "googleMaps": {
+          "apiKey": ""
+        }
+      }
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Missile Wars needs access to your photos to customize your player profile and share your game achievements",
+          "cameraPermission": "Allow Missile Wars to use your camera to capture real-world targets for in-game missions and create augmented reality experiences.",
+          "microphonePermission": "Missile Wars uses your microphone for in-game voice chat with teammates and to record victory speeches after winning battles.",
+          "savePhotosPermission": "Missile Wars saves photos to your device to preserve your epic gameplay moments and shared photos."
+        }
+      ],
+      "expo-router",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/logo.png",
+          "color": "#ffffff",
+          "defaultChannel": "default",
+          "sounds": []
+        }
+      ],
+      "expo-secure-store",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ],
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "",
+          "iosAppId": "",
+          "userTrackingUsageDescription": "This allows us to show you more relevant ads and helps keep the app free. You can decline without affecting your experience."
+        }
+      ],
+      [
+        "expo-alternate-app-icons",
+        [
+          {
+            "name": "default",
+            "ios": "./assets/appIcons/default.png",
+            "android": {
+              "foregroundImage": "./assets/appIcons/default.png",
+              "backgroundColor": "#ffffff"
+            }
+          },
+          {
+            "name": "retro",
+            "ios": "./assets/appIcons/retro.png",
+            "android": {
+              "foregroundImage": "./assets/appIcons/retro.png",
+              "backgroundColor": "#ffffff"
+            }
+          },
+          {
+            "name": "graphic",
+            "ios": "./assets/appIcons/graphic.png",
+            "android": {
+              "foregroundImage": "./assets/appIcons/graphic.png",
+              "backgroundColor": "#ffffff"
+            }
+          }
+        ]
+      ],
+      "expo-tracking-transparency",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Missile Wars to use your location for real-time gameplay and map features.",
+          "locationAlwaysPermission": "Allow Missile Wars to use your location in the background for continuous gameplay updates.",
+          "locationWhenInUsePermission": "Allow Missile Wars to use your location while using the app for accurate gameplay.",
+          "isIosBackgroundLocationEnabled": false,
+          "isAndroidBackgroundLocationEnabled": false,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ]
+    ],
+    "owner": "",
+    "updates": {
+      "url": ""
+    }
+  }
+}
