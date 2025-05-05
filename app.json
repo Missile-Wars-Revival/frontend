@@ -37,15 +37,17 @@
       "runtimeVersion": "0.2.0",
       "versionCode": 47,
       "permissions": [
-        "RECEIVE_BOOT_COMPLETED",
-        "SCHEDULE_EXACT_ALARM",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.SCHEDULE_EXACT_ALARM",
         "com.android.vending.BILLING",
-        "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION",
-        "INTERNET",
-        "NOTIFICATIONS",
-        "FOREGROUND_SERVICE",
-        "FOREGROUND_SERVICE_LOCATION"
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.INTERNET",
+        "android.permission.NOTIFICATIONS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION",
+        "android.permission.RECORD_AUDIO",
+        "com.google.android.gms.permission.AD_ID"
       ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/logo.png",

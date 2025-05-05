@@ -1,0 +1,51 @@
+{
+  "cli": {
+    "version": ">= 8.0.0"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "android": {
+        "image": "latest"
+      },
+      "ios": {
+        "image": "latest"
+      },
+      "channel": "development"
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "image": "latest"
+      },
+      "ios": {
+        "image": "latest"
+      },
+      "channel": "preview"
+    },
+    "production": {
+      "android": {
+        "image": "latest"
+      },
+      "ios": {
+        "image": "latest"
+      },
+      "channel": "missilewars-beta"
+    }
+  },
+  "submit": {
+    "production": {
+      "android": {
+        "serviceAccountKeyPath": "missile-wars-432403-ce5d48177a45.json",
+        "track": "internal",
+        "releaseStatus": "draft"
+      },
+      "ios": {
+        "appleId": "tphwoodlands@gmail.com",
+        "ascAppId": "1234567890",
+        "appleTeamId": "23FQ4A4Q35"
+      }
+    }
+  }
+}
