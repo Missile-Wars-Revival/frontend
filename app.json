@@ -3,7 +3,7 @@
     "name": "Missile Wars",
     "slug": "missilewars",
     "scheme": "missile-wars",
-    "version": "0.1.6",
+    "version": "0.2.0",
     "orientation": "portrait",
     "icon": "./assets/logo.png",
     "userInterfaceStyle": "automatic",
@@ -15,18 +15,18 @@
         "origin": false
       },
       "eas": {
-        "projectId": ""
+        "projectId": "250fd3fc-22b2-411d-abfc-63f3a6b81328"
       },
-      "googleMapsApiKey": ""
+      "googleMapsApiKey": "@env:GOOGLE_MAPS_API_KEY"
     },
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
       "supportsTablet": true,
-      "runtimeVersion": "0.1.6",
-      "buildNumber": "1",
-      "bundleIdentifier": "",
+      "runtimeVersion": "0.2.0",
+      "buildNumber": "20",
+      "bundleIdentifier": "com.longtimenoc.missilewars",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Your location is used to show your position on the game map and enable gameplay features like player interaction and loot collection!",
@@ -36,8 +36,8 @@
       }
     },
     "android": {
-      "runtimeVersion": "0.1.6",
-      "versionCode": 49,
+      "runtimeVersion": "0.2.0",
+      "versionCode": 47,
       "permissions": [
         "RECEIVE_BOOT_COMPLETED",
         "SCHEDULE_EXACT_ALARM",
@@ -53,11 +53,11 @@
         "foregroundImage": "./assets/logo.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "",
+      "package": "com.longtimenoc.missilewars",
       "googleServicesFile": "./google-services.json",
       "config": {
         "googleMaps": {
-          "apiKey": ""
+          "apiKey": "@env:GOOGLE_MAPS_API_KEY"
         }
       }
     },
@@ -93,8 +93,8 @@
       [
         "react-native-google-mobile-ads",
         {
-          "androidAppId": "",
-          "iosAppId": "",
+          "androidAppId": "ca-app-pub-4035842398612787~8146111264",
+          "iosAppId": "ca-app-pub-4035842398612787~7024601286",
           "userTrackingUsageDescription": "This allows us to show you more relevant ads and helps keep the app free. You can decline without affecting your experience."
         }
       ],
@@ -140,9 +140,9 @@
         }
       ]
     ],
-    "owner": "",
+    "owner": "osog",
     "updates": {
-      "url": ""
+      "url": "https://u.expo.dev/250fd3fc-22b2-411d-abfc-63f3a6b81328"
     }
   }
 }

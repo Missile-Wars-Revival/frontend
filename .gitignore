@@ -8,6 +8,12 @@ node_modules/
 dist/
 web-build/
 
+eas.json
+
+app.json
+
+missile-wars-432403-163f7b34c51e.json
+
 .env
 
 # Native
@@ -17,6 +23,12 @@ web-build/
 *.p12
 *.key
 *.mobileprovision
+
+# Firebase credentials
+GoogleService-Info.plist
+google-services.json
+*.p8
+*.p12
 
 # Metro
 .metro-health-check*
