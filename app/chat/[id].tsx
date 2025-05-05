@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, FlatList, Image, TextInput, TouchableOpacity, StyleSheet, useColorScheme, KeyboardAvoidingView, Platform, SafeAreaView, Modal, Alert, Animated, Linking, Keyboard } from 'react-native';
+import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, useColorScheme, KeyboardAvoidingView, Platform, SafeAreaView, Modal, Alert, Animated, Linking, Keyboard } from 'react-native';
+import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getDatabase, ref, onValue, push, set, get, update, serverTimestamp, increment } from 'firebase/database';
@@ -8,7 +9,6 @@ import * as ImagePicker from 'expo-image-picker';
 import * as MediaLibrary from 'expo-media-library';
 import * as SecureStore from "expo-secure-store";
 import { generateUID } from '../../util/uidGenerator';
-import FastImage from 'react-native-fast-image';
 import * as FileSystem from 'expo-file-system';
 import useFetchInventory from '../../hooks/websockets/inventoryhook';
 import { receiveItem, removeItem } from '../../api/add-item';
@@ -686,7 +686,7 @@ export default function ChatScreen() {
 
       <Modal visible={!!fullScreenImage} transparent={true} onRequestClose={() => setFullScreenImage(null)}>
         <View style={styles.fullScreenImageContainer}>
-          <FastImage source={{ uri: fullScreenImage ?? undefined }} style={styles.fullScreenImage} />
+          <Image source={{ uri: fullScreenImage ?? undefined }} style={styles.fullScreenImage} contentFit="contain" />
           <TouchableOpacity style={styles.closeButton} onPress={() => setFullScreenImage(null)}>
             <Ionicons name="close" size={30} color="#FFFFFF" />
           </TouchableOpacity>
@@ -857,7 +857,6 @@ const styles = StyleSheet.create({
   fullScreenImage: {
     width: '100%',
     height: '80%',
-    resizeMode: 'contain',
   },
   closeButton: {
     position: 'absolute',

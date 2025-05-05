@@ -16,8 +16,7 @@
       },
       "eas": {
         "projectId": "250fd3fc-22b2-411d-abfc-63f3a6b81328"
-      },
-      "googleMapsApiKey": "@env:GOOGLE_MAPS_API_KEY"
+      }
     },
     "assetBundlePatterns": [
       "**/*"
@@ -27,7 +26,6 @@
       "runtimeVersion": "0.2.0",
       "buildNumber": "20",
       "bundleIdentifier": "com.longtimenoc.missilewars",
-      "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Your location is used to show your position on the game map and enable gameplay features like player interaction and loot collection!",
         "NSSupportsLiveActivities": true,
@@ -53,13 +51,7 @@
         "foregroundImage": "./assets/logo.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.longtimenoc.missilewars",
-      "googleServicesFile": "./google-services.json",
-      "config": {
-        "googleMaps": {
-          "apiKey": "@env:GOOGLE_MAPS_API_KEY"
-        }
-      }
+      "package": "com.longtimenoc.missilewars"
     },
     "plugins": [
       [
