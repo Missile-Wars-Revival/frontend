@@ -2,6 +2,8 @@
 
 The official frontend app for Missile Wars, developed by [longtimeno-c](https://github.com/longtimeno-c).
 
+Project details [here:](https://www.tristans.club/missilewars).
+
 ## ⚠️ License & Usage Notice
 This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0). This means:
 
