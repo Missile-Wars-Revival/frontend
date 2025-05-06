@@ -433,7 +433,6 @@ function RootLayoutNav() {
             headerShown: false,
             gestureEnabled: false,
             animationTypeForReplace: 'push',
-            customAnimationOnGesture: true,
             gestureDirection: 'horizontal',
           }}
         >
