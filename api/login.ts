@@ -24,17 +24,14 @@ export async function logout() {
     try {
       const token = await SecureStore.getItemAsync("token");
       if (!token) {
-        throw new Error("Token not found");
+        console.log("No token found during logout, continuing cleanup");
+        return;
       }
-      const response = await axiosInstance.delete("/api/deleteNotificationToken", {
+      await axiosInstance.delete("/api/deleteNotificationToken", {
         data: { token },
       });
-      return response.data;
-  } catch (error) {
-    if (isAxiosError(error)) {
-      throw new Error(error.response?.data);
+    } catch (error) {
+      console.error("Error during logout:", error);
+      // Don't throw the error, just log it and continue with cleanup
     }
-
-    throw error;
-  }
 }

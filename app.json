@@ -26,6 +26,7 @@
       "runtimeVersion": "0.2.0",
       "buildNumber": "20",
       "bundleIdentifier": "com.longtimenoc.missilewars",
+      "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Your location is used to show your position on the game map and enable gameplay features like player interaction and loot collection!",
         "NSSupportsLiveActivities": true,
@@ -49,6 +50,7 @@
         "android.permission.RECORD_AUDIO",
         "com.google.android.gms.permission.AD_ID"
       ],
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/logo.png",
         "backgroundColor": "#ffffff"
