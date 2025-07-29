@@ -12,7 +12,16 @@
       "ios": {
         "image": "latest"
       },
-      "channel": "development"
+      "channel": "development",
+      "env": {
+        "EXPO_PUBLIC_ENV": "DEVELOPMENT"
+      }
+    },
+    "development-simulator": {
+      "extends": "development",
+      "ios": {
+        "simulator": true
+      }
     },
     "preview": {
       "distribution": "internal",
