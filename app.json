@@ -51,6 +51,11 @@
         "com.google.android.gms.permission.AD_ID"
       ],
       "googleServicesFile": "./google-services.json",
+      "config": {
+          "googleMaps": {
+            "apiKey": "@env:EXPO_PUBLIC_GOOGLE_MAPS_API_KEY"
+          }
+        },
       "adaptiveIcon": {
         "foregroundImage": "./assets/logo.png",
         "backgroundColor": "#ffffff"
