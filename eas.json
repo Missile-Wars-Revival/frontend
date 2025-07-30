@@ -47,7 +47,7 @@
   "submit": {
     "production": {
       "android": {
-        "serviceAccountKeyPath": "missile-wars-432403-ce5d48177a45.json",
+        "serviceAccountKeyPath": "missile-wars-432403-163f7b34c51e.json",
         "track": "internal",
         "releaseStatus": "draft"
       },
