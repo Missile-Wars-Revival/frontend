@@ -17,22 +17,10 @@ import { Card } from "../components/card";
 import Purchases, { PurchasesPackage, PACKAGE_TYPE } from 'react-native-purchases';
 import * as StoreReview from 'expo-store-review';
 import { getNotificationPreferences, updateNotificationPreferences } from '../api/notifications';
-import { RewardedAd, RewardedAdEventType, TestIds } from 'react-native-google-mobile-ads';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AppState, AppStateStatus } from 'react-native';
 import * as ExpoSplashScreen from 'expo-splash-screen';
 import * as Updates from 'expo-updates';
-
-
-const adUnitId = __DEV__ ? TestIds.REWARDED : Platform.select({
-  ios: 'ca-app-pub-4035842398612787/8310612855',
-  android: 'ca-app-pub-4035842398612787/2779084579',
-  default: 'ca-app-pub-4035842398612787/2779084579',
-});
-
-const rewarded = RewardedAd.createForAdRequest(adUnitId, {
-  keywords: ['games', 'clothing'], //ads category
-});
 
 const { width } = Dimensions.get('window');
 
@@ -99,27 +87,6 @@ const SettingsPage: React.FC = () => {
     fetchRandomLocActiveStatus();
     checkAdFreeStatus();
     fetchOfferings();
-  }, []);
-
-  useEffect(() => {
-    const unsubscribeLoaded = rewarded.addAdEventListener(RewardedAdEventType.LOADED, () => {
-      setAdLoaded(true);
-    });
-    const unsubscribeEarned = rewarded.addAdEventListener(
-      RewardedAdEventType.EARNED_REWARD,
-      reward => {
-        console.log('User earned reward of ', reward);
-      },
-    );
-
-    // Start loading the rewarded ad straight away
-    rewarded.load();
-
-    // Unsubscribe from events on unmount
-    return () => {
-      unsubscribeLoaded();
-      unsubscribeEarned();
-    };
   }, []);
 
   useEffect(() => {
@@ -410,7 +377,6 @@ const SettingsPage: React.FC = () => {
       // If turning off location and not ad-free, attempt to show ad
       if (adLoaded) {
         setShowAd(true);
-        rewarded.show();
         handleLocationToggle(newStatus);
       } else {
         // If ad is not loaded, continue anyway
@@ -432,7 +398,6 @@ const SettingsPage: React.FC = () => {
         // If turning off location and not ad-free, attempt to show ad 
         if (adLoaded) {
           setShowAd(true);
-          rewarded.show();
         } else {
           console.log("Ad not loaded, continuing without showing ad");
         }

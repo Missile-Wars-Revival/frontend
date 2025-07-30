@@ -1,16 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Image, Animated, useColorScheme } from 'react-native';
-import mobileAds from 'react-native-google-mobile-ads';
 import { getlocation } from '../util/locationreq';
 import { getApps, initializeApp } from "firebase/app";
 import { firebaseConfig } from '../util/firebase/config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-mobileAds()
-  .initialize()
-  .then(adapterStatuses => {
-    // Initialization complete!
-  });
 
 interface SplashScreenProps {
   onFinish: () => void;
