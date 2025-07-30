@@ -13,7 +13,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getlocActive } from "../api/locationOptions";
 import { Ionicons } from '@expo/vector-icons'; 
 import MissileFiringAnimation from "../components/Animations/MissileFiring";
-import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 import { useOnboarding } from '../util/Context/onboardingContext';
 import OnboardingOverlay from '../components/OnboardingOverlay';
 
@@ -21,12 +20,6 @@ interface Friend {
   username: string;
   profileImageUrl: string;
 }
-
-const bannerAdUnitId = __DEV__ ? TestIds.BANNER : Platform.select({
-  ios: 'ca-app-pub-4035842398612787/8310612855',
-  android: 'ca-app-pub-4035842398612787/2779084579',
-  default: 'ca-app-pub-4035842398612787/2779084579',
-});
 
 const FriendsPage: React.FC = () => {
   const friends = useFetchFriends() //WS
@@ -52,8 +45,6 @@ const FriendsPage: React.FC = () => {
   const [showMissileFiringAnimation, setShowMissileFiringAnimation] = useState(false);
   const [hasFirebaseUID, setHasFirebaseUID] = useState(false);
   const [isAdFree, setIsAdFree] = useState(false);
-  const [showAd, setShowAd] = useState(true);
-  const [adLoaded, setAdLoaded] = useState(false);
   const { isOnboardingComplete, currentStep, moveToNextStep } = useOnboarding();
 
   const handleUnreadCountUpdate = useCallback(({ count, chatCount }: { count: number, chatCount: number }) => {
@@ -417,27 +408,6 @@ const FriendsPage: React.FC = () => {
       {showMissileFiringAnimation && (
         <View style={styles.animationOverlay}>
           <MissileFiringAnimation onAnimationComplete={handleMissileAnimationComplete} />
-        </View>
-      )}
-      {!isAdFree && showAd && (
-        <View style={styles.footerAdContainer}>
-          <BannerAd
-            unitId={bannerAdUnitId}
-            size={BannerAdSize.BANNER}
-            requestOptions={{
-              requestNonPersonalizedAdsOnly: true,
-            }}
-            onAdLoaded={() => setAdLoaded(true)}
-            onAdFailedToLoad={(error) => console.error("Banner ad failed to load: ", error)}
-          />
-          {adLoaded && (
-            <TouchableOpacity 
-              style={styles.dismissAdButton} 
-              onPress={() => setShowAd(false)}
-            >
-              <Ionicons name="close-circle" size={24} color="white" />
-            </TouchableOpacity>
-          )}
         </View>
       )}
       {!isOnboardingComplete && currentStep === 'friends' && (

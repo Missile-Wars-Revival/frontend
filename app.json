@@ -92,14 +92,6 @@
         }
       ],
       [
-        "react-native-google-mobile-ads",
-        {
-          "androidAppId": "ca-app-pub-4035842398612787~8146111264",
-          "iosAppId": "ca-app-pub-4035842398612787~7024601286",
-          "userTrackingUsageDescription": "This allows us to show you more relevant ads and helps keep the app free. You can decline without affecting your experience."
-        }
-      ],
-      [
         "expo-alternate-app-icons",
         [
           {

@@ -5,7 +5,6 @@ import * as SecureStore from "expo-secure-store";
 import axiosInstance from "../api/axios-instance";
 import axios from "axios";
 import { Ionicons } from '@expo/vector-icons';
-import { RewardedAd, RewardedAdEventType, BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 import * as Location from 'expo-location';
 
 // Android Themes
@@ -41,23 +40,6 @@ import MissileFiringAnimation from "../components/Animations/MissileFiring";
 import { useOnboarding } from '../util/Context/onboardingContext';
 import OnboardingOverlay from '../components/OnboardingOverlay';
 
-const bannerAdUnitId = __DEV__ ? TestIds.BANNER : Platform.select({
-  ios: 'ca-app-pub-4035842398612787/5646222776',
-  android: 'ca-app-pub-4035842398612787/8536109994',
-  default: 'ca-app-pub-4035842398612787/8536109994',
-});
-
-const rewardedAdUnitId = __DEV__ ? TestIds.REWARDED : Platform.select({
-  ios: 'ca-app-pub-4035842398612787/8310612855',
-  android: 'ca-app-pub-4035842398612787/2779084579',
-  default: 'ca-app-pub-4035842398612787/2779084579',
-});
-
-const rewarded = RewardedAd.createForAdRequest(rewardedAdUnitId, {
-  requestNonPersonalizedAdsOnly: true,
-  keywords: ['game', 'action'],
-});
-
 const { width, height } = Dimensions.get('window');
 
 export default function Map() {
@@ -66,17 +48,13 @@ export default function Map() {
   const [userNAME, setUsername] = useState("");
   const [isAlive, setIsAlive] = useState<boolean | null>(null);
   const [deathsoundPlayed, setdeathSoundPlayed] = useState(false);
-  const [loaded, setLoaded] = useState(false);
   const health = useFetchHealth()//WS hook
   const [locActive, setLocActive] = useState<boolean>(true);
   const [locPermsActive, setLocPermsActive] = useState<boolean>(false);
   const [showMissileLibrary, setShowMissileLibrary] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState("");
   const [showMissileFiringAnimation, setShowMissileFiringAnimation] = useState(false);
-  const [showHeaderAd, setShowHeaderAd] = useState(true);
   const [isAdFree, setIsAdFree] = useState(false);
-  const [adLoaded, setAdLoaded] = useState(false);
-  const [rewardedAdLoaded, setRewardedAdLoaded] = useState(false);
   const colorScheme = useColorScheme();
   const { isOnboardingComplete, currentStep } = useOnboarding();
   const isDarkMode = colorScheme === 'dark';
@@ -106,7 +84,6 @@ export default function Map() {
 
     fetchCredentials();
     checkAdFreeStatus();
-    loadRewardedAd();
   }, []);
 
 
@@ -200,28 +177,6 @@ export default function Map() {
     return () => clearInterval(intervalId);
   }, [deathsoundPlayed]);
 
-  useEffect(() => {
-    const unsubscribeLoaded = rewarded.addAdEventListener(RewardedAdEventType.LOADED, () => {
-      setRewardedAdLoaded(true);
-    });
-    const unsubscribeEarned = rewarded.addAdEventListener(
-      RewardedAdEventType.EARNED_REWARD,
-      reward => {
-        console.log('User earned reward of ', reward);
-        // Handle the reward here (e.g., respawn the player)
-        handleRespawn();
-      },
-    );
-
-    // Load the rewarded ad
-    rewarded.load();
-
-    return () => {
-      unsubscribeLoaded();
-      unsubscribeEarned();
-    };
-  }, []);
-
   const fetchLocActiveStatus = async () => {
     try {
       const status = await getlocActive();
@@ -262,26 +217,6 @@ export default function Map() {
     } catch (error) {
       console.error('Error fetching ad-free status:', error);
     }
-  };
-
-  const loadRewardedAd = () => {
-    const unsubscribeLoaded = rewarded.addAdEventListener(RewardedAdEventType.LOADED, () => {
-      setRewardedAdLoaded(true);
-    });
-    const unsubscribeEarned = rewarded.addAdEventListener(
-      RewardedAdEventType.EARNED_REWARD,
-      reward => {
-        console.log('User earned reward of ', reward);
-        // Handle the reward here
-      },
-    );
-
-    rewarded.load();
-
-    return () => {
-      unsubscribeLoaded();
-      unsubscribeEarned();
-    };
   };
 
   const showPopup = () => {
@@ -335,12 +270,7 @@ export default function Map() {
   };
 
   const respawn = async () => {
-    if (rewardedAdLoaded) {
-      rewarded.show();
-    } else {
-      console.log('Rewarded ad not loaded yet');
       handleRespawn();
-    }
   };
 
   const handleFireMissile = (username: string) => {
@@ -394,42 +324,10 @@ export default function Map() {
               <PlayerViewButton onFireMissile={handleFireMissile} />
             </View>
           )}
-          {!isAdFree && showHeaderAd && (
-            <View style={styles.footerAdContainer}>
-              <BannerAd
-                unitId={bannerAdUnitId}
-                size={BannerAdSize.BANNER}
-                requestOptions={{
-                  requestNonPersonalizedAdsOnly: true,
-                }}
-                onAdLoaded={() => setAdLoaded(true)}
-                onAdFailedToLoad={(error) => console.error("Banner ad failed to load: ", error)}
-              />
-              {adLoaded && (
-                <TouchableOpacity
-                  style={styles.dismissAdButton}
-                  onPress={() => setShowHeaderAd(false)}
-                >
-                  <Ionicons name="close-circle" size={24} color="white" />
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
         </>
       ) : (
         // Render the death screen when the user is not alive
         <View style={[styles.containerdeath, isDarkMode && styles.containerdeathDark]}>
-          {/* Top non-dismissable banner ad */}
-          <View style={styles.topAdContainer}>
-            <BannerAd
-              unitId={bannerAdUnitId}
-              size={BannerAdSize.LARGE_BANNER}
-              requestOptions={{
-                requestNonPersonalizedAdsOnly: true,
-              }}
-            />
-          </View>
-
           <TouchableOpacity
             onPress={() => respawn()}
             style={styles.bannerdeathContainer}
@@ -450,17 +348,6 @@ export default function Map() {
               </Text>
             </View>
           </TouchableOpacity>
-
-          {/* Bottom banner ad */}
-          <View style={styles.bottomAdContainer}>
-            <BannerAd
-              unitId={bannerAdUnitId}
-              size={BannerAdSize.LARGE_BANNER}
-              requestOptions={{
-                requestNonPersonalizedAdsOnly: true,
-              }}
-            />
-          </View>
 
           <TouchableOpacity
             onPress={() => Linking.openURL('https://discord.gg/Gk8jqUnVd3')}

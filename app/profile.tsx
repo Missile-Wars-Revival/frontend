@@ -14,7 +14,6 @@ import useFetchFriends from '../hooks/websockets/friendshook';
 import { useColorScheme } from 'react-native';
 import { editUser } from '../api/editUser';
 import * as Clipboard from 'expo-clipboard';
-import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 import { Platform } from 'react-native';
 import { getImages } from '../api/store';
 
@@ -52,12 +51,6 @@ const badgeImages: { [key: string]: any } = {
   Diamond: require('../assets/leagues/diamond.png'),
   Legend: require('../assets/leagues/legend.png'),
 };
-
-const bannerAdUnitId = __DEV__ ? TestIds.BANNER : Platform.select({
-  ios: 'ca-app-pub-4035842398612787/5646222776',
-  android: 'ca-app-pub-4035842398612787/8536109994',
-  default: 'ca-app-pub-4035842398612787/8536109994',
-});
 
 const ProfilePage: React.FC = () => {
   const colorScheme = useColorScheme();
@@ -724,29 +717,7 @@ const ProfilePage: React.FC = () => {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
-
-      {!isAdFree && showAd && (
-        <View style={styles.footerAdContainer}>
-          <BannerAd
-            unitId={bannerAdUnitId}
-            size={BannerAdSize.BANNER}
-            requestOptions={{
-              requestNonPersonalizedAdsOnly: true,
-            }}
-            onAdLoaded={() => setAdLoaded(true)}
-            onAdFailedToLoad={(error) => console.error("Banner ad failed to load: ", error)}
-          />
-          {adLoaded && (
-            <TouchableOpacity 
-              style={styles.dismissAdButton} 
-              onPress={() => setShowAd(false)}
-            >
-              <Ionicons name="close-circle" size={24} color="white" />
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
-
+      
       {statistics && statistics.badges.includes('Debug') && (
         <TouchableOpacity onPress={() => setIsDebugMenuVisible(!isDebugMenuVisible)}>
           <Text style={styles.debugMenuToggle}>Toggle Debug Menu</Text>

@@ -5,7 +5,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { fetchTopLeagues, fetchCurrentLeague, fetchLeaguePlayers, top100Players } from '../api/league';
 import { fetchAndCacheImage } from '../util/imagecache'; 
 import { getLeagueAirspace } from '../components/player';
-import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const DEFAULT_IMAGE = require('../assets/mapassets/Female_Avatar_PNG.png');
@@ -31,11 +30,6 @@ interface League {
   playerCount: number;
 }
 
-const bannerAdUnitId = __DEV__ ? TestIds.BANNER : Platform.select({
-  ios: 'ca-app-pub-4035842398612787/5646222776',
-  android: 'ca-app-pub-4035842398612787/8536109994',
-  default: 'ca-app-pub-4035842398612787/8536109994',
-});
 
 const LeagueRankingPage: React.FC = () => {
   const [topLeagues, setTopLeagues] = useState<League[]>([]);
@@ -228,27 +222,6 @@ const LeagueRankingPage: React.FC = () => {
           </View>
         )}
       </ScrollView>
-      {!isAdFree && showAd && (
-        <View style={styles.footerAdContainer}>
-          <BannerAd
-            unitId={bannerAdUnitId}
-            size={BannerAdSize.BANNER}
-            requestOptions={{
-              requestNonPersonalizedAdsOnly: true,
-            }}
-            onAdLoaded={() => setAdLoaded(true)}
-            onAdFailedToLoad={(error) => console.error("Banner ad failed to load: ", error)}
-          />
-          {adLoaded && (
-            <TouchableOpacity 
-              style={styles.dismissAdButton} 
-              onPress={() => setShowAd(false)}
-            >
-              <Ionicons name="close-circle" size={24} color="white" />
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
     </SafeAreaView>
   );
 };
