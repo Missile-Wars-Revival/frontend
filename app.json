@@ -24,7 +24,7 @@
     "ios": {
       "supportsTablet": true,
       "runtimeVersion": "0.2.1",
-      "buildNumber": "1",
+      "buildNumber": "2",
       "bundleIdentifier": "com.longtimenoc.missilewars",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
