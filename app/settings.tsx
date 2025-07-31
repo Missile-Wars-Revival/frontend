@@ -1059,7 +1059,7 @@ const SettingsPage: React.FC = () => {
           </TouchableHighlight>
 
           <View style={styles.footerLinks}>
-            <TouchableOpacity onPress={() => Linking.openURL('https://website.missilewars.dev/privacypolicy')}>
+            <TouchableOpacity onPress={() => Linking.openURL('https://www.tristans.club/missilewars/privacy-policy')}>
               <Text style={[styles.footerLinkText, isDarkMode && styles.footerLinkTextDark]}>
                 Privacy Policy
               </Text>

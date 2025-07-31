@@ -3,12 +3,12 @@
     "name": "Missile Wars",
     "slug": "missilewars",
     "scheme": "missile-wars",
-    "version": "0.2.1",
+    "version": "0.2.2",
     "orientation": "portrait",
     "icon": "./assets/logo.png",
     "userInterfaceStyle": "automatic",
     "extra": {
-      "privacyPolicyUrl": "https://website.missilewars.dev/privacypolicy",
+      "privacyPolicyUrl": "https://www.tristans.club/missilewars/privacy-policy",
       "eulaUrl": "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
       "dotenv": ".env",
       "router": {
@@ -23,8 +23,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "runtimeVersion": "0.2.1",
-      "buildNumber": "2",
+      "runtimeVersion": "0.2.2",
       "bundleIdentifier": "com.longtimenoc.missilewars",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
@@ -35,8 +34,8 @@
       }
     },
     "android": {
-      "runtimeVersion": "0.2.0",
-      "versionCode": 50,
+      "runtimeVersion": "0.2.2",
+      "versionCode": 51,
       "permissions": [
         "android.permission.RECEIVE_BOOT_COMPLETED",
         "android.permission.SCHEDULE_EXACT_ALARM",
