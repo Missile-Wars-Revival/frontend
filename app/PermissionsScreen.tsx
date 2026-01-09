@@ -111,7 +111,7 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGrant
   };
 
   const openPrivacyPolicy = () => {
-    Linking.openURL('https://www.tristans.club/missilewars/privacy-policy');
+    Linking.openURL('https://www.oakforgestudios.co.uk/missilewars/privacy-policy');
   };
 
   const openEula = () => {

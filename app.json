@@ -8,7 +8,7 @@
     "icon": "./assets/logo.png",
     "userInterfaceStyle": "automatic",
     "extra": {
-      "privacyPolicyUrl": "https://www.tristans.club/missilewars/privacy-policy",
+      "privacyPolicyUrl": "https://www.oakforgestudios.co.uk/missilewars/privacy-policy",
       "eulaUrl": "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
       "dotenv": ".env",
       "router": {
@@ -35,7 +35,7 @@
     },
     "android": {
       "runtimeVersion": "0.2.2",
-      "versionCode": 51,
+      "versionCode": 52,
       "permissions": [
         "android.permission.RECEIVE_BOOT_COMPLETED",
         "android.permission.SCHEDULE_EXACT_ALARM",
