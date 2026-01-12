@@ -1,13 +1,13 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, SafeAreaView, Platform, StatusBar, Modal, useColorScheme, Alert } from 'react-native';
-import { useNotifications } from '../components/Notifications/useNotifications';
+import { useNotifications } from '../../../components/Notifications/useNotifications';
 import * as SecureStore from "expo-secure-store";
-import { addFriend } from '../api/friends';
+import { addFriend } from '../../../api/friends';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { MissileLibrary } from '../components/Missile/missile';
+import { MissileLibrary } from '../../../components/Missile/missile';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getlocActive } from '../api/locationOptions';
+import { getlocActive } from '../../../api/locationOptions';
 
 export interface Notification {
 	id: string;

@@ -2,23 +2,23 @@ import React, { useEffect, useState } from 'react';
 import { SafeAreaView, StyleSheet, Text, View, Image, ScrollView, TouchableOpacity, Alert, useColorScheme, Platform, Dimensions, Modal, TouchableWithoutFeedback } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as SecureStore from "expo-secure-store";
-import { getuserprofile } from '../api/getprofile';
-import { fetchAndCacheImage } from '../util/imagecache';
-import useFetchFriends from '../hooks/websockets/friendshook';
-import { addFriend } from '../api/friends';
+import { getuserprofile } from '../../../api/getprofile';
+import { fetchAndCacheImage } from '../../../util/imagecache';
+import useFetchFriends from '../../../hooks/websockets/friendshook';
+import { addFriend } from '../../../api/friends';
 
-const DEFAULT_IMAGE = require('../assets/mapassets/Female_Avatar_PNG.png');
+const DEFAULT_IMAGE = require('../../../assets/mapassets/Female_Avatar_PNG.png');
 
 const badgeImages = {
-  Founder: require('../assets/icons/founder.png'),
-  Staff: require('../assets/icons/staff.png'),
-  Early: require('../assets/icons/earlysupporter.png'),
+  Founder: require('../../../assets/icons/founder.png'),
+  Staff: require('../../../assets/icons/staff.png'),
+  Early: require('../../../assets/icons/earlysupporter.png'),
   //leagues
-  Bronze: require('../assets/leagues/bronze.png'),
-  Silver: require('../assets/leagues/silver.png'),
-  Gold: require('../assets/leagues/gold.png'),
-  Diamond: require('../assets/leagues/diamond.png'),
-  Legend: require('../assets/leagues/legend.png')
+  Bronze: require('../../../assets/leagues/bronze.png'),
+  Silver: require('../../../assets/leagues/silver.png'),
+  Gold: require('../../../assets/leagues/gold.png'),
+  Diamond: require('../../../assets/leagues/diamond.png'),
+  Legend: require('../../../assets/leagues/legend.png')
   // Add more badge images here
 };
 

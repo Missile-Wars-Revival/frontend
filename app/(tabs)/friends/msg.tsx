@@ -4,13 +4,13 @@ import { Link, useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getDatabase, ref, onValue, get, remove, push, set, off } from 'firebase/database';
 import * as SecureStore from "expo-secure-store";
-import useFetchFriends from '../hooks/websockets/friendshook';
-import { fetchAndCacheImage } from '../util/imagecache';
-import { useNotifications } from '../components/Notifications/useNotifications';
-import { markMessageNotificationAsRead } from '../api/notifications';
+import useFetchFriends from '../../../hooks/websockets/friendshook';
+import { fetchAndCacheImage } from '../../../util/imagecache';
+import { useNotifications } from '../../../components/Notifications/useNotifications';
+import { markMessageNotificationAsRead } from '../../../api/notifications';
 import { useFocusEffect } from '@react-navigation/native';
 
-const DEFAULT_IMAGE = require('../assets/mapassets/Female_Avatar_PNG.png');
+const DEFAULT_IMAGE = require('../../../assets/mapassets/Female_Avatar_PNG.png');
 
 // Updated Conversation type
 type Conversation = {

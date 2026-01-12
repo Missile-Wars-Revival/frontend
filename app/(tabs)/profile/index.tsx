@@ -5,19 +5,18 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from "expo-secure-store";
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import useFetchInventory from '../hooks/websockets/inventoryhook';
-import { getselfprofile } from '../api/getprofile';
+import useFetchInventory from '../../../hooks/websockets/inventoryhook';
+import { getselfprofile } from '../../../api/getprofile';
 import { Statistics } from './user-profile';
-import firebase from '../util/firebase/config';
-import { fetchAndCacheImage } from '../util/imagecache';
-import useFetchFriends from '../hooks/websockets/friendshook';
+import firebase from '../../../util/firebase/config';
+import { fetchAndCacheImage } from '../../../util/imagecache';
+import useFetchFriends from '../../../hooks/websockets/friendshook';
 import { useColorScheme } from 'react-native';
-import { editUser } from '../api/editUser';
+import { editUser } from '../../../api/editUser';
 import * as Clipboard from 'expo-clipboard';
-import { Platform } from 'react-native';
-import { getImages } from '../api/store';
+import { getImages } from '../../../api/store';
 
-const DEFAULT_IMAGE = require('../assets/mapassets/Female_Avatar_PNG.png');
+const DEFAULT_IMAGE = require('../../../assets/mapassets/Female_Avatar_PNG.png');
 
 interface ItemImages {
   [key: string]: any;
@@ -40,16 +39,16 @@ export interface ApiResponse {
 
 // Add this near the top of the file, after other imports
 const badgeImages: { [key: string]: any } = {
-  Founder: require('../assets/icons/founder.png'),
-  Staff: require('../assets/icons/staff.png'),
-  Early: require('../assets/icons/earlysupporter.png'),
+  Founder: require('../../../assets/icons/founder.png'),
+  Staff: require('../../../assets/icons/staff.png'),
+  Early: require('../../../assets/icons/earlysupporter.png'),
 
   //leagues
-  Bronze: require('../assets/leagues/bronze.png'),
-  Silver: require('../assets/leagues/silver.png'),
-  Gold: require('../assets/leagues/gold.png'),
-  Diamond: require('../assets/leagues/diamond.png'),
-  Legend: require('../assets/leagues/legend.png'),
+  Bronze: require('../../../assets/leagues/bronze.png'),
+  Silver: require('../../../assets/leagues/silver.png'),
+  Gold: require('../../../assets/leagues/gold.png'),
+  Diamond: require('../../../assets/leagues/diamond.png'),
+  Legend: require('../../../assets/leagues/legend.png'),
 };
 
 const ProfilePage: React.FC = () => {
@@ -83,7 +82,7 @@ const ProfilePage: React.FC = () => {
   const [isAdFree, setIsAdFree] = useState(false);
   const [showAd, setShowAd] = useState(true);
   const [adLoaded, setAdLoaded] = useState(false);
-  const [getImageForProduct, setGetImageForProduct] = useState<(imageName: string) => any>(() => () => require('../assets/logo.png'));
+  const [getImageForProduct, setGetImageForProduct] = useState<(imageName: string) => any>(() => () => require('../../../assets/logo.png'));
 
   useEffect(() => {
     const fetchUsername = async () => {

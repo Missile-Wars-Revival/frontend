@@ -1,20 +1,19 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { View, Text, TouchableOpacity, FlatList, Modal, Alert, RefreshControl, Image, TextInput, StyleSheet, useColorScheme, Platform } from "react-native";
 import { useRouter } from "expo-router";
-import { useUserName } from "../util/fetchusernameglobal";
+import { useUserName } from "../../../util/fetchusernameglobal";
 import * as SecureStore from 'expo-secure-store';
-import { removeFriend } from "../api/friends";
-import { MissileLibrary } from "../components/Missile/missile";
-import { searchFriendsAdded } from "../api/getplayerlocations";
-import { fetchAndCacheImage } from "../util/imagecache";
-import { useNotifications, notificationEmitter } from "../components/Notifications/useNotifications";
-import useFetchFriends from "../hooks/websockets/friendshook";
+import { removeFriend } from "../../../api/friends";
+import { MissileLibrary } from "../../../components/Missile/missile";
+import { searchFriendsAdded } from "../../../api/getplayerlocations";
+import { fetchAndCacheImage } from "../../../util/imagecache";
+import { useNotifications, notificationEmitter } from "../../../components/Notifications/useNotifications";
+import useFetchFriends from "../../../hooks/websockets/friendshook";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getlocActive } from "../api/locationOptions";
-import { Ionicons } from '@expo/vector-icons'; 
-import MissileFiringAnimation from "../components/Animations/MissileFiring";
-import { useOnboarding } from '../util/Context/onboardingContext';
-import OnboardingOverlay from '../components/OnboardingOverlay';
+import { getlocActive } from "../../../api/locationOptions";
+import MissileFiringAnimation from "../../../components/Animations/MissileFiring";
+import { useOnboarding } from '../../../util/Context/onboardingContext';
+import OnboardingOverlay from '../../../components/OnboardingOverlay';
 
 interface Friend {
   username: string;
@@ -153,7 +152,7 @@ const FriendsPage: React.FC = () => {
 
   const navigateToUserProfile = (username: string) => {
     router.navigate({
-      pathname: "/user-profile",
+      pathname: "profile/user-profile",
       params: { username }
     });
   };
@@ -277,14 +276,14 @@ const FriendsPage: React.FC = () => {
       <View style={[styles.header, isDarkMode && styles.headerDark]}>
         <TouchableOpacity
           style={[styles.addButton, isDarkMode && styles.addButtonDark]}
-          onPress={() => router.navigate("/add-friends")}
+          onPress={() => router.navigate("/friends/add-friends")}
         >
           <Text style={styles.addButtonText}>+</Text>
         </TouchableOpacity>
         <Text style={[styles.headerText, isDarkMode && styles.headerTextDark]}>Friends</Text>
         <TouchableOpacity
           style={[styles.notificationButton, isDarkMode && styles.notificationButtonDark]}
-          onPress={() => router.navigate("/notifications")}
+          onPress={() => router.navigate("/friends/notifications")}
         >
           <Text style={styles.notificationButtonText}>🔔</Text>
           {localUnreadCount > 0 && (

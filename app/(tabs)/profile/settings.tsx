@@ -2,25 +2,22 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableHighlight, Switch, ScrollView, Alert, StyleSheet, Dimensions, TouchableOpacity, Modal, Linking, Platform, Animated, PanResponder } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Input } from "../components/ui/input";
+import { Input } from "../../../components/ui/input";
 import { User, LockKeyhole, Mail, ChevronLeft, Shield, MessageCircle, ChevronRight, Heart, Star } from "lucide-react-native";
 import * as SecureStore from 'expo-secure-store';
-import { changeEmail, changePassword, changeUsername, deleteAcc } from '../api/changedetails';
-import { updateFriendsOnlyStatus } from '../api/visibility';
+import { changeEmail, changePassword, changeUsername, deleteAcc } from '../../../api/changedetails';
+import { updateFriendsOnlyStatus } from '../../../api/visibility';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColorScheme } from 'react-native';
-import { updatelocActive, getlocActive, getRandomLocation, randomLocation } from '../api/locationOptions';
-import { clearCredentials } from '../util/logincache';
-import { useAuth } from '../util/Context/authcontext';
-import AppIconChanger from '../components/appiconchanger';
-import { Card } from "../components/card";
+import { updatelocActive, getlocActive, getRandomLocation, randomLocation } from '../../../api/locationOptions';
+import { clearCredentials } from '../../../util/logincache';
+import { useAuth } from '../../../util/Context/authcontext';
+import AppIconChanger from '../../../components/appiconchanger';
+import { Card } from "../../../components/card";
 import Purchases, { PurchasesPackage, PACKAGE_TYPE } from 'react-native-purchases';
 import * as StoreReview from 'expo-store-review';
-import { getNotificationPreferences, updateNotificationPreferences } from '../api/notifications';
+import { getNotificationPreferences, updateNotificationPreferences } from '../../../api/notifications';
 import { LinearGradient } from 'expo-linear-gradient';
-import { AppState, AppStateStatus } from 'react-native';
-import * as ExpoSplashScreen from 'expo-splash-screen';
-import * as Updates from 'expo-updates';
 
 const { width } = Dimensions.get('window');
 
@@ -66,7 +63,6 @@ const SettingsPage: React.FC = () => {
   const [isAdFree, setIsAdFree] = useState<boolean>(false);
   const [offerings, setOfferings] = useState<any | null>(null);
   const [imagePreference, setImagePreference] = useState('default');
-  const [currentPosition, setCurrentPosition] = useState(0);
   const sliderPosition = useRef(new Animated.Value(0)).current;
 
   const notificationDescriptions = {

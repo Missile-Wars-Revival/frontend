@@ -1,18 +1,18 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, FlatList, Text, TouchableOpacity, Image, ImageBackground, ImageSourcePropType, SafeAreaView, StyleSheet, useColorScheme, Dimensions, Animated, Modal, ActivityIndicator, Alert, ScrollView } from 'react-native';
-import Cart from '../components/Store/cart';
+import Cart from '../../components/Store/cart';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axiosInstance from '../api/axios-instance';
+import axiosInstance from '../../api/axios-instance';
 import * as SecureStore from "expo-secure-store";
 import axios from 'axios';
 import Purchases from 'react-native-purchases';
-import { addmoney } from '../api/money';
-import { additem } from '../api/add-item';
-import { getWeaponTypes, mapProductType, PremProduct, Product, getImages } from '../api/store';
-import { getShopStyles } from '../map-themes/stylesheet';
+import { addmoney } from '../../api/money';
+import { additem } from '../../api/add-item';
+import { getWeaponTypes, mapProductType, PremProduct, Product, getImages } from '../../api/store';
+import { getShopStyles } from '../../map-themes/stylesheet';
 import { Ionicons } from '@expo/vector-icons';
-import { useOnboarding } from '../util/Context/onboardingContext';
-import OnboardingOverlay from '../components/OnboardingOverlay';
+import { useOnboarding } from '../../util/Context/onboardingContext';
+import OnboardingOverlay from '../../components/OnboardingOverlay';
 
 
 const { width, height } = Dimensions.get('window');
@@ -40,7 +40,7 @@ const StorePage: React.FC = () => {
   const [isPurchasing, setIsPurchasing] = useState<boolean>(false);
   const [cartTotal, setCartTotal] = useState<number>(0);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [getImageForProduct, setGetImageForProduct] = useState<(imageName: string) => any>(() => () => require('../assets/logo.png'));
+  const [getImageForProduct, setGetImageForProduct] = useState<(imageName: string) => any>(() => () => require('../../assets/logo.png'));
   const [imagesLoaded, setImagesLoaded] = useState(false);
   const { currentStep, moveToNextStep, isOnboardingComplete } = useOnboarding();
 
@@ -61,7 +61,7 @@ const StorePage: React.FC = () => {
 
   const getImageSource = useCallback((imageName: string) => {
     if (!imagesLoaded) {
-      return require('../assets/logo.png'); // Default while loading
+      return require('../../assets/logo.png'); // Default while loading
     }
     return getImageForProduct(imageName);
   }, [imagesLoaded, getImageForProduct]);
@@ -484,7 +484,7 @@ const StorePage: React.FC = () => {
       <Image 
         source={getImageSource(item.name)} 
         style={updatedStyles.productImage} 
-        defaultSource={require('../assets/logo.png')}
+        defaultSource={require('../../assets/logo.png')}
       />
       <Text style={[updatedStyles.productName, isDarkMode && updatedStyles.productNameDark]}>
         {item.name}
@@ -523,7 +523,7 @@ const StorePage: React.FC = () => {
           <Image 
             source={item.image} 
             style={updatedStyles.productImage}
-            defaultSource={require('../assets/logo.png')}
+            defaultSource={require('../../assets/logo.png')}
           />
           <Text style={[updatedStyles.productName, isDarkMode && updatedStyles.productNameDark]}>{item.name}</Text>
           <Text style={[updatedStyles.productPrice, isDarkMode && updatedStyles.productPriceDark]}>{item.displayprice}</Text>
@@ -550,9 +550,9 @@ const StorePage: React.FC = () => {
   return (
     <SafeAreaView style={[updatedStyles.container, isDarkMode && updatedStyles.containerDark]}>
       {!isDarkMode && (
-        <ImageBackground source={require('../assets/store/mapbackdrop.png')} style={updatedStyles.backgroundImage}>
-          <Image source={require('../assets/MissleWarsTitle.png')} style={updatedStyles.titleImage} />
-          <Image source={require('../assets/store/SHOP.png')} style={updatedStyles.shopImage} />
+        <ImageBackground source={require('../../assets/store/mapbackdrop.png')} style={updatedStyles.backgroundImage}>
+          <Image source={require('../../assets/MissleWarsTitle.png')} style={updatedStyles.titleImage} />
+          <Image source={require('../../assets/store/SHOP.png')} style={updatedStyles.shopImage} />
           <View style={updatedStyles.headerContainer}>
             <View style={updatedStyles.currencyContainer}>
               <Text style={[updatedStyles.currencyText, isDarkMode && updatedStyles.currencyTextDark]}>
@@ -668,8 +668,8 @@ const StorePage: React.FC = () => {
       )}
       {isDarkMode && (
         <View style={updatedStyles.containerDark}>
-          <Image source={require('../assets/MissleWarsTitle.png')} style={updatedStyles.titleImage} />
-          <Image source={require('../assets/store/SHOP.png')} style={updatedStyles.shopImage} />
+          <Image source={require('../../assets/MissleWarsTitle.png')} style={updatedStyles.titleImage} />
+          <Image source={require('../../assets/store/SHOP.png')} style={updatedStyles.shopImage} />
           <View style={updatedStyles.headerContainer}>
             <View style={updatedStyles.currencyContainer}>
               <Text style={[updatedStyles.currencyText, isDarkMode && updatedStyles.currencyTextDark]}>

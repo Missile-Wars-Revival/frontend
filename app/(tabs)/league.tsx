@@ -2,19 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Text, ScrollView, TouchableOpacity, Image, SafeAreaView, useColorScheme, ImageSourcePropType, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { fetchTopLeagues, fetchCurrentLeague, fetchLeaguePlayers, top100Players } from '../api/league';
-import { fetchAndCacheImage } from '../util/imagecache'; 
-import { getLeagueAirspace } from '../components/player';
+import { fetchTopLeagues, fetchCurrentLeague, fetchLeaguePlayers, top100Players } from '../../api/league';
+import { fetchAndCacheImage } from '../../util/imagecache'; 
+import { getLeagueAirspace } from '../../components/player';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const DEFAULT_IMAGE = require('../assets/mapassets/Female_Avatar_PNG.png');
+const DEFAULT_IMAGE = require('../../assets/mapassets/Female_Avatar_PNG.png');
 
 const LEAGUE_IMAGES: { [key: string]: ImageSourcePropType } = {
-  'Bronze': require('../assets/leagues/bronze.png'),
-  'Silver': require('../assets/leagues/silver.png'),
-  'Gold': require('../assets/leagues/gold.png'),
-  'Diamond': require('../assets/leagues/diamond.png'),
-  'Legend': require('../assets/leagues/legend.png'),
+  'Bronze': require('../../assets/leagues/bronze.png'),
+  'Silver': require('../../assets/leagues/silver.png'),
+  'Gold': require('../../assets/leagues/gold.png'),
+  'Diamond': require('../../assets/leagues/diamond.png'),
+  'Legend': require('../../assets/leagues/legend.png'),
 };
 
 interface Player {
@@ -49,7 +49,7 @@ const LeagueRankingPage: React.FC = () => {
   });
 
   const getLeagueImage = (leagueName: string): ImageSourcePropType => {
-    return LEAGUE_IMAGES[leagueName] || require('../assets/leagues/default.png');
+    return LEAGUE_IMAGES[leagueName] || require('../../assets/leagues/default.png');
   };
 
   useEffect(() => {

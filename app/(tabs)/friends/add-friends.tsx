@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { Text, View, FlatList, TouchableOpacity, Alert, RefreshControl, TextInput, Keyboard, TouchableWithoutFeedback, SafeAreaView, Image, useColorScheme, StyleSheet } from "react-native";
-import { NearbyPlayersData, searchOtherPlayersData } from "../api/getplayerlocations";
-import { addFriend } from "../api/friends";
+import { NearbyPlayersData, searchOtherPlayersData } from "../../../api/getplayerlocations";
+import { addFriend } from "../../../api/friends";
 import { router } from "expo-router";
-import { getCurrentLocation, location } from "../util/locationreq";
+import { getCurrentLocation, location } from "../../../util/locationreq";
 import * as SecureStore from "expo-secure-store";
 import { Ionicons } from '@expo/vector-icons';
-import { fetchAndCacheImage } from "../util/imagecache";
-import FriendAddedAnimation from "../components/Animations/FriendAddedAnimation";
+import { fetchAndCacheImage } from "../../../util/imagecache";
+import FriendAddedAnimation from "../../../components/Animations/FriendAddedAnimation";
 
 interface Filterddata {
   username: string,
@@ -16,7 +16,7 @@ interface Filterddata {
   profileImageUrl: string | null;
 }
 
-const DEFAULT_IMAGE = require("../assets/mapassets/Female_Avatar_PNG.png");
+const DEFAULT_IMAGE = require("../../../assets/mapassets/Female_Avatar_PNG.png");
 
 const QuickAddPage: React.FC = () => {
   const [userLocation, setUserLocation] = useState<{

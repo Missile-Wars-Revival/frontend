@@ -2,43 +2,43 @@ import React, { useEffect, useState } from "react";
 import { View, Platform, Alert, Image, StyleSheet, TouchableOpacity, Text, Linking, Dimensions, useColorScheme, Modal, ImageBackground } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
-import axiosInstance from "../api/axios-instance";
+import axiosInstance from "../../api/axios-instance";
 import axios from "axios";
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 
 // Android Themes
-import { androidDefaultMapStyle } from "../map-themes/Android-themes/defaultMapStyle";
-import { androidRadarMapStyle } from "../map-themes/Android-themes/radarMapStyle";
-import { androidCherryBlossomMapStyle } from "../map-themes/Android-themes/cherryBlossomMapStyle";
-import { androidCyberpunkMapStyle } from "../map-themes/Android-themes/cyberpunkstyle";
-import { androidColorblindMapStyle } from "../map-themes/Android-themes/colourblindstyle";
+import { androidDefaultMapStyle } from "../../map-themes/Android-themes/defaultMapStyle";
+import { androidRadarMapStyle } from "../../map-themes/Android-themes/radarMapStyle";
+import { androidCherryBlossomMapStyle } from "../../map-themes/Android-themes/cherryBlossomMapStyle";
+import { androidCyberpunkMapStyle } from "../../map-themes/Android-themes/cyberpunkstyle";
+import { androidColorblindMapStyle } from "../../map-themes/Android-themes/colourblindstyle";
 
 // IOS Themes
-import { IOSDefaultMapStyle } from "../map-themes/IOS-themes/themestemp";
-import { IOSRadarMapStyle } from "../map-themes/IOS-themes/themestemp";
-import { IOSCherryBlossomMapStyle } from "../map-themes/IOS-themes/themestemp";
-import { IOSCyberpunkMapStyle } from "../map-themes/IOS-themes/themestemp";
-import { IOSColorblindMapStyle } from "../map-themes/IOS-themes/themestemp";
+import { IOSDefaultMapStyle } from "../../map-themes/IOS-themes/themestemp";
+import { IOSRadarMapStyle } from "../../map-themes/IOS-themes/themestemp";
+import { IOSCherryBlossomMapStyle } from "../../map-themes/IOS-themes/themestemp";
+import { IOSCyberpunkMapStyle } from "../../map-themes/IOS-themes/themestemp";
+import { IOSColorblindMapStyle } from "../../map-themes/IOS-themes/themestemp";
 
 // Components
-import { MapStylePopup } from "../components/map-style-popup";
-import { getStoredMapStyle, storeMapStyle } from "../util/mapstore";
-import { ThemeSelectButton } from "../components/theme-select-button";
-import { FireSelector } from "../components/fire-selector";
-import { MapComp } from "../components/map-comp";
-import { MapStyle } from "../types/types";
+import { MapStylePopup } from "../../components/map-style-popup";
+import { getStoredMapStyle, storeMapStyle } from "../../util/mapstore";
+import { ThemeSelectButton } from "../../components/theme-select-button";
+import { FireSelector } from "../../components/fire-selector";
+import { MapComp } from "../../components/map-comp";
+import { MapStyle } from "../../types/types";
 import { router } from "expo-router";
-import HealthBar from "../components/healthbar";
-import { getisAlive, setHealth, updateisAlive } from "../api/health";
-import { playDeathSound } from "../util/sounds/deathsound";
-import useFetchHealth from "../hooks/websockets/healthhook";
-import { getlocActive } from "../api/locationOptions";
-import PlayerViewButton from "../components/PlayerViewButton";
-import { MissileLibrary } from "../components/Missile/missile";
-import MissileFiringAnimation from "../components/Animations/MissileFiring";
-import { useOnboarding } from '../util/Context/onboardingContext';
-import OnboardingOverlay from '../components/OnboardingOverlay';
+import HealthBar from "../../components/healthbar";
+import { getisAlive, setHealth, updateisAlive } from "../../api/health";
+import { playDeathSound } from "../../util/sounds/deathsound";
+import useFetchHealth from "../../hooks/websockets/healthhook";
+import { getlocActive } from "../../api/locationOptions";
+import PlayerViewButton from "../../components/PlayerViewButton";
+import { MissileLibrary } from "../../components/Missile/missile";
+import MissileFiringAnimation from "../../components/Animations/MissileFiring";
+import { useOnboarding } from '../../util/Context/onboardingContext';
+import OnboardingOverlay from '../../components/OnboardingOverlay';
 
 const { width, height } = Dimensions.get('window');
 
@@ -334,7 +334,7 @@ export default function Map() {
             activeOpacity={0.7}
           >
             <ImageBackground 
-              source={require('../assets/deathscreen.png')} 
+              source={require('../../assets/deathscreen.png')} 
               style={styles.bannerdeath}
               resizeMode="contain"
             >
