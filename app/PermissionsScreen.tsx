@@ -46,13 +46,13 @@ interface OnboardingSlide {
 // Onboarding images - add your own images to assets/onboarding/
 // For now, we'll use the existing Map.png as a fallback
 const ONBOARDING_IMAGES = {
-  welcome: require('../assets/concept/Map.png'), // Replace with welcome image
-  gameplay: require('../assets/concept/Map.png'), // Replace with gameplay image
-  missiles: require('../assets/concept/Map.png'), // Replace with missiles image
-  landmines: require('../assets/concept/Map.png'), // Replace with landmines image
-  multiplayer: require('../assets/concept/Map.png'), // Replace with multiplayer image
-  leagues: require('../assets/concept/Map.png'), // Replace with leagues image
-  permissions: require('../assets/concept/Map.png'), // Replace with permissions image
+  welcome: require('../assets/onboarding/welcome.png'), // Replace with welcome image
+  gameplay: require('../assets/onboarding/gameplay.png'), // Replace with gameplay image
+  missiles: require('../assets/onboarding/missiles.png'), // Replace with missiles image
+  landmines: require('../assets/onboarding/landmines.png'), // Replace with landmines image
+  multiplayer: require('../assets/onboarding/multiplayer.png'), // Replace with multiplayer image
+  leagues: require('../assets/onboarding/leagues.png'), // Replace with leagues image
+  permissions: require('../assets/onboarding/permissions.png'), // Replace with permissions image
 };
 
 const SLIDES: OnboardingSlide[] = [
