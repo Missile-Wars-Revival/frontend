@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, FlatList, Text, TouchableOpacity, Image, ImageBackground, ImageSourcePropType, SafeAreaView, StyleSheet, useColorScheme, Dimensions, Animated, Modal, ActivityIndicator, Alert, ScrollView } from 'react-native';
+import { View, FlatList, Text, TouchableOpacity, ImageBackground, SafeAreaView, StyleSheet, useColorScheme, Dimensions, Animated, Modal, ActivityIndicator, Alert, ScrollView } from 'react-native';
+import { Image } from 'expo-image';
 import Cart from '../../components/Store/cart';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axiosInstance from '../../api/axios-instance';
@@ -12,7 +13,6 @@ import { getWeaponTypes, mapProductType, PremProduct, Product, getImages } from 
 import { getShopStyles } from '../../map-themes/stylesheet';
 import { Ionicons } from '@expo/vector-icons';
 import { useOnboarding } from '../../util/Context/onboardingContext';
-import OnboardingOverlay from '../../components/OnboardingOverlay';
 
 
 const { width, height } = Dimensions.get('window');
@@ -380,7 +380,13 @@ const StorePage: React.FC = () => {
     return (
       <ScrollView style={[updatedStyles.modalContainer, isDarkMode && updatedStyles.modalContainerDark]}>
         <View style={updatedStyles.modalHeader}>
-          <Image source={selectedProduct.image} style={updatedStyles.modalImage} />
+          <Image
+            source={selectedProduct.image}
+            style={updatedStyles.modalImage}
+            contentFit="contain"
+            transition={200}
+            cachePolicy="memory-disk"
+          />
           <View style={updatedStyles.modalTitleContainer}>
             <Text style={[updatedStyles.modalTitle, isDarkMode && updatedStyles.modalTitleDark]}>{selectedProduct.name}</Text>
             <Text style={[updatedStyles.modalPrice, isDarkMode && updatedStyles.modalPriceDark]}>🪙{selectedProduct.price}</Text>
@@ -481,21 +487,28 @@ const StorePage: React.FC = () => {
       style={updatedStyles.productButton}
       onPress={() => handlePress(item)}
     >
-      <Image 
-        source={getImageSource(item.name)} 
-        style={updatedStyles.productImage} 
-        defaultSource={require('../../assets/logo.png')}
+      <Image
+        source={getImageSource(item.name)}
+        style={updatedStyles.productImage}
+        placeholder={require('../../assets/logo.png')}
+        contentFit="contain"
+        transition={200}
+        cachePolicy="memory-disk"
       />
-      <Text style={[updatedStyles.productName, isDarkMode && updatedStyles.productNameDark]}>
+      <Text
+        style={[updatedStyles.productName, isDarkMode && updatedStyles.productNameDark]}
+        numberOfLines={2}
+        ellipsizeMode="tail"
+      >
         {item.name}
       </Text>
       <Text style={[updatedStyles.productPrice, isDarkMode && updatedStyles.productPriceDark]}>🪙{item.price}</Text>
-      <TouchableOpacity 
-        style={[updatedStyles.addToCartButtonSmall, isDarkMode && updatedStyles.addToCartButtonSmallDark]} 
+      <TouchableOpacity
+        style={[updatedStyles.addToCartButtonSmall, isDarkMode && updatedStyles.addToCartButtonSmallDark]}
         onPress={() => handleAddToCart(item)}
       >
-        <Ionicons name="cart" size={18} color={isDarkMode ? "black" : "white"} />
-        <Text style={[updatedStyles.addToCartButtonTextSmall, isDarkMode && updatedStyles.addToCartButtonTextSmallDark]}>Add to Cart</Text>
+        <Ionicons name="cart" size={14} color={isDarkMode ? "black" : "white"} />
+        <Text style={[updatedStyles.addToCartButtonTextSmall, isDarkMode && updatedStyles.addToCartButtonTextSmallDark]}>Add</Text>
       </TouchableOpacity>
     </TouchableOpacity>
   );
@@ -520,10 +533,13 @@ const StorePage: React.FC = () => {
         <ActivityIndicator size="small" color="#4CAF50" />
       ) : (
         <>
-          <Image 
-            source={item.image} 
+          <Image
+            source={item.image}
             style={updatedStyles.productImage}
-            defaultSource={require('../../assets/logo.png')}
+            placeholder={require('../../assets/logo.png')}
+            contentFit="contain"
+            transition={200}
+            cachePolicy="memory-disk"
           />
           <Text style={[updatedStyles.productName, isDarkMode && updatedStyles.productNameDark]}>{item.name}</Text>
           <Text style={[updatedStyles.productPrice, isDarkMode && updatedStyles.productPriceDark]}>{item.displayprice}</Text>
@@ -780,17 +796,6 @@ const StorePage: React.FC = () => {
             </TouchableOpacity>
           </Modal>
         </View>
-      )}
-      {!isOnboardingComplete && (
-        currentStep === 'store' || 
-        currentStep === 'filter_missiles' || 
-        currentStep === 'buy_missile' || 
-        currentStep === 'filter_landmines' || 
-        currentStep === 'buy_landmine' || 
-        currentStep === 'go_to_cart' || 
-        currentStep === 'checkout'
-      ) && (
-        <OnboardingOverlay />
       )}
     </SafeAreaView>
   );

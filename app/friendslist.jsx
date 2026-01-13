@@ -1,6 +1,8 @@
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, SafeAreaView, useColorScheme, Alert } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, useColorScheme, Alert } from 'react-native';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import useFetchFriends from '../hooks/websockets/friendshook';
 import { getDatabase, ref, push, set, update, serverTimestamp, query, orderByChild, equalTo, get } from 'firebase/database';
 import * as SecureStore from 'expo-secure-store';
@@ -9,18 +11,22 @@ const DEFAULT_IMAGE = require('../assets/mapassets/Female_Avatar_PNG.png');
 
 const FriendItem = React.memo(({ item, onPress, isDarkMode }) => {
   return (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={[styles.friendItem, isDarkMode && styles.friendItemDark]}
       onPress={() => onPress(item.username)}
       accessibilityLabel={`Start chat with ${item.username}`}
     >
       <View style={styles.friendInfo}>
-        <Image 
-          source={item.profileImageUrl ? { uri: item.profileImageUrl } : DEFAULT_IMAGE} 
-          style={styles.friendImage} 
+        <Image
+          source={item.profileImageUrl ? { uri: item.profileImageUrl } : DEFAULT_IMAGE}
+          style={styles.friendImage}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+          transition={200}
         />
         <Text style={[styles.friendName, isDarkMode && styles.friendNameDark]}>{item.username}</Text>
       </View>
+      <Ionicons name="chevron-forward" size={24} color={isDarkMode ? "#8E8E93" : "#C7C7CC"} />
     </TouchableOpacity>
   );
 });
@@ -150,6 +156,9 @@ const FriendsList = () => {
   return (
     <SafeAreaView style={[styles.container, isDarkMode && styles.containerDark]}>
       <View style={[styles.header, isDarkMode && styles.headerDark]}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
         <Text style={[styles.headerText, isDarkMode && styles.headerTextDark]}>Select a Friend</Text>
       </View>
       <FlatList
@@ -171,9 +180,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#1E1E1E',
   },
   header: {
-    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
     paddingTop: 60,
+    paddingBottom: 20,
     backgroundColor: '#4a5568',
+  },
+  backButton: {
+    padding: 8,
+    marginRight: 12,
+    marginTop: -40,
   },
   headerDark: {
     backgroundColor: '#2C2C2C',
@@ -183,6 +200,7 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontWeight: 'bold',
     marginTop: -40,
+    flex: 1,
   },
   headerTextDark: {
     color: '#FFF',
@@ -195,13 +213,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#ffffff',
-    padding: 15,
-    marginBottom: 10,
-    borderRadius: 8,
-    marginHorizontal: 20,
+    padding: 16,
+    marginBottom: 12,
+    marginHorizontal: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   friendItemDark: {
     backgroundColor: '#2C2C2C',
+    shadowColor: '#000',
   },
   friendInfo: {
     flexDirection: 'row',
@@ -209,14 +233,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   friendImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginRight: 15,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    marginRight: 16,
+    borderWidth: 2,
+    borderColor: '#f0f2f5',
   },
   friendName: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 17,
+    fontWeight: '600',
     color: '#2d3748',
   },
   friendNameDark: {

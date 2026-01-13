@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { SafeAreaView, StyleSheet, Text, View, TouchableOpacity, Switch, Modal, ScrollView, FlatList, Alert, Image, Dimensions, TouchableWithoutFeedback, AlertButton, Linking, TextInput } from 'react-native';
+import { SafeAreaView, StyleSheet, Text, View, TouchableOpacity, Switch, Modal, ScrollView, FlatList, Alert, Dimensions, TouchableWithoutFeedback, AlertButton, Linking, TextInput } from 'react-native';
 import { router } from 'expo-router';
+import { Image } from 'expo-image';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from "expo-secure-store";
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -126,7 +127,7 @@ const ProfilePage: React.FC = () => {
   }, [inventory]);
 
   const openSettings = () => {
-    router.navigate("/settings");
+    router.navigate("/profile/settings");
   };
 
   const navigateToLeagues = () => {
@@ -586,8 +587,9 @@ const ProfilePage: React.FC = () => {
         <View style={[styles.profileContainer, isDarkMode && styles.profileContainerDark]}>
           <TouchableOpacity onPress={openImagePicker}>
             <Image
-              source={{ uri: userImageUrl || Image.resolveAssetSource(DEFAULT_IMAGE).uri }}
+              source={{ uri: userImageUrl ||DEFAULT_IMAGE }}
               style={styles.profileImage}
+              cachePolicy="memory-disk"
             />
           </TouchableOpacity>
           <Text style={[styles.profileName, isDarkMode && styles.profileNameDark]}>{username}</Text>
@@ -638,6 +640,7 @@ const ProfilePage: React.FC = () => {
                 <Image
                   source={getImageForProduct(item.name)}
                   style={styles.itemImage}
+                  cachePolicy="memory-disk"
                 />
                 <Text style={[styles.itemName, isDarkMode && styles.itemNameDark]}>{item.name}</Text>
                 <Text style={[styles.itemQuantity, isDarkMode && styles.itemQuantityDark]}>x{item.quantity}</Text>
@@ -656,8 +659,9 @@ const ProfilePage: React.FC = () => {
                 onPress={() => navigateToUserProfile(friend.username)}
               >
                 <Image
-                  source={{ uri: friendImages[friend.username] || Image.resolveAssetSource(DEFAULT_IMAGE).uri }}
+                  source={{ uri: friendImages[friend.username] || DEFAULT_IMAGE }}
                   style={styles.friendImage}
+                  cachePolicy="memory-disk"
                 />
                 <Text style={[styles.friendName, isDarkMode && styles.friendNameDark]}>{friend.username}</Text>
               </TouchableOpacity>
@@ -684,6 +688,7 @@ const ProfilePage: React.FC = () => {
                     <Image
                       source={getImageForProduct(item.name)}
                       style={styles.inventoryItemImage}
+                      cachePolicy="memory-disk"
                     />
                     <View style={styles.inventoryItemDetails}>
                       <Text style={[styles.inventoryItemName, isDarkMode && styles.inventoryItemNameDark]}>{item.name}</Text>

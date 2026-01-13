@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Text, View, FlatList, TouchableOpacity, Alert, RefreshControl, TextInput, Keyboard, TouchableWithoutFeedback, SafeAreaView, Image, useColorScheme, StyleSheet } from "react-native";
+import { Text, View, FlatList, TouchableOpacity, Alert, RefreshControl, TextInput, Keyboard, TouchableWithoutFeedback, SafeAreaView, useColorScheme, StyleSheet } from "react-native";
+import { Image } from "expo-image";
 import { NearbyPlayersData, searchOtherPlayersData } from "../../../api/getplayerlocations";
 import { addFriend } from "../../../api/friends";
 import { router } from "expo-router";
@@ -166,6 +167,7 @@ const QuickAddPage: React.FC = () => {
         <Image
           source={item.profileImageUrl ? { uri: item.profileImageUrl } : DEFAULT_IMAGE}
           style={styles.playerImage}
+          cachePolicy="memory-disk"
         />
         <Text style={[styles.playerName, isDarkMode && styles.playerNameDark]}>{item.username}</Text>
       </TouchableOpacity>

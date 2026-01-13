@@ -22,7 +22,6 @@ import { IOSDefaultMapStyle, IOSRadarMapStyle, IOSCherryBlossomMapStyle, IOSCybe
 import FriendAddedAnimation from "../components/Animations/FriendAddedAnimation";
 import { getImages } from '../api/store';
 import { useOnboarding } from '../util/Context/onboardingContext';
-import OnboardingOverlay from './OnboardingOverlay';
 
 interface Player {
   username: string;
@@ -424,7 +423,7 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
       </TouchableOpacity>
 
       <Modal
-        animationType="slide" 
+        animationType="fade"
         transparent={true}
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
@@ -480,9 +479,6 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
             </View>
           )}
         </View>
-        {!isOnboardingComplete && (currentStep === 'fireplayermenu' ) && (
-          <OnboardingOverlay />
-        )}
       </Modal>
     </View>
   );

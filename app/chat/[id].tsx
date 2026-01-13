@@ -536,7 +536,9 @@ export default function ChatScreen() {
             <Image
               source={{ uri: item.imageUrl }}
               style={styles.messageImage}
-              resizeMode="cover"
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              transition={200}
             />
           </TouchableOpacity>
         )}
@@ -551,7 +553,12 @@ export default function ChatScreen() {
               senderUsername: item.senderUsername
             })}
           >
-            <Image source={getImageForProduct(item.inventoryItem.name)} style={styles.inventoryMessageItemImage} />
+            <Image
+              source={getImageForProduct(item.inventoryItem.name)}
+              style={styles.inventoryMessageItemImage}
+              contentFit="contain"
+              cachePolicy="memory-disk"
+            />
             <View style={styles.inventoryMessageItemContent}>
               <Text style={styles.inventoryMessageItemText} numberOfLines={1} ellipsizeMode="tail">
                 {item.inventoryItem.name}
@@ -613,7 +620,7 @@ export default function ChatScreen() {
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardAvoidingView}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
       >
         <FlatList
           ref={flatListRef}
@@ -628,37 +635,87 @@ export default function ChatScreen() {
           onContentSizeChange={scrollToBottom}
           onLayout={scrollToBottom}
         />
+        {selectedInventoryItem && (
+          <View style={[styles.selectedInventoryItemContainer, isDarkMode && styles.selectedInventoryItemContainerDark]}>
+            <Image
+              source={getImageForProduct(selectedInventoryItem.name)}
+              style={styles.selectedInventoryItemImage}
+              contentFit="contain"
+              cachePolicy="memory-disk"
+            />
+            <View style={styles.selectedInventoryItemInfo}>
+              <Text style={[styles.selectedInventoryItemName, isDarkMode && styles.selectedInventoryItemNameDark]} numberOfLines={1}>
+                {selectedInventoryItem.name}
+              </Text>
+              <Text style={[styles.selectedInventoryItemQuantity, isDarkMode && styles.selectedInventoryItemQuantityDark]}>
+                {selectedInventoryItem.quantity} left in inventory
+              </Text>
+              <View style={styles.quantityControls}>
+                <TouchableOpacity
+                  style={[styles.quantityButton, isDarkMode && styles.quantityButtonDark]}
+                  onPress={() => setItemQuantity(Math.max(1, itemQuantity - 1))}
+                >
+                  <Ionicons name="remove" size={18} color={isDarkMode ? "#FFF" : "#000"} />
+                </TouchableOpacity>
+                <Text style={[styles.quantityText, isDarkMode && styles.quantityTextDark]}>
+                  Send: {itemQuantity}
+                </Text>
+                <TouchableOpacity
+                  style={[styles.quantityButton, isDarkMode && styles.quantityButtonDark]}
+                  onPress={() => setItemQuantity(Math.min(selectedInventoryItem.quantity, itemQuantity + 1))}
+                >
+                  <Ionicons name="add" size={18} color={isDarkMode ? "#FFF" : "#000"} />
+                </TouchableOpacity>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={styles.removeSelectedItem}
+              onPress={() => {
+                setSelectedInventoryItem(null);
+                setItemQuantity(1);
+              }}
+            >
+              <Ionicons name="close-circle" size={24} color="#FF3B30" />
+            </TouchableOpacity>
+          </View>
+        )}
         {showInventoryMenu && (
           <View style={[styles.inventoryMenuContainer, isDarkMode && styles.inventoryMenuContainerDark]}>
             <FlatList
-              data={inventory}
+              data={inventory.filter(item => item.quantity > 0)}
               renderItem={({ item }) => (
-                <TouchableOpacity onPress={() => handleSelectInventoryItem(item)} style={[styles.inventoryItem, isDarkMode && styles.inventoryItemDark]}>
-                  <Image source={getImageForProduct(item.name)} style={styles.inventoryItemImage} />
+                <TouchableOpacity
+                  onPress={() => handleSelectInventoryItem(item)}
+                  style={[styles.inventoryItem, isDarkMode && styles.inventoryItemDark]}
+                  disabled={item.quantity === 0}
+                >
+                  <Image
+                    source={getImageForProduct(item.name)}
+                    style={styles.inventoryItemImage}
+                    contentFit="contain"
+                    cachePolicy="memory-disk"
+                  />
                   <Text style={[styles.inventoryItemName, isDarkMode && styles.inventoryItemNameDark]}>{item.name}</Text>
-                  <Text style={[styles.inventoryItemQuantity, isDarkMode && styles.inventoryItemQuantityDark]}>x{item.quantity}</Text>
+                  <Text style={[styles.inventoryItemQuantity, isDarkMode && styles.inventoryItemQuantityDark]}>
+                    {item.quantity} left
+                  </Text>
                 </TouchableOpacity>
               )}
               keyExtractor={(item) => item.id}
               horizontal
               showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.inventoryListContent}
             />
           </View>
         )}
         <View style={[styles.inputContainer, isDarkMode && styles.inputContainerDark]}>
           {selectedImage && (
-            <Image source={{ uri: selectedImage }} style={styles.selectedImage} />
-          )}
-          {selectedInventoryItem && (
-            <View style={styles.selectedInventoryItem}>
-              <Text>{selectedInventoryItem.name} x {itemQuantity}</Text>
-              <TextInput
-                style={styles.quantityInput}
-                value={itemQuantity.toString()}
-                onChangeText={handleQuantityChange}
-                keyboardType="numeric"
-              />
-            </View>
+            <Image
+              source={{ uri: selectedImage }}
+              style={styles.selectedImage}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+            />
           )}
           <TouchableOpacity onPress={handleAttachPress} style={styles.attachButton}>
             <Ionicons name="attach" size={24} color={isDarkMode ? "#B0B0B0" : "#4a5568"} />
@@ -686,7 +743,12 @@ export default function ChatScreen() {
 
       <Modal visible={!!fullScreenImage} transparent={true} onRequestClose={() => setFullScreenImage(null)}>
         <View style={styles.fullScreenImageContainer}>
-          <Image source={{ uri: fullScreenImage ?? undefined }} style={styles.fullScreenImage} contentFit="contain" />
+          <Image
+            source={{ uri: fullScreenImage ?? undefined }}
+            style={styles.fullScreenImage}
+            contentFit="contain"
+            cachePolicy="memory-disk"
+          />
           <TouchableOpacity style={styles.closeButton} onPress={() => setFullScreenImage(null)}>
             <Ionicons name="close" size={30} color="#FFFFFF" />
           </TouchableOpacity>
@@ -898,35 +960,54 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f2f5',
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',
-    padding: 10,
+    paddingVertical: 15,
+    paddingHorizontal: 10,
   },
   inventoryMenuContainerDark: {
     backgroundColor: '#2C2C2C',
     borderTopColor: '#3D3D3D',
   },
+  inventoryListContent: {
+    paddingHorizontal: 5,
+  },
   inventoryItem: {
     alignItems: 'center',
-    marginHorizontal: 10,
+    marginHorizontal: 15,
+    padding: 10,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+    minWidth: 80,
   },
   inventoryItemDark: {
-    backgroundColor: '#3D3D3D', // Add a dark mode background color
+    backgroundColor: '#3D3D3D',
   },
   inventoryItemImage: {
     width: 50,
     height: 50,
     resizeMode: 'contain',
+    marginBottom: 8,
   },
   inventoryItemName: {
     fontSize: 12,
     textAlign: 'center',
-    marginTop: 5,
+    marginBottom: 4,
+    fontWeight: '600',
   },
   inventoryItemNameDark: {
     color: '#FFFFFF',
   },
   inventoryItemQuantity: {
-    fontSize: 10,
+    fontSize: 11,
     color: '#666',
+    fontWeight: '500',
   },
   inventoryItemQuantityDark: {
     color: '#B0B0B0',
@@ -971,6 +1052,76 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginRight: 10,
+  },
+  selectedInventoryItemContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f2f5',
+    padding: 8,
+    borderRadius: 12,
+    marginRight: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  selectedInventoryItemContainerDark: {
+    backgroundColor: '#3D3D3D',
+    borderColor: '#4D4D4D',
+  },
+  selectedInventoryItemImage: {
+    width: 40,
+    height: 40,
+    marginRight: 8,
+  },
+  selectedInventoryItemInfo: {
+    flex: 1,
+  },
+  selectedInventoryItemName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 4,
+  },
+  selectedInventoryItemNameDark: {
+    color: '#FFF',
+  },
+  selectedInventoryItemQuantity: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 8,
+  },
+  selectedInventoryItemQuantityDark: {
+    color: '#B0B0B0',
+  },
+  quantityControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  quantityButton: {
+    backgroundColor: '#FFF',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  quantityButtonDark: {
+    backgroundColor: '#2C2C2C',
+    borderColor: '#4D4D4D',
+  },
+  quantityText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginHorizontal: 12,
+    color: '#000',
+  },
+  quantityTextDark: {
+    color: '#FFF',
+  },
+  removeSelectedItem: {
+    marginLeft: 8,
   },
   quantityInput: {
     width: 40,

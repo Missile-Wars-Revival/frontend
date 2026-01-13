@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, SafeAreaView, useColorScheme, PanResponder, Animated, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, useColorScheme, PanResponder, Animated, TouchableWithoutFeedback } from 'react-native';
+import { Image } from 'expo-image';
 import { Link, useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getDatabase, ref, onValue, get, remove, push, set, off } from 'firebase/database';
@@ -217,6 +218,7 @@ const ConversationList = () => {
   const renderConversationItem = useCallback(({ item }: { item: Conversation }) => {
     const otherParticipant = friends.find(friend => friend.username === item.otherParticipant);
     const avatarUri = avatarUris[item.otherParticipant];
+    const displayName = item.otherParticipant || otherParticipant?.username || 'Unknown';
 
     if (!panRefs.current[item.id]) {
       panRefs.current[item.id] = new Animated.ValueXY();
@@ -266,21 +268,24 @@ const ConversationList = () => {
                   isDarkMode && styles.conversationItemDark,
                   item.unreadCount > 0 && (isDarkMode ? styles.unreadConversationItemDark : styles.unreadConversationItem)
                 ]}
-                accessibilityLabel={`Conversation with ${otherParticipant?.username || 'Unknown'}`}
+                accessibilityLabel={`Conversation with ${displayName}`}
               >
                 <View style={styles.avatarContainer}>
-                  <Image 
-                    source={avatarUri ? { uri: avatarUri } : DEFAULT_IMAGE} 
-                    style={styles.avatar} 
+                  <Image
+                    source={avatarUri ? { uri: avatarUri } : DEFAULT_IMAGE}
+                    style={styles.avatar}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                    transition={200}
                   />
                   <View style={styles.textContainer}>
                     <View style={styles.nameAndTimeContainer}>
                       <Text style={[
-                        styles.name, 
+                        styles.name,
                         isDarkMode && styles.textDark,
                         item.unreadCount > 0 && (isDarkMode ? styles.unreadTextDark : styles.unreadText)
                       ]} numberOfLines={1}>
-                        {otherParticipant?.username || 'Unknown'}
+                        {displayName}
                       </Text>
                       <Text style={[styles.timestamp, isDarkMode && styles.timestampDark]}>
                         {formatTimestamp(item.lastMessage.timestamp)}
@@ -368,14 +373,21 @@ const styles = StyleSheet.create({
   },
   conversationItem: {
     flexDirection: 'column',
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    padding: 16,
+    borderBottomWidth: 0,
     backgroundColor: '#FFFFFF',
+    marginHorizontal: 12,
+    marginVertical: 6,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
   },
   conversationItemDark: {
     backgroundColor: '#2C2C2C',
-    borderBottomColor: '#3D3D3D',
+    shadowColor: '#000',
   },
   avatarContainer: {
     flexDirection: 'row',
@@ -400,11 +412,13 @@ const styles = StyleSheet.create({
     color: '#000000',
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 12,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    marginRight: 14,
     marginBottom: 20,
+    borderWidth: 2,
+    borderColor: '#f0f2f5',
   },
   lastMessage: {
     fontSize: 14,
@@ -445,10 +459,14 @@ const styles = StyleSheet.create({
     backgroundColor: 'red',
   },
   unreadConversationItem: {
-    backgroundColor: '#E8F5FE',
+    backgroundColor: '#E3F2FD',
+    borderWidth: 1,
+    borderColor: '#2196F3',
   },
   unreadConversationItemDark: {
     backgroundColor: '#1E3A5F',
+    borderWidth: 1,
+    borderColor: '#4CAF50',
   },
   unreadText: {
     fontWeight: 'bold',
@@ -459,14 +477,17 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   unreadIndicator: {
-    backgroundColor: '#34B7F1',
-    borderRadius: 10,
-    paddingHorizontal: 6,
+    backgroundColor: '#2196F3',
+    borderRadius: 12,
+    minWidth: 24,
+    height: 24,
+    paddingHorizontal: 8,
     paddingVertical: 2,
     position: 'absolute',
-    top: 10,
-    right: 10,
-    marginRight: 50,
+    top: 12,
+    right: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   unreadCount: {
     color: '#FFFFFF',

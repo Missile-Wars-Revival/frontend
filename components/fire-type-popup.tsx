@@ -1,8 +1,7 @@
-import React, { useState } from "react";
-import { Modal, View, Text, TouchableOpacity, StyleSheet, useColorScheme, Dimensions } from "react-native";
+import React, { useState, useEffect, useRef } from "react";
+import { Modal, View, Text, TouchableOpacity, StyleSheet, useColorScheme, Dimensions, Animated } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import { useOnboarding } from '../util/Context/onboardingContext';
-import OnboardingOverlay from "./OnboardingOverlay";
 
 const { width, height } = Dimensions.get('window');
 
@@ -31,7 +30,7 @@ export const FireType = (props: FireTypeProps) => {
   };
 
   const selectFiretype = (style: string) => {
-    FireclosePopup();
+    // Trigger the handler first to open the next modal
     switch (style) {
       case "firelandmine":
         props.landmineFireHandler();
@@ -51,6 +50,9 @@ export const FireType = (props: FireTypeProps) => {
       default:
         break;
     }
+
+    // Don't close the fire selector - let it stay in the background
+    // This prevents modal conflicts
   };
 
   return (
@@ -89,9 +91,33 @@ export const FireTypeStyle = ({
   isDarkMode,
 }: MapStylePopupProps) => {
   const { currentStep, moveToNextStep, isOnboardingComplete } = useOnboarding();
+  const slideAnim = useRef(new Animated.Value(300)).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 65,
+        friction: 11,
+      }).start();
+    } else {
+      Animated.timing(slideAnim, {
+        toValue: 300,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [visible]);
+
+  const handleActionPress = (action: string) => {
+    // Prevent event bubbling and immediately select
+    onSelect(action);
+  };
+
   return (
     <Modal
-      animationType="slide"
+      animationType="fade"
       transparent={transparent}
       visible={visible}
       onRequestClose={onClose}
@@ -99,43 +125,61 @@ export const FireTypeStyle = ({
       <TouchableOpacity
         style={[styles.modalOverlay, isDarkMode && styles.modalOverlayDark]}
         activeOpacity={1}
-        onPressOut={onClose}
+        onPress={onClose}
       >
-        <View style={[styles.modalContent, isDarkMode && styles.modalContentDark]}>
-          <Text style={[styles.modalTitle, isDarkMode && styles.modalTitleDark]}>Select Action</Text>
+        <Animated.View
+          style={[
+            styles.modalContentWrapper,
+            {
+              transform: [{ translateY: slideAnim }]
+            }
+          ]}
+        >
           <TouchableOpacity
-            onPress={() => onSelect("firelandmine")}
-            style={[styles.actionButton, isDarkMode && styles.actionButtonDark]}
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
+            style={[styles.modalContent, isDarkMode && styles.modalContentDark]}
           >
-            <Ionicons name="radio-button-on" size={24} color={isDarkMode ? "#FFF" : "#000"} />
-            <Text style={[styles.actionText, isDarkMode && styles.actionTextDark]}>Place Landmine</Text>
+            <Text style={[styles.modalTitle, isDarkMode && styles.modalTitleDark]}>Select Action</Text>
+            <TouchableOpacity
+              onPress={() => handleActionPress("firelandmine")}
+              style={[styles.actionButton, isDarkMode && styles.actionButtonDark]}
+            >
+              <View style={styles.iconContainer}>
+                <Ionicons name="radio-button-on" size={24} color={isDarkMode ? "#FFF" : "#000"} />
+              </View>
+              <Text style={[styles.actionText, isDarkMode && styles.actionTextDark]}>Place Landmine</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => handleActionPress("firemissile")}
+              style={[styles.actionButton, isDarkMode && styles.actionButtonDark]}
+            >
+              <View style={styles.iconContainer}>
+                <Ionicons name="rocket" size={24} color={isDarkMode ? "#FFF" : "#000"} />
+              </View>
+              <Text style={[styles.actionText, isDarkMode && styles.actionTextDark]}>Fire Missile</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => handleActionPress("lootdrop")}
+              style={[styles.actionButton, isDarkMode && styles.actionButtonDark]}
+            >
+              <View style={styles.iconContainer}>
+                <Ionicons name="gift" size={24} color={isDarkMode ? "#FFF" : "#000"} />
+              </View>
+              <Text style={[styles.actionText, isDarkMode && styles.actionTextDark]}>Request Loot Drop</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => handleActionPress("other")}
+              style={[styles.actionButton, isDarkMode && styles.actionButtonDark]}
+            >
+              <View style={styles.iconContainer}>
+                <Ionicons name="sparkles-outline" size={24} color={isDarkMode ? "#FFF" : "#000"} />
+              </View>
+              <Text style={[styles.actionText, isDarkMode && styles.actionTextDark]}>Place Special Items</Text>
+            </TouchableOpacity>
           </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => onSelect("firemissile")}
-            style={[styles.actionButton, isDarkMode && styles.actionButtonDark]}
-          >
-            <Ionicons name="rocket" size={24} color={isDarkMode ? "#FFF" : "#000"} />
-            <Text style={[styles.actionText, isDarkMode && styles.actionTextDark]}>Fire Missile</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => onSelect("lootdrop")}
-            style={[styles.actionButton, isDarkMode && styles.actionButtonDark]}
-          >
-            <Ionicons name="gift" size={24} color={isDarkMode ? "#FFF" : "#000"} />
-            <Text style={[styles.actionText, isDarkMode && styles.actionTextDark]}>Request Loot Drop</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => onSelect("other")}
-            style={[styles.actionButton, isDarkMode && styles.actionButtonDark]}
-          >
-            <Ionicons name="sparkles-outline" size={24} color={isDarkMode ? "#FFF" : "#000"} />
-            <Text style={[styles.actionText, isDarkMode && styles.actionTextDark]}>Place Special Items</Text>
-          </TouchableOpacity>
-        </View>
+        </Animated.View>
       </TouchableOpacity>
-      {!isOnboardingComplete && (currentStep === 'fire_landmine') && (
-        <OnboardingOverlay />
-      )}
     </Modal>
   );
 };
@@ -172,6 +216,11 @@ const styles = StyleSheet.create({
   modalOverlayDark: {
     backgroundColor: "rgba(0, 0, 0, 0.7)",
   },
+  modalContentWrapper: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 0,
+  },
   modalContent: {
     backgroundColor: "white",
     borderRadius: 20,
@@ -185,7 +234,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 5,
-    width: '80%',
+    width: '90%',
+    maxWidth: 400,
   },
   modalContentDark: {
     backgroundColor: "#1E1E1E",
@@ -202,19 +252,29 @@ const styles = StyleSheet.create({
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: "#F0F0F0",
     borderRadius: 10,
     padding: 15,
+    paddingLeft: 54,
     marginVertical: 10,
     width: '100%',
+    position: 'relative',
   },
   actionButtonDark: {
     backgroundColor: "#2C2C2C",
   },
+  iconContainer: {
+    position: 'absolute',
+    left: 15,
+    width: 24,
+  },
   actionText: {
-    marginLeft: 15,
     fontSize: 16,
     color: "#000",
+    textAlign: 'center',
+    flex: 1,
+    marginRight: 24,
   },
   actionTextDark: {
     color: "#FFF",

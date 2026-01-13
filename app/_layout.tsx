@@ -107,9 +107,9 @@ export default function RootLayout() {
   useEffect(() => {
     const checkFirstLaunch = async () => {
       try {
-        const value = await AsyncStorage.getItem('alreadyLaunched');
+        const value = await AsyncStorage.getItem('alreadyLaunchedV2');
         if (value === null) {
-          await AsyncStorage.setItem('alreadyLaunched', 'true');
+          await AsyncStorage.setItem('alreadyLaunchedV2', 'true');
           setIsFirstLaunch(true);
         } else {
           setIsFirstLaunch(false);

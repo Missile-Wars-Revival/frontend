@@ -8,7 +8,6 @@ import { useColorScheme } from 'react-native';
 import { router } from 'expo-router';
 import { getImages } from '../../api/store';
 import { useOnboarding } from '../../util/Context/onboardingContext';
-import OnboardingOverlay from '../OnboardingOverlay';
 
 const tw = create(require('../../tailwind.config.js'));
 
@@ -96,13 +95,6 @@ export const LandmineLibraryView: React.FC<LandmineLibraryViewProps> = ({ Landmi
     setShowplacementPopup(false);
   };
 
-  const getModalHeight = () => {
-    const itemCount = landmineLibrary.length;
-    if (itemCount <= 3) return 'h-1/3';
-    if (itemCount <= 6) return 'h-1/2';
-    return 'h-2/3';
-  };
-
   const noItems = landmineLibrary.length === 0;
 
   return (
@@ -113,7 +105,7 @@ export const LandmineLibraryView: React.FC<LandmineLibraryViewProps> = ({ Landmi
       onRequestClose={landminePlaceHandler}
     >
       <View style={tw`flex-1 justify-center items-center bg-black bg-opacity-50`}>
-        <View style={tw`${isDarkMode ? 'bg-black' : 'bg-white'} rounded-lg p-4 w-11/12 ${getModalHeight()} max-h-[90%]`}>
+        <View style={tw`${isDarkMode ? 'bg-black' : 'bg-white'} rounded-lg p-4 w-11/12 h-[90%]`}>
           <Text style={tw`text-xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Select your Landmine:</Text>
           {noItems ? (
             <View style={tw`flex-1 justify-center items-center`}>
@@ -149,9 +141,6 @@ export const LandmineLibraryView: React.FC<LandmineLibraryViewProps> = ({ Landmi
             landminePlaceHandler(); // This should close the entire library
           }}
         />
-      )}
-      {!isOnboardingComplete && (currentStep === 'choosefire_landmine' ) && (
-        <OnboardingOverlay />
       )}
     </Modal>
   );

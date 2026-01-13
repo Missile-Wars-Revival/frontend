@@ -1,9 +1,27 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform, Dimensions, ImageBackground, Image, SafeAreaView, KeyboardAvoidingView, StatusBar, useColorScheme, ScrollView } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  Platform,
+  Dimensions,
+  StatusBar,
+  Animated,
+  PanResponder,
+  Linking,
+  Image,
+  ScrollView,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
-import { MapPin, Bell, FileText, Target } from 'lucide-react-native';
-import { Linking } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BlurView } from 'expo-blur';
 import { requestTrackingPermissionsAsync, getTrackingPermissionsAsync } from 'expo-tracking-transparency';
 import { getlocation } from '../util/locationreq';
 
@@ -13,100 +31,394 @@ interface PermissionsScreenProps {
   onPermissionGranted: () => void;
 }
 
-const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGranted }) => {
+interface OnboardingSlide {
+  id: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  image: any;
+  icon: keyof typeof Ionicons.glyphMap;
+  gradientColors: readonly [string, string, string];
+  accentColor: string;
+  glowColor: string;
+}
+
+// Onboarding images - add your own images to assets/onboarding/
+// For now, we'll use the existing Map.png as a fallback
+const ONBOARDING_IMAGES = {
+  welcome: require('../assets/concept/Map.png'), // Replace with welcome image
+  gameplay: require('../assets/concept/Map.png'), // Replace with gameplay image
+  missiles: require('../assets/concept/Map.png'), // Replace with missiles image
+  landmines: require('../assets/concept/Map.png'), // Replace with landmines image
+  multiplayer: require('../assets/concept/Map.png'), // Replace with multiplayer image
+  leagues: require('../assets/concept/Map.png'), // Replace with leagues image
+  permissions: require('../assets/concept/Map.png'), // Replace with permissions image
+};
+
+const SLIDES: OnboardingSlide[] = [
+  {
+    id: 'welcome',
+    title: 'Welcome to\nMissile Wars',
+    subtitle: 'Location-based battle royale',
+    description: 'Fight for territory in real-time! Launch missiles, plant landmines, and dominate your area.',
+    image: ONBOARDING_IMAGES.welcome,
+    icon: 'game-controller-outline',
+    gradientColors: ['#1a1f36', '#2d3561', '#773765'],
+    accentColor: '#ff6b9d',
+    glowColor: '#773765',
+  },
+  {
+    id: 'gameplay',
+    title: 'Real-World\nBattlefield',
+    subtitle: 'Your location is your power',
+    description: 'Move around in the real world to explore the map, collect loot, and engage in battles with nearby players.',
+    image: ONBOARDING_IMAGES.gameplay,
+    icon: 'map-outline',
+    gradientColors: ['#1a2f4a', '#2a4a6a', '#3d6b9e'],
+    accentColor: '#64b5f6',
+    glowColor: '#64b5f6',
+  },
+  {
+    id: 'missiles',
+    title: 'Launch\nMissiles',
+    subtitle: 'Strike from anywhere',
+    description: 'Target enemies on the map and launch powerful missiles. Time and precision are key to victory.',
+    image: ONBOARDING_IMAGES.missiles,
+    icon: 'rocket-outline',
+    gradientColors: ['#2a1a1a', '#4a2a2a', '#8b3a3a'],
+    accentColor: '#ff5252',
+    glowColor: '#ff5252',
+  },
+  {
+    id: 'landmines',
+    title: 'Deploy\nLandmines',
+    subtitle: 'Set traps for enemies',
+    description: 'Plant landmines at strategic locations. When enemies enter your territory, they will trigger your defenses.',
+    image: ONBOARDING_IMAGES.landmines,
+    icon: 'warning-outline',
+    gradientColors: ['#1a3a2f', '#2d5a4a', '#4a8b6b'],
+    accentColor: '#ffd700',
+    glowColor: '#ffd700',
+  },
+  {
+    id: 'multiplayer',
+    title: 'Battle\nPlayers',
+    subtitle: 'Real-time PvP combat',
+    description: 'Engage in epic battles with players around you. Form alliances or go solo - the choice is yours.',
+    image: ONBOARDING_IMAGES.multiplayer,
+    icon: 'people-outline',
+    gradientColors: ['#2a1a3a', '#4a2d5a', '#7b4a8b'],
+    accentColor: '#b388ff',
+    glowColor: '#b388ff',
+  },
+  {
+    id: 'leagues',
+    title: 'Climb\nLeagues',
+    subtitle: 'Compete for glory',
+    description: 'Earn points through battles and climb the league rankings. Reach the top tier and prove you are the best.',
+    image: ONBOARDING_IMAGES.leagues,
+    icon: 'trophy-outline',
+    gradientColors: ['#3a1a1a', '#5a2d2d', '#8b4a4a'],
+    accentColor: '#ffd700',
+    glowColor: '#ffd700',
+  },
+  {
+    id: 'permissions',
+    title: 'Almost\nReady!',
+    subtitle: "Let's get you set up",
+    description: 'Enable permissions to unlock the full Missile Wars experience.',
+    image: ONBOARDING_IMAGES.permissions,
+    icon: 'settings-outline',
+    gradientColors: ['#1a1f36', '#2d3561', '#773765'],
+    accentColor: '#4CAF50',
+    glowColor: '#4CAF50',
+  },
+];
+
+export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGranted }) => {
+  if (Platform.OS === 'web') return null;
+
+  const [currentSlide, setCurrentSlide] = useState(0);
   const [locationPermission, setLocationPermission] = useState(false);
   const [notificationPermission, setNotificationPermission] = useState(false);
-  const [privacyPolicyAndEulaAgreed, setPrivacyPolicyAndEulaAgreed] = useState(false);
-  // Change this line to initialize tracking permission as false for both iOS and Android
-  const [trackingPermission, setTrackingPermission] = useState(false);
+  const [trackingPermission, setTrackingPermission] = useState(Platform.OS !== 'ios');
+  const [privacyAgreed, setPrivacyAgreed] = useState(false);
 
+  const currentSlideRef = useRef(currentSlide);
+  currentSlideRef.current = currentSlide;
+
+  // Animations
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const floatAnim = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const [glowValue, setGlowValue] = useState(0.4);
+  const particleAnims = useRef(
+    Array.from({ length: 6 }, () => ({
+      x: new Animated.Value(0),
+      y: new Animated.Value(0),
+      opacity: new Animated.Value(0.3),
+      scale: new Animated.Value(0.5),
+    }))
+  ).current;
+
+  // Floating animation for images
+  useEffect(() => {
+    const float = Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatAnim, {
+          toValue: -20,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatAnim, {
+          toValue: 0,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    float.start();
+    return () => float.stop();
+  }, []);
+
+  // Glow pulse animation
+  useEffect(() => {
+    let direction = 1;
+    let value = 0.4;
+    const interval = setInterval(() => {
+      value += direction * 0.006;
+      if (value >= 0.7) {
+        value = 0.7;
+        direction = -1;
+      } else if (value <= 0.4) {
+        value = 0.4;
+        direction = 1;
+      }
+      setGlowValue(value);
+    }, 50);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Button pulse animation
+  useEffect(() => {
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.03,
+          duration: 1200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1200,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    pulse.start();
+    return () => pulse.stop();
+  }, []);
+
+  // Particle animations
+  useEffect(() => {
+    particleAnims.forEach((particle, index) => {
+      const delay = index * 500;
+      const duration = 3000 + Math.random() * 2000;
+
+      const animate = () => {
+        particle.x.setValue(Math.random() * width);
+        particle.y.setValue(height + 50);
+        particle.opacity.setValue(0);
+        particle.scale.setValue(0.3 + Math.random() * 0.5);
+
+        Animated.parallel([
+          Animated.timing(particle.y, {
+            toValue: -100,
+            duration,
+            useNativeDriver: true,
+          }),
+          Animated.sequence([
+            Animated.timing(particle.opacity, {
+              toValue: 0.6,
+              duration: duration * 0.3,
+              useNativeDriver: true,
+            }),
+            Animated.timing(particle.opacity, {
+              toValue: 0,
+              duration: duration * 0.7,
+              useNativeDriver: true,
+            }),
+          ]),
+        ]).start(() => animate());
+      };
+
+      setTimeout(animate, delay);
+    });
+  }, []);
+
+  // Check permissions
   useEffect(() => {
     checkPermissions();
   }, []);
 
   const checkPermissions = async () => {
-    const checks = [
-      { key: 'location', check: Location.getForegroundPermissionsAsync },
-      { key: 'notification', check: Notifications.getPermissionsAsync },
-    ];
+    try {
+      const locationStatus = await Location.getForegroundPermissionsAsync();
+      setLocationPermission(locationStatus.status === 'granted');
 
-    // Always check tracking permission on iOS
-    if (Platform.OS === 'ios') {
-      checks.push({ key: 'tracking', check: getTrackingPermissionsAsync });
-    } else {
-      // For Android, set tracking permission to true
-      setTrackingPermission(true);
-    }
+      const notifStatus = await Notifications.getPermissionsAsync();
+      setNotificationPermission(notifStatus.status === 'granted');
 
-    for (const { key, check } of checks) {
-      try {
-        const { status } = await check();
-        updatePermission(key as 'location' | 'notification' | 'tracking', status === 'granted');
-      } catch (error) {
-        console.error(`Error checking ${key} permission:`, error);
-        updatePermission(key as 'location' | 'notification' | 'tracking', false);
+      if (Platform.OS === 'ios') {
+        const trackingStatus = await getTrackingPermissionsAsync();
+        setTrackingPermission(trackingStatus.status === 'granted');
       }
+    } catch (error) {
+      console.error('Error checking permissions:', error);
     }
   };
 
-  const updatePermission = (key: 'location' | 'notification' | 'tracking', granted: boolean) => {
-    switch (key) {
-      case 'location':
-        setLocationPermission(granted);
-        break;
-      case 'notification':
-        setNotificationPermission(granted);
-        break;
-      case 'tracking':
-        setTrackingPermission(granted);
-        break;
-    }
+  const animateSlideChange = (direction: 'next' | 'prev') => {
+    const current = currentSlideRef.current;
+    const nextSlide = direction === 'next'
+      ? Math.min(current + 1, SLIDES.length - 1)
+      : Math.max(current - 1, 0);
+
+    if (nextSlide === current) return;
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: direction === 'next' ? -60 : 60,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 0.9,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setCurrentSlide(nextSlide);
+      slideAnim.setValue(direction === 'next' ? 60 : -60);
+
+      Animated.parallel([
+        Animated.spring(fadeAnim, {
+          toValue: 1,
+          tension: 50,
+          friction: 8,
+          useNativeDriver: true,
+        }),
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          tension: 50,
+          friction: 8,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          tension: 50,
+          friction: 8,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    });
   };
 
-  const openAppSettings = () => {
-    Linking.openSettings();
-  };
+  const goNext = () => animateSlideChange('next');
+  const goPrev = () => animateSlideChange('prev');
 
-  const handlePermissionRequest = async (
-    permissionType: 'location' | 'notification',
-    requestFunction: () => Promise<{ status: string }>
-  ) => {
-    const { status } = await requestFunction();
-    // Update the corresponding state without showing an alert
-    switch (permissionType) {
-      case 'location':
-        setLocationPermission(status === 'granted');
-        if (status === 'granted') {
-          getlocation();
+  // Swipe gesture handler
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        return Math.abs(gestureState.dx) > 15 && Math.abs(gestureState.dy) < 50;
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        const swipeThreshold = 50;
+        if (gestureState.dx < -swipeThreshold) {
+          goNext();
+        } else if (gestureState.dx > swipeThreshold) {
+          goPrev();
         }
-        break;
-      case 'notification':
-        setNotificationPermission(status === 'granted');
-        break;
-    }
-  };
+      },
+    })
+  ).current;
 
   const requestLocationPermission = async () => {
-    handlePermissionRequest('location', Location.requestForegroundPermissionsAsync);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      setLocationPermission(status === 'granted');
+      if (status === 'granted') {
+        getlocation();
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } else {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      }
+    } catch (error) {
+      console.error('Error requesting location:', error);
+    }
   };
 
-  const requestNotificationPermission = () => {
-    handlePermissionRequest('notification', Notifications.requestPermissionsAsync);
+  const requestNotifications = async () => {
+    try {
+      const { status } = await Notifications.requestPermissionsAsync();
+      setNotificationPermission(status === 'granted');
+      Haptics.notificationAsync(
+        status === 'granted'
+          ? Haptics.NotificationFeedbackType.Success
+          : Haptics.NotificationFeedbackType.Warning
+      );
+    } catch (error) {
+      console.error('Error requesting notifications:', error);
+    }
   };
 
-  const requestTrackingPermission = async () => {
+  const requestTracking = async () => {
     if (Platform.OS === 'ios') {
       try {
         const { status } = await requestTrackingPermissionsAsync();
         setTrackingPermission(status === 'granted');
-        // Add a console.log to check if this function is being called
-        console.log('Tracking permission status:', status);
+        Haptics.notificationAsync(
+          status === 'granted'
+            ? Haptics.NotificationFeedbackType.Success
+            : Haptics.NotificationFeedbackType.Warning
+        );
       } catch (error) {
-        console.error('Error requesting tracking permission:', error);
+        console.error('Error requesting tracking:', error);
       }
     } else {
-      // On Android, we don't need to request this permission
       setTrackingPermission(true);
+    }
+  };
+
+  const handleComplete = async () => {
+    if (!locationPermission) {
+      Alert.alert('Required', 'Location permission is required to play Missile Wars.');
+      return;
+    }
+
+    if (!privacyAgreed) {
+      Alert.alert('Required', 'Please agree to the Privacy Policy and Terms of Service to continue.');
+      return;
+    }
+
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+    try {
+      await AsyncStorage.setItem('alreadyLaunchedV2', 'true');
+      onPermissionGranted();
+    } catch (error) {
+      console.error('Error saving onboarding status:', error);
     }
   };
 
@@ -114,397 +426,641 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGrant
     Linking.openURL('https://www.oakforgestudios.co.uk/missilewars/privacy-policy');
   };
 
-  const openEula = () => {
+  const openEULA = () => {
     Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/');
   };
 
-  const agreeToPrivacyPolicyAndEula = () => {
-    try {
-      setPrivacyPolicyAndEulaAgreed(true);
-    } catch (error) {
-      console.error('Error agreeing to privacy policy and EULA:', error);
-    }
-  };
+  const slide = SLIDES[currentSlide];
+  const isLastSlide = currentSlide === SLIDES.length - 1;
 
-  const handleContinue = () => {
-    if (privacyPolicyAndEulaAgreed) {
-      onPermissionGranted();
-    } else {
-      Alert.alert('Required Agreement', 'You must agree to the Privacy Policy and EULA to use this app.');
-    }
-  };
-
-  const colorScheme = useColorScheme();
-  const isDarkMode = colorScheme === 'dark';
-
-  const backgroundImage = require('../assets/concept/Map.png'); 
-
-  const styles = useMemo(() => StyleSheet.create({
-    ...lightStyles,
-    ...(isDarkMode ? darkStyles : {}),
-  }), [isDarkMode]);
-
-  const titleImage = require('../assets/icons/MissleWarsTitle.png');
+  if (!slide) {
+    return null;
+  }
 
   return (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={{ flex: 1 }}
-    >
-      <ImageBackground
-        source={backgroundImage}
-        style={styles.backgroundImage}
-        imageStyle={styles.backgroundImageStyle}
-      >
-        <View style={styles.whiteOverlay} />
-        <SafeAreaView style={[styles.container, isDarkMode && styles.containerDark]}>
-          <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
-          <Image
-            source={titleImage}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-          <View style={styles.headerContainer}>
-            <Text style={[styles.title, isDarkMode && styles.titleDark]}>Permissions</Text>
-            <Text style={[styles.subtitle, isDarkMode && styles.subtitleDark]}>We need some permissions to get started</Text>
-          </View>
-          
-          <ScrollView 
-            style={styles.scrollView}
-            contentContainerStyle={styles.scrollViewContent}
-            showsVerticalScrollIndicator={false}
-          >
-            <View style={styles.permissionsContainer}>
-              <PermissionItem
-                title="Location Permission"
-                description="Needed to show your position on the map and interact with other players."
-                icon={<MapPin size={24} color={isDarkMode ? "#FFFFFF" : "#000000"} />}
-                isGranted={locationPermission}
-                onPress={requestLocationPermission}
-                styles={styles}
-                isDarkMode={isDarkMode}
-              />
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" />
 
-              <PermissionItem
-                title="Notification Permission"
-                description="Allows us to send you important game updates and alerts."
-                icon={<Bell size={24} color={isDarkMode ? "#FFFFFF" : "#000000"} />}
-                isGranted={notificationPermission}
-                onPress={requestNotificationPermission}
-                styles={styles}
-                isDarkMode={isDarkMode}
-              />
+      <LinearGradient
+        colors={slide.gradientColors}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
 
-              {Platform.OS === 'ios' && (
-                <PermissionItem
-                  title="App Tracking Permission"
-                  description="This allows us to show you more relevant ads and helps keep the app free. You can decline without affecting your experience."
-                  icon={<Target size={24} color={isDarkMode ? "#FFFFFF" : "#000000"} />}
-                  isGranted={trackingPermission}
-                  onPress={requestTrackingPermission}
-                  styles={styles}
-                  isDarkMode={isDarkMode}
-                />
-              )}
+      {/* Floating particles */}
+      {particleAnims.map((particle, index) => (
+        <Animated.View
+          key={index}
+          style={[
+            styles.particle,
+            {
+              transform: [
+                { translateX: particle.x },
+                { translateY: particle.y },
+                { scale: particle.scale },
+              ],
+              opacity: particle.opacity,
+            },
+          ]}
+        />
+      ))}
 
-              <PermissionItem
-                title="Agree to Privacy Policy and EULA (Required)"
-                description="You must agree to our Privacy Policy and End User License Agreement (EULA) to use this app."
-                icon={<FileText size={24} color={isDarkMode ? "#FFFFFF" : "#000000"} />}
-                isGranted={privacyPolicyAndEulaAgreed}
-                onPress={agreeToPrivacyPolicyAndEula}
-                styles={styles}
-                isDarkMode={isDarkMode}
-              >
-                <View style={styles.legalButtonsContainer}>
-                  <TouchableOpacity 
-                    style={[styles.legalButton, isDarkMode && styles.legalButtonDark]} 
-                    onPress={openPrivacyPolicy}
-                  >
-                    <Text style={[styles.legalButtonText, isDarkMode && styles.legalButtonTextDark]}>
-                      Read Privacy Policy
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={[styles.legalButton, isDarkMode && styles.legalButtonDark]} 
-                    onPress={openEula}
-                  >
-                    <Text style={[styles.legalButtonText, isDarkMode && styles.legalButtonTextDark]}>
-                      Read EULA
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </PermissionItem>
-            </View>
-          </ScrollView>
-
-          <View style={styles.bottomContainer}>
-            <TouchableOpacity 
+      <SafeAreaView style={styles.safeArea}>
+        {/* Progress dots */}
+        <View style={styles.progressContainer}>
+          {SLIDES.map((_, index) => (
+            <Animated.View
+              key={index}
               style={[
-                styles.continueButton, 
-                !privacyPolicyAndEulaAgreed && styles.disabledButton, 
-                isDarkMode && styles.continueButtonDark,
-                isDarkMode && !privacyPolicyAndEulaAgreed && styles.disabledButtonDark
-              ]} 
-              onPress={handleContinue}
-              disabled={!privacyPolicyAndEulaAgreed}
+                styles.progressDot,
+                index === currentSlide && styles.progressDotActive,
+                index < currentSlide && styles.progressDotCompleted,
+                index === currentSlide && {
+                  transform: [{ scale: pulseAnim }],
+                },
+              ]}
+            />
+          ))}
+        </View>
+
+        {/* Skip button */}
+        {currentSlide < SLIDES.length - 1 && (
+          <TouchableOpacity
+            style={styles.skipButton}
+            onPress={() => setCurrentSlide(SLIDES.length - 1)}
+          >
+            <BlurView intensity={20} tint="dark" style={styles.skipButtonBlur}>
+              <Text style={styles.skipText}>Skip</Text>
+            </BlurView>
+          </TouchableOpacity>
+        )}
+
+        {/* Main content */}
+        <Animated.View
+          {...panResponder.panHandlers}
+          style={[
+            styles.contentContainer,
+            {
+              opacity: fadeAnim,
+              transform: [
+                { translateX: slideAnim },
+                { scale: scaleAnim },
+              ],
+            },
+          ]}
+        >
+          {isLastSlide ? (
+            // Last slide with permissions
+            <ScrollView
+              style={styles.scrollContainer}
+              contentContainerStyle={styles.scrollContentHelper}
+              showsVerticalScrollIndicator={false}
+              bounces={true}
             >
-              <Text style={[
-                styles.continueButtonText,
-                isDarkMode && !privacyPolicyAndEulaAgreed && styles.disabledButtonTextDark
-              ]}>
-                Agree & Continue
-              </Text>
+              {/* Helper layout: image left, text right */}
+              <View style={styles.helperContainer}>
+                <Animated.View
+                  style={[
+                    styles.helperImageContainer,
+                    { transform: [{ translateY: floatAnim }] },
+                  ]}
+                >
+                  <View style={[
+                    styles.helperImageGlow,
+                    { shadowOpacity: glowValue, shadowColor: slide.glowColor },
+                  ]}>
+                    <Image
+                      source={slide.image}
+                      style={styles.helperImage}
+                      resizeMode="contain"
+                    />
+                  </View>
+                </Animated.View>
+                <View style={styles.helperTextContainer}>
+                  <Text style={styles.helperTitle}>{slide.title}</Text>
+                  <Text style={[styles.helperSubtitle, { color: slide.accentColor }]}>
+                    {slide.subtitle}
+                  </Text>
+                </View>
+              </View>
+
+              <Text style={styles.helperDescription}>{slide.description}</Text>
+
+              {/* Permissions section */}
+              <View style={styles.permissionsContainer}>
+                <PermissionRow
+                  icon="location-outline"
+                  title="Location (Required)"
+                  description="Essential for gameplay and map features"
+                  isGranted={locationPermission}
+                  onPress={requestLocationPermission}
+                  accentColor={slide.accentColor}
+                  required
+                />
+
+                <PermissionRow
+                  icon="notifications-outline"
+                  title="Notifications"
+                  description="Get alerts when you're under attack"
+                  isGranted={notificationPermission}
+                  onPress={requestNotifications}
+                  accentColor={slide.accentColor}
+                />
+
+                {Platform.OS === 'ios' && (
+                  <PermissionRow
+                    icon="analytics-outline"
+                    title="Tracking"
+                    description="Helps keep the game free with relevant ads"
+                    isGranted={trackingPermission}
+                    onPress={requestTracking}
+                    accentColor={slide.accentColor}
+                  />
+                )}
+
+                <TouchableOpacity
+                  style={styles.privacyRow}
+                  onPress={() => {
+                    setPrivacyAgreed(!privacyAgreed);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <View
+                    style={[
+                      styles.checkbox,
+                      privacyAgreed && styles.checkboxChecked,
+                    ]}
+                  >
+                    {privacyAgreed && (
+                      <Ionicons name="checkmark" size={16} color="#fff" />
+                    )}
+                  </View>
+                  <Text style={styles.privacyText}>
+                    I agree to the{' '}
+                    <Text style={styles.privacyLink} onPress={openPrivacyPolicy}>
+                      Privacy Policy
+                    </Text>
+                    {' '}and{' '}
+                    <Text style={styles.privacyLink} onPress={openEULA}>
+                      Terms of Service
+                    </Text>
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Bottom padding for scroll */}
+              <View style={{ height: 40 }} />
+            </ScrollView>
+          ) : (
+            // Regular slides
+            <>
+              {/* Image with glow effect */}
+              <Animated.View
+                style={[
+                  styles.imageContainer,
+                  { transform: [{ translateY: floatAnim }] },
+                ]}
+              >
+                <View style={[
+                  styles.imageGlow,
+                  {
+                    shadowOpacity: glowValue,
+                    shadowColor: slide.glowColor,
+                    shadowRadius: 35,
+                    shadowOffset: { width: 0, height: 0 },
+                  },
+                ]}>
+                  <Image
+                    source={slide.image}
+                    style={styles.onboardingImage}
+                    resizeMode="contain"
+                  />
+                </View>
+              </Animated.View>
+
+              {/* Text content */}
+              <View style={styles.textContainer}>
+                <Text style={styles.title}>{slide.title}</Text>
+                <View style={styles.subtitleContainer}>
+                  <View style={[styles.subtitleLine, { backgroundColor: slide.accentColor }]} />
+                  <Text style={[styles.subtitle, { color: slide.accentColor }]}>
+                    {slide.subtitle}
+                  </Text>
+                  <View style={[styles.subtitleLine, { backgroundColor: slide.accentColor }]} />
+                </View>
+                <Text style={styles.description}>{slide.description}</Text>
+              </View>
+            </>
+          )}
+        </Animated.View>
+
+        {/* Navigation */}
+        <View style={styles.navigationContainer}>
+          {currentSlide > 0 ? (
+            <TouchableOpacity
+              style={styles.navButton}
+              onPress={goPrev}
+              activeOpacity={0.7}
+            >
+              <BlurView intensity={30} tint="dark" style={styles.navButtonBlur}>
+                <Ionicons name="arrow-back" size={24} color="#fff" />
+              </BlurView>
             </TouchableOpacity>
-          </View>
-        </SafeAreaView>
-      </ImageBackground>
-    </KeyboardAvoidingView>
+          ) : (
+            <View style={styles.navButtonPlaceholder} />
+          )}
+
+          <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+            <TouchableOpacity
+              style={[
+                styles.mainButton,
+                isLastSlide && (!privacyAgreed || !locationPermission ? styles.disabledButton : styles.completeButton),
+              ]}
+              onPress={isLastSlide ? handleComplete : goNext}
+              activeOpacity={0.8}
+              disabled={isLastSlide && (!privacyAgreed || !locationPermission)}
+            >
+              <LinearGradient
+                colors={
+                  isLastSlide
+                    ? privacyAgreed && locationPermission
+                      ? ['#4CAF50', '#45a049']
+                      : ['#666', '#555']
+                    : [slide.accentColor, slide.gradientColors[1]]
+                }
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.mainButtonGradient}
+              >
+                <Text
+                  style={[
+                    styles.mainButtonText,
+                    isLastSlide && privacyAgreed && locationPermission && styles.completeButtonText,
+                  ]}
+                >
+                  {isLastSlide ? "Let's Go!" : 'Continue'}
+                </Text>
+                {!isLastSlide && (
+                  <Ionicons
+                    name="arrow-forward"
+                    size={20}
+                    color="#fff"
+                    style={{ marginLeft: 8 }}
+                  />
+                )}
+                {isLastSlide && privacyAgreed && locationPermission && (
+                  <Ionicons
+                    name="rocket"
+                    size={20}
+                    color="#fff"
+                    style={{ marginLeft: 8 }}
+                  />
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
+          </Animated.View>
+
+          <View style={styles.navButtonPlaceholder} />
+        </View>
+      </SafeAreaView>
+    </View>
   );
 };
 
-const PermissionItem = ({ title, description, icon, isGranted, onPress, styles, isDarkMode, children }: { 
-  title: string; 
-  description: string; 
-  icon: React.ReactNode; 
-  isGranted: boolean; 
-  onPress: () => void; 
-  styles: any; 
-  isDarkMode: boolean;
-  children?: React.ReactNode;
-}) => (
-  <View style={[
-    styles.permissionItem, 
-    isDarkMode && styles.permissionItemDark,
-    { backgroundColor: isDarkMode ? '#2C2C2C' : '#FFFFFF' }
-  ]}>
-    <View style={styles.permissionHeader}>
-      {icon}
-      <Text style={[styles.permissionTitle, isDarkMode && styles.permissionTitleDark]}>{title}</Text>
+const PermissionRow: React.FC<{
+  icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  description: string;
+  isGranted: boolean;
+  onPress: () => void;
+  accentColor: string;
+  required?: boolean;
+}> = ({ icon, title, description, isGranted, onPress, accentColor, required }) => (
+  <TouchableOpacity
+    style={styles.permissionRow}
+    onPress={onPress}
+    activeOpacity={0.7}
+  >
+    <View style={[styles.permissionIcon, { backgroundColor: accentColor + '40' }]}>
+      <Ionicons name={icon} size={24} color="#fff" />
     </View>
-    <Text style={[styles.permissionDescription, isDarkMode && styles.permissionDescriptionDark]}>{description}</Text>
-    {children}
-    <TouchableOpacity 
+    <View style={styles.permissionTextContainer}>
+      <Text style={styles.permissionTitle}>{title}</Text>
+      <Text style={styles.permissionDescription}>{description}</Text>
+    </View>
+    <View
       style={[
-        styles.permissionButton, 
-        isGranted ? styles.grantedPermissionButton : (isDarkMode ? styles.darkModePermissionButton : styles.lightModePermissionButton)
-      ]} 
-      onPress={onPress}
+        styles.permissionStatus,
+        isGranted && styles.permissionStatusGranted,
+      ]}
     >
-      <Text style={[
-        styles.permissionButtonText,
-        isGranted ? styles.grantedPermissionButtonText : (isDarkMode ? styles.darkModePermissionButtonText : styles.lightModePermissionButtonText)
-      ]}>
-        {isGranted ? 'Granted' : 'Continue'}
-      </Text>
-    </TouchableOpacity>
-  </View>
+      <Ionicons name={isGranted ? 'checkmark' : 'add'} size={18} color="#fff" />
+    </View>
+  </TouchableOpacity>
 );
 
-const lightStyles = StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  logo: {
-    width: width,
-    height: height * 0.15,
-    marginTop: height * 0.02,
-  },
-  headerContainer: {
-    marginBottom: height * 0.02,
-    paddingHorizontal: width * 0.05,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    textAlign: 'center',
-    color: '#773765',
-  },
-  subtitle: {
-    fontSize: 16,
-    textAlign: 'center',
-    color: '#555',
-  },
-  scrollView: {
+  safeArea: {
     flex: 1,
   },
-  scrollViewContent: {
-    flexGrow: 1,
-    paddingHorizontal: width * 0.05,
+  particle: {
+    position: 'absolute',
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255,255,255,0.8)',
   },
-  permissionsContainer: {
-    paddingBottom: height * 0.02,
-  },
-  permissionItem: {
-    marginBottom: 16,
-    backgroundColor: '#FFFFFF', // Ensure this is set
-    borderRadius: 20,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  permissionHeader: {
+  progressContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
+    justifyContent: 'center',
+    paddingTop: 20,
+    gap: 10,
   },
-  permissionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginLeft: 12,
-    color: '#773765',
+  progressDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: 'rgba(255,255,255,0.3)',
   },
-  permissionDescription: {
-    marginBottom: 12,
-    color: '#555',
-    fontSize: 14,
+  progressDotActive: {
+    width: 32,
+    backgroundColor: '#fff',
   },
-  grantedButton: {
-    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+  progressDotCompleted: {
+    backgroundColor: 'rgba(255,255,255,0.7)',
   },
-  permissionButton: {
-    borderRadius: 10,
-    padding: 10,
-    alignItems: 'center',
-  },
-  lightModePermissionButton: {
-    backgroundColor: '#773765', // Original color for light mode
-  },
-  grantedPermissionButton: {
-    backgroundColor: '#4CAF50', // Green color for granted state (both modes)
-  },
-  bottomContainer: {
-    width: '100%',
-    alignItems: 'center',
-    marginBottom: height * 0.02,
-  },
-  continueButton: {
-    backgroundColor: '#773765',
+  skipButton: {
+    position: 'absolute',
+    top: 60,
+    right: 24,
     borderRadius: 20,
-    width: '90%',
-    height: height * 0.06,
+    overflow: 'hidden',
+  },
+  skipButtonBlur: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  skipText: {
+    color: 'rgba(255,255,255,0.9)',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  contentContainer: {
+    flex: 1,
+    paddingHorizontal: 28,
+    paddingTop: 10,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
+  scrollContainer: {
+    flex: 1,
+    width: '100%',
+  },
+  scrollContentHelper: {
+    paddingBottom: 20,
+  },
+  imageContainer: {
+    height: height * 0.26,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: height * 0.02,
   },
-  continueButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
+  imageGlow: {
+    // Glow applied via inline styles
   },
-  disabledButton: {
-    backgroundColor: '#CCCCCC',
+  onboardingImage: {
+    width: width * 0.65,
+    height: width * 0.5,
+    maxWidth: 280,
+    maxHeight: 220,
   },
-  divider: {
-    width: width,
-    height: height * 0.1,
-  },
-  backgroundImage: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
-  },
-  backgroundImageStyle: {
-    resizeMode: 'cover',
-  },
-  whiteOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255, 255, 255, 0.4)', // White hue layer
-  },
-  permissionButtonText: {
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  lightModePermissionButtonText: {
-    color: '#FFFFFF', // White text for light mode button
-  },
-  grantedPermissionButtonText: {
-    color: '#FFFFFF', // White text for granted button (both modes)
-  },
-  privacyPolicyButton: {
-    backgroundColor: '#E0E0E0',
-    borderRadius: 10,
-    padding: 10,
+  helperContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 16,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 24,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
   },
-  privacyPolicyButtonText: {
-    color: '#773765',
-    fontWeight: 'bold',
+  helperImageContainer: {
+    marginRight: 16,
   },
-  legalButtonsContainer: {
+  helperImageGlow: {
+    shadowRadius: 25,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  helperImage: {
+    width: 100,
+    height: 100,
+  },
+  helperTextContainer: {
+    flex: 1,
+  },
+  helperTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#fff',
+    lineHeight: 28,
+    textShadowColor: 'rgba(0,0,0,0.3)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
+  helperSubtitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginTop: 4,
+    letterSpacing: 0.5,
+  },
+  helperDescription: {
+    fontSize: 15,
+    color: 'rgba(255,255,255,0.85)',
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 22,
+    paddingHorizontal: 8,
+  },
+  textContainer: {
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    width: '100%',
+  },
+  title: {
+    fontSize: 38,
+    fontWeight: '900',
+    color: '#fff',
+    textAlign: 'center',
+    lineHeight: 44,
+    textShadowColor: 'rgba(0,0,0,0.4)',
+    textShadowOffset: { width: 0, height: 3 },
+    textShadowRadius: 8,
+    letterSpacing: -0.5,
+  },
+  subtitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+    marginBottom: 8,
+    gap: 12,
+  },
+  subtitleLine: {
+    height: 2,
+    width: 24,
+    borderRadius: 1,
+    opacity: 0.6,
+  },
+  subtitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    textAlign: 'center',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  description: {
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.9)',
+    textAlign: 'center',
+    marginTop: 8,
+    lineHeight: 24,
+    paddingHorizontal: 12,
+  },
+  permissionsContainer: {
+    width: '100%',
+    marginTop: 24,
+    gap: 12,
+  },
+  permissionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
+  },
+  permissionIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  permissionTextContainer: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  permissionTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  permissionDescription: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.7)',
+    marginTop: 2,
+  },
+  permissionStatus: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  permissionStatusGranted: {
+    backgroundColor: '#4CAF50',
+  },
+  privacyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+  },
+  checkbox: {
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  checkboxChecked: {
+    backgroundColor: '#4CAF50',
+    borderColor: '#4CAF50',
+  },
+  privacyText: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.9)',
+    flex: 1,
+    lineHeight: 20,
+  },
+  privacyLink: {
+    textDecorationLine: 'underline',
+    fontWeight: '700',
+    color: '#fff',
+  },
+  navigationContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  legalButton: {
-    backgroundColor: '#E0E0E0',
-    borderRadius: 10,
-    padding: 10,
     alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingBottom: 24,
+  },
+  navButton: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    overflow: 'hidden',
+  },
+  navButtonBlur: {
     flex: 1,
-    marginHorizontal: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  legalButtonText: {
-    color: '#773765',
-    fontWeight: 'bold',
+  navButtonPlaceholder: {
+    width: 52,
   },
-});
-
-const darkStyles = StyleSheet.create({
-  containerDark: {
-    backgroundColor: '#1E1E1E',
+  mainButton: {
+    borderRadius: 28,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 10,
   },
-  titleDark: {
-    color: '#4CAF50',
+  completeButton: {
+    shadowColor: '#4CAF50',
+    shadowOpacity: 0.5,
   },
-  subtitleDark: {
-    color: '#BBBBBB',
+  disabledButton: {
+    opacity: 0.6,
   },
-  permissionItemDark: {
-    backgroundColor: '#2C2C2C', // Ensure this is set
+  mainButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 18,
+    paddingHorizontal: 44,
   },
-  permissionTitleDark: {
-    color: '#4CAF50',
+  mainButtonText: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#fff',
+    letterSpacing: 0.5,
   },
-  permissionDescriptionDark: {
-    color: '#BBBBBB',
-  },
-  permissionButtonDark: {
-    backgroundColor: '#4CAF50',
-  },
-  continueButtonDark: {
-    backgroundColor: '#4CAF50',
-  },
-  darkModePermissionButton: {
-    backgroundColor: '#9C27B0', // New color for dark mode (e.g., purple)
-  },
-  darkModePermissionButtonText: {
-    color: '#FFFFFF', // White text for dark mode button
-  },
-  privacyPolicyButtonDark: {
-    backgroundColor: '#444444',
-  },
-  privacyPolicyButtonTextDark: {
-    color: '#4CAF50',
-  },
-  disabledButtonDark: {
-    backgroundColor: '#2C2C2C', // Darker shade for disabled state in dark mode
-  },
-  disabledButtonTextDark: {
-    color: '#666666', // Darker text for disabled state in dark mode
-  },
-  legalButtonDark: {
-    backgroundColor: '#444444',
-  },
-  legalButtonTextDark: {
-    color: '#4CAF50',
+  completeButtonText: {
+    color: '#fff',
   },
 });
 

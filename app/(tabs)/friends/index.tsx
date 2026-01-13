@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { View, Text, TouchableOpacity, FlatList, Modal, Alert, RefreshControl, Image, TextInput, StyleSheet, useColorScheme, Platform } from "react-native";
+import { View, Text, TouchableOpacity, FlatList, Modal, Alert, RefreshControl, TextInput, StyleSheet, useColorScheme } from "react-native";
+import { Image } from "expo-image";
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from "expo-router";
 import { useUserName } from "../../../util/fetchusernameglobal";
 import * as SecureStore from 'expo-secure-store';
@@ -13,7 +15,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getlocActive } from "../../../api/locationOptions";
 import MissileFiringAnimation from "../../../components/Animations/MissileFiring";
 import { useOnboarding } from '../../../util/Context/onboardingContext';
-import OnboardingOverlay from '../../../components/OnboardingOverlay';
 
 interface Friend {
   username: string;
@@ -202,6 +203,7 @@ const FriendsPage: React.FC = () => {
         <Image
           source={{ uri: item.profileImageUrl }}
           style={styles.friendImage}
+          cachePolicy="memory-disk"
         />
         <Text style={[styles.friendName, isDarkMode && styles.friendNameDark]}>{item.username}</Text>
       </TouchableOpacity>
@@ -233,6 +235,7 @@ const FriendsPage: React.FC = () => {
         <Image
           source={{ uri: item.profileImageUrl }}
           style={styles.friendImage}
+          cachePolicy="memory-disk"
         />
         <Text style={[styles.friendName, isDarkMode && styles.friendNameDark]}>{item.username}</Text>
       </TouchableOpacity>
@@ -391,10 +394,10 @@ const FriendsPage: React.FC = () => {
         </View>
       </Modal>
       
-      {/* {hasFirebaseUID && (
+      {hasFirebaseUID && (
         <TouchableOpacity
           style={[styles.messageButton, isDarkMode && styles.messageButtonDark]}
-          onPress={() => router.navigate("/msg")}
+          onPress={() => router.navigate("/friends/msg")}
         >
           <Ionicons name="chatbubble-ellipses" size={24} color={isDarkMode ? "#FFF" : "#000"} />
           {localUnreadChatCount > 0 && (
@@ -403,14 +406,11 @@ const FriendsPage: React.FC = () => {
             </View>
           )}
         </TouchableOpacity>
-      )} */}
+      )}
       {showMissileFiringAnimation && (
         <View style={styles.animationOverlay}>
           <MissileFiringAnimation onAnimationComplete={handleMissileAnimationComplete} />
         </View>
-      )}
-      {!isOnboardingComplete && currentStep === 'friends' && (
-        <OnboardingOverlay />
       )}
     </View>
   );

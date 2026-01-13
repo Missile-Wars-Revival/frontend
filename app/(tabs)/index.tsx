@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Platform, Alert, Image, StyleSheet, TouchableOpacity, Text, Linking, Dimensions, useColorScheme, Modal, ImageBackground } from "react-native";
+import { View, Platform, Alert, StyleSheet, TouchableOpacity, Text, Linking, Dimensions, useColorScheme, Modal, ImageBackground } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
 import axiosInstance from "../../api/axios-instance";
@@ -38,7 +38,6 @@ import PlayerViewButton from "../../components/PlayerViewButton";
 import { MissileLibrary } from "../../components/Missile/missile";
 import MissileFiringAnimation from "../../components/Animations/MissileFiring";
 import { useOnboarding } from '../../util/Context/onboardingContext';
-import OnboardingOverlay from '../../components/OnboardingOverlay';
 
 const { width, height } = Dimensions.get('window');
 
@@ -412,9 +411,6 @@ export default function Map() {
         <View style={styles.animationOverlay}>
           <MissileFiringAnimation onAnimationComplete={handleMissileAnimationComplete} />
         </View>
-      )}
-      {!isOnboardingComplete && (currentStep === 'fire' || currentStep === 'store' || currentStep === "playermenu" || currentStep === "friends" ) && (
-        <OnboardingOverlay />
       )}
     </View>
   );

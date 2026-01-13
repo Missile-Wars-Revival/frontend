@@ -16,6 +16,8 @@ missile-wars-432403-163f7b34c51e.json
 
 .env
 
+.claude/
+
 # Native
 *.orig.*
 *.jks

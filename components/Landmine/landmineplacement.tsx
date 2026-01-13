@@ -26,7 +26,6 @@ import { androidColorblindMapStyle } from '../../map-themes/Android-themes/colou
 import { androidCyberpunkMapStyle } from '../../map-themes/Android-themes/cyberpunkstyle';
 import { androidRadarMapStyle } from '../../map-themes/Android-themes/radarMapStyle';
 import { useOnboarding } from '../../util/Context/onboardingContext';
-import OnboardingOverlay from '../OnboardingOverlay';
 import { getLeagueAirspace } from '../player'; // Import the airspace calculation function
 
 const GOOGLE_PLACES_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
@@ -440,9 +439,6 @@ export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ 
           </View>
         </View>
       </View>
-      {!isOnboardingComplete && (currentStep === 'place_landmine' || 'selectlandmine_location') && (
-        <OnboardingOverlay />
-      )}
     </Modal>
   );
 };

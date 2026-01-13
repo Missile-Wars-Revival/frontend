@@ -1,17 +1,62 @@
 {
-    "configVersion": 0,
-    "apple": {
-      "info": {
-        "en-US": {
-          "title": "Missile Wars",
-          "subtitle": "Attack Your Enemy!",
-          "description": "Missile Wars is a app that uses your location to fight other players.",
-          "keywords": ["awesome", "app", "pvp", "location"],
-          "marketingUrl": "https://example.com/en/promo",
-          "supportUrl": "https://example.com/en/support",
-          "privacyPolicyUrl": "https://example.com/en/privacy"
-        }
+  "configVersion": 0,
+  "apple": {
+    "version": "2.0.0.",
+    "copyright": "OakForge Studios Ltd.",
+    "release": {
+      "automaticRelease": false
+    },
+    "info": {
+      "en-GB": {
+        "description": "Missile Wars Revival is a mobile game that combines strategic gameplay with fast-paced action. Players control missiles and can fire at other players or friends. The game features a variety of missile types and landmine systems, each with unique capabilities and options. Players can compete in real-time against others globally or engage in a friendly arena. The goal is to rank up by effectively managing resources, timing missile launches, and strategically deploying defences to ensure survival and dominance in the game world.",
+        "keywords": [
+          "game",
+          "location",
+          "movement"
+        ],
+        "marketingUrl": "https://www.oakforgestudios.co.uk/missilewars",
+        "supportUrl": "https://www.oakforgestudios.co.uk/missilewars/support",
+        "title": "Missile Wars Revival",
+        "privacyPolicyUrl": "https://www.oakforgestudios.co.uk/missilewars/privacy-policy"
       }
+    },
+    "categories": [
+      [
+        "GAMES",
+        "GAMES_STRATEGY",
+        "GAMES_SIMULATION"
+      ],
+      "ENTERTAINMENT"
+    ],
+    "advisory": {
+      "ageRatingOverride": "NONE",
+      "alcoholTobaccoOrDrugUseOrReferences": "NONE",
+      "contests": "NONE",
+      "gambling": false,
+      "gamblingSimulated": "NONE",
+      "horrorOrFearThemes": "NONE",
+      "kidsAgeBand": null,
+      "koreaAgeRatingOverride": "NONE",
+      "lootBox": true,
+      "matureOrSuggestiveThemes": "NONE",
+      "medicalOrTreatmentInformation": "NONE",
+      "profanityOrCrudeHumor": "NONE",
+      "sexualContentGraphicAndNudity": "NONE",
+      "sexualContentOrNudity": "NONE",
+      "unrestrictedWebAccess": false,
+      "violenceCartoonOrFantasy": "INFREQUENT_OR_MILD",
+      "violenceRealistic": "NONE",
+      "violenceRealisticProlongedGraphicOrSadistic": "NONE"
+    },
+    "review": {
+      "firstName": "Tristan ",
+      "lastName": "Hill",
+      "email": "missilewarsdev@gmail.com",
+      "phone": "+447720642810",
+      "demoUsername": "Test2",
+      "demoPassword": "Testing123!",
+      "demoRequired": true,
+      "notes": "App tracking is used in mobile ads. \nPending review from Google Ad mob which is why they might not be visible. \nUser can choose to accept or decline this permission in the first screen. "
     }
   }
-  
+}

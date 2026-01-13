@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text, ScrollView, TouchableOpacity, Image, SafeAreaView, useColorScheme, ImageSourcePropType, Platform } from 'react-native';
+import { View, StyleSheet, Text, ScrollView, TouchableOpacity, SafeAreaView, useColorScheme, ImageSourcePropType, ActivityIndicator } from 'react-native';
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchTopLeagues, fetchCurrentLeague, fetchLeaguePlayers, top100Players } from '../../api/league';
 import { fetchAndCacheImage } from '../../util/imagecache'; 
 import { getLeagueAirspace } from '../../components/player';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const DEFAULT_IMAGE = require('../../assets/mapassets/Female_Avatar_PNG.png');
+const LEAGUE_IMAGE = require('../../assets/onboarding/leagues.png');
 
 const LEAGUE_IMAGES: { [key: string]: ImageSourcePropType } = {
   'Bronze': require('../../assets/leagues/bronze.png'),
@@ -38,9 +39,6 @@ const LeagueRankingPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<'players' | 'leagues'>('leagues');
   const [isLoading, setIsLoading] = useState(true);
   const [top100, setTop100] = useState<Player[]>([]);
-  const [isAdFree, setIsAdFree] = useState(false);
-  const [showAd, setShowAd] = useState(true);
-  const [adLoaded, setAdLoaded] = useState(false);
   
   const scheme = useColorScheme() || 'light';
   const styles = StyleSheet.create({
@@ -91,19 +89,7 @@ const LeagueRankingPage: React.FC = () => {
     };
 
     fetchData();
-    checkAdFreeStatus();
   }, []);
-
-  const checkAdFreeStatus = async () => {
-    try {
-      const storedAdFreeStatus = await AsyncStorage.getItem('isAdFree');
-      if (storedAdFreeStatus !== null) {
-        setIsAdFree(JSON.parse(storedAdFreeStatus));
-      }
-    } catch (error) {
-      console.error('Error fetching ad-free status:', error);
-    }
-  };
 
   const navigateToProfile = (username: string) => {
     router.navigate({
@@ -123,9 +109,13 @@ const LeagueRankingPage: React.FC = () => {
       onPress={() => navigateToProfile(player.username)}
     >
       <Text style={styles.rankNumber}>{index + 1}</Text>
-      <Image 
+      <Image
         source={player.profileImageUrl ? { uri: player.profileImageUrl } : DEFAULT_IMAGE}
         style={styles.profilePic}
+        contentFit="cover"
+        transition={200}
+        cachePolicy="memory-disk"
+        placeholder={DEFAULT_IMAGE}
       />
       <Text style={[styles.username, player.isCurrentUser && styles.currentUserText]}>
         {player.username} {player.isCurrentUser && '(You)'}
@@ -137,7 +127,20 @@ const LeagueRankingPage: React.FC = () => {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container}>
-        <Text style={styles.loadingText}>Loading...</Text>
+        <View style={styles.loadingContainer}>
+          <View style={styles.loadingCard}>
+            <Image
+              source={LEAGUE_IMAGE}
+              style={styles.loadingImage}
+              contentFit="contain"
+              transition={300}
+              cachePolicy="memory-disk"
+            />
+            <ActivityIndicator size="large" color={scheme === 'dark' ? '#4CAF50' : '#4a90e2'} style={styles.loadingSpinner} />
+            <Text style={styles.loadingText}>Loading rankings...</Text>
+            <Text style={styles.loadingSubtext}>Preparing your league data</Text>
+          </View>
+        </View>
       </SafeAreaView>
     );
   }
@@ -165,6 +168,9 @@ const LeagueRankingPage: React.FC = () => {
                   <Image
                     source={getLeagueImage(currentLeague.league)}
                     style={styles.leagueImage}
+                    contentFit="contain"
+                    transition={200}
+                    cachePolicy="memory-disk"
                   />
                   <View style={styles.leagueInfo}>
                     <Text style={styles.currentLeagueName}>{currentLeague.league}</Text>
@@ -325,11 +331,43 @@ const lightStyles = StyleSheet.create({
     color: '#666',
     marginTop: 5,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  loadingCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    padding: 30,
+    alignItems: 'center',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
+    minWidth: 280,
+  },
+  loadingImage: {
+    width: 120,
+    height: 120,
+    marginBottom: 20,
+  },
+  loadingSpinner: {
+    marginBottom: 15,
+  },
   loadingText: {
     fontSize: 18,
     color: '#333',
     textAlign: 'center',
-    marginTop: 20,
+    marginBottom: 8,
+    fontWeight: '600',
+  },
+  loadingSubtext: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
   },
   noDataText: {
     fontSize: 16,
@@ -490,11 +528,43 @@ const darkStyles = StyleSheet.create({
     color: '#B0B0B0',
     marginTop: 5,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  loadingCard: {
+    backgroundColor: '#2C2C2C',
+    borderRadius: 20,
+    padding: 30,
+    alignItems: 'center',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    minWidth: 280,
+  },
+  loadingImage: {
+    width: 120,
+    height: 120,
+    marginBottom: 20,
+  },
+  loadingSpinner: {
+    marginBottom: 15,
+  },
   loadingText: {
     fontSize: 18,
     color: '#FFF',
     textAlign: 'center',
-    marginTop: 20,
+    marginBottom: 8,
+    fontWeight: '600',
+  },
+  loadingSubtext: {
+    fontSize: 14,
+    color: '#B0B0B0',
+    textAlign: 'center',
   },
   noDataText: {
     fontSize: 16,

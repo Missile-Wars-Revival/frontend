@@ -9,7 +9,6 @@ import { InventoryItem } from '../../types/types';
 import { router } from 'expo-router';
 import { getImages } from "../../api/store";
 import { useOnboarding } from "../../util/Context/onboardingContext";
-import OnboardingOverlay from "../OnboardingOverlay";
 
 const tw = create(require('../../tailwind.config.js'));
 
@@ -161,15 +160,9 @@ export const MissileLibrary = ({ playerName, onMissileFired, onClose }: { player
                 <Text style={tw`text-white font-bold`}>Cancel</Text>
               </TouchableOpacity>
             </View>
-            {!isOnboardingComplete && (currentStep ===  'confirmmissile_fireplayermenu' ) && (
-              <OnboardingOverlay />
-            )}
           </View>
         </View>
       </Modal>
-      {!isOnboardingComplete && (currentStep === 'choosemissile_fireplayermenu' ) && (
-        <OnboardingOverlay />
-      )}
     </View>
   );
 };
