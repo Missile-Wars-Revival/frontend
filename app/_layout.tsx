@@ -108,12 +108,7 @@ export default function RootLayout() {
     const checkFirstLaunch = async () => {
       try {
         const value = await AsyncStorage.getItem('alreadyLaunchedV2');
-        if (value === null) {
-          await AsyncStorage.setItem('alreadyLaunchedV2', 'true');
-          setIsFirstLaunch(true);
-        } else {
-          setIsFirstLaunch(false);
-        }
+        setIsFirstLaunch(value === null);
       } catch (error) {
         console.error('Error checking first launch:', error);
       }
