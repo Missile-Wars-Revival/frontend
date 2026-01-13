@@ -295,7 +295,7 @@ const ProfilePage: React.FC = () => {
 
   const navigateToUserProfile = (username: string) => {
     router.navigate({
-      pathname: "/user-profile",
+      pathname: "/profile/user-profile",
       params: { username }
     });
   };

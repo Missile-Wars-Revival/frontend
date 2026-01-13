@@ -223,7 +223,7 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
   const navigateToUserProfile = (username: string) => {
     setModalVisible(false);
     router.navigate({
-      pathname: "/user-profile",
+      pathname: "/profile/user-profile",
       params: { username }
     });
   };
