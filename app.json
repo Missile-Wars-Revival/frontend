@@ -3,7 +3,7 @@
     "name": "Missile Wars",
     "slug": "missilewars",
     "scheme": "missile-wars",
-    "version": "0.2.2",
+    "version": "2.0.0",
     "orientation": "portrait",
     "icon": "./assets/logo.png",
     "userInterfaceStyle": "automatic",
@@ -23,7 +23,6 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "runtimeVersion": "0.2.2",
       "bundleIdentifier": "com.longtimenoc.missilewars",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
@@ -34,8 +33,6 @@
       }
     },
     "android": {
-      "runtimeVersion": "0.2.2",
-      "versionCode": 52,
       "permissions": [
         "android.permission.RECEIVE_BOOT_COMPLETED",
         "android.permission.SCHEDULE_EXACT_ALARM",
