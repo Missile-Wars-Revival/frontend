@@ -93,7 +93,7 @@ const LeagueRankingPage: React.FC = () => {
 
   const navigateToProfile = (username: string) => {
     router.navigate({
-      pathname: "/profie/user-profile",
+      pathname: "/profile/user-profile",
       params: { username }
     });
   };
