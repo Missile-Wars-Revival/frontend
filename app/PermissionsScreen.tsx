@@ -22,7 +22,6 @@ import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BlurView } from 'expo-blur';
-import { requestTrackingPermissionsAsync, getTrackingPermissionsAsync } from 'expo-tracking-transparency';
 import { getlocation } from '../util/locationreq';
 
 const { width, height } = Dimensions.get('window');
@@ -141,7 +140,6 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissi
   const [currentSlide, setCurrentSlide] = useState(0);
   const [locationPermission, setLocationPermission] = useState(false);
   const [notificationPermission, setNotificationPermission] = useState(false);
-  const [trackingPermission, setTrackingPermission] = useState(Platform.OS !== 'ios');
   const [privacyAgreed, setPrivacyAgreed] = useState(false);
 
   const currentSlideRef = useRef(currentSlide);
@@ -271,10 +269,6 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissi
       const notifStatus = await Notifications.getPermissionsAsync();
       setNotificationPermission(notifStatus.status === 'granted');
 
-      if (Platform.OS === 'ios') {
-        const trackingStatus = await getTrackingPermissionsAsync();
-        setTrackingPermission(trackingStatus.status === 'granted');
-      }
     } catch (error) {
       console.error('Error checking permissions:', error);
     }
@@ -380,24 +374,6 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissi
       );
     } catch (error) {
       console.error('Error requesting notifications:', error);
-    }
-  };
-
-  const requestTracking = async () => {
-    if (Platform.OS === 'ios') {
-      try {
-        const { status } = await requestTrackingPermissionsAsync();
-        setTrackingPermission(status === 'granted');
-        Haptics.notificationAsync(
-          status === 'granted'
-            ? Haptics.NotificationFeedbackType.Success
-            : Haptics.NotificationFeedbackType.Warning
-        );
-      } catch (error) {
-        console.error('Error requesting tracking:', error);
-      }
-    } else {
-      setTrackingPermission(true);
     }
   };
 
@@ -567,17 +543,6 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissi
                   onPress={requestNotifications}
                   accentColor={slide.accentColor}
                 />
-
-                {Platform.OS === 'ios' && (
-                  <PermissionRow
-                    icon="analytics-outline"
-                    title="Tracking"
-                    description="Helps keep the game free with relevant ads"
-                    isGranted={trackingPermission}
-                    onPress={requestTracking}
-                    accentColor={slide.accentColor}
-                  />
-                )}
 
                 <TouchableOpacity
                   style={styles.privacyRow}

@@ -43,8 +43,7 @@
         "android.permission.NOTIFICATIONS",
         "android.permission.FOREGROUND_SERVICE",
         "android.permission.FOREGROUND_SERVICE_LOCATION",
-        "android.permission.RECORD_AUDIO",
-        "com.google.android.gms.permission.AD_ID"
+        "android.permission.RECORD_AUDIO"
       ],
       "googleServicesFile": "./google-services.json",
       "config": {
@@ -116,7 +115,6 @@
           }
         ]
       ],
-      "expo-tracking-transparency",
       [
         "expo-location",
         {

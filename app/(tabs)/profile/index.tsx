@@ -80,9 +80,6 @@ const ProfilePage: React.FC = () => {
   const [isCopied, setIsCopied] = useState(false);
   const [notificationToken, setNotificationToken] = useState<string | null>(null);
   const [firebaseToken, setFirebaseToken] = useState<string | null>(null);
-  const [isAdFree, setIsAdFree] = useState(false);
-  const [showAd, setShowAd] = useState(true);
-  const [adLoaded, setAdLoaded] = useState(false);
   const [getImageForProduct, setGetImageForProduct] = useState<(imageName: string) => any>(() => () => require('../../../assets/logo.png'));
 
   useEffect(() => {
@@ -100,27 +97,12 @@ const ProfilePage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    checkAdFreeStatus();
-  }, []);
-
-  useEffect(() => {
     const loadImages = async () => {
       const imageGetter = await getImages();
       setGetImageForProduct(() => imageGetter);
     };
     loadImages();
   }, []);
-
-  const checkAdFreeStatus = async () => {
-    try {
-      const storedAdFreeStatus = await AsyncStorage.getItem('isAdFree');
-      if (storedAdFreeStatus !== null) {
-        setIsAdFree(JSON.parse(storedAdFreeStatus));
-      }
-    } catch (error) {
-      console.error('Error fetching ad-free status:', error);
-    }
-  };
 
   const filteredInventory = useMemo(() => {
     return inventory.filter(item => item.quantity > 0);

@@ -53,9 +53,7 @@ export default function Map() {
   const [showMissileLibrary, setShowMissileLibrary] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState("");
   const [showMissileFiringAnimation, setShowMissileFiringAnimation] = useState(false);
-  const [isAdFree, setIsAdFree] = useState(false);
   const colorScheme = useColorScheme();
-  const { isOnboardingComplete, currentStep } = useOnboarding();
   const isDarkMode = colorScheme === 'dark';
 
   useEffect(() => {
@@ -82,7 +80,6 @@ export default function Map() {
     };
 
     fetchCredentials();
-    checkAdFreeStatus();
   }, []);
 
 
@@ -204,17 +201,6 @@ export default function Map() {
       setLocPermsActive(true);
     } else {
       setLocPermsActive(false);
-    }
-  };
-
-  const checkAdFreeStatus = async () => {
-    try {
-      const storedAdFreeStatus = await AsyncStorage.getItem('isAdFree');
-      if (storedAdFreeStatus !== null) {
-        setIsAdFree(JSON.parse(storedAdFreeStatus));
-      }
-    } catch (error) {
-      console.error('Error fetching ad-free status:', error);
     }
   };
 

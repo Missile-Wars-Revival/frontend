@@ -11,13 +11,11 @@ import { CountdownContext, CountdownProviderProps } from "../util/Context/countd
 import CountdownTimer from '../components/countdown';
 import { useCountdown } from '../util/Context/countdown';
 import { AuthProvider } from "../util/Context/authcontext";
-import { useNotifications } from "../components/Notifications/useNotifications";
 import { useColorScheme } from 'react-native';
 import PermissionsCheck from '../components/PermissionsCheck';
 import Purchases from 'react-native-purchases';
 import * as ExpoSplashScreen from 'expo-splash-screen';
 import { LandmineProvider } from '../util/Context/landminecontext';
-import { WebSocketMessage, WSMsg } from 'middle-earth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import PermissionsScreen from './PermissionsScreen';
 import { OnboardingProvider } from '../util/Context/onboardingContext';
@@ -82,24 +80,12 @@ export default function RootLayout() {
     }
   }, []);
 
-  const checkAdFreeStatus = async () => {
-    try {
-      const customerInfo = await Purchases.getCustomerInfo();
-      const adFreeStatus = customerInfo.entitlements.active['ad_free'] !== undefined;
-      console.log('Ad-free status:', adFreeStatus);
-      await AsyncStorage.setItem('isAdFree', JSON.stringify(adFreeStatus));
-    } catch (error) {
-      console.error('Error checking ad-free status:', error);
-    }
-  };
-
   const isConfigured = useRef(false);
 
   useEffect(() => {
     if (!isConfigured.current) {
       console.log('Calling configurePurchases...');
       configurePurchases();
-      checkAdFreeStatus();
       isConfigured.current = true;
     }
   }, []);

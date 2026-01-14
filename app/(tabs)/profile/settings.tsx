@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableHighlight, Switch, ScrollView, Alert, StyleSheet, Dimensions, TouchableOpacity, Modal, Linking, Platform, Animated, PanResponder } from 'react-native';
+import { View, Text, TouchableHighlight, Switch, ScrollView, Alert, StyleSheet, Dimensions, TouchableOpacity, Modal, Linking, Platform, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Input } from "../../../components/ui/input";
-import { User, LockKeyhole, Mail, ChevronLeft, Shield, MessageCircle, ChevronRight, Heart, Star } from "lucide-react-native";
+import { User, LockKeyhole, Mail, ChevronLeft, Shield, MessageCircle, ChevronRight, Heart } from "lucide-react-native";
 import * as SecureStore from 'expo-secure-store';
 import { changeEmail, changePassword, changeUsername, deleteAcc } from '../../../api/changedetails';
 import { updateFriendsOnlyStatus } from '../../../api/visibility';
@@ -14,7 +14,6 @@ import { clearCredentials } from '../../../util/logincache';
 import { useAuth } from '../../../util/Context/authcontext';
 import AppIconChanger from '../../../components/appiconchanger';
 import { Card } from "../../../components/card";
-import Purchases, { PurchasesPackage, PACKAGE_TYPE } from 'react-native-purchases';
 import * as StoreReview from 'expo-store-review';
 import { getNotificationPreferences, updateNotificationPreferences } from '../../../api/notifications';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -55,13 +54,9 @@ const SettingsPage: React.FC = () => {
     leagues: false,
   });
   const [slideAnimation] = useState(new Animated.Value(width));
-  const [adLoaded, setAdLoaded] = useState(false);
-  const [showAd, setShowAd] = useState(false);
   const [randomLocActive, setRandomLocActive] = useState<boolean>(false);
   const [isConfirmingEmail, setIsConfirmingEmail] = useState(false);
   const [newEmail, setNewEmail] = useState('');
-  const [isAdFree, setIsAdFree] = useState<boolean>(false);
-  const [offerings, setOfferings] = useState<any | null>(null);
   const [imagePreference, setImagePreference] = useState('default');
   const sliderPosition = useRef(new Animated.Value(0)).current;
 
@@ -81,8 +76,6 @@ const SettingsPage: React.FC = () => {
     fetchLocActiveStatus();
     fetchNotificationPreferences();
     fetchRandomLocActiveStatus();
-    checkAdFreeStatus();
-    fetchOfferings();
   }, []);
 
   useEffect(() => {
@@ -177,58 +170,6 @@ const SettingsPage: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    fetchOfferings();
-  }, []);
-
-  const fetchOfferings = async () => {
-    try {
-      const offerings = await Purchases.getOfferings();
-      if (offerings.current !== null) {
-        // console.log('Current offerings:', offerings.current.availablePackages);
-        const adFreePackage = offerings.current.availablePackages.find(
-          (pkg) => pkg.identifier === 'ad_free'
-        );
-        if (adFreePackage) {
-          // console.log('Ad-free package found:', adFreePackage);
-          setOfferings([adFreePackage]); // Set as an array with only the ad_free package
-        } else {
-          // console.log('Ad-free package not found in the current offering');
-          setOfferings([]); // Set an empty array if no ad_free package is found
-        }
-      } else {
-        // console.log('No current offering available');
-        setOfferings([]);
-      }
-    } catch (e) {
-      // console.error('Error fetching offerings:', e);
-      setOfferings([]);
-    }
-  };
-
-  const handlePurchase = async (pkg: PurchasesPackage) => {
-    try {
-      const { customerInfo } = await Purchases.purchasePackage(pkg);
-      if (typeof customerInfo.entitlements.active['ad_free'] !== "undefined") {
-        console.log("User has ad-free access");
-        setIsAdFree(true);
-        await AsyncStorage.setItem('isAdFree', 'true');
-        Alert.alert('Success', 'You now have ad-free access!');
-      }
-    } catch (e) {
-      if (e instanceof Error) {
-        console.error('Error processing purchase:', (e as Error).message);
-        if ('code' in e && (e as any).code === (Purchases as any).ErrorCode.PURCHASE_CANCELLED_ERROR) {
-          console.log('User cancelled the purchase');
-        } else {
-          Alert.alert('Purchase Error', (e as Error).message);
-        }
-      } else {
-        console.error('Unexpected error during purchase:', e);
-        Alert.alert('Error', 'An unexpected error occurred. Please try again.');
-      }
-    }
-  };
 
   const validateEmail = (email: string) => {
     return email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
@@ -368,21 +309,7 @@ const SettingsPage: React.FC = () => {
 
   const toggleLocActive = async () => {
     const newStatus = !locActive;
-
-    if (!newStatus && !isAdFree) {
-      // If turning off location and not ad-free, attempt to show ad
-      if (adLoaded) {
-        setShowAd(true);
-        handleLocationToggle(newStatus);
-      } else {
-        // If ad is not loaded, continue anyway
-        console.log("Ad not loaded, continuing without showing ad");
-        handleLocationToggle(newStatus);
-      }
-    } else {
-      // If turning on location or ad-free, proceed normally
-      handleLocationToggle(newStatus);
-    }
+    handleLocationToggle(newStatus);
   };
 
   const toggleRandomLocActive = async () => {
@@ -390,15 +317,6 @@ const SettingsPage: React.FC = () => {
     setRandomLocActive(newStatus); // Update state immediately for responsive UI
 
     try {
-      if (newStatus && !isAdFree) {
-        // If turning off location and not ad-free, attempt to show ad 
-        if (adLoaded) {
-          setShowAd(true);
-        } else {
-          console.log("Ad not loaded, continuing without showing ad");
-        }
-      }
-
       const result = await randomLocation(newStatus);
       console.log("API response:", result); // Log the API response
 
@@ -409,7 +327,7 @@ const SettingsPage: React.FC = () => {
       );
     } catch (error) {
       console.error("Failed to update random location status:", error);
-      setRandomLocActive(newStatus); // Revert state if API call fails
+      setRandomLocActive(!newStatus); // Revert state if API call fails
 
       let errorMessage = "Failed to update random location status. Please try again.";
       if (error instanceof Error) {
@@ -417,7 +335,6 @@ const SettingsPage: React.FC = () => {
       }
 
       Alert.alert("Error", errorMessage);
-      setRandomLocActive(newStatus); // Revert state if API call fails
     }
   };
 
@@ -929,41 +846,6 @@ const SettingsPage: React.FC = () => {
     </ScrollView>
   );
 
-  const checkAdFreeStatus = async () => {
-    try {
-      const storedAdFreeStatus = await AsyncStorage.getItem('isAdFree');
-      if (storedAdFreeStatus !== null) {
-        setIsAdFree(JSON.parse(storedAdFreeStatus));
-      }
-    } catch (error) {
-      console.error('Error fetching ad-free status:', error);
-    }
-  };
-
-  const renderPurchaseOptions = () => {
-    if (!offerings || offerings.length === 0) return null;
-  
-    return (
-      <Card title="In-App Purchases" icon={<Star size={24} color={isDarkMode ? "white" : "black"} />}>
-        {offerings.map((pkg: PurchasesPackage) => (
-          <TouchableHighlight
-            key={pkg.identifier}
-            onPress={() => handlePurchase(pkg)}
-            style={[styles.button, isDarkMode && styles.buttonDark]}
-            underlayColor={isDarkMode ? '#5c2a4f' : '#662d60'}
-          >
-            <View style={styles.buttonContent}>
-              <Text style={styles.buttonText}>
-                {pkg.packageType === PACKAGE_TYPE.LIFETIME ? 'Buy ' : 'Subscribe to '}
-                {pkg.product.title} - {pkg.product.priceString}
-              </Text>
-            </View>
-          </TouchableHighlight>
-        ))}
-      </Card>
-    );
-  };
-
   return (
     <ScrollView style={[styles.container, isDarkMode && styles.containerDark]}>
       <SafeAreaView style={[styles.safeArea, isDarkMode && styles.safeAreaDark]}>
@@ -1013,8 +895,6 @@ const SettingsPage: React.FC = () => {
             <Card title="App Icon" icon={<Shield size={24} color={isDarkMode ? "white" : "black"} />}>
               <AppIconChanger />
             </Card>
-
-          {renderPurchaseOptions()}
 
           <Card title="Community & Feedback" icon={<MessageCircle size={24} color={isDarkMode ? "white" : "black"} />}>
             <TouchableHighlight

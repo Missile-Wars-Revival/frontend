@@ -31,7 +31,6 @@ const FriendsPage: React.FC = () => {
   const router = useRouter();
   const [showMissileLibrary, setShowMissileLibrary] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState("");
-  const userNAME = useUserName();
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredFriends, setFilteredFriends] = useState<Friend[]>([]);
   const [isSearchActive, setIsSearchActive] = useState(false);
@@ -44,8 +43,7 @@ const FriendsPage: React.FC = () => {
   const isDarkMode = colorScheme === 'dark';
   const [showMissileFiringAnimation, setShowMissileFiringAnimation] = useState(false);
   const [hasFirebaseUID, setHasFirebaseUID] = useState(false);
-  const [isAdFree, setIsAdFree] = useState(false);
-  const { isOnboardingComplete, currentStep, moveToNextStep } = useOnboarding();
+
 
   const handleUnreadCountUpdate = useCallback(({ count, chatCount }: { count: number, chatCount: number }) => {
     setLocalUnreadCount(count);
@@ -83,9 +81,6 @@ const FriendsPage: React.FC = () => {
     useEffect(() => {
       // Fetch immediately on component mount
       fetchLocActiveStatus();
-      if (currentStep === 'friends') {
-        moveToNextStep();
-      }
       // Set up interval to fetch every 30 seconds (adjust as needed)
       const intervalId = setInterval(fetchLocActiveStatus, 30000);
   
@@ -258,21 +253,6 @@ const FriendsPage: React.FC = () => {
 
     checkFirebaseUID();
   }, []);
-
-  useEffect(() => {
-    checkAdFreeStatus();
-  }, []);
-
-  const checkAdFreeStatus = async () => {
-    try {
-      const storedAdFreeStatus = await AsyncStorage.getItem('isAdFree');
-      if (storedAdFreeStatus !== null) {
-        setIsAdFree(JSON.parse(storedAdFreeStatus));
-      }
-    } catch (error) {
-      console.error('Error fetching ad-free status:', error);
-    }
-  };
 
   return (
     <View style={[styles.container, isDarkMode && styles.containerDark]}>
