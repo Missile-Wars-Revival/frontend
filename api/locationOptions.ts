@@ -27,13 +27,13 @@ export const updatelocActive = async (locActive: boolean) => {
 export async function getlocActive() {
     try {
         const token = await SecureStore.getItemAsync("token");
-        if (!token) throw new Error("No authentication token found.");
-        
+        if (!token) return null;
+
         const response = await axiosInstance.get(`/api/getlocActive?token=${encodeURIComponent(token)}`);
         const locActive = response.data.locActive;
-        
+
         console.log("Received locActive status:", locActive);
-        
+
         await AsyncStorage.setItem('locActive', JSON.stringify(locActive));
         return locActive;
     } catch (error) {
@@ -41,7 +41,7 @@ export async function getlocActive() {
         if (isAxiosError(error)) {
             console.error("Response data:", error.response?.data);
         }
-        throw error; // Propagate the error to be handled by the caller
+        throw error;
     }
 }
 
@@ -71,13 +71,13 @@ export const randomLocation = async (randomLocation: boolean) => {
 export async function getRandomLocation() {
     try {
         const token = await SecureStore.getItemAsync("token");
-        if (!token) throw new Error("No authentication token found.");
-        
+        if (!token) return null;
+
         const response = await axiosInstance.get(`/api/getrandomLocation?token=${encodeURIComponent(token)}`);
         const randomLocation = response.data.randomLocation;
-        
+
         console.log("Received randomLocation status:", randomLocation);
-        
+
         await AsyncStorage.setItem('randomLocation', JSON.stringify(randomLocation));
         return randomLocation;
     } catch (error) {
@@ -85,6 +85,6 @@ export async function getRandomLocation() {
         if (isAxiosError(error)) {
             console.error("Response data:", error.response?.data);
         }
-        throw error; // Propagate the error to be handled by the caller
+        throw error;
     }
 }

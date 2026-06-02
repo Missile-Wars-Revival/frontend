@@ -1,11 +1,18 @@
 import React from 'react';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
+import { Redirect } from 'expo-router';
 import { useColorScheme } from 'react-native';
 import { useNotifications } from '../../components/Notifications/useNotifications';
+import { useAuth } from '../../util/Context/authcontext';
 
 export default function TabLayout() {
+  const { isSignedIn } = useAuth();
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
+
+  if (!isSignedIn) {
+    return <Redirect href="/login" />;
+  }
   const { unreadCount, unreadChatCount } = useNotifications();
   const totalUnread = unreadCount + unreadChatCount;
 

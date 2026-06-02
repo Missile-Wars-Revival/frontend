@@ -1,4 +1,13 @@
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, User, initializeAuth, getReactNativePersistence } from "firebase/auth";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signInWithCredential,
+  OAuthProvider,
+  GoogleAuthProvider,
+  User,
+  initializeAuth,
+  getReactNativePersistence,
+} from "firebase/auth";
 import { initializeApp, getApps, FirebaseApp } from "firebase/app";
 import { firebaseConfig } from "./config";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -15,7 +24,7 @@ if (getApps().length === 0) {
 }
 
 // Initialize Firebase Auth with AsyncStorage persistence
-const auth = initializeAuth(app, {
+export const auth = initializeAuth(app, {
   persistence: getReactNativePersistence(AsyncStorage)
 });
 
@@ -107,4 +116,33 @@ export async function registerWithFirebase(email: string, password: string): Pro
     }
     return null;
   }
+}
+
+export type OAuthUser = {
+  uid: string;
+  email: string;
+  displayName: string;
+};
+
+export async function signInWithApple(identityToken: string, displayName: string): Promise<OAuthUser> {
+  const provider = new OAuthProvider('apple.com');
+  const credential = provider.credential({ idToken: identityToken });
+  const { user } = await signInWithCredential(auth, credential);
+  await SecureStore.setItemAsync('firebaseUID', user.uid);
+  return {
+    uid: user.uid,
+    email: user.email ?? '',
+    displayName: user.displayName || displayName,
+  };
+}
+
+export async function signInWithGoogle(idToken: string): Promise<OAuthUser> {
+  const credential = GoogleAuthProvider.credential(idToken);
+  const { user } = await signInWithCredential(auth, credential);
+  await SecureStore.setItemAsync('firebaseUID', user.uid);
+  return {
+    uid: user.uid,
+    email: user.email ?? '',
+    displayName: user.displayName ?? '',
+  };
 }

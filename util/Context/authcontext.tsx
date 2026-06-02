@@ -8,10 +8,18 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isSignedIn, setIsSignedIn] = useState(false);
+interface AuthProviderProps {
+  children: React.ReactNode;
+  initialIsSignedIn?: boolean;
+}
+
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children, initialIsSignedIn }) => {
+  const [isSignedIn, setIsSignedIn] = useState(initialIsSignedIn ?? false);
 
   useEffect(() => {
+    // Only fall back to AsyncStorage if we didn't get a value from the splash screen
+    if (initialIsSignedIn !== undefined) return;
+
     const checkSignInStatus = async () => {
       const status = await AsyncStorage.getItem('signedIn');
       setIsSignedIn(status === 'true');

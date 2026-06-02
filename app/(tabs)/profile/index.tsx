@@ -299,7 +299,7 @@ const ProfilePage: React.FC = () => {
         await SecureStore.setItem("email", response.userProfile.email);
 
         setRankPoints(response.userProfile.rankpoints);
-      } else {
+      } else if (response.message !== "Not signed in") {
         console.error('Failed to fetch user statistics: Invalid response structure');
       }
     } catch (error) {
@@ -569,7 +569,7 @@ const ProfilePage: React.FC = () => {
         <View style={[styles.profileContainer, isDarkMode && styles.profileContainerDark]}>
           <TouchableOpacity onPress={openImagePicker}>
             <Image
-              source={{ uri: userImageUrl ||DEFAULT_IMAGE }}
+              source={userImageUrl ? { uri: userImageUrl } : DEFAULT_IMAGE}
               style={styles.profileImage}
               cachePolicy="memory-disk"
             />

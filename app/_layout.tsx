@@ -10,7 +10,7 @@ import { WebSocketContext, WebSocketProviderProps } from "../util/Context/websoc
 import { CountdownContext, CountdownProviderProps , useCountdown } from "../util/Context/countdown";
 import CountdownTimer from '../components/countdown';
 
-import { AuthProvider } from "../util/Context/authcontext";
+import { AuthProvider, useAuth } from "../util/Context/authcontext";
 
 import PermissionsCheck from '../components/PermissionsCheck';
 import Purchases from 'react-native-purchases';
@@ -48,6 +48,7 @@ const CountdownProvider: React.FC<CountdownProviderProps> = ({ children }) => {
 export default function RootLayout() {
   const queryClient = new QueryClient();
   const [isSplashVisible, setIsSplashVisible] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | undefined>(undefined);
   const [isFirstLaunch, setIsFirstLaunch] = useState(true);
   const [appState, setAppState] = useState(AppState.currentState);
   const [lastActiveTime, setLastActiveTime] = useState(Date.now());
@@ -91,12 +92,6 @@ export default function RootLayout() {
     }
   }, []);
 
-  // Initialize Google Mobile Ads (with consent, frequency capping, reconnect logic, etc.)
-  useEffect(() => {
-    AdService.initialize().catch((error) => {
-      console.error('Failed to initialize AdService:', error);
-    });
-  }, []);
 
   useEffect(() => {
     const checkFirstLaunch = async () => {
@@ -115,7 +110,8 @@ export default function RootLayout() {
     setIsFirstLaunch(false);
   }, []);
 
-  const handleSplashFinish = useCallback(() => {
+  const handleSplashFinish = useCallback((authenticated: boolean) => {
+    setIsAuthenticated(authenticated);
     setIsSplashVisible(false);
   }, []);
 
@@ -174,7 +170,7 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <CountdownProvider>
-        <AuthProvider>
+        <AuthProvider initialIsSignedIn={isAuthenticated}>
           <WebSocketProvider>
             <LandmineProvider>
               <OnboardingProvider>
@@ -194,7 +190,15 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const { countdownIsActive, stopCountdown } = useCountdown();
+  const { isSignedIn } = useAuth();
   const colorScheme = useColorScheme();
+
+  useEffect(() => {
+    if (!isSignedIn) return;
+    AdService.initialize().catch((error) => {
+      console.error('Failed to initialize AdService:', error);
+    });
+  }, [isSignedIn]);
 
   const backgroundColor = colorScheme === 'dark' ? '#1E1E1E' : '#FFFFFF';
 

@@ -14,7 +14,7 @@ export interface League {
 export async function fetchTopLeagues() {
     try {
         const token = await SecureStore.getItemAsync("token");
-        if (!token) throw new Error("No authentication token found.");
+        if (!token) return { leagues: [] };
         const response = await axiosInstance.get('/api/topleagues', {
             params: { token },
         });
@@ -33,7 +33,7 @@ export async function fetchTopLeagues() {
 export async function fetchCurrentLeague() {
     try {
         const token = await SecureStore.getItemAsync("token");
-        if (!token) throw new Error("No authentication token found.");
+        if (!token) return null;
         const response = await axiosInstance.get('/api/leagues/current', {
             params: { token },
         });
@@ -52,7 +52,7 @@ export async function fetchCurrentLeague() {
 export async function fetchLeaguePlayers() {
     try {
         const token = await SecureStore.getItemAsync("token");
-        if (!token) throw new Error("No authentication token found.");
+        if (!token) return { players: [] };
         const response = await axiosInstance.get('/api/leagues/players', {
             params: { token },
         });
@@ -71,7 +71,7 @@ export async function fetchLeaguePlayers() {
 export async function top100Players() {
     try {
         const token = await SecureStore.getItemAsync("token");
-        if (!token) throw new Error("No authentication token found.");
+        if (!token) return { players: [] };
         const response = await axiosInstance.get('/api/top100players', {
             params: { token },
         });

@@ -160,7 +160,7 @@ export const getImages = async () => {
 export async function getWeaponTypes(): Promise<WeaponTypesResponse> {
   try {
     const token = await SecureStore.getItemAsync("token");
-    if (!token) throw new Error("No authentication token found.");
+    if (!token) return { landmineTypes: [], missileTypes: [], otherTypes: [] };
     const response = await axiosInstance.get('/api/getWeaponTypes', {
       params: { token },
     });

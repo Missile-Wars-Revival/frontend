@@ -20,8 +20,8 @@ export const getNotifications = async (): Promise<Notification[]> => {
 	try {
 		const token = await SecureStore.getItemAsync("token");
 		if (!token) {
-			console.log('Token not found');
-			throw new Error('Authentication token not found');
+			// Not signed in: skip the request quietly.
+			return [];
 		}
 
 		const response = await axiosInstance.get<NotificationResponse>("/api/notifications", {

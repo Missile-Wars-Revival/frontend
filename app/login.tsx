@@ -1,576 +1,653 @@
-import { SafeAreaView, Text, View, Image, TouchableHighlight, ScrollView, Dimensions, Modal, TouchableOpacity, Alert, StyleSheet, useColorScheme } from "react-native";
-import { router } from "expo-router";
-import { Input } from "../components/ui/input";
-import React, { useEffect, useMemo, useState } from "react";
-import useLogin from "../hooks/api/useLogin";
-import { User, LockKeyhole, CheckCircle2 } from "lucide-react-native";
-
-import { saveCredentials } from "../util/logincache";
-import { usePushNotifications } from "../components/Notifications/usePushNotifications";
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import {
+  Image, StyleSheet, Dimensions, Alert, Text, Pressable, View, useColorScheme, Platform,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+import {
+  Host, Column, FieldGroup, RNHostView, BottomSheet,
+  TextInput,
+  Text as UIText,
+  type TextInputRef,
+} from '@expo/ui';
+import { Picker, Text as SwiftUIText } from '@expo/ui/swift-ui';
+import { pickerStyle, tag } from '@expo/ui/swift-ui/modifiers';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
+import { useAuth } from '../util/Context/authcontext';
+import useLogin from '../hooks/api/useLogin';
+import useRegister from '../hooks/api/useRegister';
+import { saveCredentials } from '../util/logincache';
+import { usePushNotifications } from '../components/Notifications/usePushNotifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useAuth } from "../util/Context/authcontext";
-import { requestPasswordReset, requestUsernameReminder, resetPassword } from "../api/changedetails";
-import LoginSwirl from "../components/Animations/loginSwirl";
-import { signInWithFirebase } from "../util/firebase/firebaseAuth";
-import { getlocation } from "../util/locationreq";
+import { signInWithFirebase, registerWithFirebase, signInWithApple, signInWithGoogle } from '../util/firebase/firebaseAuth';
+import { oauthLogin } from '../api/oauthLogin';
+import { requestPasswordReset, requestUsernameReminder, resetPassword } from '../api/changedetails';
+import LoginSwirl from '../components/Animations/loginSwirl';
+import { getlocation } from '../util/locationreq';
+
+const IOS_CLIENT_ID = '199249539413-0og9o1srvoq381tajt844jraabb9pmf0.apps.googleusercontent.com';
+const WEB_CLIENT_ID  = '199249539413-4ggab6ob709kii3sumthvi5olqf1g7p4.apps.googleusercontent.com';
+
+type Mode = 'login' | 'register';
+type ForgotStep = 'email' | 'reset';
 
 const { width, height } = Dimensions.get('window');
+const INNER_WIDTH = width - 32;
 
-export default function Login() {
+export default function Auth() {
   const { expoPushToken } = usePushNotifications();
-  const notificationToken = expoPushToken?.data ?? "No token";
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [isError, setIsError] = useState(false);
-  const [showForgotModal, setShowForgotModal] = useState(false);
-  const [forgotEmail, setForgotEmail] = useState("");
-  const [forgotError, setForgotError] = useState("");
-
+  const notificationToken = expoPushToken?.data ?? 'No token';
+  const { setIsSignedIn } = useAuth();
   const colorScheme = useColorScheme();
-  const isDarkMode = colorScheme === 'dark';
+  const isDark = colorScheme === 'dark';
+  const accent = isDark ? '#4CAF50' : '#773765';
 
-  const styles = useMemo(() => StyleSheet.create({
-    ...lightStyles,
-    ...(isDarkMode ? darkStyles : {}),
-  }), [isDarkMode]);
+  const [mode, setMode] = useState<Mode>('login');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState('');
+  const [showSwirl, setShowSwirl] = useState(false);
+
+  const [showForgot, setShowForgot] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotCode, setForgotCode] = useState('');
+  const [forgotNewPassword, setForgotNewPassword] = useState('');
+  const [forgotStep, setForgotStep] = useState<ForgotStep>('email');
+  const [forgotError, setForgotError] = useState('');
+
+  const usernameRef = useRef<TextInputRef>(null);
+  const passwordRef = useRef<TextInputRef>(null);
+  const emailRef = useRef<TextInputRef>(null);
+  const confirmRef = useRef<TextInputRef>(null);
+
+  useEffect(() => { getlocation(); }, []);
 
   useEffect(() => {
-    getlocation();
+    GoogleSignin.configure({
+      webClientId: WEB_CLIENT_ID,
+      iosClientId: IOS_CLIENT_ID,
+      offlineAccess: true,
+    });
   }, []);
-  
-  return (
-    <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-      <SafeAreaView style={[styles.container, isDarkMode && styles.containerDark]}>
-        <Image
-          source={require("../assets/icons/MissleWarsTitle.png")}
-          style={styles.logo}
-          resizeMode="contain"
-        />
-        <View style={styles.inputContainer}>
-          <View style={styles.inputWrapper}>
-            <Input
-              placeholder="Username"
-              autoCorrect={false}
-              onChangeText={(text) => setUsername(text)}
-              style={[styles.input, isDarkMode && styles.inputDark]}
-              icon={
-                <View style={styles.iconContainer}>
-                  <User size={24} color={isDarkMode ? "#FFFFFF" : "#000000"} />
-                </View>
-              }
-            />
-          </View>
-          <View style={styles.inputWrapper}>
-            <Input
-              placeholder="Password"
-              onChangeText={(text) => setPassword(text)}
-              secureTextEntry={true}
-              autoCorrect={false}
-              autoCapitalize="none"
-              keyboardType="default"
-              textContentType="newPassword"
-              autoComplete="password"
-              style={[styles.input, isDarkMode && styles.inputDark]}
-              icon={
-                <View style={styles.iconContainer}>
-                  <LockKeyhole size={24} color={isDarkMode ? "white" : "black"} />
-                </View>
-              }
-            />
-            {isError && (
-              <Text style={styles.errorText}>
-                Invalid username or password
-              </Text>
-            )}
-          </View>
-        </View>
-        <LoginButton
-          username={username}
-          password={password}
-          notificationToken={notificationToken}
-          setIsError={setIsError}
-          isDarkMode={isDarkMode}
-          styles={styles}
-        />
-        <TouchableOpacity
-          onPress={() => setShowForgotModal(true)}
-          style={styles.forgotButton}
-        >
-          <Text style={[styles.forgotText, isDarkMode && styles.forgotTextDark]}>
-            Forgot Username or Password?
-          </Text>
-        </TouchableOpacity>
 
-        <ForgotCredentialsModal
-          visible={showForgotModal}
-          onClose={() => setShowForgotModal(false)}
-          email={forgotEmail}
-          setEmail={setForgotEmail}
-          error={forgotError}
-          setError={(error: string | null) => setForgotError(error || '')}
-          isDarkMode={isDarkMode}
-          styles={styles}
-        />
-        <View style={styles.bottomContainer}>
-          {!isDarkMode && (
-            <Image
-              source={require("../assets/icons/cometDivider.png")}
-              resizeMode="stretch"
-              style={styles.divider}
-            />
-          )}
-          <SignUpButton isDarkMode={isDarkMode} styles={styles} />
-        </View>
-      </SafeAreaView>
-    </ScrollView>
-  );
-}
+  const finishOAuth = useCallback(async (uid: string, email: string, displayName: string) => {
+    try {
+      const data = await oauthLogin(uid, email, displayName, notificationToken);
+      await saveCredentials(data.username, data.token, notificationToken);
+      await AsyncStorage.setItem('signedIn', 'true');
+      setIsSignedIn(true);
+      setShowSwirl(true);
+    } catch {
+      setError('Sign-in succeeded but account setup failed. Please try again.');
+    }
+  }, [notificationToken, setIsSignedIn]);
 
-function LoginButton({
-  username,
-  password,
-  notificationToken,
-  setIsError,
-  isDarkMode,
-  styles,
-}: {
-  username: string;
-  password: string;
-  notificationToken: string;
-  setIsError: (error: boolean) => void;
-  isDarkMode: boolean;
-  styles: any;
-}) {
-  const { setIsSignedIn } = useAuth();
-  const [showSwirl, setShowSwirl] = useState(false);
-  const mutation = useLogin(
+  const handleApple = useCallback(async () => {
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+      if (!credential.identityToken) throw new Error('No identity token');
+      const derivedName = [credential.fullName?.givenName, credential.fullName?.familyName]
+        .filter(Boolean).join(' ').trim();
+      const user = await signInWithApple(credential.identityToken, derivedName);
+      await finishOAuth(user.uid, user.email, user.displayName || derivedName);
+    } catch (err: any) {
+      if (err?.code === 'ERR_REQUEST_CANCELED' || err?.code === 'ERR_CANCELED') return;
+      setError('Apple sign-in failed. Please try again.');
+    }
+  }, [finishOAuth]);
+
+  const handleGoogle = useCallback(async () => {
+    try {
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      const info = await GoogleSignin.signIn();
+      const idToken = info.data?.idToken;
+      if (!idToken) throw new Error('No ID token from Google');
+      const user = await signInWithGoogle(idToken);
+      await finishOAuth(user.uid, user.email, user.displayName);
+    } catch (err: any) {
+      const code = err?.code;
+      if (code === statusCodes.SIGN_IN_CANCELLED || code === 'SIGN_IN_CANCELLED') return;
+      setError('Google sign-in failed. Please try again.');
+    }
+  }, [finishOAuth]);
+
+  const switchMode = useCallback((newMode: Mode) => {
+    if (newMode === mode) return;
+    usernameRef.current?.clear();
+    passwordRef.current?.clear();
+    emailRef.current?.clear();
+    confirmRef.current?.clear();
+    setMode(newMode);
+    setUsername('');
+    setPassword('');
+    setEmail('');
+    setConfirmPassword('');
+    setError('');
+  }, [mode]);
+
+  const loginMutation = useLogin(
     async (token) => {
       await saveCredentials(username, token, notificationToken);
-      console.log("Logged in with token", token);
-
-      try {
-        console.log("Attempting Firebase sign-in");
-        await signInWithFirebase(password, token);
-        console.log("Firebase sign-in successful");
-      } catch (firebaseError) {
-        console.error("Firebase sign-in failed:", firebaseError);
-        // Alert.alert(
-        //   "Firebase Sign-In Failed",
-        //   "Continuing with login process. Some features may be limited."
-        // );
-      }
+      try { await signInWithFirebase(password, token); } catch {}
       await AsyncStorage.setItem('signedIn', 'true');
       setIsSignedIn(true);
       setShowSwirl(true);
     },
-    () => {
-      setIsError(true);
-    }
+    () => setError('Invalid username or password'),
   );
 
-  const handleLogin = () => {
-    mutation.mutate({ username, password, notificationToken });
-  };
-
-  const handleAnimationComplete = () => {
-    router.navigate('/');
-  };
-
-  return (
-    <>
-      <TouchableHighlight
-        onPress={handleLogin}
-        style={[styles.loginButton, isDarkMode && styles.loginButtonDark]}
-      >
-        <View>
-          <Text style={styles.loginButtonText}>Let&apos;s Fight</Text>
-        </View>
-      </TouchableHighlight>
-      {showSwirl && <LoginSwirl onAnimationComplete={handleAnimationComplete} />}
-    </>
+  const registerMutation = useRegister(
+    async (token) => {
+      await saveCredentials(username, token, notificationToken);
+      await AsyncStorage.setItem('signedIn', 'true');
+      try { await registerWithFirebase(email, password); } catch {}
+      setIsSignedIn(true);
+      router.navigate('/');
+    },
+    () => setError('Registration failed. Please try again.'),
   );
-}
 
-function SignUpButton({ isDarkMode, styles }: { isDarkMode: boolean; styles: any }) {
-  return (
-    <TouchableHighlight
-      onPress={() => {
-        router.navigate("/register");
-      }}
-      style={[styles.signUpButton, isDarkMode && styles.signUpButtonDark]}
-    >
-      <View>
-        <Text style={[styles.signUpButtonText, isDarkMode && styles.signUpButtonTextDark]}>Sign up with Email</Text>
-      </View>
-    </TouchableHighlight>
-  );
-}
-
-function ForgotCredentialsModal({
-  visible,
-  onClose,
-  email,
-  setEmail,
-  error,
-  setError,
-  isDarkMode,
-  styles,
-}: {
-  visible: boolean;
-  onClose: () => void;
-  email: string;
-  setEmail: (email: string) => void;
-  error: string;
-  setError: (error: string) => void;
-  isDarkMode: boolean;
-  styles: any;
-}) {
-  const [resetCode, setResetCode] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [showResetForm, setShowResetForm] = useState(false);
-  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
-
-  const isValidEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
-  const handleRequestReset = async () => {
-    try {
-      await requestPasswordReset(email);
-      setShowResetForm(true);
-      setError("");
-    } catch {
-      setError("Failed to request password reset. Please try again.");
+  const validateRegister = useCallback((): boolean => {
+    if (username.length < 3) { setError('Username must be at least 3 characters'); return false; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError('Please enter a valid email'); return false; }
+    if (!/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/.test(password)) {
+      setError('Password needs 8+ chars with uppercase, lowercase, number and symbol');
+      return false;
     }
-  };
+    if (password !== confirmPassword) { setError('Passwords do not match'); return false; }
+    return true;
+  }, [username, email, password, confirmPassword]);
 
-  const handleResetPassword = async () => {
-    try {
-      const result = await resetPassword(email, resetCode, newPassword);
-      if (result.success) {
-        setShowSuccessAnimation(true);
-        setTimeout(() => {
-          setShowSuccessAnimation(false);
-          onClose();
-        }, 2000);
-      } else {
-        setError(result.message);
-      }
-    } catch {
-      setError("Failed to reset password. Please try again.");
+  const handleSubmit = useCallback(() => {
+    setError('');
+    if (mode === 'login') {
+      loginMutation.mutate({ username, password, notificationToken });
+    } else if (validateRegister()) {
+      registerMutation.mutate({ username, email, password, notificationToken });
     }
-  };
+  }, [mode, username, password, email, notificationToken, loginMutation, registerMutation, validateRegister]);
 
-  const handleSubmit = async (type: 'username' | 'password') => {
+  const handleForgotRequest = async (type: 'username' | 'password') => {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(forgotEmail)) {
+      setForgotError('Please enter a valid email');
+      return;
+    }
     try {
       if (type === 'username') {
-        const response = await requestUsernameReminder(email);
-        if (response.message) {
-          Alert.alert(`The username associated with this email is: ${response.message}`);
-        } else {
-          alert('No username found for this email address.');
-        }
+        const response = await requestUsernameReminder(forgotEmail);
+        Alert.alert('Username found', response.message || 'No username found for this email.');
       } else {
-        handleRequestReset();
+        await requestPasswordReset(forgotEmail);
+        setForgotStep('reset');
+        setForgotError('');
       }
     } catch {
-      setError(`Failed to request ${type} recovery. Please try again.`);
+      setForgotError(`Failed to recover ${type}. Please try again.`);
     }
   };
 
+  const handleForgotReset = async () => {
+    try {
+      const result = await resetPassword(forgotEmail, forgotCode, forgotNewPassword);
+      if (result.success) {
+        setShowForgot(false);
+        setForgotStep('email');
+        setForgotEmail('');
+        setForgotCode('');
+        setForgotNewPassword('');
+      } else {
+        setForgotError(result.message);
+      }
+    } catch {
+      setForgotError('Failed to reset password. Please try again.');
+    }
+  };
+
+  const closeForgot = useCallback(() => {
+    setShowForgot(false);
+    setForgotStep('email');
+    setForgotError('');
+  }, []);
+
   return (
-    <Modal visible={visible} animationType="fade" transparent>
-      <View style={styles.modalOverlay}>
-        <View style={[styles.modalContent, isDarkMode && styles.modalContentDark]}>
-          <Text style={[styles.modalTitle, isDarkMode && styles.modalTitleDark]}>Forgot Credentials</Text>
-          {!showResetForm ? (
-            <>
-              <View style={styles.inputWrapper}>
-                <Input
-                  placeholder="Enter your email"
-                  value={email}
+    <SafeAreaView style={[styles.container, isDark && styles.containerDark]}>
+      <Image
+        source={require('../assets/icons/MissleWarsTitle.png')}
+        style={styles.logo}
+        resizeMode="contain"
+      />
+
+      {/*
+        Host fills remaining space. Column stacks items from the top — no Spacer,
+        so the button sits naturally below the form with no gap to the bottom.
+        RNHostView lets us embed custom-styled RN Pressables inside the SwiftUI tree.
+      */}
+      <Host style={styles.formHost}>
+        <Column spacing={16} alignment="center">
+          <Picker
+            selection={mode}
+            onSelectionChange={(v) => switchMode(v as Mode)}
+            modifiers={[pickerStyle('segmented')]}
+          >
+            <SwiftUIText modifiers={[tag('login')]}>Login</SwiftUIText>
+            <SwiftUIText modifiers={[tag('register')]}>Register</SwiftUIText>
+          </Picker>
+
+          <FieldGroup>
+            <FieldGroup.Section>
+              <TextInput
+                ref={usernameRef}
+                placeholder="Username"
+                onChangeText={setUsername}
+                autoCorrect={false}
+                autoCapitalize="none"
+              />
+              {mode === 'register' && (
+                <TextInput
+                  ref={emailRef}
+                  placeholder="Email"
                   onChangeText={setEmail}
                   keyboardType="email-address"
                   autoCapitalize="none"
-                  style={[styles.modalInput, isDarkMode && styles.modalInputDark]}
-                  icon={<User size={24} color={isDarkMode ? "#FFFFFF" : "#000000"} />}
+                  autoCorrect={false}
+                  autoComplete="email"
                 />
-              </View>
-              <TouchableOpacity
-                onPress={() => handleSubmit('username')}
-                style={[
-                  styles.modalButton,
-                  isDarkMode && styles.modalButtonDark,
-                  !isValidEmail(email) && styles.disabledButton
-                ]}
-                disabled={!isValidEmail(email)}
-              >
-                <Text style={[
-                  styles.modalButtonText,
-                  isDarkMode && styles.modalButtonTextDark,
-                  !isValidEmail(email) && styles.disabledButtonText
-                ]}>
-                  Recover Username
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={handleRequestReset}
-                style={[
-                  styles.modalButton,
-                  isDarkMode && styles.modalButtonDark,
-                  !isValidEmail(email) && styles.disabledButton
-                ]}
-                disabled={!isValidEmail(email)}
-              >
-                <Text style={[
-                  styles.modalButtonText,
-                  isDarkMode && styles.modalButtonTextDark,
-                  !isValidEmail(email) && styles.disabledButtonText
-                ]}>
-                  Reset Password
-                </Text>
-              </TouchableOpacity>
-            </>
-          ) : (
-            <>
-              <View style={styles.inputWrapper}>
-                <Input
-                  placeholder="Enter reset code"
-                  value={resetCode}
-                  onChangeText={setResetCode}
-                  keyboardType="number-pad"
-                  style={[styles.modalInput, isDarkMode && styles.modalInputDark]}
-                />
-              </View>
-              <View style={styles.inputWrapper}>
-                <Input
-                  placeholder="Enter new password"
-                  value={newPassword}
-                  onChangeText={setNewPassword}
+              )}
+              <TextInput
+                ref={passwordRef}
+                placeholder="Password"
+                onChangeText={setPassword}
+                secureTextEntry
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              {mode === 'register' && (
+                <TextInput
+                  ref={confirmRef}
+                  placeholder="Confirm Password"
+                  onChangeText={setConfirmPassword}
                   secureTextEntry
-                  style={[styles.modalInput, isDarkMode && styles.modalInputDark]}
+                  autoCapitalize="none"
+                  autoCorrect={false}
                 />
-              </View>
-              <TouchableOpacity
-                onPress={handleResetPassword}
-                style={[styles.modalButton, isDarkMode && styles.modalButtonDark]}
+              )}
+            </FieldGroup.Section>
+          </FieldGroup>
+
+          {!!error && (
+            <UIText textStyle={{ color: '#e74c3c', fontSize: 13 }}>{error}</UIText>
+          )}
+
+          {/* Custom-styled submit button embedded in SwiftUI layout via RNHostView */}
+          <RNHostView matchContents style={{ width: INNER_WIDTH }}>
+            <Pressable
+              onPress={handleSubmit}
+              style={({ pressed }) => [
+                styles.submitButton,
+                { backgroundColor: accent, width: INNER_WIDTH },
+                pressed && styles.pressed,
+              ]}
+            >
+              <Text style={styles.submitLabel}>
+                {mode === 'login' ? "Let's Fight" : 'Create Account'}
+              </Text>
+            </Pressable>
+          </RNHostView>
+
+          {mode === 'login' && (
+            <RNHostView matchContents style={{ width: INNER_WIDTH }}>
+              <Pressable
+                onPress={() => setShowForgot(true)}
+                style={[styles.forgotButton, { width: INNER_WIDTH }]}
               >
-                <Text style={[styles.modalButtonText, isDarkMode && styles.modalButtonTextDark]}>Confirm Reset</Text>
-              </TouchableOpacity>
-            </>
+                <Text style={[styles.forgotText, { color: accent }]}>
+                  Forgot username or password?
+                </Text>
+              </Pressable>
+            </RNHostView>
           )}
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
-          <TouchableOpacity onPress={onClose} style={styles.cancelButton}>
-            <Text style={[styles.cancelButtonText, isDarkMode && styles.cancelButtonTextDark]}>Cancel</Text>
-          </TouchableOpacity>
-          {showSuccessAnimation && (
-            <View style={styles.successAnimation}>
-              <CheckCircle2 size={64} color={isDarkMode ? "#4CAF50" : "#773765"} />
+
+          {/* Social auth divider */}
+          <RNHostView matchContents style={{ width: INNER_WIDTH }}>
+            <View style={styles.dividerRow}>
+              <View style={styles.dividerLine} />
+              <Text style={[styles.dividerText, isDark && styles.dividerTextDark]}>
+                or continue with
+              </Text>
+              <View style={styles.dividerLine} />
             </View>
+          </RNHostView>
+
+          {/* Apple Sign In — iOS only */}
+          {Platform.OS === 'ios' && (
+            <RNHostView matchContents style={{ width: INNER_WIDTH }}>
+              <AppleAuthentication.AppleAuthenticationButton
+                buttonType={
+                  mode === 'register'
+                    ? AppleAuthentication.AppleAuthenticationButtonType.SIGN_UP
+                    : AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN
+                }
+                buttonStyle={
+                  isDark
+                    ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
+                    : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
+                }
+                cornerRadius={14}
+                style={styles.appleButton}
+                onPress={handleApple}
+              />
+            </RNHostView>
           )}
-        </View>
-      </View>
-    </Modal>
+
+          {/* Google Sign In */}
+          <RNHostView matchContents style={{ width: INNER_WIDTH }}>
+            <Pressable
+              onPress={handleGoogle}
+              style={({ pressed }) => [styles.googleButton, pressed && styles.pressed]}
+            >
+              <Text style={styles.googleIcon}>G</Text>
+              <Text style={[styles.googleLabel, isDark && styles.googleLabelDark]}>
+                Continue with Google
+              </Text>
+            </Pressable>
+          </RNHostView>
+        </Column>
+      </Host>
+
+      {showSwirl && (
+        <LoginSwirl onAnimationComplete={() => router.navigate('/')} />
+      )}
+
+      <ForgotSheet
+        isPresented={showForgot}
+        step={forgotStep}
+        forgotError={forgotError}
+        accent={accent}
+        isDark={isDark}
+        onForgotRequest={handleForgotRequest}
+        onForgotReset={handleForgotReset}
+        onClose={closeForgot}
+        setForgotEmail={setForgotEmail}
+        setForgotCode={setForgotCode}
+        setForgotNewPassword={setForgotNewPassword}
+      />
+    </SafeAreaView>
   );
 }
 
-const lightStyles = StyleSheet.create({
+type ForgotSheetProps = {
+  isPresented: boolean;
+  step: ForgotStep;
+  forgotError: string;
+  accent: string;
+  isDark: boolean;
+  onForgotRequest: (type: 'username' | 'password') => void;
+  onForgotReset: () => void;
+  onClose: () => void;
+  setForgotEmail: (v: string) => void;
+  setForgotCode: (v: string) => void;
+  setForgotNewPassword: (v: string) => void;
+};
+
+const SHEET_WIDTH = width - 40;
+
+type SheetButtonProps = {
+  label: string;
+  onPress: () => void;
+  variant: 'filled' | 'outlined' | 'text';
+  accent: string;
+  isDark: boolean;
+};
+
+function SheetButton({ label, onPress, variant, accent, isDark }: SheetButtonProps) {
+  return (
+    <RNHostView matchContents style={{ width: SHEET_WIDTH }}>
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => [
+          styles.sheetButton,
+          variant === 'filled' && { backgroundColor: accent },
+          variant === 'outlined' && {
+            backgroundColor: 'transparent',
+            borderWidth: 1.5,
+            borderColor: accent,
+          },
+          variant === 'text' && { backgroundColor: 'transparent', height: 44 },
+          { width: SHEET_WIDTH },
+          pressed && styles.pressed,
+        ]}
+      >
+        <Text
+          style={[
+            styles.sheetButtonLabel,
+            variant === 'filled' && { color: '#fff' },
+            variant === 'outlined' && { color: accent },
+            variant === 'text' && { color: isDark ? '#8e8e93' : '#8e8e93', fontWeight: '500' },
+          ]}
+        >
+          {label}
+        </Text>
+      </Pressable>
+    </RNHostView>
+  );
+}
+
+function ForgotSheet({
+  isPresented,
+  step,
+  forgotError,
+  accent,
+  isDark,
+  onForgotRequest,
+  onForgotReset,
+  onClose,
+  setForgotEmail,
+  setForgotCode,
+  setForgotNewPassword,
+}: ForgotSheetProps) {
+  return (
+    <BottomSheet isPresented={isPresented} onDismiss={onClose}>
+      <Column spacing={0} style={{ paddingBottom: 24, paddingHorizontal: 20 }}>
+        <Column spacing={4} style={{ paddingTop: 12, paddingBottom: 14 }}>
+          <UIText textStyle={{ fontSize: 24, fontWeight: '700' }}>
+            {step === 'email' ? 'Recover Account' : 'Set New Password'}
+          </UIText>
+          <UIText textStyle={{ fontSize: 14, color: '#8e8e93' }}>
+            {step === 'email'
+              ? 'Enter your email to recover your credentials'
+              : 'Enter the code we sent to your email'}
+          </UIText>
+        </Column>
+
+        {step === 'email' ? (
+          <Column spacing={12} style={{ paddingTop: 4 }}>
+            <FieldGroup>
+              <FieldGroup.Section>
+                <TextInput
+                  placeholder="Email address"
+                  onChangeText={setForgotEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoComplete="email"
+                  autoCorrect={false}
+                />
+              </FieldGroup.Section>
+            </FieldGroup>
+
+            {!!forgotError && (
+              <UIText textStyle={{ color: '#e74c3c', fontSize: 13 }}>{forgotError}</UIText>
+            )}
+
+            <SheetButton
+              label="Send My Username"
+              variant="outlined"
+              onPress={() => onForgotRequest('username')}
+              accent={accent}
+              isDark={isDark}
+            />
+            <SheetButton
+              label="Reset My Password"
+              variant="filled"
+              onPress={() => onForgotRequest('password')}
+              accent={accent}
+              isDark={isDark}
+            />
+          </Column>
+        ) : (
+          <Column spacing={12} style={{ paddingTop: 4 }}>
+            <FieldGroup>
+              <FieldGroup.Section>
+                <TextInput
+                  placeholder="Reset code"
+                  onChangeText={setForgotCode}
+                  keyboardType="number-pad"
+                />
+                <TextInput
+                  placeholder="New password"
+                  onChangeText={setForgotNewPassword}
+                  secureTextEntry
+                  autoCapitalize="none"
+                />
+              </FieldGroup.Section>
+            </FieldGroup>
+
+            {!!forgotError && (
+              <UIText textStyle={{ color: '#e74c3c', fontSize: 13 }}>{forgotError}</UIText>
+            )}
+
+            <SheetButton
+              label="Set New Password"
+              variant="filled"
+              onPress={onForgotReset}
+              accent={accent}
+              isDark={isDark}
+            />
+          </Column>
+        )}
+
+        <SheetButton
+          label="Cancel"
+          variant="text"
+          onPress={onClose}
+          accent={accent}
+          isDark={isDark}
+        />
+      </Column>
+    </BottomSheet>
+  );
+}
+
+const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    backgroundColor: '#f0f2f5',
+    backgroundColor: '#f2f2f7',
+  },
+  containerDark: {
+    backgroundColor: '#000',
   },
   logo: {
-    width: width * 1,
-    height: height * 0.2,
-    marginTop: height * 0.04,
-    marginBottom: height * 0.00001,
+    width,
+    height: height * 0.16,
+    marginTop: height * 0.02,
+    alignSelf: 'center',
   },
-  inputContainer: {
-    width: width * 0.9,
-    marginTop: height * 0.01,
+  formHost: {
+    flex: 1,
+    width: '100%',
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
-  inputWrapper: {
-    marginBottom: height * 0.02,
+  submitButton: {
+    height: 54,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 4,
   },
-  input: {
-    height: height * 0.06,
-    borderRadius: 20,
-    paddingLeft: 45,
+  pressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.985 }],
   },
-  errorText: {
-    color: 'red',
-    fontSize: 12,
-    textAlign: 'center',
-    marginTop: 5,
+  submitLabel: {
+    color: '#fff',
+    fontSize: 17,
+    fontWeight: '600',
+    letterSpacing: 0.3,
   },
   forgotButton: {
-    marginTop: height * 0.02,
+    alignItems: 'center',
+    paddingVertical: 4,
   },
   forgotText: {
-    color: '#773765',
-    textDecorationLine: 'underline',
+    fontSize: 14,
   },
-  bottomContainer: {
+  sheetButton: {
+    height: 50,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sheetButtonLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: 0.2,
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 4,
+  },
+  dividerLine: {
     flex: 1,
-    justifyContent: 'flex-end',
-    width: '100%',
-    alignItems: 'center',
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: '#c7c7cc',
   },
-  divider: {
-    width: width * 1,
-    height: height * 0.1,
-    marginBottom: height * 0.01,
+  dividerText: {
+    marginHorizontal: 12,
+    fontSize: 13,
+    color: '#8e8e93',
   },
-  loginButton: {
-    backgroundColor: '#773765',
-    borderRadius: 20,
-    width: '90%',
-    height: height * 0.06,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: height * 0.04,
+  dividerTextDark: {
+    color: '#48484a',
   },
-  loginButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
+  appleButton: {
+    width: INNER_WIDTH,
+    height: 50,
   },
-  signUpButton: {
-    borderRadius: 20,
-    width: '90%',
-    height: height * 0.06,
+  googleButton: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    marginBottom: height * 0.02,
+    height: 50,
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#c7c7cc',
+    backgroundColor: '#fff',
+    gap: 10,
   },
-  signUpButtonText: {
-    fontWeight: 'bold',
+  googleIcon: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#4285F4',
   },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  googleLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#3c4043',
   },
-  modalContent: {
-    backgroundColor: "white",
-    borderRadius: 20,
-    padding: 20,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-    width: '80%',
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 15,
-    color: "#000",
-  },
-  modalInput: {
-    backgroundColor: '#f0f2f5',
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    marginBottom: 15,
-    width: '100%',
-  },
-  modalButton: {
-    backgroundColor: '#773765',
-    borderRadius: 10,
-    width: '100%',
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 10,
-  },
-  modalButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  cancelButton: {
-    marginTop: 10,
-  },
-  cancelButtonText: {
-    color: '#773765',
-    fontWeight: 'bold',
-  },
-  iconContainer: {
-    position: 'absolute',
-    left: 10,
-    top: 10,
-    transform: [{ translateY: 2 }],
-    zIndex: 1,
-  },
-  successAnimation: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-  },
-});
-
-const darkStyles = StyleSheet.create({
-  containerDark: {
-    backgroundColor: '#1E1E1E',
-  },
-  inputDark: {
-      height: height * 0.06,
-      borderRadius: 20,
-      paddingLeft: 45,
-      color: '#FFF',
-  },
-  forgotTextDark: {
-    color: '#4CAF50',
-  },
-  loginButtonDark: {
-    backgroundColor: '#4CAF50',
-  },
-  signUpButtonDark: {
-    borderColor: '#4CAF50',
-  },
-  signUpButtonTextDark: {
-    color: '#FFFFFF',
-  },
-  modalContentDark: {
-    backgroundColor: '#2C2C2C',
-  },
-  modalTitleDark: {
-    color: '#FFFFFF',
-  },
-  modalInputDark: {
-    backgroundColor: '#3D3D3D',
-    color: '#FFFFFF',
-  },
-  modalButtonDark: {
-    backgroundColor: '#4CAF50',
-  },
-  modalButtonTextDark: {
-    color: '#FFFFFF',
-  },
-  cancelButtonTextDark: {
-    color: '#4CAF50',
-  },
-  iconContainer: {
-    position: 'absolute',
-    left: 10,
-    top: 10,
-    transform: [{ translateY: 2 }],
-    zIndex: 1,
-  },
-  successAnimation: {
-    backgroundColor: 'rgba(30, 30, 30, 0.9)',
+  googleLabelDark: {
+    color: '#e8eaed',
   },
 });

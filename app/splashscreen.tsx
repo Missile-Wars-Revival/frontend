@@ -1,20 +1,89 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Image, Animated, useColorScheme } from 'react-native';
+import React, { useEffect, useState, useMemo } from 'react';
+import { View, Text, StyleSheet, Image, Animated, useWindowDimensions } from 'react-native';
+import { Canvas, Path, Skia, Group, Circle, Rect } from '@shopify/react-native-skia';
+import { useSharedValue, withRepeat, withTiming, useDerivedValue, Easing } from 'react-native-reanimated';
+import * as SecureStore from 'expo-secure-store';
 import { getlocation } from '../util/locationreq';
 import { getApps, initializeApp } from "firebase/app";
 import { firebaseConfig } from '../util/firebase/config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface SplashScreenProps {
-  onFinish: () => void;
+  onFinish: (isAuthenticated: boolean) => void;
 }
 
 const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
   const [fadeAnim] = useState(() => new Animated.Value(0));
   const [progressAnim] = useState(() => new Animated.Value(0));
   const [loadingText, setLoadingText] = useState('Initializing connection...');
-  const colorScheme = useColorScheme();
-  const isDarkMode = colorScheme === 'dark';
+  const { width, height } = useWindowDimensions();
+
+  const cx = width / 2;
+  const cy = height / 2 - 40;
+  const orbitRx = width * 0.44;
+  const orbitRy = height * 0.13;
+
+  const t = useSharedValue(0);
+
+  useEffect(() => {
+    t.value = withRepeat(
+      withTiming(Math.PI * 2, { duration: 4500, easing: Easing.linear }),
+      -1,
+      false
+    );
+  }, []);
+
+  const missilePath = useMemo(() =>
+    Skia.Path.MakeFromSVGString(
+      'M -13 -4 L 9 -4 L 9 4 L -13 4 Z' +
+      ' M 9 -4 L 23 0 L 9 4 Z' +
+      ' M -13 -4 L -23 -12 L -7 -4 Z' +
+      ' M -13 4 L -23 12 L -7 4 Z'
+    )!, []);
+
+  const exhaustPath = useMemo(() =>
+    Skia.Path.MakeFromSVGString('M -13 -2.5 L -30 0 L -13 2.5 Z')!, []);
+
+  const stars = useMemo(() =>
+    Array.from({ length: 100 }, (_, i) => ({
+      x: ((Math.sin(i * 127.1 + 311) + 1) / 2) * width,
+      y: ((Math.sin(i * 311.7 + 74) + 1) / 2) * height,
+      r: 0.5 + ((Math.sin(i * 74.3) + 1) / 2) * 1.5,
+      a: 0.25 + ((Math.sin(i * 53.1) + 1) / 2) * 0.6,
+    })),
+    [width, height]
+  );
+
+  const rocket0 = useDerivedValue(() => {
+    const angle = t.value;
+    const x = cx + orbitRx * Math.cos(angle);
+    const y = cy + orbitRy * Math.sin(angle);
+    const rot = Math.atan2(orbitRy * Math.cos(angle), -orbitRx * Math.sin(angle));
+    return [{ translateX: x }, { translateY: y }, { rotate: rot }];
+  });
+
+  const rocket1 = useDerivedValue(() => {
+    const angle = t.value + (2 * Math.PI) / 3;
+    const x = cx + orbitRx * Math.cos(angle);
+    const y = cy + orbitRy * Math.sin(angle);
+    const rot = Math.atan2(orbitRy * Math.cos(angle), -orbitRx * Math.sin(angle));
+    return [{ translateX: x }, { translateY: y }, { rotate: rot }];
+  });
+
+  const rocket2 = useDerivedValue(() => {
+    const angle = t.value + (4 * Math.PI) / 3;
+    const x = cx + orbitRx * Math.cos(angle);
+    const y = cy + orbitRy * Math.sin(angle);
+    const rot = Math.atan2(orbitRy * Math.cos(angle), -orbitRx * Math.sin(angle));
+    return [{ translateX: x }, { translateY: y }, { rotate: rot }];
+  });
+
+  // Wraps Animated.timing in a Promise so each step can be properly awaited
+  const animateProgress = (toValue: number, duration: number) =>
+    new Promise<void>(resolve =>
+      Animated.timing(progressAnim, { toValue, duration, useNativeDriver: false })
+        .start(() => resolve())
+    );
 
   const initializeAsyncStorageValues = async () => {
     const keysToInitialize = [
@@ -39,72 +108,78 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
   useEffect(() => {
     const initializeAppLoad = async () => {
       try {
-        // Step 1: Initialize location
+        // Step 1: location + animate to 33% in parallel (whichever is slower wins)
         setLoadingText('Initializing connection...');
-        await getlocation();
-        Animated.timing(progressAnim, {
-          toValue: 0.2,
-          duration: 500,
-          useNativeDriver: false,
-        }).start();
+        await Promise.all([
+          getlocation(),
+          animateProgress(0.33, 900),
+        ]);
 
-        // Step 2: Initialize Firebase
+        // Step 2: Firebase (instant) + animate to 60%
         setLoadingText('Connecting to servers...');
-        if (getApps().length === 0) {
-          initializeApp(firebaseConfig);
-        }
-        Animated.timing(progressAnim, {
-          toValue: 0.5,
-          duration: 500,
-          useNativeDriver: false,
-        }).start();
+        if (getApps().length === 0) initializeApp(firebaseConfig);
+        await animateProgress(0.6, 500);
 
-        // Step 3: Initialize AsyncStorage
+        // Step 3: AsyncStorage init + animate to 85%
         setLoadingText('Setting up storage...');
-        await initializeAsyncStorageValues();
-        Animated.timing(progressAnim, {
-          toValue: 0.8,
-          duration: 500,
-          useNativeDriver: false,
-        }).start();
+        await Promise.all([
+          initializeAsyncStorageValues(),
+          animateProgress(0.85, 600),
+        ]);
 
-        // Step 4: Loading assets
+        // Step 4: Auth check + fill bar to 100%
         setLoadingText('Loading assets...');
-        Animated.timing(progressAnim, {
-          toValue: 1,
-          duration: 500,
-          useNativeDriver: false,
-        }).start();
+        const username = await SecureStore.getItemAsync('username');
+        const isAuthenticated = !!username;
+        await animateProgress(1.0, 400);
 
-        // Wait a bit for smooth transition
-        setTimeout(() => {
-          onFinish();
-        }, 500);
-
+        setTimeout(() => onFinish(isAuthenticated), 2000);
       } catch (error) {
         console.error("Error during app initialization:", error);
-        // Still finish even if there's an error
-        onFinish();
+        onFinish(false);
       }
     };
 
     initializeAppLoad();
-
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 1000,
-      useNativeDriver: true,
-    }).start();
-
-  }, [onFinish, fadeAnim, progressAnim]);
+    Animated.timing(fadeAnim, { toValue: 1, duration: 1200, useNativeDriver: true }).start();
+  }, [onFinish, fadeAnim]);
 
   return (
-    <View style={[styles.container, isDarkMode && styles.containerDark]}>
-      <Animated.View style={{ ...styles.bannerContainer, opacity: fadeAnim }}>
+    <View style={styles.container}>
+      <Canvas style={StyleSheet.absoluteFill}>
+        <Rect x={0} y={0} width={width} height={height} color="#060818" />
+
+        {stars.map((s, i) => (
+          <Circle
+            key={i}
+            cx={s.x}
+            cy={s.y}
+            r={s.r}
+            color={`rgba(200,220,255,${s.a.toFixed(2)})`}
+          />
+        ))}
+
+        <Group transform={rocket0}>
+          <Path path={exhaustPath} color="#FFA500" opacity={0.75} />
+          <Path path={missilePath} color="#FF4500" />
+        </Group>
+        <Group transform={rocket1}>
+          <Path path={exhaustPath} color="#FFA500" opacity={0.75} />
+          <Path path={missilePath} color="#FF4500" />
+        </Group>
+        <Group transform={rocket2}>
+          <Path path={exhaustPath} color="#FFA500" opacity={0.75} />
+          <Path path={missilePath} color="#FF4500" />
+        </Group>
+      </Canvas>
+
+      <Animated.View style={[styles.bannerContainer, { opacity: fadeAnim }]}>
         <Image source={require('../assets/icons/MissleWarsTitle.png')} style={styles.banner} />
       </Animated.View>
-      <Text style={[styles.text, isDarkMode && styles.textDark]}>{loadingText}</Text>
-      <View style={[styles.progressBarContainer, isDarkMode && styles.progressBarContainerDark]}>
+
+      <Text style={styles.text}>{loadingText}</Text>
+
+      <View style={styles.progressBarContainer}>
         <Animated.View
           style={[
             styles.progressBar,
@@ -113,7 +188,6 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
                 inputRange: [0, 1],
                 outputRange: ['0%', '100%'],
               }),
-              backgroundColor: isDarkMode ? '#4CAF50' : '#0000ff',
             },
           ]}
         />
@@ -127,10 +201,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
-  },
-  containerDark: {
-    backgroundColor: '#1E1E1E',
+    backgroundColor: '#060818',
   },
   bannerContainer: {
     marginBottom: 20,
@@ -141,28 +212,23 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
   text: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '600',
     marginBottom: 20,
-    color: '#000',
+    color: '#a0c4ff',
     textAlign: 'center',
-  },
-  textDark: {
-    color: '#fff',
   },
   progressBarContainer: {
     width: '70%',
     height: 4,
-    backgroundColor: '#e0e0e0',
+    backgroundColor: 'rgba(255,255,255,0.12)',
     borderRadius: 2,
     overflow: 'hidden',
-  },
-  progressBarContainerDark: {
-    backgroundColor: '#333',
   },
   progressBar: {
     height: '100%',
     borderRadius: 2,
+    backgroundColor: '#4fc3f7',
   },
 });
 

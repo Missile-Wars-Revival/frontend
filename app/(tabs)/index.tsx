@@ -41,6 +41,7 @@ export default function Map() {
   const [themePopupVisible, setThemePopupVisible] = useState(false);
   const [isAlive, setIsAlive] = useState<boolean | null>(null);
   const [deathsoundPlayed, setdeathSoundPlayed] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const health = useFetchHealth()//WS hook
   const [locActive, setLocActive] = useState<boolean>(true);
   const [locPermsActive, setLocPermsActive] = useState<boolean>(false);
@@ -102,6 +103,8 @@ export default function Map() {
       if (!credentials) {
         await AsyncStorage.setItem('signedIn', 'false');
         router.navigate("/login");
+      } else {
+        setIsLoggedIn(true);
       }
     };
 
@@ -171,6 +174,8 @@ export default function Map() {
   }, []);
 
   useEffect(() => {
+    if (!isLoggedIn) return;
+
     const initializeApp = async () => {
       try {
         const isAliveStatusString = await AsyncStorage.getItem('isAlive');
@@ -197,7 +202,7 @@ export default function Map() {
     const intervalId = setInterval(initializeApp, 1000);
 
     return () => clearInterval(intervalId);
-  }, [deathsoundPlayed]);
+  }, [deathsoundPlayed, isLoggedIn]);
 
   useEffect(() => {
     const fetchLocActiveStatus = async () => {
@@ -264,6 +269,10 @@ export default function Map() {
     setShowMissileFiringAnimation(false);
     setSelectedPlayer("");
   };
+
+  if (!isLoggedIn) {
+    return <View style={[styles.container, isDarkMode && styles.containerDark]} />;
+  }
 
   return (
     <View style={[styles.container, isDarkMode && styles.containerDark]}>

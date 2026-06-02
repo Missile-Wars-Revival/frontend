@@ -7,7 +7,7 @@ export async function getuserprofile(
 ) {
     try {
         const token = await SecureStore.getItemAsync("token");
-        if (!token) throw new Error("No authentication token found.");
+        if (!token) return { success: false, message: "Not signed in" };
         const response = await axiosInstance.get(`/api/user-profile/`, { params: { token, username }, });
         return response.data;
     } catch (error) {
@@ -28,7 +28,7 @@ export async function getselfprofile(
 ) {
     try {
         const token = await SecureStore.getItemAsync("token");
-        if (!token) throw new Error("No authentication token found.");
+        if (!token) return { success: false, message: "Not signed in" };
         const response = await axiosInstance.get(`/api/self-profile/`, { params: { token }, });
         return response.data;
     } catch (error) {
