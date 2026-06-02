@@ -27,6 +27,7 @@
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Your location is used to show your position on the game map and enable gameplay features like player interaction and loot collection!",
+        "NSUserTrackingUsageDescription": "We use your device identifier to measure ad performance and limit repeated ads so we can keep Missile Wars free. For example, this helps us show fewer duplicate promotions after you install or view an ad campaign.",
         "NSSupportsLiveActivities": true,
         "LSMinimumSystemVersion": "12.0",
         "ITSAppUsesNonExemptEncryption": false
@@ -126,7 +127,16 @@
           "isAndroidForegroundServiceEnabled": true
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-asset",
+      "expo-tracking-transparency",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
+          "iosAppId": "ca-app-pub-3940256099942544~1458002511"
+        }
+      ]
     ],
     "owner": "osog",
     "updates": {

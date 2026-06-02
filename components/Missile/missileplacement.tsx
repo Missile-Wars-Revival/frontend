@@ -157,14 +157,7 @@ export const MissilePlacementPopup: React.FC<MissilePlacementPopupProps> = ({ vi
     const initializeApp = async () => {
       try {
         const isDBConnection = await AsyncStorage.getItem('dbconnection');
-        if (isDBConnection === "false") {
-          setDbConnection(false)
-        }
-        if (isDBConnection === "true") {
-          setDbConnection(true)
-        } else {
-          setDbConnection(false);
-        }
+        setDbConnection(isDBConnection === 'true');
       } catch (error) {
         console.error('Error initializing map:', error);
       }
@@ -187,8 +180,7 @@ export const MissilePlacementPopup: React.FC<MissilePlacementPopupProps> = ({ vi
     };
 
     initializeApp();
-  },
-  );
+  }, []);
 
   // if (loading) {
   //   return (
@@ -198,21 +190,27 @@ export const MissilePlacementPopup: React.FC<MissilePlacementPopupProps> = ({ vi
   //   );
   // }
   const handleMissilePlacement = () => {
-    if (marker && currentLocation && marker.latitude === currentLocation.latitude && marker.longitude === currentLocation.longitude) {
-      Alert.alert('Warning', 'Firing a Missile at your current location is not recommended!');
-    } else if (marker && currentLocation) {
-      // Close the popup and trigger the onMissileFired callback immediately
-      onMissileFired();
-      onClose();
-
-      // Fire the missile in the background
-      console.log(`FIRING Missile: Dest coords: ${marker.latitude}, ${marker.longitude}; sentbyUser: ${userName} Missile Type: ${selectedMissile}, current coords: ${currentLocation.latitude}, ${currentLocation.longitude}`);
-      firemissileloc(marker.latitude.toString(), marker.longitude.toString(), selectedMissile)
-        .catch(error => {
-          console.error('Error firing missile:', error);
-          // Optionally, you can show an error message to the user here
-        });
+    if (!marker || !currentLocation) {
+      Alert.alert('Not Ready', 'Waiting for your location. Please try again in a moment.');
+      return;
     }
+
+    if (marker.latitude === currentLocation.latitude && marker.longitude === currentLocation.longitude) {
+      Alert.alert('Warning', 'Firing a Missile at your current location is not recommended! Move the target pin to a different location.');
+      return;
+    }
+
+    // Close the popup and trigger the onMissileFired callback immediately
+    onMissileFired();
+    onClose();
+
+    // Fire the missile in the background
+    console.log(`FIRING Missile: Dest coords: ${marker.latitude}, ${marker.longitude}; sentbyUser: ${userName} Missile Type: ${selectedMissile}, current coords: ${currentLocation.latitude}, ${currentLocation.longitude}`);
+    firemissileloc(marker.latitude.toString(), marker.longitude.toString(), selectedMissile)
+      .catch(error => {
+        console.error('Error firing missile:', error);
+        Alert.alert('Failed', 'Could not fire missile. Please check your connection and try again.');
+      });
   };
 
   const handlePlaceSelected = (data: any, details: any = null) => {

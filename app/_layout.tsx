@@ -14,6 +14,7 @@ import { AuthProvider } from "../util/Context/authcontext";
 import { useColorScheme } from 'react-native';
 import PermissionsCheck from '../components/PermissionsCheck';
 import Purchases from 'react-native-purchases';
+import mobileAds from 'react-native-google-mobile-ads';
 import * as ExpoSplashScreen from 'expo-splash-screen';
 import { LandmineProvider } from '../util/Context/landminecontext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -88,6 +89,14 @@ export default function RootLayout() {
       configurePurchases();
       isConfigured.current = true;
     }
+  }, []);
+
+  useEffect(() => {
+    mobileAds()
+      .initialize()
+      .catch((error) => {
+        console.error('Failed to initialize mobile ads:', error);
+      });
   }, []);
 
   useEffect(() => {

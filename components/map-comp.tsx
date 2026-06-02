@@ -8,8 +8,9 @@ import { AllPlayers } from "./map-players";
 import { loadLastKnownLocation, saveLocation } from '../util/mapstore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCurrentLocation } from "../util/locationreq";
-import { getMainMapStyles } from "../map-themes/stylesheet";
+import { dispatch } from "../api/dispatch";
 import * as SecureStore from "expo-secure-store";
+import { getMainMapStyles } from "../map-themes/stylesheet";
 import { updateFriendsOnlyStatus } from "../api/visibility";
 import useFetchMissiles from "../hooks/websockets/missilehook";
 import useFetchLoot from "../hooks/websockets/loothook";
@@ -212,7 +213,8 @@ export const MapComp = (props: MapCompProps) => {
 
     useEffect(() => {
         let isSubscribed = true;
-        
+        let dispatchCounter = 0;
+
         const updateLocation = async () => {
             try {
                 const location = await getCurrentLocation();
@@ -221,6 +223,19 @@ export const MapComp = (props: MapCompProps) => {
                         latitude: location.latitude,
                         longitude: location.longitude
                     });
+
+                    // Dispatch location to backend every 5 seconds so missile/landmine
+                    // endpoints can look up the user's current location from the DB.
+                    dispatchCounter++;
+                    if (dispatchCounter >= 5) {
+                        dispatchCounter = 0;
+                        const token = await SecureStore.getItemAsync('token');
+                        if (token) {
+                            dispatch(token, location.latitude, location.longitude).catch(
+                                (err) => console.warn('Location dispatch failed:', err)
+                            );
+                        }
+                    }
                 }
             } catch (error) {
                 console.error('Error updating location:', error);

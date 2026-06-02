@@ -19,10 +19,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
 import * as Haptics from 'expo-haptics';
+import * as TrackingTransparency from 'expo-tracking-transparency';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BlurView } from 'expo-blur';
 import { getlocation } from '../util/locationreq';
+import MissileSkiaBackground from '../components/onboarding/MissileSkiaBackground';
 
 const { width, height } = Dimensions.get('window');
 
@@ -140,6 +142,8 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissi
   const [currentSlide, setCurrentSlide] = useState(0);
   const [locationPermission, setLocationPermission] = useState(false);
   const [notificationPermission, setNotificationPermission] = useState(false);
+  const [trackingPermissionResolved, setTrackingPermissionResolved] = useState(false);
+  const [trackingPermissionGranted, setTrackingPermissionGranted] = useState(false);
   const [privacyAgreed, setPrivacyAgreed] = useState(false);
 
   const currentSlideRef = useRef(currentSlide);
@@ -269,8 +273,34 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissi
       const notifStatus = await Notifications.getPermissionsAsync();
       setNotificationPermission(notifStatus.status === 'granted');
 
+      const trackingStatus = await TrackingTransparency.getTrackingPermissionsAsync();
+      const trackingResolved =
+        trackingStatus.status === 'granted' ||
+        trackingStatus.status === 'denied';
+      setTrackingPermissionResolved(trackingResolved);
+      setTrackingPermissionGranted(trackingStatus.status === 'granted');
+
     } catch (error) {
       console.error('Error checking permissions:', error);
+    }
+  };
+
+  const requestTrackingPermission = async () => {
+    try {
+      const response = await TrackingTransparency.requestTrackingPermissionsAsync();
+      const resolved =
+        response.status === 'granted' ||
+        response.status === 'denied';
+      setTrackingPermissionResolved(resolved);
+      setTrackingPermissionGranted(response.status === 'granted');
+
+      Haptics.notificationAsync(
+        response.status === 'granted'
+          ? Haptics.NotificationFeedbackType.Success
+          : Haptics.NotificationFeedbackType.Warning
+      );
+    } catch (error) {
+      console.error('Error requesting tracking permission:', error);
     }
   };
 
@@ -416,6 +446,7 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissi
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
+      <MissileSkiaBackground />
 
       <LinearGradient
         colors={slide.gradientColors}
@@ -526,6 +557,15 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissi
               {/* Permissions section */}
               <View style={styles.permissionsContainer}>
                 <PermissionRow
+                  icon="analytics-outline"
+                  title="App Tracking Transparency"
+                  description="Lets us measure ad performance and reduce repeated ads"
+                  isGranted={trackingPermissionResolved}
+                  onPress={requestTrackingPermission}
+                  accentColor={slide.accentColor}
+                />
+
+                <PermissionRow
                   icon="location-outline"
                   title="Location (Required)"
                   description="Essential for gameplay and map features"
@@ -573,6 +613,10 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissi
                     </Text>
                   </Text>
                 </TouchableOpacity>
+
+                <Text style={styles.permissionDisclosureText}>
+                  Tracking permission is optional and does not block gameplay. Location is required for map-based gameplay.
+                </Text>
               </View>
 
               {/* Bottom padding for scroll */}
@@ -973,6 +1017,14 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
     fontWeight: '700',
     color: '#fff',
+  },
+  permissionDisclosureText: {
+    marginTop: 4,
+    fontSize: 12,
+    lineHeight: 18,
+    color: 'rgba(255,255,255,0.75)',
+    textAlign: 'center',
+    paddingHorizontal: 4,
   },
   navigationContainer: {
     flexDirection: 'row',

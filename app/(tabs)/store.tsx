@@ -13,6 +13,7 @@ import { getWeaponTypes, mapProductType, PremProduct, Product, getImages } from 
 import { getShopStyles } from '../../map-themes/stylesheet';
 import { Ionicons } from '@expo/vector-icons';
 import { useOnboarding } from '../../util/Context/onboardingContext';
+import AdBanner from '../../components/ads/AdBanner';
 
 
 const { width, height } = Dimensions.get('window');
@@ -797,6 +798,7 @@ const StorePage: React.FC = () => {
           </Modal>
         </View>
       )}
+      <AdBanner />
     </SafeAreaView>
   );
 }

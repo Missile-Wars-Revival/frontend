@@ -114,6 +114,8 @@ export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ 
       setRegion(lastKnownLocation);
       setMarker(lastKnownLocation);
       setCurrentLocation(lastKnownLocation);
+      // The starting marker is at the user's current position — always a valid placement
+      setIsValidPlacement(true);
     }
 
     // Then, check for permission and get current location
@@ -136,6 +138,8 @@ export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ 
       setRegion(currentRegion);
       setMarker(currentRegion);
       setCurrentLocation(currentRegion);
+      // GPS location is always within the user's airspace (distance 0)
+      setIsValidPlacement(true);
 
       // Save the current location for future use
       await saveLocation(currentRegion);
@@ -180,27 +184,34 @@ export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ 
   }, []);
 
   const handleLandminePlacement = () => {
-    if (marker && currentLocation && isValidPlacement) {
-      // Close the popup and trigger callback immediately
-      onLandminePlaced();
-      onClose();
-
-      // Place the Landmine in the background
-      console.log(`PLACING Landmine: Dest coords: ${marker.latitude}, ${marker.longitude}; sentbyUser: ${userName} Landmine Type: ${selectedLandmine.type}, current coords: ${currentLocation.latitude}, ${currentLocation.longitude}`);
-      placelandmine(marker.latitude.toString(), marker.longitude.toString(), selectedLandmine.type)
-        .then(() => {
-          console.log("Landmine placed successfully");
-        })
-        .catch(error => {
-          console.error("Error placing landmine:", error);
-          // Optionally, you can show an error message to the user here
-        });
+    if (!marker || !currentLocation) {
+      Alert.alert('Not Ready', 'Waiting for your location. Please try again in a moment.');
+      return;
     }
+
+    if (!isValidPlacement) {
+      Alert.alert('Out of Range', 'You can only place landmines within your league airspace. Tap a location inside the green circle.');
+      return;
+    }
+
+    // Close the popup and trigger callback immediately
+    onLandminePlaced();
+    onClose();
+
+    // Place the Landmine in the background
+    console.log(`PLACING Landmine: Dest coords: ${marker.latitude}, ${marker.longitude}; sentbyUser: ${userName} Landmine Type: ${selectedLandmine.type}, current coords: ${currentLocation.latitude}, ${currentLocation.longitude}`);
+    placelandmine(marker.latitude.toString(), marker.longitude.toString(), selectedLandmine.type)
+      .then(() => {
+        console.log('Landmine placed successfully');
+      })
+      .catch(error => {
+        console.error('Error placing landmine:', error);
+        Alert.alert('Failed', 'Could not place landmine. Please check your connection and try again.');
+      });
 
     if (currentStep === 'place_landmine') {
       moveToNextStep();
     }
-
   };
 
   const handlePlaceSelected = (data: any, details: any = null) => {
@@ -227,12 +238,10 @@ export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ 
 
     const isValid = currentLocation ? isWithinAirspace(newMarker, currentLocation) : false;
     setIsValidPlacement(isValid);
+    setMarker(newMarker);
 
-    if (isValid) {
-      setMarker(newMarker);
-      if (currentStep === 'selectlandmine_location' && !isOnboardingComplete) {
-        moveToNextStep();
-      }
+    if (isValid && currentStep === 'selectlandmine_location' && !isOnboardingComplete) {
+      moveToNextStep();
     }
   };
 
