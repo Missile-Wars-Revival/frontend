@@ -1,16 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { Missilelib } from "../../types/types";
+import { Missilelib , InventoryItem } from "../../types/types";
 import { Text, View, TouchableOpacity, Image, Dimensions, Modal, ScrollView, StyleSheet, useColorScheme } from "react-native";
 import { MissilePlacementPopup } from './missileplacement';
 import { firemissileplayer } from "../../api/fireentities";
-import { create } from 'twrnc';
 import useFetchInventory from "../../hooks/websockets/inventoryhook";
-import { InventoryItem } from '../../types/types';
+
 import { router } from 'expo-router';
 import { getImages } from "../../api/store";
 import { useOnboarding } from "../../util/Context/onboardingContext";
-
-const tw = create(require('../../tailwind.config.js'));
+import { tw } from '../../util/twrnc';
 
 //Missile types
 //   Amplifier:
@@ -186,7 +184,7 @@ export const MissilefireposLibrary = ({ onClose }: { onClose: () => void }) => {
   };
 
   return (
-    <View style={tw`${isDarkMode ? 'bg-black' : 'bg-white'} rounded-lg p-4 h-[90%]`}>
+    <View style={tw`flex-1`}>
       <Text style={tw`text-xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Select Missile to Fire at Location</Text>
       <MissileSelector onSelect={handleMissileClick} missiles={missileLibrary} onClose={onClose} />
       {showPlacementPopup && selectedMissile && (

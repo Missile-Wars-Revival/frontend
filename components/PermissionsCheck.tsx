@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import * as Location from 'expo-location';
 import { View, Text, TouchableOpacity, StyleSheet, useColorScheme, Linking, Platform } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@react-native-vector-icons/ionicons';
 
 interface PermissionsCheckProps {
   children: React.ReactNode;

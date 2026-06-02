@@ -1,6 +1,8 @@
-import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated, Easing, useColorScheme } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, StyleSheet, useColorScheme } from 'react-native';
+import Ionicons from '@react-native-vector-icons/ionicons';
+import { EaseView, type Transition } from 'react-native-ease';
+import { Presets } from 'react-native-pulsar';
 
 type FriendAddedAnimationProps = {
   onAnimationComplete: () => void;
@@ -9,107 +11,113 @@ type FriendAddedAnimationProps = {
 const FriendAddedAnimation: React.FC<FriendAddedAnimationProps> = ({ onAnimationComplete }) => {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
-  const scaleAnim = useRef(new Animated.Value(0)).current;
-  const rotateAnim = useRef(new Animated.Value(0)).current;
-  const sparkleAnims = useRef(Array(6).fill(null).map(() => new Animated.Value(0))).current;
+  const iconColor = isDarkMode ? '#FFFFFF' : '#000000';
 
+  // Declarative animation targets (updated to trigger enter/exit)
+  const [animateRotate, setAnimateRotate] = useState(360);
+  const [animateScale, setAnimateScale] = useState(1);
+  const [sparkleAnimates, setSparkleAnimates] = useState(() =>
+    Array(6).fill({ scale: 1, opacity: 1 })
+  );
+  const [isExiting, setIsExiting] = useState(false);
+
+  const exitTriggered = useRef(false);
+
+  // Trigger haptic feedback on mount (using lightweight Pulsar)
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(scaleAnim, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-        easing: Easing.out(Easing.back(1.5)),
-      }),
-      Animated.timing(rotateAnim, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-        easing: Easing.inOut(Easing.cubic),
-      }),
-      ...sparkleAnims.map((anim) =>
-        Animated.sequence([
-          Animated.delay(Math.random() * 200),
-          Animated.timing(anim, {
-            toValue: 1,
-            duration: 600,
-            useNativeDriver: true,
-            easing: Easing.out(Easing.cubic),
-          }),
-        ])
-      ),
-    ]).start(() => {
-      setTimeout(() => {
-        Animated.parallel([
-          Animated.timing(scaleAnim, {
-            toValue: 0,
-            duration: 300,
-            useNativeDriver: true,
-          }),
-          ...sparkleAnims.map((anim) =>
-            Animated.timing(anim, {
-              toValue: 0,
-              duration: 300,
-              useNativeDriver: true,
-            })
-          ),
-        ]).start(onAnimationComplete);
-      }, 1000);
-    });
+    try {
+      Presets.System.notificationSuccess();
+    } catch {
+      // Fallback silently if haptics not supported on device
+    }
   }, []);
 
-  const iconColor = isDarkMode ? '#FFFFFF' : '#000000';
+  // Transitions (can be phase-dependent for enter vs exit)
+  const rotateTransition: Transition = isExiting
+    ? { type: 'timing', duration: 300, easing: 'easeInOut' }
+    : { type: 'timing', duration: 650, easing: 'easeInOut' };
+
+  const scaleTransition: Transition = isExiting
+    ? { type: 'timing', duration: 300, easing: 'easeIn' }
+    : { type: 'spring', stiffness: 240, damping: 9 };
+
 
   return (
     <View style={[
       styles.container,
       { backgroundColor: isDarkMode ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }
     ]}>
-      <Animated.View style={[
-        styles.iconContainer,
-        {
-          transform: [
-            { scale: scaleAnim },
-            {
-              rotate: rotateAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: ['0deg', '360deg'],
-              }),
-            },
-          ],
-        },
-      ]}>
-        <Ionicons name="person-add" size={60} color={iconColor} />
-        {sparkleAnims.map((anim, index) => (
-          <Animated.View
-            key={index}
-            style={[
-              styles.sparkle,
-              {
-                transform: [
-                  { scale: anim },
-                  { rotate: `${index * 60}deg` },
-                  { translateX: 50 },
-                ],
-                opacity: anim,
-              },
-            ]}
-          />
-        ))}
-      </Animated.View>
+      <EaseView
+        style={styles.iconContainer}
+        animate={{ rotate: animateRotate }}
+        initialAnimate={{ rotate: 0 }}
+        transition={rotateTransition}
+      >
+        <EaseView
+          animate={{ scale: animateScale }}
+          initialAnimate={{ scale: 0 }}
+          transition={scaleTransition}
+          onTransitionEnd={(e) => {
+            if (e.finished && !exitTriggered.current) {
+              exitTriggered.current = true;
+              setIsExiting(true);
+              setTimeout(() => {
+                setAnimateRotate(0);
+                setAnimateScale(0);
+                setSparkleAnimates(Array(6).fill({ scale: 0, opacity: 0 }));
+                setTimeout(() => {
+                  onAnimationComplete();
+                }, 350);
+              }, 1000);
+            }
+          }}
+        >
+          <Ionicons name="person-add" size={60} color={iconColor} />
+        </EaseView>
+
+        {sparkleAnimates.map((anim, index) => {
+          const sparkleTransition: Transition = isExiting
+            ? { type: 'timing', duration: 280, easing: 'easeIn' }
+            : {
+                type: 'timing',
+                duration: 480,
+                easing: 'easeOut',
+                delay: 40 + index * 70,
+              };
+
+          return (
+            <EaseView
+              key={index}
+              style={[
+                styles.sparkle,
+                {
+                  transform: [
+                    { rotate: `${index * 60}deg` },
+                    { translateX: 50 },
+                  ],
+                },
+              ]}
+              animate={anim}
+              initialAnimate={{ scale: 0, opacity: 0 }}
+              transition={sparkleTransition}
+            />
+          );
+        })}
+      </EaseView>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     justifyContent: 'center',
     alignItems: 'center',
   },
   iconContainer: {
     width: 100,
     height: 100,
+    position: 'relative',
     justifyContent: 'center',
     alignItems: 'center',
   },

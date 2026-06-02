@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import Purchases from 'react-native-purchases';
 import * as TrackingTransparency from 'expo-tracking-transparency';
-import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
+import { BannerAd, BannerAdSize } from 'react-native-google-mobile-ads';
+import { AD_UNIT_IDS } from '@/constants/AdConfig';
 
 const parseEntitlementKeys = () => {
   const configured = process.env.EXPO_PUBLIC_REVENUECAT_AD_FREE_ENTITLEMENTS;
@@ -11,21 +12,6 @@ const parseEntitlementKeys = () => {
     .split(',')
     .map((key) => key.trim().toLowerCase())
     .filter(Boolean);
-};
-
-const getBannerUnitId = () => {
-  if (__DEV__) {
-    return TestIds.BANNER;
-  }
-
-  const iosUnit = process.env.EXPO_PUBLIC_ADMOB_BANNER_IOS;
-  const androidUnit = process.env.EXPO_PUBLIC_ADMOB_BANNER_ANDROID;
-
-  if (Platform.OS === 'ios') {
-    return iosUnit || TestIds.BANNER;
-  }
-
-  return androidUnit || TestIds.BANNER;
 };
 
 const AdBanner: React.FC = () => {
@@ -80,8 +66,8 @@ const AdBanner: React.FC = () => {
   return (
     <View style={styles.container}>
       <BannerAd
-        unitId={getBannerUnitId()}
-        size={BannerAdSize.BANNER}
+        unitId={AD_UNIT_IDS.BANNER}
+        size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
         requestOptions={{ requestNonPersonalizedAdsOnly: nonPersonalizedAdsOnly }}
       />
     </View>

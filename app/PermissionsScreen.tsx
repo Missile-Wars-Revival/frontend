@@ -20,7 +20,7 @@ import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
 import * as Haptics from 'expo-haptics';
 import * as TrackingTransparency from 'expo-tracking-transparency';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@react-native-vector-icons/ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BlurView } from 'expo-blur';
 import { getlocation } from '../util/locationreq';
@@ -38,7 +38,7 @@ interface OnboardingSlide {
   subtitle: string;
   description: string;
   image: any;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: React.ComponentProps<typeof Ionicons>['name'];
   gradientColors: readonly [string, string, string];
   accentColor: string;
   glowColor: string;
@@ -136,9 +136,14 @@ const SLIDES: OnboardingSlide[] = [
   },
 ];
 
-export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGranted }) => {
+export const PermissionsScreen: React.FC<PermissionsScreenProps> = (props) => {
+  // Web is unsupported for onboarding; render nothing. Keeping this guard in a
+  // hook-free wrapper ensures the inner component's hooks always run in order.
   if (Platform.OS === 'web') return null;
+  return <PermissionsScreenInner {...props} />;
+};
 
+const PermissionsScreenInner: React.FC<PermissionsScreenProps> = ({ onPermissionGranted }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [locationPermission, setLocationPermission] = useState(false);
   const [notificationPermission, setNotificationPermission] = useState(false);
@@ -147,23 +152,25 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissi
   const [privacyAgreed, setPrivacyAgreed] = useState(false);
 
   const currentSlideRef = useRef(currentSlide);
-  currentSlideRef.current = currentSlide;
+  useEffect(() => {
+    currentSlideRef.current = currentSlide;
+  }, [currentSlide]);
 
   // Animations
-  const fadeAnim = useRef(new Animated.Value(1)).current;
-  const slideAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-  const floatAnim = useRef(new Animated.Value(0)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const [fadeAnim] = useState(() => new Animated.Value(1));
+  const [slideAnim] = useState(() => new Animated.Value(0));
+  const [scaleAnim] = useState(() => new Animated.Value(1));
+  const [floatAnim] = useState(() => new Animated.Value(0));
+  const [pulseAnim] = useState(() => new Animated.Value(1));
   const [glowValue, setGlowValue] = useState(0.4);
-  const particleAnims = useRef(
+  const [particleAnims] = useState(() =>
     Array.from({ length: 6 }, () => ({
       x: new Animated.Value(0),
       y: new Animated.Value(0),
       opacity: new Animated.Value(0.3),
       scale: new Animated.Value(0.5),
     }))
-  ).current;
+  );
 
   // Floating animation for images
   useEffect(() => {
@@ -260,11 +267,6 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissi
     });
   }, []);
 
-  // Check permissions
-  useEffect(() => {
-    checkPermissions();
-  }, []);
-
   const checkPermissions = async () => {
     try {
       const locationStatus = await Location.getForegroundPermissionsAsync();
@@ -284,6 +286,14 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissi
       console.error('Error checking permissions:', error);
     }
   };
+
+  // Check permissions
+  useEffect(() => {
+    // checkPermissions awaits native permission APIs before any setState, so the
+    // updates are async (not a synchronous cascading render) and safe here.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    checkPermissions();
+  }, []);
 
   const requestTrackingPermission = async () => {
     try {
@@ -360,8 +370,10 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissi
   const goNext = () => animateSlideChange('next');
   const goPrev = () => animateSlideChange('prev');
 
-  // Swipe gesture handler
-  const panResponder = useRef(
+  // Swipe gesture handler. The handlers read currentSlideRef only when a gesture
+  // fires (never during render), so the ref access here is safe.
+  // eslint-disable-next-line react-hooks/refs
+  const [panResponder] = useState(() =>
     PanResponder.create({
       onStartShouldSetPanResponder: () => false,
       onMoveShouldSetPanResponder: (_, gestureState) => {
@@ -376,7 +388,7 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissi
         }
       },
     })
-  ).current;
+  );
 
   const requestLocationPermission = async () => {
     try {
@@ -739,7 +751,7 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissi
 };
 
 const PermissionRow: React.FC<{
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: React.ComponentProps<typeof Ionicons>['name'];
   title: string;
   description: string;
   isGranted: boolean;

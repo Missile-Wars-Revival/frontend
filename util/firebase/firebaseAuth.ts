@@ -4,7 +4,7 @@ import { firebaseConfig } from "./config";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
 import { startGetSelfProfile } from "../../api/getprofile";
-import { ApiResponse } from "../../app/profile";
+import type { ApiResponse } from "../../app/(tabs)/profile";
 
 // Initialize Firebase app
 let app: FirebaseApp;

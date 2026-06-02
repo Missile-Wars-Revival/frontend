@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Image, Animated, useColorScheme, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Image, Animated, useColorScheme } from 'react-native';
 import { getlocation } from '../util/locationreq';
 import { getApps, initializeApp } from "firebase/app";
 import { firebaseConfig } from '../util/firebase/config';
@@ -10,11 +10,31 @@ interface SplashScreenProps {
 }
 
 const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
-  const [fadeAnim] = useState(new Animated.Value(0));
-  const [progressAnim] = useState(new Animated.Value(0));
+  const [fadeAnim] = useState(() => new Animated.Value(0));
+  const [progressAnim] = useState(() => new Animated.Value(0));
   const [loadingText, setLoadingText] = useState('Initializing connection...');
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
+
+  const initializeAsyncStorageValues = async () => {
+    const keysToInitialize = [
+      { key: 'visibilitymode', defaultValue: 'global' },
+      { key: 'selectedMapStyle', defaultValue: 'default' },
+      { key: 'regionlocation', defaultValue: JSON.stringify({ latitude: 0, longitude: 0, latitudeDelta: 0.0922, longitudeDelta: 0.0421 }) },
+      { key: 'firstload', defaultValue: 'true' },
+      { key: 'dbconnection', defaultValue: 'false' },
+      { key: 'isAlive', defaultValue: 'true' },
+      { key: 'signedIn', defaultValue: 'false' },
+      { key: 'locActive', defaultValue: 'false' },
+    ];
+
+    for (const { key, defaultValue } of keysToInitialize) {
+      const value = await AsyncStorage.getItem(key);
+      if (value === null) {
+        await AsyncStorage.setItem(key, defaultValue);
+      }
+    }
+  };
 
   useEffect(() => {
     const initializeAppLoad = async () => {
@@ -30,11 +50,8 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
 
         // Step 2: Initialize Firebase
         setLoadingText('Connecting to servers...');
-        let app;
         if (getApps().length === 0) {
-          app = initializeApp(firebaseConfig);
-        } else {
-          app = getApps()[0];
+          initializeApp(firebaseConfig);
         }
         Animated.timing(progressAnim, {
           toValue: 0.5,
@@ -80,26 +97,6 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
     }).start();
 
   }, [onFinish, fadeAnim, progressAnim]);
-
-  const initializeAsyncStorageValues = async () => {
-    const keysToInitialize = [
-      { key: 'visibilitymode', defaultValue: 'global' },
-      { key: 'selectedMapStyle', defaultValue: 'default' },
-      { key: 'regionlocation', defaultValue: JSON.stringify({ latitude: 0, longitude: 0, latitudeDelta: 0.0922, longitudeDelta: 0.0421 }) },
-      { key: 'firstload', defaultValue: 'true' },
-      { key: 'dbconnection', defaultValue: 'false' },
-      { key: 'isAlive', defaultValue: 'true' },
-      { key: 'signedIn', defaultValue: 'false' },
-      { key: 'locActive', defaultValue: 'false' },
-    ];
-
-    for (const { key, defaultValue } of keysToInitialize) {
-      const value = await AsyncStorage.getItem(key);
-      if (value === null) {
-        await AsyncStorage.setItem(key, defaultValue);
-      }
-    }
-  };
 
   return (
     <View style={[styles.container, isDarkMode && styles.containerDark]}>

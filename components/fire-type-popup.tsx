@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Modal, View, Text, TouchableOpacity, StyleSheet, useColorScheme, Dimensions, Animated } from "react-native";
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@react-native-vector-icons/ionicons';
 import { useOnboarding } from '../util/Context/onboardingContext';
 
 const { width, height } = Dimensions.get('window');
@@ -91,7 +91,7 @@ export const FireTypeStyle = ({
   isDarkMode,
 }: MapStylePopupProps) => {
   const { currentStep, moveToNextStep, isOnboardingComplete } = useOnboarding();
-  const slideAnim = useRef(new Animated.Value(300)).current;
+  const [slideAnim] = useState(() => new Animated.Value(300));
 
   useEffect(() => {
     if (visible) {

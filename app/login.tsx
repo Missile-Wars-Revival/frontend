@@ -1,10 +1,10 @@
 import { SafeAreaView, Text, View, Image, TouchableHighlight, ScrollView, Dimensions, Modal, TouchableOpacity, Alert, StyleSheet, useColorScheme } from "react-native";
 import { router } from "expo-router";
 import { Input } from "../components/ui/input";
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import useLogin from "../hooks/api/useLogin";
 import { User, LockKeyhole, CheckCircle2 } from "lucide-react-native";
-import React from "react";
+
 import { saveCredentials } from "../util/logincache";
 import { usePushNotifications } from "../components/Notifications/usePushNotifications";
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -17,7 +17,7 @@ import { getlocation } from "../util/locationreq";
 const { width, height } = Dimensions.get('window');
 
 export default function Login() {
-  const { expoPushToken, notification } = usePushNotifications();
+  const { expoPushToken } = usePushNotifications();
   const notificationToken = expoPushToken?.data ?? "No token";
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -58,7 +58,6 @@ export default function Login() {
                   <User size={24} color={isDarkMode ? "#FFFFFF" : "#000000"} />
                 </View>
               }
-              className="w-[90vw] h-[5vh] rounded-[20px]"
             />
           </View>
           <View style={styles.inputWrapper}>
@@ -77,7 +76,6 @@ export default function Login() {
                   <LockKeyhole size={24} color={isDarkMode ? "white" : "black"} />
                 </View>
               }
-              className="w-[90vw] h-[5vh] rounded-[20px]"
             />
             {isError && (
               <Text style={styles.errorText}>
@@ -185,7 +183,7 @@ function LoginButton({
         style={[styles.loginButton, isDarkMode && styles.loginButtonDark]}
       >
         <View>
-          <Text style={styles.loginButtonText}>Let's Fight</Text>
+          <Text style={styles.loginButtonText}>Let&apos;s Fight</Text>
         </View>
       </TouchableHighlight>
       {showSwirl && <LoginSwirl onAnimationComplete={handleAnimationComplete} />}
@@ -242,7 +240,7 @@ function ForgotCredentialsModal({
       await requestPasswordReset(email);
       setShowResetForm(true);
       setError("");
-    } catch (err) {
+    } catch {
       setError("Failed to request password reset. Please try again.");
     }
   };
@@ -259,7 +257,7 @@ function ForgotCredentialsModal({
       } else {
         setError(result.message);
       }
-    } catch (err) {
+    } catch {
       setError("Failed to reset password. Please try again.");
     }
   };
@@ -276,7 +274,7 @@ function ForgotCredentialsModal({
       } else {
         handleRequestReset();
       }
-    } catch (err) {
+    } catch {
       setError(`Failed to request ${type} recovery. Please try again.`);
     }
   };

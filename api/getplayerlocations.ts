@@ -1,4 +1,4 @@
-import axios from "axios";
+import { isAxiosError } from "axios";
 import axiosInstance from "./axios-instance";
 import * as SecureStore from "expo-secure-store";
 
@@ -48,7 +48,7 @@ export async function searchOtherPlayersData(searchTerm: string): Promise<any[]>
         // The backend already returns the data in the correct format, so we don't need to map it again
         return response.data;
     } catch (error) {
-        if (axios.isAxiosError(error)) {
+        if (isAxiosError(error)) {
             console.error("Error fetching other players data:", error.response?.data || error.message);
         } else {
             console.error("Error fetching other players data:", error);
@@ -74,7 +74,7 @@ export async function searchFriendsAdded(searchTerm: string): Promise<any[]> {
         // The backend already returns the data in the correct format, so we don't need to map it again
         return response.data;
     } catch (error) {
-        if (axios.isAxiosError(error)) {
+        if (isAxiosError(error)) {
             console.error("Error fetching other players data:", error.response?.data || error.message);
         } else {
             console.error("Error fetching other players data:", error);
@@ -108,7 +108,7 @@ export const NearbyPlayersData = async (latitude: number, longitude: number) => 
         }
     } catch (error: unknown) {
         // Check if the error is an AxiosError
-        if (axios.isAxiosError(error)) {
+        if (isAxiosError(error)) {
             //console.log("Error fetching nearby players:", error.message);
             if (error.response) {
                 //console.error("Error Response:", error.response.data);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Modal, Text, View, Dimensions, Alert, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { Modal, Text, View, Dimensions, Alert, StyleSheet, TouchableOpacity, Platform , useColorScheme } from 'react-native';
 import MapView, { Marker, Circle, Polygon } from 'react-native-maps';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -7,7 +7,6 @@ import * as Location from 'expo-location';
 import { useUserName } from "../../util/fetchusernameglobal";
 import { mapstyles } from '../../map-themes/stylesheet';
 import { placelandmine } from '../../api/fireentities';
-import { useColorScheme } from 'react-native';
 import { loadLastKnownLocation, saveLocation } from '../../util/mapstore';
 import { AllOther } from '../Other/map-other';
 import { AllLandMines } from '../Landmine/map-landmines';
@@ -476,7 +475,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
     justifyContent: 'center',
     alignItems: 'center',

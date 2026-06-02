@@ -1,10 +1,10 @@
-import { SafeAreaView, Text, View, Image, TouchableOpacity, ScrollView, Dimensions, StyleSheet, useColorScheme, Alert } from "react-native";
+import { SafeAreaView, Text, View, Image, TouchableOpacity, ScrollView, Dimensions, StyleSheet, useColorScheme } from "react-native";
 import { router } from "expo-router";
 import { Input } from "../components/ui/input";
-import { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import useRegister from "../hooks/api/useRegister";
 import { User, LockKeyhole, Mail } from "lucide-react-native";
-import React from "react";
+
 import { saveCredentials } from "../util/logincache";
 import { usePushNotifications } from "../components/Notifications/usePushNotifications";
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -138,7 +138,6 @@ export default function Register() {
                   <User size={24} color={isDarkMode ? "#FFFFFF" : "#000000"} />
                 </View>
               }
-              className="w-[90vw] h-[5vh] rounded-[20px]"
             />
             {errors.username && <Text style={styles.errorText}>{errors.username}</Text>}
           </View>
@@ -155,7 +154,6 @@ export default function Register() {
                   <Mail size={24} color={isDarkMode ? "#FFFFFF" : "#000000"} />
                 </View>
               }
-              className="w-[90vw] h-[5vh] rounded-[20px]"
             />
             {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
           </View>
@@ -172,7 +170,6 @@ export default function Register() {
                   <LockKeyhole size={24} color={isDarkMode ? "#FFFFFF" : "#000000"} />
                 </View>
               }
-              className="w-[90vw] h-[5vh] rounded-[20px]"
             />
             {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
           </View>
@@ -189,7 +186,6 @@ export default function Register() {
                   <LockKeyhole size={24} color={isDarkMode ? "#FFFFFF" : "#000000"} />
                 </View>
               }
-              className="w-[90vw] h-[5vh] rounded-[20px]"
             />
             {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
           </View>

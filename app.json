@@ -91,7 +91,7 @@
         "expo-alternate-app-icons",
         [
           {
-            "name": "default",
+            "name": "Default",
             "ios": "./assets/appIcons/default.png",
             "android": {
               "foregroundImage": "./assets/appIcons/default.png",
@@ -99,7 +99,7 @@
             }
           },
           {
-            "name": "retro",
+            "name": "Retro",
             "ios": "./assets/appIcons/retro.png",
             "android": {
               "foregroundImage": "./assets/appIcons/retro.png",
@@ -107,7 +107,7 @@
             }
           },
           {
-            "name": "graphic",
+            "name": "Graphic",
             "ios": "./assets/appIcons/graphic.png",
             "android": {
               "foregroundImage": "./assets/appIcons/graphic.png",
@@ -136,9 +136,16 @@
           "androidAppId": "ca-app-pub-3940256099942544~3347511713",
           "iosAppId": "ca-app-pub-3940256099942544~1458002511"
         }
-      ]
+      ],
+      "@react-native-vector-icons/ionicons",
+      "@react-native-vector-icons/fontawesome",
+      "@react-native-vector-icons/material-design-icons",
+      "expo-splash-screen"
     ],
     "owner": "osog",
+    "experiments": {
+      "reactCompiler": true
+    },
     "updates": {
       "url": "https://u.expo.dev/250fd3fc-22b2-411d-abfc-63f3a6b81328"
     }

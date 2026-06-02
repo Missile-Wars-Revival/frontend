@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
         bottom: 0,
     },
     overlay: {
-        ...StyleSheet.absoluteFillObject,
+        ...StyleSheet.absoluteFill,
         backgroundColor: 'rgba(0, 0, 0, 0.3)',
     },
     textContainer: {

@@ -1,22 +1,20 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, FlatList, Text, TouchableOpacity, ImageBackground, SafeAreaView, StyleSheet, useColorScheme, Dimensions, Animated, Modal, ActivityIndicator, Alert, ScrollView } from 'react-native';
+import { View, FlatList, Text, TouchableOpacity, ImageBackground, SafeAreaView, StyleSheet, useColorScheme, Animated, Modal, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import { Image } from 'expo-image';
 import Cart from '../../components/Store/cart';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axiosInstance from '../../api/axios-instance';
 import * as SecureStore from "expo-secure-store";
-import axios from 'axios';
+import { isAxiosError } from 'axios';
 import Purchases from 'react-native-purchases';
 import { addmoney } from '../../api/money';
 import { additem } from '../../api/add-item';
 import { getWeaponTypes, mapProductType, PremProduct, Product, getImages } from '../../api/store';
 import { getShopStyles } from '../../map-themes/stylesheet';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@react-native-vector-icons/ionicons';
 import { useOnboarding } from '../../util/Context/onboardingContext';
 import AdBanner from '../../components/ads/AdBanner';
-
-
-const { width, height } = Dimensions.get('window');
+import { InventoryBottomSheet } from '../../components/ui/inventory-bottom-sheet';
 
 export const products: Product[] = [
   // { id: "20", name: 'LootDrop', price: 400, image: require('../assets/mapassets/Airdropicon.png'), description: 'A Loot Drop', type: 'Loot Drops' },
@@ -33,7 +31,6 @@ const StorePage: React.FC = () => {
   const [currencyAmount, setCurrencyAmount] = useState<number>(0);
   const [isPremiumStore, setIsPremiumStore] = useState<boolean>(false);
   const [premiumProducts, setPremiumProducts] = useState<PremProduct[]>([]);
-  const [cartAnimation] = useState(new Animated.Value(0));
   const [weapons, setWeapons] = useState<Product[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [animation] = useState(new Animated.Value(0));
@@ -43,7 +40,7 @@ const StorePage: React.FC = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [getImageForProduct, setGetImageForProduct] = useState<(imageName: string) => any>(() => () => require('../../assets/logo.png'));
   const [imagesLoaded, setImagesLoaded] = useState(false);
-  const { currentStep, moveToNextStep, isOnboardingComplete } = useOnboarding();
+  const { currentStep, moveToNextStep } = useOnboarding();
 
   useEffect(() => {
     const loadImages = async () => {
@@ -70,6 +67,19 @@ const StorePage: React.FC = () => {
   const sortedWeapons = React.useMemo(() => {
     return [...weapons].sort((a, b) => a.price - b.price);
   }, [weapons]);
+
+  const updateCartTotal = useCallback((currentCart: { product: Product; quantity: number }[]) => {
+    const total = currentCart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+    setCartTotal(total);
+  }, []);
+
+  const showCart = useCallback(() => {
+    setCartVisible(true);
+  }, []);
+
+  const hideCart = useCallback(() => {
+    setCartVisible(false);
+  }, []);
 
   useEffect(() => {
     const fetchWeapons = async () => {
@@ -164,6 +174,7 @@ const StorePage: React.FC = () => {
     };
 
     loadCart();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -183,7 +194,7 @@ const StorePage: React.FC = () => {
         const moneyAsString = String(totalMoney);
         await AsyncStorage.setItem("Money", moneyAsString);
       } catch (error: any) {
-        if (axios.isAxiosError(error)) {
+        if (isAxiosError(error)) {
           console.error('Axios error:', error.message);
         } else {
           console.error('Error fetching currency amount:', error);
@@ -194,12 +205,7 @@ const StorePage: React.FC = () => {
     fetchCurrencyAmount();
   }, [cartTotal]);
 
-  const updateCartTotal = (currentCart: { product: Product; quantity: number }[]) => {
-    const total = currentCart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-    setCartTotal(total);
-  };
-
-  const addToCart = (product: Product) => {
+  const addToCart = useCallback((product: Product) => {
     if (currencyAmount >= product.price) {
       setCart((prevCart) => {
         const cartItem = prevCart.find((item) => item.product.id === product.id);
@@ -219,16 +225,16 @@ const StorePage: React.FC = () => {
     } else {
       alert('Not enough currency!');
     }
-  };
+  }, [currencyAmount, updateCartTotal]);
 
-  const handleRemove = (productId: string) => {
+  const handleRemove = useCallback((productId: string) => {
     setCart((prevCart) => {
       const updatedCart = prevCart.filter(item => item.product.id !== productId);
       AsyncStorage.setItem('cartitems', JSON.stringify(updatedCart));
       updateCartTotal(updatedCart);
       return updatedCart;
     });
-  };
+  }, [updateCartTotal]);
 
   //buys item - SET API TOKENS IN _LAYOUT.TSX
   const buyItem = async (product: PremProduct) => {
@@ -454,12 +460,12 @@ const StorePage: React.FC = () => {
     }
   };
 
-  const handleShowCart = () => {
+  const handleShowCart = useCallback(() => {
     showCart();
     if (currentStep === 'go_to_cart') {
       moveToNextStep();
     }
-  };
+  }, [currentStep, moveToNextStep, showCart]);
 
   const renderTabs = () => (
     <View style={updatedStyles.tabContainerMissiles}>
@@ -549,20 +555,22 @@ const StorePage: React.FC = () => {
     </TouchableOpacity>
   );
 
-  const showCart = () => {
-    setCartVisible(true);
-    Animated.spring(cartAnimation, {
-      toValue: 1,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const hideCart = () => {
-    Animated.spring(cartAnimation, {
-      toValue: 0,
-      useNativeDriver: true,
-    }).start(() => setCartVisible(false));
-  };
+  // The cart "purchase mode" rendered as a native bottom sheet (shared with the
+  // landmine/loot/missile pickers). Defined once and used in both theme branches.
+  const renderCartSheet = () => (
+    <InventoryBottomSheet
+      visible={isCartVisible}
+      onClose={hideCart}
+      backgroundColor={isDarkMode ? '#1E1E1E' : '#FFFFFF'}
+    >
+      <View style={[updatedStyles.container, { backgroundColor: isDarkMode ? '#1E1E1E' : '#FFFFFF' }]}>
+        <Cart cart={cart} onRemove={handleRemove} />
+        <TouchableOpacity onPress={hideCart} style={updatedStyles.cartButton}>
+          <Text style={updatedStyles.cartButtonText}>Back to Products</Text>
+        </TouchableOpacity>
+      </View>
+    </InventoryBottomSheet>
+  );
 
   return (
     <SafeAreaView style={[updatedStyles.container, isDarkMode && updatedStyles.containerDark]}>
@@ -632,24 +640,7 @@ const StorePage: React.FC = () => {
             </View>
           )}
 
-          {isCartVisible && (
-            <Animated.View style={[
-              updatedStyles.cartContainer,
-              {
-                transform: [{
-                  translateY: cartAnimation.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [height, 0],
-                  }),
-                }],
-              },
-            ]}>
-              <Cart cart={cart} onRemove={handleRemove} />
-              <TouchableOpacity onPress={hideCart} style={updatedStyles.cartButton}>
-                <Text style={updatedStyles.cartButtonText}>Back to Products</Text>
-              </TouchableOpacity>
-            </Animated.View>
-          )}
+          {renderCartSheet()}
 
           <Modal
             visible={modalVisible}
@@ -747,24 +738,7 @@ const StorePage: React.FC = () => {
             </View>
           )}
 
-          {isCartVisible && (
-            <Animated.View style={[
-              updatedStyles.cartContainer,
-              {
-                transform: [{
-                  translateY: cartAnimation.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [height, 0],
-                  }),
-                }],
-              },
-            ]}>
-              <Cart cart={cart} onRemove={handleRemove} />
-              <TouchableOpacity onPress={hideCart} style={updatedStyles.cartButton}>
-                <Text style={updatedStyles.cartButtonText}>Back to Products</Text>
-              </TouchableOpacity>
-            </Animated.View>
-          )}
+          {renderCartSheet()}
 
           <Modal
             visible={modalVisible}

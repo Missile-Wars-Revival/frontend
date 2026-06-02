@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, Switch, Alert, ActivityIndicator, TouchableOpacity, useColorScheme, StyleSheet, Dimensions } from "react-native";
+import React, { useEffect, useState, useMemo } from "react";
+import { View, Text, Switch, Alert, TouchableOpacity, useColorScheme } from "react-native";
 import MapView, { Circle } from "react-native-maps";
 import { AllLootDrops } from "./Loot/map-loot";
 import { AllLandMines } from "./Landmine/map-landmines";
@@ -15,17 +15,15 @@ import { updateFriendsOnlyStatus } from "../api/visibility";
 import useFetchMissiles from "../hooks/websockets/missilehook";
 import useFetchLoot from "../hooks/websockets/loothook";
 import useFetchLandmines from "../hooks/websockets/landminehook";
-import { FontAwesome } from '@expo/vector-icons';
+import FontAwesome from '@react-native-vector-icons/fontawesome';
 import useFetchOther from "../hooks/websockets/otherhook";
 import { AllOther } from "./Other/map-other";
-import { useUserLeague } from "../hooks/api/useUserLEague";
+import { useUserLeague } from "../hooks/api/useUserLeague";
 import { getLeagueAirspace } from "./player";
 
 interface MapCompProps {
     selectedMapStyle: any;
 }
-
-const { width, height } = Dimensions.get('window');
 
 export const MapComp = (props: MapCompProps) => {
 
@@ -35,19 +33,18 @@ export const MapComp = (props: MapCompProps) => {
     const otherData = useFetchOther()
     const LandmineData = useFetchLandmines()
 
-    const [isLoading, setIsLoading] = useState(true);
+    // API hooks (must be called unconditionally at top)
+    const userLeague = useUserLeague();
+
     const [hasDbConnection, setDbConnection] = useState<boolean>(true);
     const [isAlive, setisAlive] = useState<boolean>(true);
-    const [firstLoad, setFirstLoad] = useState<boolean>();
     const [visibilitymode, setMode] = useState<'friends' | 'global'>('global');
-    const [locActive, setLocActive] = useState<boolean>(true);
+    const [locActive] = useState<boolean>(true);
     const [isMapDisabled, setIsMapDisabled] = useState(false);
 
     const colorScheme = useColorScheme();
     const isDarkMode = colorScheme === 'dark';
-    const mainmapstyles = StyleSheet.create({
-        ...getMainMapStyles(isDarkMode),
-    });
+    const mainmapstyles = useMemo(() => getMainMapStyles(isDarkMode), [isDarkMode]);
 
     const [region, setRegion] = useState({
         latitude: 0,
@@ -70,16 +67,16 @@ export const MapComp = (props: MapCompProps) => {
                 if (cachedRegion !== null) {
                     setRegion(cachedRegion);
                 }
-    
+
                 // Check DB Connection
                 const isDBConnection = await AsyncStorage.getItem('dbconnection');
-    
+
                 const token = await SecureStore.getItemAsync("token");
                 if (!token) {
                     console.error("Authentication token is missing");
                     // Don't return here, continue with the rest of the initialization
                 }
-    
+
                 if (isDBConnection === "false") {
                     setDbConnection(false);
                 } else if (isDBConnection === "true") {
@@ -87,57 +84,59 @@ export const MapComp = (props: MapCompProps) => {
                 } else {
                     setDbConnection(false);
                 }
-    
-                // Set firstLoad to false by default
-                setFirstLoad(false);
-    
+
                 const cachedMode = await AsyncStorage.getItem('visibilitymode');
                 if (cachedMode !== null) {
                     setMode(cachedMode as 'friends' | 'global');
                 }
-
-                const intervalId = setInterval(async () => {
-                    // Periodically check DB connection status
-                    const dbConnStatus = await AsyncStorage.getItem('dbconnection');
-                    if (dbConnStatus === "false") {
-                        setDbConnection(false)
-                    }
-                    if (dbConnStatus === "true") {
-                        setDbConnection(true)
-                    } else {
-                        setDbConnection(false);
-                    }
-                    try {
-                        const isAliveStatus = await AsyncStorage.getItem('isAlive');
-                        if (isAliveStatus !== null) {
-                            const isAliveData = JSON.parse(isAliveStatus); // Converts the string to an object
-                            if (typeof isAliveData === 'object' && isAliveData.hasOwnProperty('isAlive')) {
-                                const isAlive = isAliveData.isAlive; // Extract the boolean value from the object
-                                setisAlive(isAlive);
-                            } else {
-                                // Handle unexpected format
-                                setisAlive(false);
-                            }
-                        } else {
-                            // Handle null (e.g., key does not exist)
-                            setisAlive(true); // Assume false if nothing is stored
-                        }
-                    } catch (error) {
-                        setisAlive(true); 
-                    }
-
-                }, 1000);
-
-                return () => {
-                    clearInterval(intervalId);
-                };
             } catch (error) {
-                setIsLoading(false);
                 console.error('Error initializing app:', error);
             }
         };
 
         initializeApp();
+    }, []);
+
+    // Periodic polling for DB connection and alive status (with proper cleanup)
+    useEffect(() => {
+        const pollStatus = async () => {
+            // Periodically check DB connection status
+            const dbConnStatus = await AsyncStorage.getItem('dbconnection');
+            if (dbConnStatus === "false") {
+                setDbConnection(false);
+            } else if (dbConnStatus === "true") {
+                setDbConnection(true);
+            } else {
+                setDbConnection(false);
+            }
+            try {
+                const isAliveStatus = await AsyncStorage.getItem('isAlive');
+                if (isAliveStatus !== null) {
+                    const isAliveData = JSON.parse(isAliveStatus); // Converts the string to an object
+                    if (typeof isAliveData === 'object' && isAliveData != null && 'isAlive' in isAliveData) {
+                        const isAliveVal = isAliveData.isAlive; // Extract the boolean value from the object
+                        setisAlive(isAliveVal);
+                    } else {
+                        // Handle unexpected format
+                        setisAlive(false);
+                    }
+                } else {
+                    // Handle null (e.g., key does not exist)
+                    setisAlive(true); // Assume true if nothing is stored
+                }
+            } catch {
+                setisAlive(true);
+            }
+        };
+
+        // Run once immediately
+        pollStatus();
+
+        const intervalId = setInterval(pollStatus, 1000);
+
+        return () => {
+            clearInterval(intervalId);
+        };
     }, []);
 
     useEffect(() => {
@@ -254,17 +253,7 @@ export const MapComp = (props: MapCompProps) => {
         };
     }, []);
 
-    if (firstLoad === true) {
-        return (
-            <View style={mainmapstyles.loaderContainer}>
-                <ActivityIndicator size="large" color="#0000ff" />
-                <Text></Text>
-                <Text style={mainmapstyles.overlayText}>Connecting To Servers For The First Time...</Text>
-            </View>
-        );
-    }
-
-    const relocate = async (setRegion: (arg0: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number; pitch: number; heading: number; }) => void) => {
+    const relocate = async () => {
         try {
             const cachedLocation = await loadLastKnownLocation();
             if (cachedLocation) {
@@ -290,10 +279,7 @@ export const MapComp = (props: MapCompProps) => {
         }
     };
 
-
-  const userLeague = useUserLeague();
-
-  const leagueairspace = getLeagueAirspace(userLeague?.league || 'bronze');
+    const leagueairspace = getLeagueAirspace(userLeague?.league || 'bronze');
 
     // Render map and other components once initialization is complete
     return (
@@ -329,7 +315,7 @@ export const MapComp = (props: MapCompProps) => {
             </View>
             <TouchableOpacity
                 style={mainmapstyles.relocateButton}
-                onPress={() => relocate(setRegion)}>
+                onPress={relocate}>
                 <FontAwesome name="location-arrow" size={24} color="#ffffff" />
             </TouchableOpacity>
             {(!isAlive) && (

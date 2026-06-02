@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Text, View, FlatList, TouchableOpacity, Alert, RefreshControl, TextInput, Keyboard, TouchableWithoutFeedback, SafeAreaView, useColorScheme, StyleSheet } from "react-native";
 import { Image } from "expo-image";
 import { NearbyPlayersData, searchOtherPlayersData } from "../../../api/getplayerlocations";
@@ -6,7 +6,7 @@ import { addFriend } from "../../../api/friends";
 import { router } from "expo-router";
 import { getCurrentLocation, location } from "../../../util/locationreq";
 import * as SecureStore from "expo-secure-store";
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@react-native-vector-icons/ionicons';
 import { fetchAndCacheImage } from "../../../util/imagecache";
 import FriendAddedAnimation from "../../../components/Animations/FriendAddedAnimation";
 
@@ -49,29 +49,31 @@ const QuickAddPage: React.FC = () => {
     fetchCredentials();
   }, []);
 
-  const fetchLocation = async () => {
-    const location: location = await getCurrentLocation();
-    setUserLocation(location)
-    }
+  const fetchPlayers = useCallback((latitude: number, longitude: number) => {
+    NearbyPlayersData(latitude, longitude)
+      .then(data => {
+        setPlayersData(data);
+        setLoading(false);
+      })
+      .catch(error => {
+        console.error("Failed to fetch players:", error);
+        setLoading(false);
+      });
+  }, []);
 
   useEffect(() => {
-    fetchLocation();
+    const loadInitialLocation = async () => {
+      const loc: location = await getCurrentLocation();
+      setUserLocation(loc);
+    };
+    loadInitialLocation();
   }, []);
 
   useEffect(() => {
     if (userLocation) {
-      setLoading(true);
-      NearbyPlayersData(userLocation.latitude, userLocation.longitude)
-        .then(data => {
-          setPlayersData(data);
-          setLoading(false);
-        })
-        .catch(error => {
-          console.error("Failed to fetch players:", error);
-          setLoading(false);
-        });
+      fetchPlayers(userLocation.latitude, userLocation.longitude);
     }
-  }, [userLocation]);
+  }, [userLocation, fetchPlayers]);
 
   const handleAddFriend = async (friendUsername: string) => {
     const token = await SecureStore.getItemAsync("token");
@@ -101,15 +103,7 @@ const QuickAddPage: React.FC = () => {
     setRefreshing(true);
     if (userLocation) {
       setLoading(true);
-      NearbyPlayersData(userLocation.latitude, userLocation.longitude)
-        .then(data => {
-          setPlayersData(data);
-          setLoading(false);
-        })
-        .catch(error => {
-          console.error("Failed to fetch players:", error);
-          setLoading(false);
-        });
+      fetchPlayers(userLocation.latitude, userLocation.longitude);
     }
     setRefreshing(false);
   };

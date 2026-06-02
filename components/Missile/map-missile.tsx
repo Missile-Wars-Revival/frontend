@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { View, Image, Platform, ScrollView, Text, useColorScheme, Modal, TouchableOpacity, Dimensions } from "react-native";
+import { View, Image, Platform, ScrollView, Text, useColorScheme, Modal, TouchableOpacity } from "react-native";
 import { Circle, Marker, Polyline } from "react-native-maps";
 import { GeoLocation, Missile } from "middle-earth";
 import { convertimestampfuturemissile } from "../../util/get-time-difference";
-import { getWeaponTypes, Product } from "../../api/store";
-import { getImages } from "../../api/store";
+import { getWeaponTypes, Product , getImages } from "../../api/store";
+
 import { getShopStyles } from "../../map-themes/stylesheet";
+import * as geolib from 'geolib';
 
 interface AllMissilesProps {
     missileData: Missile[];
@@ -100,9 +101,7 @@ export const MapMissile = (missileProps: MissileProps) => {
         };
     
         fetchWeapons();
-      }, []);
-
-    const geolib = require('geolib');
+      }, [getImageForProduct]);
 
     const generateTrajectory = (start: any, end: any, segments: number) => {
         const totalDistance = geolib.getDistance(start, end);
@@ -270,46 +269,3 @@ export const MapMissile = (missileProps: MissileProps) => {
         </View>
     )
 }
-
-// Add these styles to your existing styles object
-const additionalStyles = {
-    centeredView: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    },
-    modalContainer: {
-        width: Dimensions.get('window').width * 0.9,
-        maxHeight: Dimensions.get('window').height * 0.8,
-        backgroundColor: 'white',
-        borderRadius: 20,
-        padding: 20,
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 2
-        },
-        shadowOpacity: 0.25,
-        shadowRadius: 4,
-        elevation: 5
-    },
-    modalContainerDark: {
-        backgroundColor: '#333',
-    },
-    button: {
-        borderRadius: 20,
-        padding: 10,
-        elevation: 2,
-        marginTop: 15,
-    },
-    buttonClose: {
-        backgroundColor: '#2196F3',
-    },
-    textStyle: {
-        color: 'white',
-        fontWeight: 'bold',
-        textAlign: 'center',
-    },
-};

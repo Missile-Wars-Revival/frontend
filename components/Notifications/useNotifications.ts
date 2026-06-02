@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { getNotifications, markNotificationAsRead, deleteNotification } from '../../api/notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -43,10 +43,18 @@ export const useNotifications = () => {
 	const [unreadChatCount, setUnreadChatCount] = useState(0);
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
-	const [lastFetchTime, setLastFetchTime] = useState(0);
+	const lastFetchTimeRef = useRef(0);
+
+	const updateUnreadCount = useCallback((notifs: Notification[]) => {
+		const chatCount = notifs.filter(n => !n.isRead && n.title === 'New Message').length;
+		const otherCount = notifs.filter(n => !n.isRead && n.title !== 'New Message').length;
+		setUnreadChatCount(chatCount);
+		setUnreadCount(otherCount);
+		notificationEmitter.emit('unreadCountUpdated', { count: otherCount, chatCount });
+	}, []);
 
 	const fetchNotifications = useCallback(async (force = false) => {
-		if (!force && Date.now() - lastFetchTime < 30000) {
+		if (!force && Date.now() - lastFetchTimeRef.current < 30000) {
 			// If not forced and less than 30 seconds since last fetch, don't fetch
 			return;
 		}
@@ -55,9 +63,8 @@ export const useNotifications = () => {
 			setError(null);
 			const data = await getNotifications();
 			setNotifications(data);
-			updateUnreadCount(data);
 			notificationEmitter.emit('notificationsUpdated', data);
-			setLastFetchTime(Date.now());
+			lastFetchTimeRef.current = Date.now();
 
 			// Store the latest notification
 			try {
@@ -77,17 +84,10 @@ export const useNotifications = () => {
 		} finally {
 			setIsLoading(false);
 		}
-	}, [lastFetchTime]);
-
-	const updateUnreadCount = useCallback((notifs: Notification[]) => {
-		const chatCount = notifs.filter(n => !n.isRead && n.title === 'New Message').length;
-		const otherCount = notifs.filter(n => !n.isRead && n.title !== 'New Message').length;
-		setUnreadChatCount(chatCount);
-		setUnreadCount(otherCount);
-		notificationEmitter.emit('unreadCountUpdated', { count: otherCount, chatCount });
 	}, []);
 
 	useEffect(() => {
+		// eslint-disable-next-line react-hooks/set-state-in-effect
 		fetchNotifications();
 
 		const handleNewNotification = () => {
@@ -110,6 +110,11 @@ export const useNotifications = () => {
 		};
 	}, [fetchNotifications]);
 
+	// Derive unread counts from notifications list to avoid stale closures and keep in sync
+	useEffect(() => {
+		// eslint-disable-next-line react-hooks/set-state-in-effect
+		updateUnreadCount(notifications);
+	}, [notifications, updateUnreadCount]);
 
 	const markAsRead = async (notificationId: string) => {
 		try {
@@ -121,9 +126,6 @@ export const useNotifications = () => {
 						: notification
 				)
 			);
-			updateUnreadCount(notifications.map(n =>
-				n.id === notificationId.toString() ? { ...n, isRead: true } : n
-			));
 		} catch (error) {
 			console.error('Failed to mark notification as read:', error);
 		}
@@ -138,9 +140,6 @@ export const useNotifications = () => {
 						: notification
 				)
 			);
-			updateUnreadCount(notifications.map(n =>
-				n.id === notificationId.toString() ? { ...n, isRead: true } : n
-			));
 		} catch (error) {
 			console.error('Failed to mark notification as read:', error);
 		}
@@ -152,7 +151,6 @@ export const useNotifications = () => {
 			setNotifications(prevNotifications => 
 				prevNotifications.filter(notification => notification.id !== notificationId)
 			);
-			updateUnreadCount(notifications.filter(n => n.id !== notificationId));
 		} catch (error) {
 			console.error('Failed to delete notification:', error);
 		}
@@ -169,7 +167,6 @@ export const useNotifications = () => {
 			}
 			
 			setNotifications([]);
-			updateUnreadCount([]);
 			notificationEmitter.emit('notificationsCleared');
 		} catch (error) {
 			console.error('Failed to clear all notifications:', error);

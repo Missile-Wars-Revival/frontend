@@ -2,14 +2,14 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, useColorScheme, KeyboardAvoidingView, Platform, SafeAreaView, Modal, Alert, Animated, Linking, Keyboard } from 'react-native';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@react-native-vector-icons/ionicons';
 import { getDatabase, ref, onValue, push, set, get, update, serverTimestamp, increment } from 'firebase/database';
 import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import * as ImagePicker from 'expo-image-picker';
 import * as MediaLibrary from 'expo-media-library';
 import * as SecureStore from "expo-secure-store";
 import { generateUID } from '../../util/uidGenerator';
-import * as FileSystem from 'expo-file-system';
+import { File, Paths } from 'expo-file-system';
 import useFetchInventory from '../../hooks/websockets/inventoryhook';
 import { receiveItem, removeItem } from '../../api/add-item';
 import { notificationEmitter } from '../../components/Notifications/useNotifications';
@@ -118,7 +118,7 @@ export default function ChatScreen() {
   const [itemQuantity, setItemQuantity] = useState(1);
   const [showInventoryMenu, setShowInventoryMenu] = useState(false);
   const [isAttachMenuVisible, setIsAttachMenuVisible] = useState(false);
-  const slideAnimation = useRef(new Animated.Value(0)).current;
+  const [slideAnimation] = useState(() => new Animated.Value(0));
   const [isUploading, setIsUploading] = useState(false);
   const [collectingItem, setCollectingItem] = useState<InventoryMessageItem | null>(null);
   const [inputHeight, setInputHeight] = useState(40);
@@ -169,6 +169,34 @@ export default function ChatScreen() {
     };
     loadImages();
   }, []);
+
+  const scrollToBottom = useCallback(() => {
+    if (flatListRef.current) {
+      flatListRef.current.scrollToEnd({ animated: true });
+    }
+  }, []);
+
+  const markMessagesAsRead = useCallback(async (messageList: Message[], otherParticipant: string) => {
+    if (!username || !otherParticipant) return;
+    const db = getDatabase();
+    const unreadMessages = messageList.filter(msg =>
+      msg.senderUsername === otherParticipant && !msg.read
+    );
+
+    if (unreadMessages.length === 0) return;
+
+    const updates: { [key: string]: any } = {};
+    unreadMessages.forEach(msg => {
+      updates[`conversations/${id}/messages/${msg.id}/read`] = true;
+      updates[`conversations/${id}/messages/${msg.id}/readTimestamp`] = serverTimestamp();
+    });
+
+    // Add this line to mark the mostRecentMessage as read
+    updates[`conversations/${id}/lastMessage/isRead`] = true;
+
+    await update(ref(db), updates);
+    setUnreadCount(0); // Reset unread count after marking messages as read
+  }, [username, id]);
 
   useEffect(() => {
     if (!id || !username) return;
@@ -229,14 +257,7 @@ export default function ChatScreen() {
     });
 
     return () => unsubscribe();
-  }, [id, username]);
-
-  // Add this new function to scroll to bottom
-  const scrollToBottom = () => {
-    if (flatListRef.current) {
-      flatListRef.current.scrollToEnd({ animated: true });
-    }
-  };
+  }, [id, username, markMessagesAsRead, scrollToBottom]);
 
   const handleAttachPress = () => {
     Keyboard.dismiss(); // Add this line to hide the keyboard
@@ -435,22 +456,28 @@ export default function ChatScreen() {
           return;
         }
 
-        // First, download the image to local file system
-        const fileUri = FileSystem.documentDirectory + "temp_image.jpg";
-        await FileSystem.downloadAsync(fullScreenImage, fileUri);
+        // First, download the image to the local file system (SDK 54+ File API)
+        const destination = new File(Paths.document, `temp_image_${Date.now()}.jpg`);
+        const downloaded = await File.downloadFileAsync(fullScreenImage, destination);
 
-        // Then, save the local file to media library
-        const asset = await MediaLibrary.createAssetAsync(fileUri);
+        // Then, save the local file to the media library (SDK 54+ class-based API)
+        const asset = await MediaLibrary.Asset.create(downloaded.uri);
 
         if (asset) {
-          await MediaLibrary.createAlbumAsync('ChatApp', asset, false);
+          // Add to the "ChatApp" album, creating it if it doesn't exist yet.
+          const existingAlbum = await MediaLibrary.Album.get('ChatApp');
+          if (existingAlbum) {
+            await existingAlbum.add(asset);
+          } else {
+            await MediaLibrary.Album.create('ChatApp', [asset], false);
+          }
           Alert.alert('Success', 'Image saved to gallery!');
         } else {
           throw new Error('Asset creation failed');
         }
 
         // Clean up the temporary file
-        await FileSystem.deleteAsync(fileUri);
+        downloaded.delete();
 
       } catch (error) {
         console.error('Error saving image:', error);
@@ -459,29 +486,7 @@ export default function ChatScreen() {
     }
   };
 
-  const markMessagesAsRead = async (messageList: Message[], otherParticipant: string) => {
-    if (!username || !otherParticipant) return;
-    const db = getDatabase();
-    const unreadMessages = messageList.filter(msg =>
-      msg.senderUsername === otherParticipant && !msg.read
-    );
-
-    if (unreadMessages.length === 0) return;
-
-    const updates: { [key: string]: any } = {};
-    unreadMessages.forEach(msg => {
-      updates[`conversations/${id}/messages/${msg.id}/read`] = true;
-      updates[`conversations/${id}/messages/${msg.id}/readTimestamp`] = serverTimestamp();
-    });
-
-    // Add this line to mark the mostRecentMessage as read
-    updates[`conversations/${id}/lastMessage/isRead`] = true;
-
-    await update(ref(db), updates);
-    setUnreadCount(0); // Reset unread count after marking messages as read
-  };
-
-  const handleCollectItem = async (item: InventoryMessageItem) => {
+  const handleCollectItem = useCallback(async (item: InventoryMessageItem) => {
     if (!username || item.senderUsername === username) return;
 
     setCollectingItem(item);
@@ -506,7 +511,7 @@ export default function ChatScreen() {
       }));
       setMessages(messageList.sort((a, b) => a.timestamp - b.timestamp));
     }
-  };
+  }, [username, id]);
 
   const handleAnimationComplete = () => {
     setCollectingItem(null);
@@ -580,7 +585,7 @@ export default function ChatScreen() {
         )}
       </View>
     );
-  }, [username, isDarkMode, getImageForProduct]);
+  }, [username, isDarkMode, getImageForProduct, handleCollectItem]);
 
   const renderHeader = () => (
     <View style={[styles.header, isDarkMode && styles.headerDark]}>

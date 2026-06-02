@@ -2,19 +2,19 @@ import 'react-native-reanimated';
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
-import { View, StyleSheet, AppStateStatus, AppState, Platform } from 'react-native';
+import { View, StyleSheet, AppStateStatus, AppState, Platform , useColorScheme } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import SplashScreen from './splashscreen';
 import useWebSocket from "../hooks/websockets/websockets";
 import { WebSocketContext, WebSocketProviderProps } from "../util/Context/websocket";
-import { CountdownContext, CountdownProviderProps } from "../util/Context/countdown";
+import { CountdownContext, CountdownProviderProps , useCountdown } from "../util/Context/countdown";
 import CountdownTimer from '../components/countdown';
-import { useCountdown } from '../util/Context/countdown';
+
 import { AuthProvider } from "../util/Context/authcontext";
-import { useColorScheme } from 'react-native';
+
 import PermissionsCheck from '../components/PermissionsCheck';
 import Purchases from 'react-native-purchases';
-import mobileAds from 'react-native-google-mobile-ads';
+import AdService from '../util/AdService';
 import * as ExpoSplashScreen from 'expo-splash-screen';
 import { LandmineProvider } from '../util/Context/landminecontext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -22,10 +22,10 @@ import PermissionsScreen from './PermissionsScreen';
 import { OnboardingProvider } from '../util/Context/onboardingContext';
 
 const WebSocketProvider = ({ children }: WebSocketProviderProps) => {
-  const { data, missiledata, landminedata, lootdata, otherdata, healthdata, friendsdata, inventorydata, playerlocations, leaguesData, sendWebsocket } = useWebSocket();
+  const { missiledata, landminedata, lootdata, otherdata, healthdata, friendsdata, inventorydata, playerlocations, leaguesData, sendWebsocket } = useWebSocket();
 
   return (
-    <WebSocketContext.Provider value={{ data, missiledata, landminedata, lootdata, otherdata, healthdata, friendsdata, inventorydata, playerlocations, leaguesData, sendWebsocket }}>
+    <WebSocketContext.Provider value={{ missiledata, landminedata, lootdata, otherdata, healthdata, friendsdata, inventorydata, playerlocations, leaguesData, sendWebsocket }}>
       {children}
     </WebSocketContext.Provider>
   );
@@ -91,12 +91,11 @@ export default function RootLayout() {
     }
   }, []);
 
+  // Initialize Google Mobile Ads (with consent, frequency capping, reconnect logic, etc.)
   useEffect(() => {
-    mobileAds()
-      .initialize()
-      .catch((error) => {
-        console.error('Failed to initialize mobile ads:', error);
-      });
+    AdService.initialize().catch((error) => {
+      console.error('Failed to initialize AdService:', error);
+    });
   }, []);
 
   useEffect(() => {

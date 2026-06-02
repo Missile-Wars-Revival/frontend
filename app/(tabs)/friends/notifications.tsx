@@ -3,7 +3,7 @@ import { View, Text, FlatList, StyleSheet, TouchableOpacity, SafeAreaView, Platf
 import { useNotifications } from '../../../components/Notifications/useNotifications';
 import * as SecureStore from "expo-secure-store";
 import { addFriend } from '../../../api/friends';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@react-native-vector-icons/ionicons';
 import { useRouter } from 'expo-router';
 import { MissileLibrary } from '../../../components/Missile/missile';
 import AsyncStorage from '@react-native-async-storage/async-storage';

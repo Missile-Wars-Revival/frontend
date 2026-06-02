@@ -19,7 +19,7 @@ export interface Friend {
 
 export type MapStyle = {
   elementType?: string; //element is optional
-  stylers: Array<{ color?: string; visibility?: string }>;
+  stylers: { color?: string; visibility?: string }[];
 };
 
 export interface InventoryItem {

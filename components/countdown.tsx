@@ -12,8 +12,8 @@ interface TimerProps {
 
 const CountdownTimer: React.FC<TimerProps> = ({ duration, onExpire, style }) => {
     const [timeLeft, setTimeLeft] = useState(duration);
-    const animatedWidth = useRef(new Animated.Value(width * 0.9)).current; // Start with full width
-    const colorAnimation = useRef(new Animated.Value(0)).current;
+    const [animatedWidth] = useState(() => new Animated.Value(width * 0.9)); // Start with full width
+    const [colorAnimation] = useState(() => new Animated.Value(0));
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
     const colorScheme = useColorScheme();
 

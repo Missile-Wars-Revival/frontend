@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { unzip, WebSocketMessage, WSMsg, zip } from "middle-earth";
+import { unzip, WebSocketMessage, zip } from "middle-earth";
 import * as SecureStore from "expo-secure-store";
 import { useAuth } from "../../util/Context/authcontext";
 
@@ -10,7 +10,6 @@ const MAX_RECONNECT_ATTEMPTS = 10;
 
 const useWebSocket = () => {
     const { isSignedIn } = useAuth();
-    const [data, setData] = useState<any>(null);
     const [missiledata, setmissileData] = useState<any>(null);
     const [landminedata, setlandmineData] = useState<any>(null);
     const [lootdata, setlootData] = useState<any>(null);
@@ -20,7 +19,7 @@ const useWebSocket = () => {
     const [inventorydata, setinventoryData] = useState<any>(null);
     const [playerlocations, setplayerlocations] = useState<any>(null);
     const [leaguesData, setLeaguesData] = useState<any>(null);
-    const [websocket, setWebsocket] = useState<WebSocket | null>(null);
+    const websocketRef = useRef<WebSocket | null>(null);
     const [reconnectAttempts, setReconnectAttempts] = useState(0);
 
     const connectWebsocket = (): Promise<WebSocket> => {
@@ -60,7 +59,7 @@ const useWebSocket = () => {
     const initializeWebSocket = async () => {
         try {
             const ws = await connectWebsocket();
-            setWebsocket(ws);
+            websocketRef.current = ws;
             setReconnectAttempts(0); // Reset reconnect attempts on successful connection
 
             ws.onclose = () => {
@@ -168,11 +167,15 @@ const useWebSocket = () => {
 
     useEffect(() => {
         if (isSignedIn) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             initializeWebSocket();
         } else {
-            websocket?.close();
-            setWebsocket(null);
+            if (websocketRef.current) {
+                websocketRef.current.close();
+                websocketRef.current = null;
+            }
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isSignedIn]);
 
     const sendWebsocket = async (data: WebSocketMessage) => {
@@ -183,11 +186,11 @@ const useWebSocket = () => {
             return;
         }
 
-        if (websocket && websocket.readyState === WebSocket.OPEN) {
+        if (websocketRef.current && websocketRef.current.readyState === WebSocket.OPEN) {
             try {
                 const encodedData = zip(data);
                 // console.log("Sending data to websocket", data);
-                websocket.send(encodedData);
+                websocketRef.current.send(encodedData);
             } catch (error) {
                 console.error("Error sending websocket request:", error);
             }
@@ -196,7 +199,7 @@ const useWebSocket = () => {
         }
     };
 
-    return { data, missiledata, landminedata, lootdata, otherdata, healthdata, friendsdata, inventorydata, playerlocations, leaguesData, sendWebsocket };
+    return { missiledata, landminedata, lootdata, otherdata, healthdata, friendsdata, inventorydata, playerlocations, leaguesData, sendWebsocket };
 };
 
 export default useWebSocket;

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Dimensions, Animated, useColorScheme } from 'react-native';
 
 // Get screen dimensions
@@ -9,7 +9,7 @@ interface HealthBarProps {
 }
 
 const HealthBar: React.FC<HealthBarProps> = ({ health }) => {
-  const animatedHealth = useRef(new Animated.Value(0)).current;
+  const [animatedHealth] = useState(() => new Animated.Value(0));
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
 

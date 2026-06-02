@@ -2,14 +2,15 @@ import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, useColorScheme, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@react-native-vector-icons/ionicons';
 import useFetchFriends from '../hooks/websockets/friendshook';
+import { Friend } from '../types/types';
 import { getDatabase, ref, push, set, update, serverTimestamp, query, orderByChild, equalTo, get } from 'firebase/database';
 import * as SecureStore from 'expo-secure-store';
 
 const DEFAULT_IMAGE = require('../assets/mapassets/Female_Avatar_PNG.png');
 
-const FriendItem = React.memo(({ item, onPress, isDarkMode }) => {
+const FriendItem = React.memo(function FriendItem({ item, onPress, isDarkMode }: { item: Friend; onPress: (username: string) => void; isDarkMode: boolean }) {
   return (
     <TouchableOpacity
       style={[styles.friendItem, isDarkMode && styles.friendItemDark]}
@@ -36,7 +37,7 @@ const FriendsList = () => {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
   const friends = useFetchFriends();
-  const [username, setUsername] = useState(null);
+  const [username, setUsername] = useState<string | null>(null);
 
   useEffect(() => {
     const checkAuthentication = async () => {
@@ -52,15 +53,18 @@ const FriendsList = () => {
     checkAuthentication();
   }, [router]);
 
-  const createNewConversation = useCallback(async (friendUsername) => {
+  const createNewConversation = useCallback(async (friendUsername: string) => {
     if (!username) {
       Alert.alert("Not Signed In", "Please sign in to start a conversation.");
       return;
     }
 
+    // Narrow for TS: at runtime when this callback executes (from a render where username was set), it's always string
+    const currentUser = username;
+
     try {
       const db = getDatabase();
-      const participants = [username, friendUsername].sort();
+      const participants = [currentUser, friendUsername].sort();
       const participantsString = participants.join(',');
 
       // Check if a conversation already exists
@@ -69,16 +73,17 @@ const FriendsList = () => {
       
       const snapshot = await get(conversationsQuery);
 
-      let conversationId;
+      let conversationId: string;
 
       if (snapshot.exists()) {
         // Conversation already exists, use the existing one
-        conversationId = Object.keys(snapshot.val())[0];
+        const existingId = Object.keys(snapshot.val() || {})[0];
+        conversationId = existingId || '';
         console.log('Using existing conversation with ID:', conversationId);
       } else {
         // Create a new conversation
         const newConversationRef = push(conversationsRef);
-        conversationId = newConversationRef.key;
+        conversationId = newConversationRef.key!;
 
         const conversationData = {
           participants: participantsString,
@@ -98,15 +103,15 @@ const FriendsList = () => {
       }
 
       // Check if the conversation is already in the user's list
-      const userConversationsRef = ref(db, `users/${username}/conversations`);
+      const userConversationsRef = ref(db, `users/${currentUser}/conversations`);
       const userConversationsSnapshot = await get(userConversationsRef);
       const userConversations = userConversationsSnapshot.val() || {};
 
-      const updates = {};
+      const updates: Record<string, boolean> = {};
 
       // Only add to user's list if it's not already there
       if (!userConversations[conversationId]) {
-        updates[`users/${username}/conversations/${conversationId}`] = true;
+        updates[`users/${currentUser}/conversations/${conversationId}`] = true;
       }
 
       // Do the same for the friend
@@ -125,15 +130,16 @@ const FriendsList = () => {
 
       // Navigate to the chat screen
       router.push({ pathname: '/chat/[id]', params: { id: conversationId } });
-    } catch (error) {
-      console.error('Detailed error:', JSON.stringify(error, null, 2));
+    } catch (err: unknown) {
+      console.error('Detailed error:', JSON.stringify(err, null, 2));
+      const error = err as Error & { code?: string };
       console.error('Error code:', error.code);
       console.error('Error message:', error.message);
-      Alert.alert("Error", `Failed to create or find a conversation. Error: ${error.message}`);
+      Alert.alert("Error", `Failed to create or find a conversation. Error: ${error.message || String(err)}`);
     }
   }, [username, router]);
 
-  const renderFriendItem = useCallback(({ item }) => (
+  const renderFriendItem = useCallback(({ item }: { item: Friend }) => (
     <FriendItem 
       item={item} 
       onPress={createNewConversation} 

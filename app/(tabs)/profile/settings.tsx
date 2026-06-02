@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableHighlight, Switch, ScrollView, Alert, StyleSheet, Dimensions, TouchableOpacity, Modal, Linking, Platform, Animated } from 'react-native';
+import { View, Text, TouchableHighlight, Switch, ScrollView, Alert, StyleSheet, Dimensions, TouchableOpacity, Modal, Linking, Platform, Animated , useColorScheme, DevSettings } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Input } from "../../../components/ui/input";
@@ -8,7 +8,7 @@ import * as SecureStore from 'expo-secure-store';
 import { changeEmail, changePassword, changeUsername, deleteAcc } from '../../../api/changedetails';
 import { updateFriendsOnlyStatus } from '../../../api/visibility';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useColorScheme } from 'react-native';
+
 import { updatelocActive, getlocActive, getRandomLocation, randomLocation } from '../../../api/locationOptions';
 import { clearCredentials } from '../../../util/logincache';
 import { useAuth } from '../../../util/Context/authcontext';
@@ -58,7 +58,7 @@ const SettingsPage: React.FC = () => {
   const [isConfirmingEmail, setIsConfirmingEmail] = useState(false);
   const [newEmail, setNewEmail] = useState('');
   const [imagePreference, setImagePreference] = useState('default');
-  const sliderPosition = useRef(new Animated.Value(0)).current;
+  const [sliderPosition] = useState(() => new Animated.Value(0));
 
   const notificationDescriptions = {
     incomingEntities: "Receive alerts when entities are approaching your location.",
@@ -481,7 +481,6 @@ const SettingsPage: React.FC = () => {
                   setTimeout(() => {
                     if (__DEV__) {
                       // In development, we can use DevSettings
-                      const DevSettings = require('react-native').DevSettings;
                       DevSettings.reload();
                     } else {
                       // In production, we can use the Expo updates API

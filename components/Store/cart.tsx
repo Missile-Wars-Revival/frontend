@@ -21,7 +21,7 @@ interface CartProps {
 const Cart: React.FC<CartProps> = ({ cart, onRemove }) => {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
-  const { isOnboardingComplete, currentStep, setCurrentStep, moveToNextStep } = useOnboarding();
+  const { currentStep, setCurrentStep, moveToNextStep } = useOnboarding();
 
   const totalPrice = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
 

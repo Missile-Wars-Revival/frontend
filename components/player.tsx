@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Button, View, Image, Text, Modal, Dimensions, StyleSheet, TouchableOpacity, useColorScheme } from "react-native";
+import { View, Image, Text, Modal, Dimensions, StyleSheet, TouchableOpacity, useColorScheme } from "react-native";
 import { Circle, Marker } from "react-native-maps";
 import { MissileLibrary } from "./Missile/missile";
 import { Players } from "./map-players";
@@ -231,7 +231,7 @@ export const PlayerComp = (props: PlayerProps) => {
       return getOffsetLocation(latitude, longitude, offsetRadius);
     }
     return { latitude, longitude };
-  }, [useRandomLocation, latitude, longitude]);
+  }, [useRandomLocation, latitude, longitude, offsetRadius]);
 
   // Compute marker location
   const markerLocation = useMemo(() => {
@@ -239,7 +239,7 @@ export const PlayerComp = (props: PlayerProps) => {
       return getRandomLocation(circleCenter.latitude, circleCenter.longitude, circleRadius);
     }
     return { latitude, longitude };
-  }, [useRandomLocation, circleCenter, circleRadius]);
+  }, [useRandomLocation, circleCenter, circleRadius, latitude, longitude]);
 
   // Define dynamic colors based on useRandomLocation
   const circleFillColor = useRandomLocation ? "rgba(0, 255, 0, 0.1)" : "rgba(0, 255, 0, 0.2)";

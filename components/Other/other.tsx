@@ -1,16 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, View, TouchableOpacity, FlatList, Text, Image } from 'react-native';
+import { View, TouchableOpacity, FlatList, Text, Image , useColorScheme } from 'react-native';
 import { OtherPlacementPopup } from './otherplacement';
-import { create } from 'twrnc';
+import { InventoryBottomSheet } from '../ui/inventory-bottom-sheet';
 import { InventoryItem } from '../../types/types';
 import useFetchInventory from '../../hooks/websockets/inventoryhook';
-import { useColorScheme } from 'react-native';
+
 import { router } from 'expo-router';
 import { removeItem } from '../../api/add-item';
 import { useLandmine } from '../../util/Context/landminecontext';
 import { getImages } from "../../api/store";
-
-const tw = create(require('../../tailwind.config.js'));
+import { tw } from '../../util/twrnc';
 
 interface OtherType {
   type: string;
@@ -106,31 +105,23 @@ export const OtherLibraryView: React.FC<OtherLibraryViewProps> = ({ OtherModalVi
     OtherPlaceHandler(); // This closes the entire library
   };
 
-  const getModalHeight = () => {
-    const itemCount = OtherLibrary.length;
-    if (itemCount <= 3) return 'h-1/3';
-    if (itemCount <= 6) return 'h-1/2';
-    return 'h-2/3';
-  };
-
   const noItems = OtherLibrary.length === 0;
 
   return (
-    <Modal
-      animationType="slide"
-      transparent={true}
-      visible={OtherModalVisible}
-      onRequestClose={OtherPlaceHandler}
-    >
-      <View style={tw`flex-1 justify-center items-center bg-black bg-opacity-50`}>
-        <View style={tw`${isDarkMode ? 'bg-black' : 'bg-white'} rounded-lg p-4 w-11/12 ${getModalHeight()} max-h-[90%]`}>
-          <Text style={tw`text-xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Select your Other:</Text>
+    <>
+      <InventoryBottomSheet
+        visible={OtherModalVisible}
+        onClose={OtherPlaceHandler}
+        backgroundColor={isDarkMode ? '#000000' : '#ffffff'}
+      >
+        <View style={tw`flex-1 ${isDarkMode ? 'bg-black' : 'bg-white'} px-4 pt-2 pb-4`}>
+          <Text style={tw`text-xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Select your Special Item:</Text>
           {noItems ? (
             <View style={tw`flex-1 justify-center items-center`}>
               <Text style={tw`text-center mb-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>No items in inventory</Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => {
-                  OtherPlaceHandler(); // Close the Other modal
+                  OtherPlaceHandler(); // Close the Other sheet
                   router.navigate('/store'); // Navigate to the store
                 }}
                 style={tw`bg-blue-500 px-6 py-3 rounded-lg`}
@@ -148,7 +139,7 @@ export const OtherLibraryView: React.FC<OtherLibraryViewProps> = ({ OtherModalVi
             <Text style={tw`text-white font-bold`}>Done</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </InventoryBottomSheet>
       {showplacmentPopup && selectedOther && (
         <OtherPlacementPopup
           visible={showplacmentPopup}
@@ -160,9 +151,9 @@ export const OtherLibraryView: React.FC<OtherLibraryViewProps> = ({ OtherModalVi
       {showBriefPopup && (
         <View style={tw`absolute inset-0 flex items-center justify-center bg-black bg-opacity-50`}>
           <View style={tw`${isDarkMode ? 'bg-gray-800' : 'bg-white'} p-6 rounded-lg items-center`}>
-            <Image 
-              source={require("../../assets/mapassets/landminesweeper.png")} 
-              style={tw`w-16 h-16 mb-4`} 
+            <Image
+              source={require("../../assets/mapassets/landminesweeper.png")}
+              style={tw`w-16 h-16 mb-4`}
             />
             <Text style={tw`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-black'}`}>
               Landmine Sweeper used!
@@ -170,6 +161,6 @@ export const OtherLibraryView: React.FC<OtherLibraryViewProps> = ({ OtherModalVi
           </View>
         </View>
       )}
-    </Modal>
+    </>
   );
 };

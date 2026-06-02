@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { View, Platform, Alert, StyleSheet, TouchableOpacity, Text, Linking, Dimensions, useColorScheme, Modal, ImageBackground } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
 import axiosInstance from "../../api/axios-instance";
-import axios from "axios";
-import { Ionicons } from '@expo/vector-icons';
+import { isAxiosError } from "axios";
+import Ionicons from '@react-native-vector-icons/ionicons';
 import * as Location from 'expo-location';
 
 // Android Themes
@@ -15,11 +15,7 @@ import { androidCyberpunkMapStyle } from "../../map-themes/Android-themes/cyberp
 import { androidColorblindMapStyle } from "../../map-themes/Android-themes/colourblindstyle";
 
 // IOS Themes
-import { IOSDefaultMapStyle } from "../../map-themes/IOS-themes/themestemp";
-import { IOSRadarMapStyle } from "../../map-themes/IOS-themes/themestemp";
-import { IOSCherryBlossomMapStyle } from "../../map-themes/IOS-themes/themestemp";
-import { IOSCyberpunkMapStyle } from "../../map-themes/IOS-themes/themestemp";
-import { IOSColorblindMapStyle } from "../../map-themes/IOS-themes/themestemp";
+import { IOSCherryBlossomMapStyle, IOSColorblindMapStyle, IOSCyberpunkMapStyle, IOSDefaultMapStyle, IOSRadarMapStyle } from "../../map-themes/IOS-themes/themestemp";
 
 // Components
 import { MapStylePopup } from "../../components/map-style-popup";
@@ -37,14 +33,12 @@ import { getlocActive } from "../../api/locationOptions";
 import PlayerViewButton from "../../components/PlayerViewButton";
 import { MissileLibrary } from "../../components/Missile/missile";
 import MissileFiringAnimation from "../../components/Animations/MissileFiring";
-import { useOnboarding } from '../../util/Context/onboardingContext';
 
 const { width, height } = Dimensions.get('window');
 
 export default function Map() {
   const [selectedMapStyle, setSelectedMapStyle] = useState<MapStyle[]>(Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle);
   const [themePopupVisible, setThemePopupVisible] = useState(false);
-  const [userNAME, setUsername] = useState("");
   const [isAlive, setIsAlive] = useState<boolean | null>(null);
   const [deathsoundPlayed, setdeathSoundPlayed] = useState(false);
   const health = useFetchHealth()//WS hook
@@ -56,6 +50,40 @@ export default function Map() {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
 
+  const showPopup = useCallback(() => {
+    setThemePopupVisible(true);
+  }, []);
+
+  const closePopup = useCallback(() => {
+    setThemePopupVisible(false);
+  }, []);
+
+  const selectMapStyle = useCallback((style: string) => {
+    closePopup();
+    let selectedStyle;
+    switch (style) {
+      case "default":
+        selectedStyle = Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle;
+        break;
+      case "radar":
+        selectedStyle = Platform.OS === 'android' ? androidRadarMapStyle : IOSRadarMapStyle;
+        break;
+      case "cherry":
+        selectedStyle = Platform.OS === 'android' ? androidCherryBlossomMapStyle : IOSCherryBlossomMapStyle;
+        break;
+      case "cyber":
+        selectedStyle = Platform.OS === 'android' ? androidCyberpunkMapStyle : IOSCyberpunkMapStyle;
+        break;
+      case "colourblind":
+        selectedStyle = Platform.OS === 'android' ? androidColorblindMapStyle : IOSColorblindMapStyle;
+        break;
+      default:
+        selectedStyle = Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle;
+    }
+    setSelectedMapStyle(selectedStyle);
+    storeMapStyle(style);
+  }, [closePopup]);
+
   useEffect(() => {
     const loadStoredMapStyle = async () => {
       const storedStyle = await getStoredMapStyle();
@@ -65,15 +93,13 @@ export default function Map() {
     };
 
     loadStoredMapStyle();
-  }, []);
+  }, [selectMapStyle]);
 
   // Fetch username from secure storage
   useEffect(() => {
     const fetchCredentials = async () => {
       const credentials = await SecureStore.getItemAsync("username");
-      if (credentials) {
-        setUsername(credentials);
-      } else {
+      if (!credentials) {
         await AsyncStorage.setItem('signedIn', 'false');
         router.navigate("/login");
       }
@@ -110,7 +136,7 @@ export default function Map() {
           await AsyncStorage.setItem('lastRewardedDate', today); // Update the last rewarded date
         }
       } catch (error) {
-        if (axios.isAxiosError(error)) {
+        if (isAxiosError(error)) {
           console.error('Axios error:', error.response?.data.message || error.message);
         } else {
           console.error('Error adding currency:', error);
@@ -131,7 +157,7 @@ export default function Map() {
         }
         getisAlive(token)
       } catch (error) {
-        if (axios.isAxiosError(error)) {
+        if (isAxiosError(error)) {
           console.error('Axios error:', error.message);
         } else {
           console.error('Error fetching health:', error);
@@ -173,17 +199,26 @@ export default function Map() {
     return () => clearInterval(intervalId);
   }, [deathsoundPlayed]);
 
-  const fetchLocActiveStatus = async () => {
-    try {
-      const status = await getlocActive();
-      setLocActive(status);
-    } catch (error) {
-      console.error("Failed to fetch locActive status:", error);
-    } finally {
-    }
-  };
-
   useEffect(() => {
+    const fetchLocActiveStatus = async () => {
+      try {
+        const status = await getlocActive();
+        setLocActive(status);
+      } catch (error) {
+        console.error("Failed to fetch locActive status:", error);
+      } finally {
+      }
+    };
+
+    const checkPermissions = async () => {
+      const { status } = await Location.getForegroundPermissionsAsync();
+      if (status === 'granted') {
+        setLocPermsActive(true);
+      } else {
+        setLocPermsActive(false);
+      }
+    };
+
     fetchLocActiveStatus();
     checkPermissions();
     const locActiveIntervalId = setInterval(fetchLocActiveStatus, 3000);
@@ -194,49 +229,6 @@ export default function Map() {
       clearInterval(permsIntervalId);
     };
   }, []);
-
-  const checkPermissions = async () => {
-    const { status } = await Location.getForegroundPermissionsAsync();
-    if (status === 'granted') {
-      setLocPermsActive(true);
-    } else {
-      setLocPermsActive(false);
-    }
-  };
-
-  const showPopup = () => {
-    setThemePopupVisible(true);
-  };
-
-  const closePopup = () => {
-    setThemePopupVisible(false);
-  };
-
-  const selectMapStyle = (style: string) => {
-    closePopup();
-    let selectedStyle;
-    switch (style) {
-      case "default":
-        selectedStyle = Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle;
-        break;
-      case "radar":
-        selectedStyle = Platform.OS === 'android' ? androidRadarMapStyle : IOSRadarMapStyle;
-        break;
-      case "cherry":
-        selectedStyle = Platform.OS === 'android' ? androidCherryBlossomMapStyle : IOSCherryBlossomMapStyle;
-        break;
-      case "cyber":
-        selectedStyle = Platform.OS === 'android' ? androidCyberpunkMapStyle : IOSCyberpunkMapStyle;
-        break;
-      case "colourblind":
-        selectedStyle = Platform.OS === 'android' ? androidColorblindMapStyle : IOSColorblindMapStyle;
-        break;
-      default:
-        selectedStyle = Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle;
-    }
-    setSelectedMapStyle(selectedStyle);
-    storeMapStyle(style);
-  };
 
   const handleRespawn = async () => {
     const token = await SecureStore.getItemAsync("token");
@@ -610,7 +602,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   animationOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 1000,
     justifyContent: 'center',
     alignItems: 'center',

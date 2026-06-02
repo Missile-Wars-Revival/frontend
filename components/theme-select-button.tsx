@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Text, TouchableOpacity, View, StyleSheet, Modal, useColorScheme, Dimensions } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@react-native-vector-icons/ionicons';
 
 const { width, height } = Dimensions.get('window');
 

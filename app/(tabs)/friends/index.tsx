@@ -1,9 +1,8 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { View, Text, TouchableOpacity, FlatList, Modal, Alert, RefreshControl, TextInput, StyleSheet, useColorScheme } from "react-native";
-import { Image } from "expo-image";
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, TouchableOpacity, Modal, Alert, TextInput, StyleSheet, useColorScheme } from "react-native";
+import Ionicons from '@react-native-vector-icons/ionicons';
+import FriendsList from "../../../components/Friends/FriendsList";
 import { useRouter } from "expo-router";
-import { useUserName } from "../../../util/fetchusernameglobal";
 import * as SecureStore from 'expo-secure-store';
 import { removeFriend } from "../../../api/friends";
 import { MissileLibrary } from "../../../components/Missile/missile";
@@ -14,7 +13,6 @@ import useFetchFriends from "../../../hooks/websockets/friendshook";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getlocActive } from "../../../api/locationOptions";
 import MissileFiringAnimation from "../../../components/Animations/MissileFiring";
-import { useOnboarding } from '../../../util/Context/onboardingContext';
 
 interface Friend {
   username: string;
@@ -23,11 +21,8 @@ interface Friend {
 
 const FriendsPage: React.FC = () => {
   const friends = useFetchFriends() //WS
-  const [loading, setLoading] = useState(false);
-  const error = null;
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedFriend, setSelectedFriend] = useState("");
-  const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
   const [showMissileLibrary, setShowMissileLibrary] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState("");
@@ -79,6 +74,16 @@ const FriendsPage: React.FC = () => {
 	  }, []);
 
     useEffect(() => {
+      const fetchLocActiveStatus = async () => {
+        try {
+          const status = await getlocActive();
+          setLocActive(status);
+        } catch (error) {
+          console.error("Failed to fetch locActive status:", error);
+        } finally {
+        }
+      };
+
       // Fetch immediately on component mount
       fetchLocActiveStatus();
       // Set up interval to fetch every 30 seconds (adjust as needed)
@@ -89,16 +94,6 @@ const FriendsPage: React.FC = () => {
         clearInterval(intervalId);
       };
     }, []);
-    
-    const fetchLocActiveStatus = async () => {
-      try {
-        const status = await getlocActive();
-        setLocActive(status);
-      } catch (error) {
-        console.error("Failed to fetch locActive status:", error);
-      } finally {
-      }
-    };
 
   const handleRemPress = (friendUsername: string) => {
     setSelectedFriend(friendUsername);
@@ -139,11 +134,6 @@ const FriendsPage: React.FC = () => {
       console.error('Error removing friend:', error);
       Alert.alert("Error", "An unexpected error occurred while removing the friend.");
     }
-  };
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    setRefreshing(false);
   };
 
   const navigateToUserProfile = (username: string) => {
@@ -189,62 +179,6 @@ const FriendsPage: React.FC = () => {
     }
   };
 
-  const renderFriendItem = ({ item }: { item: Friend }) => (
-    <View style={[styles.friendItem, isDarkMode && styles.friendItemDark]}>
-      <TouchableOpacity 
-        style={styles.friendInfo}
-        onPress={() => navigateToUserProfile(item.username)}
-      >
-        <Image
-          source={{ uri: item.profileImageUrl }}
-          style={styles.friendImage}
-          cachePolicy="memory-disk"
-        />
-        <Text style={[styles.friendName, isDarkMode && styles.friendNameDark]}>{item.username}</Text>
-      </TouchableOpacity>
-      <View style={styles.actionButtons}>
-        {isAlive && locActive && (
-          <TouchableOpacity
-            style={[styles.actionButton, styles.fireButton]}
-            onPress={() => fireMissile(item.username)}
-          >
-            <Text style={styles.actionButtonText}>🚀</Text>
-          </TouchableOpacity>
-        )}
-        <TouchableOpacity
-          style={[styles.actionButton, styles.removeButton]}
-          onPress={() => handleRemPress(item.username)}
-        >
-          <Text style={styles.actionButtonText}>X</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-
-  const renderSearchResultItem = ({ item }: { item: Friend }) => (
-    <View style={[styles.friendItem, isDarkMode && styles.friendItemDark]}>
-      <TouchableOpacity 
-        style={styles.friendInfo}
-        onPress={() => navigateToUserProfile(item.username)}
-      >
-        <Image
-          source={{ uri: item.profileImageUrl }}
-          style={styles.friendImage}
-          cachePolicy="memory-disk"
-        />
-        <Text style={[styles.friendName, isDarkMode && styles.friendNameDark]}>{item.username}</Text>
-      </TouchableOpacity>
-      <View style={styles.actionButtons}>
-        <TouchableOpacity
-          style={[styles.actionButton, styles.removeButton]}
-          onPress={() => handleRemPress(item.username)}
-        >
-          <Text style={styles.actionButtonText}>X</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-
   useEffect(() => {
     const checkFirebaseUID = async () => {
       const firebaseUID = await SecureStore.getItemAsync("firebaseUID");
@@ -284,36 +218,31 @@ const FriendsPage: React.FC = () => {
         onChangeText={handleSearch}
       />
 
-      {loading ? (
-        <Text style={[styles.centerText, isDarkMode && styles.centerTextDark]}>Loading...</Text>
-      ) : error ? (
-        <Text style={[styles.centerText, isDarkMode && styles.centerTextDark, styles.errorText]}>{error}</Text>
-      ) : isSearchActive ? (
-        <FlatList
-          data={filteredFriends}
-          keyExtractor={(item) => item.username}
-          renderItem={renderSearchResultItem}
-          ListEmptyComponent={
-            <Text style={[styles.centerText, isDarkMode && styles.centerTextDark]}>
-              {searchTerm.trim() ? "No friends found" : "Type to search friends"}
-            </Text>
-          }
-        />
+      {isSearchActive ? (
+        filteredFriends.length === 0 ? (
+          <Text style={[styles.centerText, isDarkMode && styles.centerTextDark]}>
+            {searchTerm.trim() ? "No friends found" : "Type to search friends"}
+          </Text>
+        ) : (
+          <FriendsList
+            friends={filteredFriends}
+            isDarkMode={isDarkMode}
+            showFire={false}
+            onProfilePress={navigateToUserProfile}
+            onFirePress={fireMissile}
+            onRemovePress={handleRemPress}
+          />
+        )
       ) : friends.length === 0 ? (
         <Text style={[styles.centerText, isDarkMode && styles.centerTextDark]}>No friends found</Text>
       ) : (
-        <FlatList
-          data={friends}
-          keyExtractor={(item) => item.username}
-          renderItem={renderFriendItem}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={["#9Bd35A", "#689F38"]}
-              tintColor={isDarkMode ? "#FFF" : "#000"}
-            />
-          }
+        <FriendsList
+          friends={friends}
+          isDarkMode={isDarkMode}
+          showFire={isAlive && locActive}
+          onProfilePress={navigateToUserProfile}
+          onFirePress={fireMissile}
+          onRemovePress={handleRemPress}
         />
       )}
       <Modal
@@ -677,7 +606,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   animationOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 1000,
     justifyContent: 'center',
     alignItems: 'center',

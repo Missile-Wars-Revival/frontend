@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, Modal, FlatList, Image, StyleSheet, useColorScheme, Dimensions, ActivityIndicator, Animated, Alert, Platform } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@react-native-vector-icons/ionicons';
 import { fetchAndCacheImage } from "../util/imagecache";
 import * as SecureStore from 'expo-secure-store';
 import { addFriend } from "../api/friends";
@@ -52,7 +52,7 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
   const friends = useFetchFriends();
   const missiles = useFetchMissiles();
   const [isLoading, setIsLoading] = useState(false);
-  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const [fadeAnim] = useState(() => new Animated.Value(1));
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const mapRef = useRef<MapView>(null);
   const [currentMapStyle, setCurrentMapStyle] = useState<MapStyle[]>(Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle);

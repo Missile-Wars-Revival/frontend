@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Text, ScrollView, TouchableOpacity, SafeAreaView, useColorScheme, ImageSourcePropType, ActivityIndicator } from 'react-native';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@react-native-vector-icons/ionicons';
 import { fetchTopLeagues, fetchCurrentLeague, fetchLeaguePlayers, top100Players } from '../../api/league';
 import { fetchAndCacheImage } from '../../util/imagecache'; 
 import { getLeagueAirspace } from '../../components/player';
