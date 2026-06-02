@@ -18,7 +18,7 @@ import useFetchLandmines from "../hooks/websockets/landminehook";
 import FontAwesome from '@react-native-vector-icons/fontawesome';
 import useFetchOther from "../hooks/websockets/otherhook";
 import { AllOther } from "./Other/map-other";
-import { useUserLeague } from "../hooks/api/useUserLeague";
+import { useUserLeague } from "../hooks/api/useUserLEague";
 import { getLeagueAirspace } from "./player";
 
 interface MapCompProps {
