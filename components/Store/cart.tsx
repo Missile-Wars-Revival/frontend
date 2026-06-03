@@ -114,7 +114,6 @@ const Cart: React.FC<CartProps> = ({ cart, onRemove }) => {
 
 const getStyles = (isDarkMode: boolean) => StyleSheet.create({
   cartContainer: {
-    flex: 1,
     backgroundColor: isDarkMode ? '#1E1E1E' : '#FFFFFF',
   },
   cartItem: {

@@ -23,6 +23,7 @@ import * as TrackingTransparency from 'expo-tracking-transparency';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BlurView } from 'expo-blur';
+import { Presets } from 'react-native-pulsar';
 import { getlocation } from '../util/locationreq';
 import MissileSkiaBackground from '../components/onboarding/MissileSkiaBackground';
 
@@ -163,14 +164,6 @@ const PermissionsScreenInner: React.FC<PermissionsScreenProps> = ({ onPermission
   const [floatAnim] = useState(() => new Animated.Value(0));
   const [pulseAnim] = useState(() => new Animated.Value(1));
   const [glowValue, setGlowValue] = useState(0.4);
-  const [particleAnims] = useState(() =>
-    Array.from({ length: 6 }, () => ({
-      x: new Animated.Value(0),
-      y: new Animated.Value(0),
-      opacity: new Animated.Value(0.3),
-      scale: new Animated.Value(0.5),
-    }))
-  );
 
   // Floating animation for images
   useEffect(() => {
@@ -230,43 +223,6 @@ const PermissionsScreenInner: React.FC<PermissionsScreenProps> = ({ onPermission
     return () => pulse.stop();
   }, []);
 
-  // Particle animations
-  useEffect(() => {
-    particleAnims.forEach((particle, index) => {
-      const delay = index * 500;
-      const duration = 3000 + Math.random() * 2000;
-
-      const animate = () => {
-        particle.x.setValue(Math.random() * width);
-        particle.y.setValue(height + 50);
-        particle.opacity.setValue(0);
-        particle.scale.setValue(0.3 + Math.random() * 0.5);
-
-        Animated.parallel([
-          Animated.timing(particle.y, {
-            toValue: -100,
-            duration,
-            useNativeDriver: true,
-          }),
-          Animated.sequence([
-            Animated.timing(particle.opacity, {
-              toValue: 0.6,
-              duration: duration * 0.3,
-              useNativeDriver: true,
-            }),
-            Animated.timing(particle.opacity, {
-              toValue: 0,
-              duration: duration * 0.7,
-              useNativeDriver: true,
-            }),
-          ]),
-        ]).start(() => animate());
-      };
-
-      setTimeout(animate, delay);
-    });
-  }, []);
-
   const checkPermissions = async () => {
     try {
       const locationStatus = await Location.getForegroundPermissionsAsync();
@@ -322,7 +278,7 @@ const PermissionsScreenInner: React.FC<PermissionsScreenProps> = ({ onPermission
 
     if (nextSlide === current) return;
 
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try { Presets.System.impactLight(); } catch { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }
 
     Animated.parallel([
       Animated.timing(fadeAnim, {
@@ -430,10 +386,10 @@ const PermissionsScreenInner: React.FC<PermissionsScreenProps> = ({ onPermission
       return;
     }
 
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    try { Presets.System.notificationSuccess(); } catch { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); }
 
     try {
-      await AsyncStorage.setItem('alreadyLaunchedV2', 'true');
+      await AsyncStorage.setItem('alreadyLaunchedV3', 'true');
       onPermissionGranted();
     } catch (error) {
       console.error('Error saving onboarding status:', error);
@@ -458,7 +414,6 @@ const PermissionsScreenInner: React.FC<PermissionsScreenProps> = ({ onPermission
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
-      <MissileSkiaBackground />
 
       <LinearGradient
         colors={slide.gradientColors}
@@ -467,23 +422,8 @@ const PermissionsScreenInner: React.FC<PermissionsScreenProps> = ({ onPermission
         style={StyleSheet.absoluteFill}
       />
 
-      {/* Floating particles */}
-      {particleAnims.map((particle, index) => (
-        <Animated.View
-          key={index}
-          style={[
-            styles.particle,
-            {
-              transform: [
-                { translateX: particle.x },
-                { translateY: particle.y },
-                { scale: particle.scale },
-              ],
-              opacity: particle.opacity,
-            },
-          ]}
-        />
-      ))}
+      {/* Animated tactical-radar map, themed to the active slide's accent */}
+      <MissileSkiaBackground accentColor={slide.accentColor} />
 
       <SafeAreaView style={styles.safeArea}>
         {/* Progress dots */}
@@ -600,7 +540,7 @@ const PermissionsScreenInner: React.FC<PermissionsScreenProps> = ({ onPermission
                   style={styles.privacyRow}
                   onPress={() => {
                     setPrivacyAgreed(!privacyAgreed);
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    try { Presets.System.selection(); } catch { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }
                   }}
                   activeOpacity={0.7}
                 >
@@ -788,13 +728,6 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
-  },
-  particle: {
-    position: 'absolute',
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(255,255,255,0.8)',
   },
   progressContainer: {
     flexDirection: 'row',

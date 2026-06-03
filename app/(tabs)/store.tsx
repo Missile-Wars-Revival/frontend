@@ -16,6 +16,8 @@ import { useOnboarding } from '../../util/Context/onboardingContext';
 import AdBanner from '../../components/ads/AdBanner';
 import { InventoryBottomSheet } from '../../components/ui/inventory-bottom-sheet';
 
+const DEV_OFFLINE_TOKEN = 'dev-offline-token';
+
 export const products: Product[] = [
   // { id: "20", name: 'LootDrop', price: 400, image: require('../assets/mapassets/Airdropicon.png'), description: 'A Loot Drop', type: 'Loot Drops' },
   // { id: "21", name: 'Shield', price: 2000, image: require('../assets/mapassets/shield.png'), description: 'A Standard Shield', type: 'Other' },
@@ -186,6 +188,13 @@ const StorePage: React.FC = () => {
           return;
         }
 
+        if (token === DEV_OFFLINE_TOKEN) {
+          const cachedMoney = await AsyncStorage.getItem('Money');
+          const parsedMoney = cachedMoney ? Number(cachedMoney) : 0;
+          setCurrencyAmount(Number.isNaN(parsedMoney) ? 0 : parsedMoney);
+          return;
+        }
+
         const response = await axiosInstance.get('/api/getMoney', {
           params: { token }
         });
@@ -344,6 +353,10 @@ const StorePage: React.FC = () => {
       width: 120, // Larger size for the modal
       height: 120,
       resizeMode: 'contain',
+    },
+    cartSheetContent: {
+      backgroundColor: isDarkMode ? '#1E1E1E' : '#FFFFFF',
+      paddingBottom: 12,
     },
   });
 
@@ -561,9 +574,10 @@ const StorePage: React.FC = () => {
     <InventoryBottomSheet
       visible={isCartVisible}
       onClose={hideCart}
+      fitToContents
       backgroundColor={isDarkMode ? '#1E1E1E' : '#FFFFFF'}
     >
-      <View style={[updatedStyles.container, { backgroundColor: isDarkMode ? '#1E1E1E' : '#FFFFFF' }]}>
+      <View style={updatedStyles.cartSheetContent}>
         <Cart cart={cart} onRemove={handleRemove} />
         <TouchableOpacity onPress={hideCart} style={updatedStyles.cartButton}>
           <Text style={updatedStyles.cartButtonText}>Back to Products</Text>

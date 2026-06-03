@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { View, Text, Switch, Alert, TouchableOpacity, useColorScheme } from "react-native";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Circle } from "react-native-maps";
 import { AllLootDrops } from "./Loot/map-loot";
 import { AllLandMines } from "./Landmine/map-landmines";
@@ -18,8 +19,8 @@ import useFetchLandmines from "../hooks/websockets/landminehook";
 import FontAwesome from '@react-native-vector-icons/fontawesome';
 import useFetchOther from "../hooks/websockets/otherhook";
 import { AllOther } from "./Other/map-other";
-import { useUserLeague } from "../hooks/api/useUserLeague";
 import { getLeagueAirspace } from "./player";
+import { useUserLeague } from "@/hooks/api/useUserLeague";
 
 interface MapCompProps {
     selectedMapStyle: any;
@@ -44,6 +45,7 @@ export const MapComp = (props: MapCompProps) => {
 
     const colorScheme = useColorScheme();
     const isDarkMode = colorScheme === 'dark';
+    const insets = useSafeAreaInsets();
     const mainmapstyles = useMemo(() => getMainMapStyles(isDarkMode), [isDarkMode]);
 
     const [region, setRegion] = useState({
@@ -314,7 +316,7 @@ export const MapComp = (props: MapCompProps) => {
                 </MapView>
             </View>
             <TouchableOpacity
-                style={mainmapstyles.relocateButton}
+                style={[mainmapstyles.relocateButton, { bottom: insets.bottom + 40 }]}
                 onPress={relocate}>
                 <FontAwesome name="location-arrow" size={24} color="#ffffff" />
             </TouchableOpacity>

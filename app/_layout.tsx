@@ -49,7 +49,6 @@ export default function RootLayout() {
   const queryClient = new QueryClient();
   const [isSplashVisible, setIsSplashVisible] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | undefined>(undefined);
-  const [isFirstLaunch, setIsFirstLaunch] = useState(true);
   const [appState, setAppState] = useState(AppState.currentState);
   const [lastActiveTime, setLastActiveTime] = useState(Date.now());
   const router = useRouter();
@@ -92,23 +91,6 @@ export default function RootLayout() {
     }
   }, []);
 
-
-  useEffect(() => {
-    const checkFirstLaunch = async () => {
-      try {
-        const value = await AsyncStorage.getItem('alreadyLaunchedV2');
-        setIsFirstLaunch(value === null);
-      } catch (error) {
-        console.error('Error checking first launch:', error);
-      }
-    };
-
-    checkFirstLaunch();
-  }, []);
-
-  const handlePermissionGranted = useCallback(() => {
-    setIsFirstLaunch(false);
-  }, []);
 
   const handleSplashFinish = useCallback((authenticated: boolean) => {
     setIsAuthenticated(authenticated);
@@ -163,27 +145,88 @@ export default function RootLayout() {
     return <SplashScreen onFinish={handleSplashFinish} />;
   }
 
-  if (isFirstLaunch) {
-    return <PermissionsScreen onPermissionGranted={handlePermissionGranted} />;
-  }
-
   return (
     <QueryClientProvider client={queryClient}>
       <CountdownProvider>
         <AuthProvider initialIsSignedIn={isAuthenticated}>
-          <WebSocketProvider>
-            <LandmineProvider>
-              <OnboardingProvider>
-                <PermissionsCheck>
-                  <RootLayoutNav />
-                </PermissionsCheck>
-              </OnboardingProvider>
-            </LandmineProvider>
-          </WebSocketProvider>
+          <OnboardingGate>
+            <WebSocketProvider>
+              <LandmineProvider>
+                <OnboardingProvider>
+                  <PermissionsCheck>
+                    <RootLayoutNav />
+                  </PermissionsCheck>
+                </OnboardingProvider>
+              </LandmineProvider>
+            </WebSocketProvider>
+          </OnboardingGate>
         </AuthProvider>
       </CountdownProvider>
     </QueryClientProvider>
   );
+}
+
+/**
+ * Gates onboarding / permissions behind authentication.
+ * If `alreadyLaunchedV3` is missing for a signed-in user, show permissions.
+ */
+function OnboardingGate({ children }: { children: React.ReactNode }) {
+  const { isSignedIn } = useAuth();
+  const [onboardingChecked, setOnboardingChecked] = useState(false);
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
+
+  const checkOnboardingStatus = useCallback(async () => {
+    try {
+      const value = await AsyncStorage.getItem('alreadyLaunchedV3');
+      setNeedsOnboarding(value === null);
+    } catch (error) {
+      console.error('Error checking onboarding status:', error);
+    } finally {
+      setOnboardingChecked(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isSignedIn) {
+      setOnboardingChecked(false);
+      setNeedsOnboarding(false);
+      return;
+    }
+
+    // Trigger a fresh read on mount.
+    setOnboardingChecked(false);
+    checkOnboardingStatus();
+  }, [isSignedIn, checkOnboardingStatus]);
+
+  useEffect(() => {
+    if (!isSignedIn) return;
+
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        // Re-check when returning to foreground so manual key resets are reflected.
+        checkOnboardingStatus();
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [isSignedIn, checkOnboardingStatus]);
+
+  const handlePermissionGranted = useCallback(async () => {
+    try {
+      await AsyncStorage.setItem('alreadyLaunchedV3', 'true');
+    } catch (error) {
+      console.error('Error saving onboarding status:', error);
+    }
+    setNeedsOnboarding(false);
+  }, []);
+
+  if (isSignedIn && onboardingChecked && needsOnboarding) {
+    return <PermissionsScreen onPermissionGranted={handlePermissionGranted} />;
+  }
+
+  return <>{children}</>;
 }
 
 
@@ -205,28 +248,45 @@ function RootLayoutNav() {
   return (
     <SafeAreaProvider>
       <View style={{ flex: 1, backgroundColor }}>
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            gestureEnabled: false,
-            animationTypeForReplace: 'push',
-            gestureDirection: 'horizontal',
-          }}
-        >
-          <Stack.Screen
-            name="(tabs)"
-            options={{
+        {isSignedIn ? (
+          <Stack
+            initialRouteName="(tabs)"
+            screenOptions={{
               headerShown: false,
+              gestureEnabled: false,
+              animationTypeForReplace: 'push',
+              gestureDirection: 'horizontal',
             }}
-          />
-          <Stack.Screen
-            name="login"
-            options={{ headerShown: false, gestureEnabled: false, animation: 'slide_from_bottom' }}
-          />
-          <Stack.Screen name="register" options={{ headerShown: false, gestureEnabled: true }} />
-          <Stack.Screen name="PermissionsScreen" options={{ headerShown: false, animation: 'slide_from_bottom' }} />
-          <Stack.Screen name="splashscreen" options={{ headerShown: false }} />
-        </Stack>
+          >
+            <Stack.Screen
+              name="(tabs)"
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name="login"
+              options={{ headerShown: false, gestureEnabled: false, animation: 'slide_from_bottom' }}
+            />
+            <Stack.Screen name="PermissionsScreen" options={{ headerShown: false, animation: 'slide_from_bottom' }} />
+            <Stack.Screen name="splashscreen" options={{ headerShown: false }} />
+          </Stack>
+        ) : (
+          <Stack
+            initialRouteName="login"
+            screenOptions={{
+              headerShown: false,
+              gestureEnabled: false,
+              animationTypeForReplace: 'push',
+              gestureDirection: 'horizontal',
+            }}
+          >
+            <Stack.Screen
+              name="login"
+              options={{ headerShown: false, gestureEnabled: false, animation: 'none' }}
+            />
+          </Stack>
+        )}
         {countdownIsActive && (
           <View style={styles.countdownContainer}>
             <CountdownTimer duration={30} onExpire={stopCountdown} />

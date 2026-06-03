@@ -1,49 +1,57 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableHighlight, Switch, ScrollView, Alert, StyleSheet, Dimensions, TouchableOpacity, Modal, Linking, Platform, Animated , useColorScheme, DevSettings } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
-import { Input } from "../../../components/ui/input";
-import { User, LockKeyhole, Mail, ChevronLeft, Shield, MessageCircle, ChevronRight, Heart } from "lucide-react-native";
+import React, { useState, useEffect } from 'react';
+import {
+  Alert, Linking, Platform, DevSettings,
+  View, Text, ScrollView, Pressable, Switch as RNSwitch,
+  StyleSheet, useColorScheme, ActionSheetIOS,
+} from 'react-native';
+import { Stack, router } from 'expo-router';
+import {
+  FieldGroup,
+  Switch,
+  Button,
+  Text as UIText,
+  BottomSheet,
+  TextInput,
+  useNativeState,
+  Column,
+  ScrollView as UIScrollView,
+} from '@expo/ui';
+import {
+  User, Smartphone, Bell, MessageSquare, Star, Heart,
+  Info, Shield, FileText, HelpCircle, LogOut, Trash2,
+  ChevronRight, ExternalLink, Palette,
+} from 'lucide-react-native';
 import * as SecureStore from 'expo-secure-store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { changeEmail, changePassword, changeUsername, deleteAcc } from '../../../api/changedetails';
 import { updateFriendsOnlyStatus } from '../../../api/visibility';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
 import { updatelocActive, getlocActive, getRandomLocation, randomLocation } from '../../../api/locationOptions';
 import { clearCredentials } from '../../../util/logincache';
 import { useAuth } from '../../../util/Context/authcontext';
 import AppIconChanger from '../../../components/appiconchanger';
-import { Card } from "../../../components/card";
 import * as StoreReview from 'expo-store-review';
 import { getNotificationPreferences, updateNotificationPreferences } from '../../../api/notifications';
-import { LinearGradient } from 'expo-linear-gradient';
 
-const { width } = Dimensions.get('window');
+const IMAGE_PREFERENCES = [
+  { label: '🚀  Default', value: 'default' },
+  { label: '🥕  Fruit & Veg', value: 'fruitandveg' },
+  { label: '🎃  Halloween', value: 'halloween' },
+];
 
 const SettingsPage: React.FC = () => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [visibilityMode, setVisibilityMode] = useState<'friends' | 'global'>('global');
   const [emailError, setEmailError] = useState('');
   const [usernameError, setUsernameError] = useState('');
   const [passwordError, setPasswordError] = useState('');
-  const colorScheme = useColorScheme();
-  const isDarkMode = colorScheme === 'dark';
-  const [locActive, setLocActive] = useState<boolean>(true);
+  const [locActive, setLocActive] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
-  const [token, setToken] = useState<string | null>(null);
-  const [notificationToken, setNotificationToken] = useState<string | null>(null);
-  const [firebaseToken, setFirebaseToken] = useState<string | null>(null);
-  const [isCopied, setIsCopied] = useState(false);
   const { setIsSignedIn } = useAuth();
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deleteAccountUsername, setDeleteAccountUsername] = useState('');
   const [showAccountDetails, setShowAccountDetails] = useState(false);
-  const [showVisibilitySettings, setShowVisibilitySettings] = useState(false);
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
   const [showCredits, setShowCredits] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [notificationSettings, setNotificationSettings] = useState({
     incomingEntities: false,
     entityDamage: false,
@@ -53,21 +61,29 @@ const SettingsPage: React.FC = () => {
     friendRequests: false,
     leagues: false,
   });
-  const [slideAnimation] = useState(new Animated.Value(width));
-  const [randomLocActive, setRandomLocActive] = useState<boolean>(false);
+  const [randomLocActive, setRandomLocActive] = useState(false);
   const [isConfirmingEmail, setIsConfirmingEmail] = useState(false);
-  const [newEmail, setNewEmail] = useState('');
+  const [pendingEmail, setPendingEmail] = useState('');
   const [imagePreference, setImagePreference] = useState('default');
-  const [sliderPosition] = useState(() => new Animated.Value(0));
 
-  const notificationDescriptions = {
-    incomingEntities: "Receive alerts when entities are approaching your location.",
-    entityDamage: "Get notified when you take damage.",
-    entitiesInAirspace: "Be alerted when entities enter your airspace.",
-    eliminationReward: "Receive notifications for elimination rewards and Grace Periods.",
-    lootDrops: "Get alerts for nearby loot drops and loot drop rewards.",
-    friendRequests: "Be notified of new friend requests or friends adding you back.",
-    leagues: "Receive updates about league events and standings.",
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
+  const accent = isDark ? '#4CAF50' : '#773765';
+
+  const usernameInput = useNativeState('');
+  const emailInput = useNativeState('');
+  const newPasswordInput = useNativeState('');
+  const confirmPasswordInput = useNativeState('');
+  const deleteUsernameInput = useNativeState('');
+
+  const notificationLabels: Record<string, string> = {
+    incomingEntities: 'Incoming Entities',
+    entityDamage: 'Entity Damage',
+    entitiesInAirspace: 'Entities in Airspace',
+    eliminationReward: 'Elimination Reward',
+    lootDrops: 'Loot Drops',
+    friendRequests: 'Friend Requests',
+    leagues: 'League Updates',
   };
 
   useEffect(() => {
@@ -78,84 +94,29 @@ const SettingsPage: React.FC = () => {
     fetchRandomLocActiveStatus();
   }, []);
 
-  useEffect(() => {
-    if (
-      showAccountDetails ||
-      showVisibilitySettings ||
-      showNotificationSettings ||
-      showCredits // Include showCredits here
-    ) {
-      Animated.spring(slideAnimation, {
-        toValue: 0,
-        useNativeDriver: true,
-        friction: 8,
-        tension: 40,
-      }).start();
-    }
-  }, [showAccountDetails, showVisibilitySettings, showNotificationSettings, showCredits]); // Add showCredits to dependencies
-
-  useEffect(() => {
-    const loadImagePreference = async () => {
-      const pref = await AsyncStorage.getItem('imagepref');
-      setImagePreference(pref || 'default');
-      sliderPosition.setValue(getSliderPosition(pref || 'default'));
-    };
-    loadImagePreference();
-  }, []);
-
-  const getSliderPosition = (pref: string) => {
-    switch (pref) {
-      case 'default': return 0;
-      case 'fruitandveg': return 1;
-      case 'halloween': return 2;
-      default: return 0;
-    }
-  };
-
-  const closePopup = (setStateFunction: React.Dispatch<React.SetStateAction<boolean>>) => {
-    Animated.spring(slideAnimation, {
-      toValue: width,
-      useNativeDriver: true,
-      friction: 8,
-      tension: 40,
-    }).start(() => {
-      setStateFunction(false);
-      // Reset the animation value for the next opening
-      slideAnimation.setValue(width);
-    });
-  };
-
-  const closeAccountDetails = () => closePopup(setShowAccountDetails);
-  const closeVisibilitySettings = () => closePopup(setShowVisibilitySettings);
-  const closeNotificationSettings = () => closePopup(setShowNotificationSettings);
+  useEffect(() => { usernameInput.value = username; }, [username]);
+  useEffect(() => { emailInput.value = email; }, [email]);
 
   const loadUserData = async () => {
     const storedUsername = await SecureStore.getItemAsync('username');
     const storedEmail = await SecureStore.getItemAsync('email');
-    const cachedNotificationToken = await SecureStore.getItemAsync('notificationToken');
-    const cachedFirebaseToken = await SecureStore.getItemAsync("firebaseUID");
-    const cachedToken = await SecureStore.getItemAsync('token');
-    setNotificationToken(cachedNotificationToken);
-    setFirebaseToken(cachedFirebaseToken);
     setUsername(storedUsername || '');
     setEmail(storedEmail || '');
-    setToken(cachedToken);
   };
 
   const loadSettings = async () => {
     const storedMode = await AsyncStorage.getItem('visibilitymode');
-    if (storedMode !== null) {
-      setVisibilityMode(storedMode as 'friends' | 'global');
-    }
+    if (storedMode) setVisibilityMode(storedMode as 'friends' | 'global');
+    const pref = await AsyncStorage.getItem('imagepref');
+    setImagePreference(pref || 'default');
   };
 
   const fetchLocActiveStatus = async () => {
     setIsLoading(true);
     try {
-      const status = await getlocActive();
-      setLocActive(status);
-    } catch (error) {
-      console.error("Failed to fetch locActive status:", error);
+      setLocActive(await getlocActive());
+    } catch (e) {
+      console.error('Failed to fetch locActive:', e);
     } finally {
       setIsLoading(false);
     }
@@ -163,196 +124,145 @@ const SettingsPage: React.FC = () => {
 
   const fetchRandomLocActiveStatus = async () => {
     try {
-      const status = await getRandomLocation();
-      setRandomLocActive(status);
-    } catch (error) {
-      console.error("Failed to fetch random location status:", error);
+      setRandomLocActive(await getRandomLocation());
+    } catch (e) {
+      console.error('Failed to fetch randomLocActive:', e);
     }
   };
 
-
-  const validateEmail = (email: string) => {
-    return email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
+  const fetchNotificationPreferences = async () => {
+    try {
+      setNotificationSettings(await getNotificationPreferences());
+    } catch (e) {
+      console.error('Failed to fetch notification preferences:', e);
+    }
   };
 
-  const validateUsername = (username: string) => {
-    return username.length >= 3 && username.match(/^[a-zA-Z0-9]+$/);
-  };
-
-  const validatePassword = (password: string) => {
-    return password.length >= 8 && password.match(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/);
-  };
+  const validateEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  const validateUsername = (v: string) => v.length >= 3 && /^[a-zA-Z0-9]+$/.test(v);
+  const validatePassword = (v: string) =>
+    v.length >= 8 && /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(v);
 
   const handleUsernameChange = async () => {
+    const val = usernameInput.value;
     setUsernameError('');
-    if (!validateUsername(username)) {
-      setUsernameError('Username must be at least 3 characters long and contain only letters and numbers');
+    if (!validateUsername(val)) {
+      setUsernameError('At least 3 chars, letters and numbers only');
       return;
     }
-    Alert.alert(
-      "Confirm Username Change",
-      `Are you sure you want to change your username to "${username}"?`,
-      [
-        {
-          text: "Cancel",
-          style: "cancel"
-        },
-        {
-          text: "Confirm",
-          onPress: async () => {
-            try {
-              await changeUsername(username);
-              await SecureStore.setItemAsync('username', username);
-              Alert.alert("Success", "Username changed successfully");
-            } catch (error) {
-              console.error("Error changing username:", error);
-              Alert.alert("Error", "Failed to change username. Please try again.");
-            }
+    Alert.alert('Confirm', `Change username to "${val}"?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Confirm',
+        onPress: async () => {
+          try {
+            await changeUsername(val);
+            await SecureStore.setItemAsync('username', val);
+            setUsername(val);
+            Alert.alert('Success', 'Username changed successfully');
+          } catch {
+            Alert.alert('Error', 'Failed to change username. Please try again.');
           }
-        }
-      ]
-    );
+        },
+      },
+    ]);
   };
 
-  const handleEmailChange = (email: string) => {
+  const handleEmailChange = () => {
+    const val = emailInput.value;
     setEmailError('');
-    if (!validateEmail(email)) {
+    if (!validateEmail(val)) {
       setEmailError('Invalid email address');
       return;
     }
-    setNewEmail(email);
+    setPendingEmail(val);
     setIsConfirmingEmail(true);
   };
 
   const confirmEmailChange = async () => {
     try {
-      await changeEmail(newEmail);
-      await SecureStore.setItemAsync('email', newEmail);
+      await changeEmail(pendingEmail);
+      await SecureStore.setItemAsync('email', pendingEmail);
       setIsConfirmingEmail(false);
-      Alert.alert("Success", "Email changed successfully. Please sign in again.");
+      Alert.alert('Success', 'Email changed. Please sign in again.');
       handleLogout();
-    } catch (error) {
-      console.error("Error changing email:", error);
-      Alert.alert("Error", "Failed to change email. Please try again.");
+    } catch {
+      Alert.alert('Error', 'Failed to change email. Please try again.');
     }
   };
 
   const handlePasswordChange = async () => {
+    const password = newPasswordInput.value;
+    const confirm = confirmPasswordInput.value;
     setPasswordError('');
-    if (newPassword !== confirmPassword) {
-      setPasswordError('Passwords do not match');
+    if (password !== confirm) { setPasswordError('Passwords do not match'); return; }
+    if (!validatePassword(password)) {
+      setPasswordError('8+ chars with upper, lower, number, and special character');
       return;
     }
-    if (!validatePassword(newPassword)) {
-      setPasswordError('Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character');
-      return;
-    }
-    Alert.alert(
-      "Confirm Password Change",
-      "Are you sure you want to change your password?",
-      [
-        {
-          text: "Cancel",
-          style: "cancel"
-        },
-        {
-          text: "Confirm",
-          onPress: async () => {
-            try {
-              await changePassword(newPassword);
-              Alert.alert("Success", "Password changed successfully");
-              setNewPassword('');
-              setConfirmPassword('');
-            } catch (error) {
-              console.error("Error changing password:", error);
-              Alert.alert("Error", "Failed to change password. Please try again.");
-            }
+    Alert.alert('Confirm', 'Change your password?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Confirm',
+        onPress: async () => {
+          try {
+            await changePassword(password);
+            newPasswordInput.value = '';
+            confirmPasswordInput.value = '';
+            Alert.alert('Success', 'Password changed successfully');
+          } catch {
+            Alert.alert('Error', 'Failed to change password. Please try again.');
           }
-        }
-      ]
-    );
+        },
+      },
+    ]);
   };
 
   const toggleVisibilityMode = async () => {
     const newMode = visibilityMode === 'friends' ? 'global' : 'friends';
-    setVisibilityMode(newMode);
-    await AsyncStorage.setItem('visibilitymode', newMode);
-    updateFriendsOnlyStatus(newMode === 'friends');
-
     if (newMode === 'global') {
-      Alert.alert(
-        "Change to Global Mode",
-        "You are about to change your visibility to global. Everyone will be able to see your location.",
-        [
-          {
-            text: "Cancel",
-            onPress: () => {
-              console.log("Change cancelled");
-              setVisibilityMode('friends');
-            },
-            style: "cancel"
+      Alert.alert('Change to Global?', 'Everyone will be able to see your location.', [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Confirm',
+          onPress: async () => {
+            setVisibilityMode('global');
+            await AsyncStorage.setItem('visibilitymode', 'global');
+            await updateFriendsOnlyStatus(false);
           },
-          {
-            text: "Confirm",
-            onPress: async () => {
-              await AsyncStorage.setItem('visibilitymode', newMode);
-              await updateFriendsOnlyStatus(newMode === 'global');
-              console.log("Visibility mode changed to:", newMode);
-            }
-          }
-        ]
-      );
+        },
+      ]);
     } else {
-      console.log("Visibility mode changed to:", newMode);
+      setVisibilityMode('friends');
+      await AsyncStorage.setItem('visibilitymode', 'friends');
+      updateFriendsOnlyStatus(true);
     }
   };
 
   const toggleLocActive = async () => {
-    const newStatus = !locActive;
-    handleLocationToggle(newStatus);
+    const next = !locActive;
+    setLocActive(next);
+    await updatelocActive(next);
+    Alert.alert(
+      next ? 'Location Activated' : 'Location Deactivated',
+      next ? 'Your location is now being shared.' : 'Your location will no longer be shared.',
+      [{ text: 'OK' }],
+    );
   };
 
   const toggleRandomLocActive = async () => {
-    const newStatus = !randomLocActive;
-    setRandomLocActive(newStatus); // Update state immediately for responsive UI
-
+    const next = !randomLocActive;
+    setRandomLocActive(next);
     try {
-      const result = await randomLocation(newStatus);
-      console.log("API response:", result); // Log the API response
-
+      await randomLocation(next);
       Alert.alert(
-        newStatus ? "Random Location Activated" : "Random Location Deactivated",
-        `Your random location will now be ${newStatus ? "Diffused" : "Accurate"}.`,
-        [{ text: "OK" }]
+        next ? 'Diffused Location On' : 'Diffused Location Off',
+        next ? 'Your location will be diffused.' : 'Your location will be accurate.',
+        [{ text: 'OK' }],
       );
-    } catch (error) {
-      console.error("Failed to update random location status:", error);
-      setRandomLocActive(!newStatus); // Revert state if API call fails
-
-      let errorMessage = "Failed to update random location status. Please try again.";
-      if (error instanceof Error) {
-        errorMessage += ` Error: ${error.message}`;
-      }
-
-      Alert.alert("Error", errorMessage);
-    }
-  };
-
-  const handleLocationToggle = async (newStatus: boolean) => {
-    setLocActive(newStatus);
-    await updatelocActive(newStatus);
-    if (newStatus) {
-      Alert.alert(
-        "Location Activated",
-        "Your location will now be shared and map functionality will be fully enabled.",
-        [{ text: "OK" }]
-      );
-    } else {
-      Alert.alert(
-        "Location Deactivated",
-        "Your location will no longer be shared, and map functionality will be limited.",
-        [{ text: "OK" }]
-      );
+    } catch {
+      setRandomLocActive(!next);
+      Alert.alert('Error', 'Failed to update location setting.');
     }
   };
 
@@ -360,1168 +270,598 @@ const SettingsPage: React.FC = () => {
     await clearCredentials();
     await AsyncStorage.setItem('signedIn', 'false');
     setIsSignedIn(false);
-    router.navigate("/login");
+    router.navigate('/login');
   };
 
   const handleDeleteAccount = async () => {
-    if (deleteAccountUsername !== username) {
-      Alert.alert("Error", "The username you entered does not match your current username.");
+    if (deleteUsernameInput.value !== username) {
+      Alert.alert('Error', 'Username does not match.');
       return;
     }
-
     try {
       const result = await deleteAcc(username);
       if (result.success) {
-        Alert.alert("Account Deleted", result.message, [
-          {
-            text: "OK",
-            onPress: async () => {
-              await handleLogout();
-              router.replace("/login");
-            }
-          }
-        ]);
+        Alert.alert('Account Deleted', result.message, [{
+          text: 'OK',
+          onPress: async () => { await handleLogout(); router.replace('/login'); },
+        }]);
       } else {
-        Alert.alert("Error", result.message);
+        Alert.alert('Error', result.message);
       }
-    } catch (error) {
-      console.error("Error deleting account:", error);
-      Alert.alert("Error", "An unexpected error occurred. Please try again.");
+    } catch {
+      Alert.alert('Error', 'An unexpected error occurred.');
     }
     setShowDeleteModal(false);
-  };
-
-  const handleJoinDiscord = () => {
-    Linking.openURL('https://discord.gg/Gk8jqUnVd3');
   };
 
   const handleRateApp = async () => {
     if (await StoreReview.hasAction()) {
       StoreReview.requestReview();
     } else {
-      // Fallback for devices that can't request review
-      if (Platform.OS === 'ios') {
-        Linking.openURL('https://apps.apple.com/app/missile-wars-revival/id6590602456');
-      } else {
-        Linking.openURL('https://play.google.com/store/apps/details?id=com.longtimenoc.missilewars');
-      }
+      Linking.openURL(
+        Platform.OS === 'ios'
+          ? 'https://apps.apple.com/app/missile-wars-revival/id6590602456'
+          : 'https://play.google.com/store/apps/details?id=com.longtimenoc.missilewars',
+      );
     }
   };
 
-  useEffect(() => {
-    fetchNotificationPreferences();
-  }, []);
-
-  const fetchNotificationPreferences = async () => {
+  const toggleNotificationSetting = async (key: keyof typeof notificationSettings) => {
+    const next = { ...notificationSettings, [key]: !notificationSettings[key] };
     try {
-      const preferences = await getNotificationPreferences();
-      setNotificationSettings(preferences);
-    } catch (error) {
-      console.error("Failed to fetch notification preferences:", error);
-      // Optionally, you can show an error message to the user
+      setNotificationSettings(await updateNotificationPreferences(next));
+    } catch {
+      Alert.alert('Error', 'Failed to update notification preference.');
     }
   };
 
-  const toggleNotificationSetting = async (setting: keyof typeof notificationSettings) => {
-    const newSettings = {
-      ...notificationSettings,
-      [setting]: !notificationSettings[setting]
-    };
-    
+  const handleImagePreferenceChange = async (val: string) => {
     try {
-      const updatedPreferences = await updateNotificationPreferences(newSettings);
-      setNotificationSettings(updatedPreferences);
-      console.log("Updated notification settings:", updatedPreferences);
-    } catch (error) {
-      console.error("Failed to update notification preference:", error);
-      // Optionally, show an error message to the user
-      Alert.alert("Error", "Failed to update notification preference. Please try again.");
+      await AsyncStorage.setItem('imagepref', val);
+      setImagePreference(val);
+      Alert.alert('Theme Updated', 'The app will restart to apply the new theme.', [{
+        text: 'OK',
+        onPress: () => {
+          router.replace('/');
+          setTimeout(() => {
+            if (__DEV__) {
+              DevSettings.reload();
+            } else {
+              import('expo-updates').then(u => u.reloadAsync()).catch(console.error);
+            }
+          }, 100);
+        },
+      }]);
+    } catch {
+      Alert.alert('Error', 'Failed to save preference.');
     }
   };
 
-  const renderPopup = (content: React.ReactNode) => (
-    <Animated.View
-      style={[
-        styles.settingsPopup,
-        isDarkMode && styles.settingsPopupDark,
-        { transform: [{ translateX: slideAnimation }] },
-      ]}
-    >
-      {content}
-    </Animated.View>
-  );
-
-  const renderImagePreferenceToggle = () => {
-    const options = [
-      { value: 'default', label: 'Default', icon: '🚀' },
-      { value: 'fruitandveg', label: 'Veggie', icon: '🥕' },
-      { value: 'halloween', label: 'Halloween', icon: '🎃' },
-    ];
-  
-    const containerWidth = width * 0.9; // Assuming the container width is 90% of the screen width
-    const optionWidth = (containerWidth - 29) / 3; // Subtracting 24 for padding (8 on each side)
-
-    const handleImagePreferenceChange = async (newValue: string) => {
-      if (newValue !== imagePreference) {
-        try {
-          await AsyncStorage.setItem('imagepref', newValue);
-          setImagePreference(newValue);
-          
-          Alert.alert(
-            "Preference Updated",
-            "The app will now restart to apply the new theme.",
-            [
-              {
-                text: "OK",
-                onPress: () => {
-                  // Navigate to the home screen (or any initial screen)
-                  router.replace('/');
-                  
-                  // Use a timeout to allow the navigation to complete
-                  setTimeout(() => {
-                    if (__DEV__) {
-                      // In development, we can use DevSettings
-                      DevSettings.reload();
-                    } else {
-                      // In production, we can use the Expo updates API
-                      import('expo-updates').then(Updates => {
-                        Updates.reloadAsync();
-                      }).catch(error => {
-                        console.error('Failed to reload the app:', error);
-                      });
-                    }
-                  }, 100);
-                }
-              }
-            ]
-          );
-        } catch (error) {
-          console.error("Failed to save image preference:", error);
-          Alert.alert("Error", "Failed to save preference. Please try again.");
-        }
-      }
-    };
-  
-    return (
-      <View style={[styles.visibilityContainer, isDarkMode && styles.visibilityContainerDark]}>
-        <Text style={[styles.visibilityText, isDarkMode && styles.visibilityTextDark]}>Image Preference</Text>
-        <View style={styles.toggleContainer}>
-          {options.map((option, index) => (
-            <TouchableOpacity
-              key={option.value}
-              style={[
-                styles.toggleOption,
-                { width: optionWidth },
-                imagePreference === option.value && styles.toggleOptionActive,
-                isDarkMode && styles.toggleOptionDark,
-                imagePreference === option.value && isDarkMode && styles.toggleOptionActiveDark,
-              ]}
-              onPress={() => handleImagePreferenceChange(option.value)}
-            >
-              <Text style={styles.toggleOptionIcon}>{option.icon}</Text>
-              <Text style={[
-                styles.toggleOptionLabel,
-                imagePreference === option.value && styles.toggleOptionLabelActive,
-                isDarkMode && styles.toggleOptionLabelDark,
-              ]}>
-                {option.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-          <LinearGradient
-            colors={isDarkMode ? ['#5c2a4f', '#773765'] : ['#773765', '#9d4b87']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={[
-              styles.toggleIndicator,
-              {
-                width: optionWidth,
-                transform: [{ translateX: optionWidth * options.findIndex(o => o.value === imagePreference) }],
-              },
-            ]}
-          />
-        </View>
-        <Text style={[styles.visibilityDescription, isDarkMode && styles.visibilityDescriptionDark]}>
-          {imagePreference === 'default'
-            ? 'Using default game images'
-            : imagePreference === 'fruitandveg'
-            ? 'Using fruit and vegetable themed images'
-            : 'Using Halloween themed images'}
-        </Text>
-      </View>
-    );
+  const showImagePicker = () => {
+    const options = [...IMAGE_PREFERENCES.map(p => p.label), 'Cancel'];
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        { options, cancelButtonIndex: options.length - 1, title: 'Image Theme' },
+        (i) => { if (i < IMAGE_PREFERENCES.length) handleImagePreferenceChange(IMAGE_PREFERENCES[i].value); },
+      );
+    } else {
+      Alert.alert('Image Theme', 'Select a theme', [
+        ...IMAGE_PREFERENCES.map(p => ({ text: p.label, onPress: () => handleImagePreferenceChange(p.value) })),
+        { text: 'Cancel', style: 'cancel' as const },
+      ]);
+    }
   };
 
-  const renderAccountDetails = () => renderPopup(
-    <ScrollView contentContainerStyle={styles.popupScrollContent}>
-      <View style={styles.popupHeader}>
-        <TouchableOpacity
-          style={styles.popupbackButton}
-          onPress={closeAccountDetails}
-        >
-          <ChevronLeft size={24} color={isDarkMode ? "white" : "black"} />
-        </TouchableOpacity>
-        <Text style={[styles.popupTitle, isDarkMode && styles.popupTitleDark]}>Account Details</Text>
-      </View>
+  const imagePrefLabel = IMAGE_PREFERENCES.find(p => p.value === imagePreference)?.label ?? '🚀  Default';
 
-      <View style={styles.inputContainer}>
-        <User size={24} color={isDarkMode ? "white" : "black"} style={styles.inputIcon} />
-        <Input
-          placeholder={username || "Username"}
-          onChangeText={(text) => {
-            setUsername(text);
-            setUsernameError('');
-          }}
-          style={[styles.input, isDarkMode && styles.inputDark]}
-        />
-      </View>
-      {usernameError ? <Text style={styles.errorText}>{usernameError}</Text> : null}
-      <TouchableHighlight
-        onPress={handleUsernameChange}
-        style={[styles.button, isDarkMode && styles.buttonDark]}
-        underlayColor={isDarkMode ? '#5c2a4f' : '#662d60'}
-      >
-        <Text style={styles.buttonText}>Change Username</Text>
-      </TouchableHighlight>
-
-      <View style={styles.inputContainer}>
-        <Mail size={24} color={isDarkMode ? "white" : "black"} style={styles.inputIcon} />
-        <Input
-          placeholder={email || "Email"}
-          onChangeText={(text) => {
-            setEmail(text);
-            setEmailError('');
-          }}
-          style={[styles.input, isDarkMode && styles.inputDark]}
-        />
-      </View>
-      {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
-
-      {isConfirmingEmail ? (
-        <View style={styles.confirmationContainer}>
-          <Text style={[styles.confirmationText, isDarkMode && styles.confirmationTextDark]}>
-            Are you sure you want to change your email to {newEmail}? You will be required to sign back in after changing.
-          </Text>
-          <View style={styles.confirmationButtons}>
-            <TouchableOpacity
-              onPress={() => setIsConfirmingEmail(false)}
-              style={[styles.confirmationButton, styles.cancelButton]}
-            >
-              <Text style={styles.confirmationButtonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={confirmEmailChange}
-              style={[styles.confirmationButton, styles.confirmButton]}
-            >
-              <Text style={styles.confirmationButtonText}>Confirm</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      ) : (
-        <TouchableHighlight
-          onPress={() => handleEmailChange(email)}
-          style={[styles.button, isDarkMode && styles.buttonDark]}
-          underlayColor={isDarkMode ? '#5c2a4f' : '#662d60'}
-        >
-          <Text style={styles.buttonText}>Change Email</Text>
-        </TouchableHighlight>
-      )}
-
-      <View style={styles.inputContainer}>
-        <LockKeyhole size={24} color={isDarkMode ? "white" : "black"} style={styles.inputIcon} />
-        <Input
-          placeholder="New Password"
-          value={newPassword}
-          secureTextEntry={true}
-          autoCorrect={false}
-          autoCapitalize="none"
-          onChangeText={(text) => {
-            setNewPassword(text);
-            setPasswordError('');
-          }}
-          style={[styles.input, isDarkMode && styles.inputDark]}
-        />
-      </View>
-      <View style={styles.inputContainer}>
-        <LockKeyhole size={24} color={isDarkMode ? "white" : "black"} style={styles.inputIcon} />
-        <Input
-          placeholder="Confirm New Password"
-          value={confirmPassword}
-          onChangeText={(text) => {
-            setConfirmPassword(text);
-            setPasswordError('');
-          }}
-          secureTextEntry
-          style={[styles.input, isDarkMode && styles.inputDark]}
-        />
-      </View>
-      {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
-      <TouchableHighlight
-        onPress={handlePasswordChange}
-        style={[styles.button, isDarkMode && styles.buttonDark]}
-        underlayColor={isDarkMode ? '#5c2a4f' : '#662d60'}
-      >
-        <Text style={styles.buttonText}>Change Password</Text>
-      </TouchableHighlight>
-    </ScrollView>
-  );
-
-  const renderVisibilitySettings = () => renderPopup(
-    <ScrollView contentContainerStyle={styles.popupScrollContent}>
-      <View style={styles.popupHeader}>
-        <TouchableOpacity
-          style={styles.popupbackButton}
-          onPress={closeVisibilitySettings}
-        >
-          <ChevronLeft size={24} color={isDarkMode ? "white" : "black"} />
-        </TouchableOpacity>
-        <Text style={[styles.popupTitle, isDarkMode && styles.popupTitleDark]}>Visibility Settings</Text>
-      </View>
-
-      <View style={styles.visibilitySettingsContent}>
-        <View style={[styles.visibilityContainer, isDarkMode && styles.visibilityContainerDark]}>
-          <Text style={[styles.visibilityText, isDarkMode && styles.visibilityTextDark]}>Visibility Mode</Text>
-          <View style={styles.visibilityToggleContainer}>
-            <Switch
-              value={visibilityMode === 'global'}
-              onValueChange={toggleVisibilityMode}
-              trackColor={{ false: "#cbd5e0", true: "#773765" }}
-              thumbColor={visibilityMode === 'global' ? "#5c2a4f" : "#ffffff"}
-            />
-            <Text style={[styles.visibilityModeText, isDarkMode && styles.visibilityModeTextDark]}>
-              {visibilityMode === 'global' ? 'Global' : 'Friends Only'}
-            </Text>
-          </View>
-          <Text style={[styles.visibilityDescription, isDarkMode && styles.visibilityDescriptionDark]}>
-            {visibilityMode === 'global'
-              ? 'You are visible to friends and players in your league'
-              : 'You are only visible to your friends'}
-          </Text>
-        </View>
-
-        <View style={[styles.visibilityContainer, isDarkMode && styles.visibilityContainerDark]}>
-          <Text style={[styles.visibilityText, isDarkMode && styles.visibilityTextDark]}>Location Active</Text>
-          <View style={styles.visibilityToggleContainer}>
-            <Switch
-              value={locActive}
-              onValueChange={toggleLocActive}
-              trackColor={{ false: "#cbd5e0", true: "#773765" }}
-              thumbColor={locActive ? "#5c2a4f" : "#ffffff"}
-            />
-            <Text style={[styles.visibilityModeText, isDarkMode && styles.visibilityModeTextDark]}>
-              {locActive ? 'On' : 'Off'}
-            </Text>
-          </View>
-          <Text style={[styles.visibilityDescription, isDarkMode && styles.visibilityDescriptionDark]}>
-            {locActive
-              ? 'Your location is being used to update your position on the map'
-              : 'You are not visible to other players and your location is not being updated'}
-          </Text>
-        </View>
-
-        <View style={[styles.visibilityContainer, isDarkMode && styles.visibilityContainerDark]}>
-          <Text style={[styles.visibilityText, isDarkMode && styles.visibilityTextDark]}>Diffused Location</Text>
-          <View style={styles.visibilityToggleContainer}>
-            <Switch
-              value={randomLocActive}
-              onValueChange={toggleRandomLocActive}
-              trackColor={{ false: "#cbd5e0", true: "#773765" }}
-              thumbColor={randomLocActive ? "#5c2a4f" : "#ffffff"}
-            />
-            <Text style={[styles.visibilityModeText, isDarkMode && styles.visibilityModeTextDark]}>
-              {randomLocActive ? 'On' : 'Off'}
-            </Text>
-          </View>
-          <Text style={[styles.visibilityDescription, isDarkMode && styles.visibilityDescriptionDark]}>
-            {randomLocActive
-              ? 'Your location is diffused, making it less precise'
-              : 'Your location is accurate'}
-          </Text>
-        </View>
-        {renderImagePreferenceToggle()}
-      </View>
-    </ScrollView>
-  );
-
-  const renderNotificationSettings = () => renderPopup(
-    <ScrollView contentContainerStyle={styles.popupScrollContent}>
-      <View style={styles.popupHeader}>
-        <TouchableOpacity
-          style={styles.popupbackButton}
-          onPress={closeNotificationSettings}
-        >
-          <ChevronLeft size={24} color={isDarkMode ? "white" : "black"} />
-        </TouchableOpacity>
-        <Text style={[styles.popupTitle, isDarkMode && styles.popupTitleDark]}>Notification Settings</Text>
-      </View>
-
-      {Object.entries(notificationSettings).map(([key, value]) => {
-        // Skip 'id' and 'userId' options
-        if (key === 'id' || key === 'userId') return null;
-
-        const title = key.split(/(?=[A-Z])/).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
-        const description = notificationDescriptions[key as keyof typeof notificationDescriptions];
-
-        return (
-          <View key={key} style={[styles.notificationSettingItem, isDarkMode && styles.notificationSettingItemDark]}>
-            <View style={styles.notificationSettingTextContainer}>
-              <Text style={[styles.notificationSettingText, isDarkMode && styles.notificationSettingTextDark]}>
-                {title}
-              </Text>
-              <Text style={[styles.notificationSettingDescription, isDarkMode && styles.notificationSettingDescriptionDark]}>
-                {description}
-              </Text>
-            </View>
-            <Switch
-              value={value}
-              onValueChange={() => toggleNotificationSetting(key as keyof typeof notificationSettings)}
-              trackColor={{ false: "#cbd5e0", true: "#773765" }}
-              thumbColor={value ? "#5c2a4f" : "#ffffff"}
-            />
-          </View>
-        );
-      })}
-    </ScrollView>
-  );
-
-  const renderCredits = () => renderPopup(
-    <ScrollView contentContainerStyle={styles.popupScrollContent}>
-      <View style={styles.popupHeader}>
-        <TouchableOpacity
-          style={styles.popupbackButton}
-          onPress={() => closePopup(setShowCredits)}
-        >
-          <ChevronLeft size={24} color={isDarkMode ? "white" : "black"} />
-        </TouchableOpacity>
-        <Text style={[styles.popupTitle, isDarkMode && styles.popupTitleDark]}>Credits</Text>
-      </View>
-
-      <View style={styles.creditsContent}>
-        <Text style={[styles.creditsSubtitle, isDarkMode && styles.creditsSubtitleDark]}>
-          This game was developed by One Studio One Game, LLC
-        </Text>
-        <Text style={[styles.creditsSectionTitle, isDarkMode && styles.creditsSectionTitleDark]}>Lead Developers:</Text>
-        <View style={styles.creditsList}>
-          <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>Tristan</Text>
-          <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>Clxud</Text>
-        </View>
-        <Text style={[styles.creditsSectionTitle, isDarkMode && styles.creditsSectionTitleDark]}>Frontend Developers:</Text>
-        <View style={styles.creditsList}>
-          <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>Tristan</Text>
-          <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>NightSpark</Text>
-          <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>TheVin</Text>
-          <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>Luc</Text>
-        </View>
-
-        <Text style={[styles.creditsSectionTitle, isDarkMode && styles.creditsSectionTitleDark]}>Backend Developers:</Text>
-        <View style={styles.creditsList}>
-          <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>Tristan</Text>
-          <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>Clxud</Text>
-          <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>SwissArmywrench</Text>
-          <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>manaf941</Text>
-        </View>
-
-        <Text style={[styles.creditsSectionTitle, isDarkMode && styles.creditsSectionTitleDark]}>Concept & UI work:</Text>
-        <View style={styles.creditsList}>
-          <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>Gubb0</Text>
-          <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>ryaaab</Text>
-          <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>arapeggio</Text>
-        </View>
-
-        <Text style={[styles.creditsSectionTitle, isDarkMode && styles.creditsSectionTitleDark]}>Staff:</Text>
-        <View style={styles.creditsList}>
-          <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>Sophie</Text>
-          <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>ToxicSans</Text>
-          <Text style={[styles.creditsText, isDarkMode && styles.creditsTextDark]}>Nero</Text>
-        </View>
-        <TouchableOpacity
-          style={[styles.donateButton, isDarkMode && styles.donateButtonDark]}
-          onPress={() => Linking.openURL('https://donate.stripe.com/fZe6r884h6e59Ww288')}
-        >
-          <Heart size={20} color="#FFFFFF" style={styles.donateIcon} />
-          <Text style={styles.donateButtonText}>Donate to support the game!</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
-  );
+  const s = styles(isDark);
 
   return (
-    <ScrollView style={[styles.container, isDarkMode && styles.containerDark]}>
-      <SafeAreaView style={[styles.safeArea, isDarkMode && styles.safeAreaDark]}>
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.backButton}
-          >
-            <ChevronLeft size={24} color={isDarkMode ? "#4CAF50" : "#007AFF"} />
-          </TouchableOpacity>
-          <Text style={[styles.title, isDarkMode && styles.titleDark]}>Settings</Text>
-        </View>
+    <>
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          title: 'Settings',
+          headerBackTitle: 'Profile',
+          headerStyle: { backgroundColor: isDark ? '#000' : '#F2F2F7' },
+          headerTintColor: isDark ? '#fff' : '#773765',
+          headerTitleStyle: { color: isDark ? '#fff' : '#000', fontWeight: '600' },
+          headerShadowVisible: false,
+        }}
+      />
 
-        <View style={styles.settingsContainer}>
-          <TouchableOpacity
-            style={[styles.settingsItem, isDarkMode && styles.settingsItemDark]}
-            onPress={() => setShowAccountDetails(true)}
-          >
-            <Text style={[styles.settingsItemText, isDarkMode && styles.settingsItemTextDark]}>Account Details</Text>
-            <ChevronRight size={24} color={isDarkMode ? "white" : "black"} />
-          </TouchableOpacity>
+      <ScrollView style={s.container} contentContainerStyle={s.content}>
 
-          <TouchableOpacity
-            style={[styles.settingsItem, isDarkMode && styles.settingsItemDark]}
-            onPress={() => setShowVisibilitySettings(true)}
-          >
-            <Text style={[styles.settingsItemText, isDarkMode && styles.settingsItemTextDark]}>Visibility</Text>
-            <ChevronRight size={24} color={isDarkMode ? "white" : "black"} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.settingsItem, isDarkMode && styles.settingsItemDark]}
-            onPress={() => setShowNotificationSettings(true)}
-          >
-            <Text style={[styles.settingsItemText, isDarkMode && styles.settingsItemTextDark]}>Notification Settings</Text>
-            <ChevronRight size={24} color={isDarkMode ? "white" : "black"} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.settingsItem, isDarkMode && styles.settingsItemDark]}
-            onPress={() => setShowCredits(true)}
-          >
-            <Text style={[styles.settingsItemText, isDarkMode && styles.settingsItemTextDark]}>Credits</Text>
-            <ChevronRight size={24} color={isDarkMode ? "white" : "black"} />
-          </TouchableOpacity>
-
-            <Card title="App Icon" icon={<Shield size={24} color={isDarkMode ? "white" : "black"} />}>
-              <AppIconChanger />
-            </Card>
-
-          <Card title="Community & Feedback" icon={<MessageCircle size={24} color={isDarkMode ? "white" : "black"} />}>
-            <TouchableHighlight
-              onPress={handleJoinDiscord}
-              style={[styles.button, isDarkMode && styles.buttonDark]}
-              underlayColor={isDarkMode ? '#5c2a4f' : '#662d60'}
-            >
-              <View style={styles.buttonContent}>
-                <Text style={styles.buttonText}>Join our Discord Community</Text>
-              </View>
-            </TouchableHighlight>
-            <TouchableHighlight
-            onPress={handleRateApp}
-            style={[styles.button, isDarkMode && styles.buttonDark]}
-            underlayColor={isDarkMode ? '#5c2a4f' : '#662d60'}
-          >
-              <View style={styles.buttonContent}>
-                <Text style={styles.buttonText}>Rate and Review Our App!</Text>
-              </View>
-            </TouchableHighlight>
-            <TouchableHighlight
-            onPress={() => Linking.openURL('https://donate.stripe.com/fZe6r884h6e59Ww288')}
-            style={[styles.button, isDarkMode && styles.buttonDark]}
-            underlayColor={isDarkMode ? '#5c2a4f' : '#662d60'}
-          >
-              <View style={styles.buttonContent}>
-                <Text style={styles.buttonText}>Donate to support the game!</Text>
-              </View>
-            </TouchableHighlight>
-          </Card>
-
-          <TouchableHighlight
-            onPress={handleLogout}
-            style={[styles.button, styles.signOutButton, isDarkMode && styles.buttonDark]}
-            underlayColor={isDarkMode ? '#5c2a4f' : '#662d60'}
-          >
-            <Text style={styles.signOutButtonText}>Sign Out</Text>
-          </TouchableHighlight>
-
-          <View style={styles.footerLinks}>
-            <TouchableOpacity onPress={() => Linking.openURL('https://www.oakforgestudios.co.uk/missilewars/privacy-policy')}>
-              <Text style={[styles.footerLinkText, isDarkMode && styles.footerLinkTextDark]}>
-                Privacy Policy
-              </Text>
-            </TouchableOpacity>
-            <Text style={[styles.footerLinkText, isDarkMode && styles.footerLinkTextDark]}> | </Text>
-            <TouchableOpacity onPress={() => Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')}>
-              <Text style={[styles.footerLinkText, isDarkMode && styles.footerLinkTextDark]}>
-                EULA Agreement
-              </Text>
-            </TouchableOpacity>
-            <Text style={[styles.footerLinkText, isDarkMode && styles.footerLinkTextDark]}> | </Text>
-            <TouchableOpacity onPress={() => Linking.openURL('https://discord.gg/Gk8jqUnVd3')}>
-              <Text style={[styles.footerLinkText, isDarkMode && styles.footerLinkTextDark]}>
-                Contact Support
-              </Text>
-            </TouchableOpacity>
-            <Text style={[styles.footerLinkText, isDarkMode && styles.footerLinkTextDark]}> | </Text>
-            <TouchableOpacity onPress={() => setShowDeleteModal(true)}>
-              <Text style={[styles.footerLinkText, styles.deleteAccountText, isDarkMode && styles.deleteAccountTextDark]}>
-                Delete Account
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <Modal
-          visible={showDeleteModal}
-          transparent={true}
-          animationType="fade"
-        >
-          <View style={styles.modalOverlay}>
-            <View style={[styles.modalContent, isDarkMode && styles.modalContentDark]}>
-              <Text style={[styles.modalTitle, isDarkMode && styles.modalTitleDark]}>Delete Account</Text>
-              <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>
-                This action cannot be undone. Please enter your username to confirm.
-              </Text>
-              <Input
-                placeholder="Enter your username"
-                value={deleteAccountUsername}
-                onChangeText={setDeleteAccountUsername}
-                style={[styles.modalInput, isDarkMode && styles.modalInputDark]}
-              />
-              <View style={styles.modalButtons}>
-                <TouchableHighlight
-                  onPress={() => setShowDeleteModal(false)}
-                  style={[styles.modalButton, styles.cancelButton]}
-                  underlayColor="#DDDDDD"
-                >
-                  <Text style={styles.modalButtonText}>Cancel</Text>
-                </TouchableHighlight>
-                <TouchableHighlight
-                  onPress={handleDeleteAccount}
-                  style={[styles.modalButton, styles.confirmDeleteButton]}
-                  underlayColor="#FF0000"
-                >
-                  <Text style={styles.modalButtonText}>Delete</Text>
-                </TouchableHighlight>
-              </View>
+        {/* ── Account ───────────────────────────────────────── */}
+        <Text style={s.sectionHeader}>ACCOUNT</Text>
+        <View style={s.card}>
+          <Pressable style={s.row} onPress={() => setShowAccountDetails(true)}>
+            <View style={[s.iconCircle, { backgroundColor: accent + '22' }]}>
+              <User size={18} color={accent} />
             </View>
+            <View style={s.rowBody}>
+              <Text style={s.rowTitle}>Account Details</Text>
+              <Text style={s.rowSub}>Username, email, password</Text>
+            </View>
+            <ChevronRight size={16} color="#C7C7CC" />
+          </Pressable>
+          <View style={s.sep} />
+          <View style={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+              <View style={[s.iconCircle, { backgroundColor: accent + '22', marginRight: 12 }]}>
+                <Smartphone size={18} color={accent} />
+              </View>
+              <Text style={s.rowTitle}>App Icon</Text>
+            </View>
+            <AppIconChanger />
           </View>
-        </Modal>
+        </View>
 
-        {showAccountDetails && renderAccountDetails()}
-        {showVisibilitySettings && renderVisibilitySettings()}
-        {showNotificationSettings && renderNotificationSettings()}
-        {showCredits && renderCredits()}
-      </SafeAreaView>
-    </ScrollView>
+        {/* ── Privacy & Location ────────────────────────────── */}
+        <Text style={s.sectionHeader}>PRIVACY & LOCATION</Text>
+        <View style={s.card}>
+          <View style={s.row}>
+            <View style={s.rowBody}>
+              <Text style={s.rowTitle}>Global Visibility</Text>
+              <Text style={s.rowSub}>Everyone can see your location</Text>
+            </View>
+            <RNSwitch
+              value={visibilityMode === 'global'}
+              onValueChange={toggleVisibilityMode}
+              trackColor={{ false: '#E5E5EA', true: accent }}
+            />
+          </View>
+          <View style={s.sep} />
+          <View style={s.row}>
+            <View style={s.rowBody}>
+              <Text style={s.rowTitle}>Location Active</Text>
+              <Text style={s.rowSub}>Share your position on the map</Text>
+            </View>
+            <RNSwitch
+              value={locActive}
+              onValueChange={toggleLocActive}
+              disabled={isLoading}
+              trackColor={{ false: '#E5E5EA', true: accent }}
+            />
+          </View>
+          <View style={s.sep} />
+          <View style={s.row}>
+            <View style={s.rowBody}>
+              <Text style={s.rowTitle}>Diffused Location</Text>
+              <Text style={s.rowSub}>Randomise your reported position</Text>
+            </View>
+            <RNSwitch
+              value={randomLocActive}
+              onValueChange={toggleRandomLocActive}
+              trackColor={{ false: '#E5E5EA', true: accent }}
+            />
+          </View>
+        </View>
+
+        {/* ── Notifications ─────────────────────────────────── */}
+        <Text style={s.sectionHeader}>NOTIFICATIONS</Text>
+        <View style={s.card}>
+          <Pressable style={s.row} onPress={() => setShowNotificationSettings(true)}>
+            <View style={[s.iconCircle, { backgroundColor: accent + '22' }]}>
+              <Bell size={18} color={accent} />
+            </View>
+            <View style={s.rowBody}>
+              <Text style={s.rowTitle}>Notification Settings</Text>
+              <Text style={s.rowSub}>Customise push notifications</Text>
+            </View>
+            <ChevronRight size={16} color="#C7C7CC" />
+          </Pressable>
+        </View>
+
+        {/* ── Image Theme ───────────────────────────────────── */}
+        <Text style={s.sectionHeader}>IMAGE THEME</Text>
+        <View style={s.card}>
+          <Pressable style={s.row} onPress={showImagePicker}>
+            <View style={[s.iconCircle, { backgroundColor: '#FF950022' }]}>
+              <Palette size={18} color="#FF9500" />
+            </View>
+            <View style={s.rowBody}>
+              <Text style={s.rowTitle}>Theme</Text>
+              <Text style={s.rowSub}>{imagePrefLabel}</Text>
+            </View>
+            <ChevronRight size={16} color="#C7C7CC" />
+          </Pressable>
+        </View>
+
+        {/* ── Community & Support ───────────────────────────── */}
+        <Text style={s.sectionHeader}>COMMUNITY & SUPPORT</Text>
+        <View style={s.card}>
+          <Pressable style={s.row} onPress={() => Linking.openURL('https://discord.gg/Gk8jqUnVd3')}>
+            <View style={[s.iconCircle, { backgroundColor: '#5865F222' }]}>
+              <MessageSquare size={18} color="#5865F2" />
+            </View>
+            <View style={s.rowBody}>
+              <Text style={s.rowTitle}>Join our Discord</Text>
+            </View>
+            <ExternalLink size={14} color="#C7C7CC" />
+          </Pressable>
+          <View style={s.sep} />
+          <Pressable style={s.row} onPress={handleRateApp}>
+            <View style={[s.iconCircle, { backgroundColor: '#FF950022' }]}>
+              <Star size={18} color="#FF9500" />
+            </View>
+            <View style={s.rowBody}>
+              <Text style={s.rowTitle}>Rate the App</Text>
+            </View>
+            <ExternalLink size={14} color="#C7C7CC" />
+          </Pressable>
+          <View style={s.sep} />
+          <Pressable style={s.row} onPress={() => Linking.openURL('https://donate.stripe.com/fZe6r884h6e59Ww288')}>
+            <View style={[s.iconCircle, { backgroundColor: '#FF2D5522' }]}>
+              <Heart size={18} color="#FF2D55" />
+            </View>
+            <View style={s.rowBody}>
+              <Text style={s.rowTitle}>Donate to Support Us</Text>
+            </View>
+            <ExternalLink size={14} color="#C7C7CC" />
+          </Pressable>
+        </View>
+
+        {/* ── Legal & Info ──────────────────────────────────── */}
+        <Text style={s.sectionHeader}>LEGAL & INFO</Text>
+        <View style={s.card}>
+          <Pressable style={s.row} onPress={() => setShowCredits(true)}>
+            <View style={[s.iconCircle, { backgroundColor: '#007AFF22' }]}>
+              <Info size={18} color="#007AFF" />
+            </View>
+            <View style={s.rowBody}>
+              <Text style={s.rowTitle}>Credits</Text>
+            </View>
+            <ChevronRight size={16} color="#C7C7CC" />
+          </Pressable>
+          <View style={s.sep} />
+          <Pressable style={s.row} onPress={() => Linking.openURL('https://www.oakforgestudios.co.uk/missilewars/privacy-policy')}>
+            <View style={[s.iconCircle, { backgroundColor: '#007AFF22' }]}>
+              <Shield size={18} color="#007AFF" />
+            </View>
+            <View style={s.rowBody}>
+              <Text style={s.rowTitle}>Privacy Policy</Text>
+            </View>
+            <ExternalLink size={14} color="#C7C7CC" />
+          </Pressable>
+          <View style={s.sep} />
+          <Pressable style={s.row} onPress={() => Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')}>
+            <View style={[s.iconCircle, { backgroundColor: '#007AFF22' }]}>
+              <FileText size={18} color="#007AFF" />
+            </View>
+            <View style={s.rowBody}>
+              <Text style={s.rowTitle}>EULA Agreement</Text>
+            </View>
+            <ExternalLink size={14} color="#C7C7CC" />
+          </Pressable>
+          <View style={s.sep} />
+          <Pressable style={s.row} onPress={() => Linking.openURL('https://discord.gg/Gk8jqUnVd3')}>
+            <View style={[s.iconCircle, { backgroundColor: '#007AFF22' }]}>
+              <HelpCircle size={18} color="#007AFF" />
+            </View>
+            <View style={s.rowBody}>
+              <Text style={s.rowTitle}>Contact Support</Text>
+            </View>
+            <ExternalLink size={14} color="#C7C7CC" />
+          </Pressable>
+        </View>
+
+        {/* ── Danger Zone ───────────────────────────────────── */}
+        <View style={[s.card, { marginTop: 8 }]}>
+          <Pressable style={s.row} onPress={handleLogout}>
+            <View style={[s.iconCircle, { backgroundColor: '#FF3B3022' }]}>
+              <LogOut size={18} color="#FF3B30" />
+            </View>
+            <View style={s.rowBody}>
+              <Text style={{ fontSize: 16, color: '#FF3B30' }}>Sign Out</Text>
+            </View>
+          </Pressable>
+          <View style={s.sep} />
+          <Pressable style={s.row} onPress={() => setShowDeleteModal(true)}>
+            <View style={[s.iconCircle, { backgroundColor: '#FF3B3022' }]}>
+              <Trash2 size={18} color="#FF3B30" />
+            </View>
+            <View style={s.rowBody}>
+              <Text style={{ fontSize: 16, color: '#FF3B30' }}>Delete Account</Text>
+            </View>
+          </Pressable>
+        </View>
+
+        <View style={{ height: 48 }} />
+      </ScrollView>
+
+      {/* ── Account Details Sheet ─────────────────────────── */}
+      <BottomSheet
+        isPresented={showAccountDetails}
+        onDismiss={() => {
+          setShowAccountDetails(false);
+          setIsConfirmingEmail(false);
+          setUsernameError('');
+          setEmailError('');
+          setPasswordError('');
+        }}
+        snapPoints={['full']}
+      >
+        <UIScrollView>
+          <Column style={{ padding: 24 }}>
+            <UIText textStyle={{ fontSize: 28, fontWeight: '700' }} style={{ paddingBottom: 28 }}>
+              Account Details
+            </UIText>
+
+            <UIText textStyle={{ fontSize: 12, fontWeight: '600', color: '#8E8E93', letterSpacing: 0.5 }} style={{ paddingBottom: 6 }}>
+              USERNAME
+            </UIText>
+            <TextInput
+              value={usernameInput}
+              placeholder="Username"
+              autoCapitalize="none"
+              autoCorrect={false}
+              style={{ paddingBottom: usernameError ? 4 : 12 }}
+            />
+            {!!usernameError && (
+              <UIText textStyle={{ fontSize: 13, color: '#FF3B30' }} style={{ paddingBottom: 12 }}>
+                {usernameError}
+              </UIText>
+            )}
+            <Button label="Change Username" onPress={handleUsernameChange} style={{ paddingBottom: 28 }} />
+
+            <UIText textStyle={{ fontSize: 12, fontWeight: '600', color: '#8E8E93', letterSpacing: 0.5 }} style={{ paddingBottom: 6 }}>
+              EMAIL
+            </UIText>
+            <TextInput
+              value={emailInput}
+              placeholder="Email"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              style={{ paddingBottom: emailError ? 4 : 12 }}
+            />
+            {!!emailError && (
+              <UIText textStyle={{ fontSize: 13, color: '#FF3B30' }} style={{ paddingBottom: 12 }}>
+                {emailError}
+              </UIText>
+            )}
+            {isConfirmingEmail ? (
+              <Column style={{ paddingBottom: 28 }}>
+                <UIText textStyle={{ fontSize: 14, color: '#8E8E93' }} style={{ paddingBottom: 16 }}>
+                  {`Change your email to ${pendingEmail}? You will be signed out.`}
+                </UIText>
+                <Column spacing={10}>
+                  <Button label="Confirm Email Change" onPress={confirmEmailChange} />
+                  <Button label="Cancel" variant="outlined" onPress={() => setIsConfirmingEmail(false)} />
+                </Column>
+              </Column>
+            ) : (
+              <Button label="Change Email" onPress={handleEmailChange} style={{ paddingBottom: 28 }} />
+            )}
+
+            <UIText textStyle={{ fontSize: 12, fontWeight: '600', color: '#8E8E93', letterSpacing: 0.5 }} style={{ paddingBottom: 6 }}>
+              PASSWORD
+            </UIText>
+            <TextInput
+              value={newPasswordInput}
+              placeholder="New Password"
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+              style={{ paddingBottom: 8 }}
+            />
+            <TextInput
+              value={confirmPasswordInput}
+              placeholder="Confirm New Password"
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+              style={{ paddingBottom: passwordError ? 4 : 12 }}
+            />
+            {!!passwordError && (
+              <UIText textStyle={{ fontSize: 13, color: '#FF3B30' }} style={{ paddingBottom: 12 }}>
+                {passwordError}
+              </UIText>
+            )}
+            <Button label="Change Password" onPress={handlePasswordChange} style={{ paddingBottom: 40 }} />
+          </Column>
+        </UIScrollView>
+      </BottomSheet>
+
+      {/* ── Notification Settings Sheet ───────────────────── */}
+      <BottomSheet
+        isPresented={showNotificationSettings}
+        onDismiss={() => setShowNotificationSettings(false)}
+        snapPoints={['full']}
+      >
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ padding: 24, paddingBottom: 48 }}
+          showsHorizontalScrollIndicator={false}
+          horizontal={false}
+        >
+          <Text style={{ fontSize: 28, fontWeight: '700', color: isDark ? '#fff' : '#000', marginBottom: 8 }}>
+            Notifications
+          </Text>
+          <Text style={{ fontSize: 15, color: '#8E8E93', marginBottom: 24 }}>
+            Choose which events send you a push notification.
+          </Text>
+
+          {(() => {
+            const items = (Object.entries(notificationSettings) as [keyof typeof notificationSettings, boolean][])
+              .filter(([key]) => key !== 'id' && key !== 'userId');
+
+            if (items.length === 0) {
+              return (
+                <Text style={{ fontSize: 15, color: '#8E8E93', textAlign: 'center', marginTop: 32 }}>
+                  No notification settings available.
+                </Text>
+              );
+            }
+
+            return (
+              <View style={{ borderRadius: 12, overflow: 'hidden', backgroundColor: isDark ? '#1C1C1E' : '#fff' }}>
+                {items.map(([key, value], index) => (
+                  <View key={key}>
+                    {index > 0 && (
+                      <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: isDark ? '#38383A' : '#C6C6C8', marginLeft: 16 }} />
+                    )}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14 }}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 16, color: isDark ? '#fff' : '#000' }}>
+                          {notificationLabels[key] ?? key}
+                        </Text>
+                      </View>
+                      <RNSwitch
+                        value={value}
+                        onValueChange={() => toggleNotificationSetting(key)}
+                        trackColor={{ false: '#E5E5EA', true: accent }}
+                      />
+                    </View>
+                  </View>
+                ))}
+              </View>
+            );
+          })()}
+        </ScrollView>
+      </BottomSheet>
+
+      {/* ── Credits Sheet ─────────────────────────────────── */}
+      <BottomSheet
+        isPresented={showCredits}
+        onDismiss={() => setShowCredits(false)}
+        snapPoints={['full']}
+      >
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ padding: 24, paddingBottom: 48 }}
+          showsHorizontalScrollIndicator={false}
+          horizontal={false}
+        >
+          <Text style={{ fontSize: 28, fontWeight: '700', color: isDark ? '#fff' : '#000', marginBottom: 6 }}>
+            Credits
+          </Text>
+          <Text style={{ fontSize: 15, color: '#8E8E93', marginBottom: 28 }}>
+            Developed by One Studio One Game, LLC
+          </Text>
+
+          {[
+            { title: 'Lead Developers', names: ['Tristan', 'Clxud'] },
+            { title: 'Frontend Developers', names: ['Tristan', 'NightSpark', 'TheVin', 'Luc'] },
+            { title: 'Backend Developers', names: ['Tristan', 'Clxud', 'SwissArmywrench', 'manaf941'] },
+            { title: 'Concept & UI', names: ['Gubb0', 'ryaaab', 'arapeggio'] },
+            { title: 'Staff', names: ['Sophie', 'ToxicSans', 'Nero'] },
+          ].map(section => (
+            <View key={section.title} style={{ marginBottom: 20 }}>
+              <Text style={{ fontSize: 12, fontWeight: '600', color: '#8E8E93', letterSpacing: 0.5, marginBottom: 8 }}>
+                {section.title.toUpperCase()}
+              </Text>
+              {section.names.map(name => (
+                <Text key={name} style={{ fontSize: 16, color: isDark ? '#fff' : '#000', marginBottom: 4 }}>
+                  {name}
+                </Text>
+              ))}
+            </View>
+          ))}
+
+          <Pressable
+            onPress={() => Linking.openURL('https://donate.stripe.com/fZe6r884h6e59Ww288')}
+            style={({ pressed }) => ({
+              marginTop: 16,
+              height: 50,
+              borderRadius: 14,
+              backgroundColor: accent,
+              alignItems: 'center',
+              justifyContent: 'center',
+              opacity: pressed ? 0.85 : 1,
+            })}
+          >
+            <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>
+              ❤️  Donate to Support the Game
+            </Text>
+          </Pressable>
+        </ScrollView>
+      </BottomSheet>
+
+      {/* ── Delete Account Sheet ──────────────────────────── */}
+      <BottomSheet
+        isPresented={showDeleteModal}
+        onDismiss={() => { setShowDeleteModal(false); deleteUsernameInput.value = ''; }}
+      >
+        <Column style={{ padding: 24 }}>
+          <UIText textStyle={{ fontSize: 22, fontWeight: '700', color: '#FF3B30' }} style={{ paddingBottom: 8 }}>
+            Delete Account
+          </UIText>
+          <UIText textStyle={{ fontSize: 15, color: '#8E8E93' }} style={{ paddingBottom: 20 }}>
+            This action cannot be undone. Type your username to confirm deletion.
+          </UIText>
+          <TextInput
+            value={deleteUsernameInput}
+            placeholder="Enter your username"
+            autoCapitalize="none"
+            autoCorrect={false}
+            style={{ paddingBottom: 20 }}
+          />
+          <Column spacing={10} style={{ paddingBottom: 40 }}>
+            <Button label="Permanently Delete Account" onPress={handleDeleteAccount} />
+            <Button label="Cancel" variant="outlined" onPress={() => setShowDeleteModal(false)} />
+          </Column>
+        </Column>
+      </BottomSheet>
+    </>
   );
 };
 
-const styles = StyleSheet.create({
+const styles = (isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f0f2f5',
+    backgroundColor: isDark ? '#000' : '#F2F2F7',
   },
-  containerDark: {
-    backgroundColor: '#1E1E1E',
+  content: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
   },
-  safeArea: {
-    flex: 1,
-    alignItems: 'center',
-    backgroundColor: '#f0f2f5',
-  },
-  safeAreaDark: {
-    backgroundColor: '#1E1E1E',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
-    paddingHorizontal: 20,
+  sectionHeader: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#8E8E93',
+    letterSpacing: 0.5,
     marginTop: 20,
-    marginBottom: 20,
+    marginBottom: 8,
+    paddingHorizontal: 4,
   },
-  backButton: {
-    padding: 10,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#2d3748',
-    marginLeft: 10,
-  },
-  titleDark: {
-    color: '#FFF',
-  },
-  settingsContainer: {
-    width: width * 0.9,
-    alignItems: 'center',
-  },
-  settingGroup: {
-    width: width * 1,
-    marginBottom: 20,
-  },
-  errorText: {
-    color: '#e53e3e',
-    marginBottom: 10,
-  },
-  button: {
-    backgroundColor: '#773765',
-    borderRadius: 10,
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 15,
-    width: '100%',
-  },
-  buttonDark: {
-    backgroundColor: '#5c2a4f',
-  },
-  buttonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  signOutButton: {
-    height: 40,
-    width: '50%',
-    marginTop: 20,
-    marginBottom: 20,
-  },
-  signOutButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  debugMenu: {
-    marginTop: 20,
-    padding: 15,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 10,
-  },
-  debugMenuDark: {
-    backgroundColor: '#2C2C2C',
-  },
-  debugMenuTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#333',
-  },
-  debugMenuTitleDark: {
-    color: '#FFF',
-  },
-  debugMenuItem: {
-    marginBottom: 10,
-  },
-  debugMenuLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 5,
-  },
-  debugMenuLabelDark: {
-    color: '#B0B0B0',
-  },
-  debugMenuValue: {
-    fontSize: 14,
-    color: '#333',
-  },
-  debugMenuValueDark: {
-    color: '#FFF',
-  },
-  tokenContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  copyButton: {
-    backgroundColor: '#007AFF',
-    padding: 6,
-    borderRadius: 4,
-    marginLeft: 10,
-  },
-  copyButtonText: {
-    color: '#FFF',
-    fontSize: 12,
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalContent: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    padding: 20,
-    width: '80%',
-    alignItems: 'center',
-  },
-  modalContentDark: {
-    backgroundColor: '#2C2C2C',
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#333',
-  },
-  modalTitleDark: {
-    color: '#FFF',
-  },
-  modalText: {
-    marginBottom: 15,
-    color: '#666',
-    textAlign: 'center',
-  },
-  modalTextDark: {
-    color: '#B0B0B0',
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    marginTop: 20,
-  },
-  modalButton: {
-    padding: 10,
-    borderRadius: 5,
-    width: '45%',
-    alignItems: 'center',
-  },
-  cancelButton: {
-    backgroundColor: '#6C757D',
-  },
-  confirmDeleteButton: {
-    backgroundColor: '#DC3545',
-  },
-  confirmButton: {
-    backgroundColor: '#28A745',
-  },
-  modalButtonText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-  },
-  modalInput: {
-    width: '100%',
-    height: 40,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    marginBottom: 10,
-  },
-  modalInputDark: {
-    borderColor: '#555',
-    color: '#FFF',
-    backgroundColor: '#3C3C3C',
-  },
-  footerLinks: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    marginTop: 20,
-    marginBottom: 10,
-    paddingHorizontal: 10,
-  },
-  footerLinkText: {
-    fontSize: 12,
-    color: '#666',
-    marginHorizontal: 5,
-  },
-  footerLinkTextDark: {
-    color: '#B0B0B0',
-  },
-  deleteAccountText: {
-    color: '#DC3545',
-  },
-  deleteAccountTextDark: {
-    color: '#FF6B6B',
-  },
-  buttonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  settingsItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 15,
-    width: '100%',
-  },
-  settingsItemDark: {
-    backgroundColor: '#2C2C2C',
-  },
-  settingsItemText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#2d3748',
-  },
-  settingsItemTextDark: {
-    color: '#FFF',
-  },
-  settingsPopup: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    width: '100%',
-    backgroundColor: '#ffffff',
-    borderTopLeftRadius: 20,
-    borderBottomLeftRadius: 20,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  settingsPopupDark: {
-    backgroundColor: '#2C2C2C',
-  },
-  popupScrollContent: {
-    padding: 20,
-  },
-  popupHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-    marginTop: 40, // Add some top margin to move the header down
-  },
-  popupbackButton: {
-    padding: 10,
-    marginRight: 10,
-  },
-  popupTitle: {
-    fontSize: 24, // Increased font size
-    fontWeight: 'bold',
-    color: '#2d3748',
-  },
-  popupTitleDark: {
-    color: '#FFF',
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
+  card: {
+    backgroundColor: isDark ? '#1C1C1E' : '#fff',
+    borderRadius: 12,
     overflow: 'hidden',
   },
-  inputIcon: {
-    padding: 15,
-    width: 54,
-    alignItems: 'center',
-  },
-  input: {
-    flex: 1,
-    height: 50,
-    paddingHorizontal: 10,
-  },
-  inputDark: {
-    color: '#FFF',
-    backgroundColor: '#3C3C3C',
-  },
-  visibilitySettingsContent: {
-    width: '100%',
-  },
-  visibilityContainer: {
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 15,
-    width: '100%',
-  },
-  visibilityContainerDark: {
-    backgroundColor: 'transparent',
-  },
-  visibilityText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#2d3748',
-    marginBottom: 10,
-  },
-  visibilityTextDark: {
-    color: '#FFF',
-  },
-  visibilityToggleContainer: {
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    minHeight: 54,
   },
-  visibilityModeText: {
-    fontSize: 16,
-    color: '#4a5568',
-    marginLeft: 10,
-  },
-  visibilityModeTextDark: {
-    color: '#B0B0B0',
-  },
-  notificationSettingItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 15,
-    width: '100%',
-  },
-  notificationSettingItemDark: {
-    backgroundColor: '#2C2C2C',
-  },
-  notificationSettingTextContainer: {
-    flex: 1,
-    marginRight: 10,
-  },
-  notificationSettingText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#2d3748',
-    marginBottom: 5,
-  },
-  notificationSettingTextDark: {
-    color: '#FFF',
-  },
-  notificationSettingDescription: {
-    fontSize: 14,
-    color: '#4a5568',
-  },
-  notificationSettingDescriptionDark: {
-    color: '#B0B0B0',
-  },
-  creditsContent: {
-    width: '100%',
-    paddingHorizontal: 20,
-  },
-  creditsSubtitle: {
-    fontSize: 16,
-    color: '#4a5568',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  creditsSubtitleDark: {
-    color: '#B0B0B0',
-  },
-  creditsSectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#2d3748',
-    marginTop: 15,
-    marginBottom: 10,
-  },
-  creditsSectionTitleDark: {
-    color: '#FFF',
-  },
-  creditsList: {
-    marginLeft: 10,
-    marginBottom: 20,
-  },
-  creditsText: {
-    fontSize: 16,
-    color: '#4a5568',
-    marginBottom: 5,
-  },
-  creditsTextDark: {
-    color: '#B0B0B0',
-  },
-  visibilityDescription: {
-    fontSize: 14,
-    color: '#4a5568',
-    marginTop: 5,
-  },
-  visibilityDescriptionDark: {
-    color: '#B0B0B0',
-  },
-  donateButton: {
-    flexDirection: 'row',
+  iconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#773765',
-    borderRadius: 10,
-    padding: 15,
-    marginTop: 20,
+    marginRight: 12,
   },
-  donateButtonDark: {
-    backgroundColor: '#5c2a4f',
+  rowBody: {
+    flex: 1,
   },
-  donateIcon: {
-    marginRight: 10,
-  },
-  donateButtonText: {
-    color: '#FFFFFF',
+  rowTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
+    color: isDark ? '#fff' : '#000',
   },
-  confirmationContainer: {
-    marginTop: 10,
-    marginBottom: 20,
-    padding: 15,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 10,
+  rowSub: {
+    fontSize: 13,
+    color: '#8E8E93',
+    marginTop: 1,
   },
-  confirmationText: {
-    fontSize: 14,
-    color: '#333',
-    marginBottom: 15,
-    textAlign: 'center',
-  },
-  confirmationTextDark: {
-    color: '#B0B0B0',
-  },
-  confirmationButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  confirmationButton: {
-    padding: 10,
-    borderRadius: 5,
-    width: '45%',
-    alignItems: 'center',
-  },
-  confirmationButtonText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-  },
-  toggleContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#E2E8F0',
-    borderRadius: 15,
-    padding: 4,
-    position: 'relative',
-    marginVertical: 10,
-    width: '100%',
-  },
-  toggleOption: {
-    paddingVertical: 12,
-    paddingHorizontal: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1,
-  },
-  toggleOptionDark: {
-    backgroundColor: 'transparent',
-  },
-  toggleOptionActive: {
-    backgroundColor: 'transparent',
-  },
-  toggleOptionActiveDark: {
-    backgroundColor: 'transparent',
-  },
-  toggleOptionIcon: {
-    fontSize: 20,
-    marginBottom: 2,
-  },
-  toggleOptionLabel: {
-    fontSize: 10,
-    color: '#4A5568',
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  toggleOptionLabelActive: {
-    color: '#FFFFFF',
-  },
-  toggleOptionLabelDark: {
-    color: '#B0B0B0',
-  },
-  toggleIndicator: {
-    position: 'absolute',
-    top: 4,
-    bottom: 4,
-    borderRadius: 12,
-    zIndex: 0,
+  sep: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: isDark ? '#38383A' : '#C6C6C8',
+    marginLeft: 60,
   },
 });
 

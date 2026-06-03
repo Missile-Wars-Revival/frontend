@@ -13,12 +13,20 @@ export function InventoryBottomSheet({
   visible,
   onClose,
   children,
+  fitToContents,
   backgroundColor,
 }: InventoryBottomSheetProps) {
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose} />
-      <View style={[styles.sheet, backgroundColor ? { backgroundColor } : null]}>{children}</View>
+      <View
+        style={[
+          styles.sheet,
+          fitToContents ? styles.sheetFitToContents : styles.sheetFixed,
+          backgroundColor ? { backgroundColor } : null,
+        ]}>
+        {children}
+      </View>
     </Modal>
   );
 }
@@ -34,5 +42,11 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     overflow: 'hidden',
+  },
+  sheetFixed: {
+    height: `${Math.round(SHEET_HEIGHT_FRACTION * 100)}%`,
+  },
+  sheetFitToContents: {
+    maxHeight: `${Math.round(SHEET_HEIGHT_FRACTION * 100)}%`,
   },
 });

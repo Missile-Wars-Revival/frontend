@@ -7,6 +7,18 @@ import { useAuth } from "../../util/Context/authcontext";
 const WEBSOCKET_URL = process.env.EXPO_PUBLIC_WEBSOCKET_URL || "ws://localhost:3000";
 const RECONNECT_INTERVAL_BASE = 1000; // base interval in ms
 const MAX_RECONNECT_ATTEMPTS = 10;
+const DEV_OFFLINE_TOKEN = "dev-offline-token";
+
+const isDevOfflineToken = (token: string | null): token is string => token === DEV_OFFLINE_TOKEN;
+
+const formatWebSocketError = (error: unknown): string => {
+    if (error instanceof Error) return error.message;
+    if (typeof error === "string") return error;
+    if (error && typeof error === "object" && "_type" in error) {
+        return `event:${String((error as { _type?: string })._type ?? "unknown")}`;
+    }
+    return "unknown websocket error";
+};
 
 const useWebSocket = () => {
     const { isSignedIn } = useAuth();
@@ -22,9 +34,8 @@ const useWebSocket = () => {
     const websocketRef = useRef<WebSocket | null>(null);
     const [reconnectAttempts, setReconnectAttempts] = useState(0);
 
-    const connectWebsocket = (): Promise<WebSocket> => {
+    const connectWebsocket = (token: string): Promise<WebSocket> => {
         return new Promise(async (resolve, reject) => {
-            const token = await SecureStore.getItemAsync("token");
             try {
                 if (!token) {
                     console.log('Token not found');
@@ -41,7 +52,7 @@ const useWebSocket = () => {
                 };
     
                 ws.onerror = (error) => {
-                    console.error("WebSocket error:", error);
+                    console.error("WebSocket error:", formatWebSocketError(error));
                     reject(error);
                 };
     
@@ -58,7 +69,25 @@ const useWebSocket = () => {
 
     const initializeWebSocket = async () => {
         try {
-            const ws = await connectWebsocket();
+            const token = await SecureStore.getItemAsync("token");
+
+            // Dev-only offline sessions should not attempt websocket/network reconnect loops.
+            if (isDevOfflineToken(token)) {
+                if (websocketRef.current) {
+                    websocketRef.current.close();
+                    websocketRef.current = null;
+                }
+                await AsyncStorage.setItem('dbconnection', 'true');
+                setReconnectAttempts(0);
+                return;
+            }
+
+            if (!token) {
+                await AsyncStorage.setItem('dbconnection', 'false');
+                return;
+            }
+
+            const ws = await connectWebsocket(token);
             websocketRef.current = ws;
             setReconnectAttempts(0); // Reset reconnect attempts on successful connection
 
@@ -145,13 +174,19 @@ const useWebSocket = () => {
             };
 
         } catch (error) {
-            console.error("Failed to connect to websocket:", error);
+            console.error("Failed to connect to websocket:", formatWebSocketError(error));
             AsyncStorage.setItem('dbconnection', 'false');
             reconnectWebsocket();
         }
     };
 
     const reconnectWebsocket = async () => {
+        const token = await SecureStore.getItemAsync("token");
+        if (isDevOfflineToken(token)) {
+            await AsyncStorage.setItem('dbconnection', 'true');
+            return;
+        }
+
         if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
             console.error("Max reconnect attempts reached. Could not connect to WebSocket.");
             return;

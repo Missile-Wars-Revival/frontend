@@ -30,7 +30,11 @@ export const FireType = (props: FireTypeProps) => {
   };
 
   const selectFiretype = (style: string) => {
-    // Trigger the handler first to open the next modal
+    // Always close this selector before opening another sheet.
+    // This avoids stale visibility state after swipe-dismiss or navigation.
+    FireclosePopup();
+
+    // Trigger the handler to open the next modal
     switch (style) {
       case "firelandmine":
         props.landmineFireHandler();
@@ -50,9 +54,6 @@ export const FireType = (props: FireTypeProps) => {
       default:
         break;
     }
-
-    // Don't close the fire selector - let it stay in the background
-    // This prevents modal conflicts
   };
 
   return (
@@ -187,8 +188,8 @@ export const FireTypeStyle = ({
 const styles = StyleSheet.create({
   fireButton: {
     position: 'absolute',
-    bottom: 30,
-    left: width * 0.04,
+    bottom: 0,
+    left: width * 0.05,
     backgroundColor: '#FFF',
     borderRadius: 30,
     width: 60,

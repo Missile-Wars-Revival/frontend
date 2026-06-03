@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { View, Platform, Alert, StyleSheet, TouchableOpacity, Text, Linking, Dimensions, useColorScheme, Modal, ImageBackground } from "react-native";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
 import axiosInstance from "../../api/axios-instance";
@@ -35,6 +36,7 @@ import { MissileLibrary } from "../../components/Missile/missile";
 import MissileFiringAnimation from "../../components/Animations/MissileFiring";
 
 const { width, height } = Dimensions.get('window');
+const DEV_OFFLINE_TOKEN = "dev-offline-token";
 
 export default function Map() {
   const [selectedMapStyle, setSelectedMapStyle] = useState<MapStyle[]>(Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle);
@@ -50,6 +52,7 @@ export default function Map() {
   const [showMissileFiringAnimation, setShowMissileFiringAnimation] = useState(false);
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
+  const insets = useSafeAreaInsets();
 
   const showPopup = useCallback(() => {
     setThemePopupVisible(true);
@@ -125,6 +128,11 @@ export default function Map() {
       const token = await SecureStore.getItemAsync("token");
       if (!token) {
         console.log('Token not found');
+        return;
+      }
+
+      if (token === DEV_OFFLINE_TOKEN) {
+        await AsyncStorage.setItem('lastRewardedDate', today);
         return;
       }
 
@@ -297,7 +305,7 @@ export default function Map() {
             onSelect={selectMapStyle}
           />
           {locActive && (
-            <View style={styles.fireSelectorContainer}>
+            <View style={[styles.fireSelectorContainer, { bottom: insets.bottom + 40 }]}>
               <FireSelector
                 selectedMapStyle={selectedMapStyle}
                 getStoredMapStyle={getStoredMapStyle}
@@ -424,8 +432,8 @@ const styles = StyleSheet.create({
   },
   fireSelectorContainer: {
     position: 'absolute',
-    bottom: height * 0.0001,
-    left: width * 0.000001,
+    bottom: 0,
+    left: 0,
   },
   containerdeath: {
     flex: 1,
@@ -433,6 +441,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'white',
     paddingVertical: 10,
+    paddingBottom: Platform.OS === 'ios' ? 110 : 95,
   },
   containerdeathDark: {
     backgroundColor: '#1E1E1E',
@@ -494,7 +503,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     width: width * 0.5,
     marginTop: 10,
-    marginBottom: 10, // Add some space below the button
+    marginBottom: 0,
   },
   retryButtonDark: {
     backgroundColor: '#FF4136',

@@ -1,11 +1,17 @@
 import { isAxiosError } from "axios";
 import axiosInstance from "./axios-instance";
 
+const DEV_OFFLINE_TOKEN = "dev-offline-token";
+
 export async function dispatch(
   token: string,
   latitude: number,
   longitude: number
 ) {
+  if (token === DEV_OFFLINE_TOKEN) {
+    return { success: true, offline: true };
+  }
+
   try {
     const response = await axiosInstance.post("/api/dispatch", {
       token,

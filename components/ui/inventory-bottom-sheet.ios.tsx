@@ -19,6 +19,7 @@ export function InventoryBottomSheet({
   visible,
   onClose,
   children,
+  fitToContents,
   backgroundColor,
 }: InventoryBottomSheetProps) {
   const modifiers: ModifierConfig[] = [presentationDragIndicator('visible')];
@@ -38,7 +39,7 @@ export function InventoryBottomSheet({
         fitToContents>
         <Group modifiers={modifiers}>
           <RNHostView matchContents>
-            <View style={styles.content}>{children}</View>
+            <View style={[styles.content, fitToContents ? styles.contentFitToContents : null]}>{children}</View>
           </RNHostView>
         </Group>
       </BottomSheet>
@@ -51,4 +52,5 @@ const styles = StyleSheet.create({
   // occupy space or intercept touches on the map underneath.
   anchor: { position: 'absolute', width: 0, height: 0 },
   content: { width, height: SHEET_HEIGHT },
+  contentFitToContents: { height: undefined, maxHeight: SHEET_HEIGHT },
 });

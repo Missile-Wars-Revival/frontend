@@ -2,15 +2,13 @@ import axiosInstance from './axios-instance';
 import { isAxiosError } from 'axios';
 
 export async function oauthLogin(
-  firebaseUID: string,
-  email: string,
+  idToken: string,
   displayName: string,
   notificationToken: string,
 ): Promise<{ token: string; username: string }> {
   try {
     const response = await axiosInstance.post('/api/oauth-login', {
-      firebaseUID,
-      email,
+      idToken,
       displayName,
       notificationToken,
     });

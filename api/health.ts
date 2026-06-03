@@ -5,9 +5,19 @@ import { removemoney } from "./money";
 import { Alert } from "react-native";
 //import { playDeathSound } from "../util/sounds/deathsound";
 
+const DEV_OFFLINE_TOKEN = "dev-offline-token";
+
+const isDevOfflineToken = (token: string) => token === DEV_OFFLINE_TOKEN;
+
 export async function getHealth(
   token: string,
 ) {
+  if (isDevOfflineToken(token)) {
+    const cachedHealth = await AsyncStorage.getItem('health');
+    const health = cachedHealth ? Number(cachedHealth) : 100;
+    return { health };
+  }
+
   try {
     const response = await axiosInstance.post("/api/getHealth", {
       token: token
@@ -31,6 +41,11 @@ export async function setHealth(
   token: string,
   newHealth: number,
 ) {
+  if (isDevOfflineToken(token)) {
+    await AsyncStorage.setItem('health', String(newHealth));
+    return { success: true, health: newHealth };
+  }
+
   try {
     const response = await axiosInstance.post("/api/setHealth", {
       token: token,
@@ -54,6 +69,14 @@ export async function removeHealth(
   token: string,
   amount: number,
 ) {
+  if (isDevOfflineToken(token)) {
+    const cachedHealth = await AsyncStorage.getItem('health');
+    const currentHealth = cachedHealth ? Number(cachedHealth) : 100;
+    const updatedHealth = Math.max(0, currentHealth - amount);
+    await AsyncStorage.setItem('health', String(updatedHealth));
+    return { success: true, health: updatedHealth };
+  }
+
   try {
     const response = await axiosInstance.post("/api/removeHealth", {
       token: token,
@@ -78,6 +101,14 @@ export async function addHealth(
   token: string,
   amount: number,
 ) {
+  if (isDevOfflineToken(token)) {
+    const cachedHealth = await AsyncStorage.getItem('health');
+    const currentHealth = cachedHealth ? Number(cachedHealth) : 100;
+    const updatedHealth = currentHealth + amount;
+    await AsyncStorage.setItem('health', String(updatedHealth));
+    return { success: true, health: updatedHealth };
+  }
+
   try {
     const response = await axiosInstance.post("/api/addHealth", {
       token: token,
@@ -106,6 +137,11 @@ export const updateisAlive = async (token: string, isAlive: boolean) => {
       return;
     }
     await AsyncStorage.setItem('isAlive', JSON.stringify(isAlive));
+
+    if (isDevOfflineToken(token)) {
+      return;
+    }
+
     // Including the token as part of the URL query parameters
     const url = `/api/isAlive?token=${encodeURIComponent(token)}`;
     await axiosInstance.patch(url, {
@@ -136,6 +172,14 @@ export const updateisAlive = async (token: string, isAlive: boolean) => {
 export async function getisAlive(
   token: string,
 ) {
+  if (isDevOfflineToken(token)) {
+    const cachedIsAlive = await AsyncStorage.getItem('isAlive');
+    const isAliveValue = cachedIsAlive ? JSON.parse(cachedIsAlive) : true;
+    const data = { isAlive: Boolean(isAliveValue) };
+    await AsyncStorage.setItem('isAlive', JSON.stringify(data));
+    return data;
+  }
+
   try {
     const response = await axiosInstance.post("/api/getisAlive", {
       token,

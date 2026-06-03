@@ -17,6 +17,7 @@ export function InventoryBottomSheet({
   visible,
   onClose,
   children,
+  fitToContents,
   backgroundColor,
 }: InventoryBottomSheetProps) {
   if (!visible) {
@@ -30,7 +31,7 @@ export function InventoryBottomSheet({
         skipPartiallyExpanded
         containerColor={backgroundColor}>
         <RNHostView matchContents>
-          <View style={styles.content}>{children}</View>
+          <View style={[styles.content, fitToContents ? styles.contentFitToContents : null]}>{children}</View>
         </RNHostView>
       </ModalBottomSheet>
     </Host>
@@ -42,4 +43,5 @@ const styles = StyleSheet.create({
   // layout space or intercept touches on the map underneath.
   anchor: { position: 'absolute', width: 0, height: 0 },
   content: { width, height: SHEET_HEIGHT },
+  contentFitToContents: { height: undefined, maxHeight: SHEET_HEIGHT },
 });

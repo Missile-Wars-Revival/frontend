@@ -2,6 +2,8 @@ import axiosInstance from "./axios-instance";
 import { isAxiosError } from "axios";
 import * as SecureStore from "expo-secure-store";
 
+const DEV_OFFLINE_TOKEN = "dev-offline-token";
+
 export interface League {
     id: string;
     name: string;
@@ -15,6 +17,7 @@ export async function fetchTopLeagues() {
     try {
         const token = await SecureStore.getItemAsync("token");
         if (!token) return { leagues: [] };
+        if (token === DEV_OFFLINE_TOKEN) return { leagues: [] };
         const response = await axiosInstance.get('/api/topleagues', {
             params: { token },
         });
@@ -26,7 +29,7 @@ export async function fetchTopLeagues() {
         } else {
             console.error("Error fetching top leagues:", error);
         }
-        return [];
+        return { leagues: [] };
     }
 }
 
@@ -34,6 +37,7 @@ export async function fetchCurrentLeague() {
     try {
         const token = await SecureStore.getItemAsync("token");
         if (!token) return null;
+        if (token === DEV_OFFLINE_TOKEN) return null;
         const response = await axiosInstance.get('/api/leagues/current', {
             params: { token },
         });
@@ -53,6 +57,7 @@ export async function fetchLeaguePlayers() {
     try {
         const token = await SecureStore.getItemAsync("token");
         if (!token) return { players: [] };
+        if (token === DEV_OFFLINE_TOKEN) return { players: [] };
         const response = await axiosInstance.get('/api/leagues/players', {
             params: { token },
         });
@@ -64,7 +69,7 @@ export async function fetchLeaguePlayers() {
         } else {
             console.error("Error fetching league players:", error);
         }
-        return [];
+        return { players: [] };
     }
 }
 
@@ -72,6 +77,7 @@ export async function top100Players() {
     try {
         const token = await SecureStore.getItemAsync("token");
         if (!token) return { players: [] };
+        if (token === DEV_OFFLINE_TOKEN) return { players: [] };
         const response = await axiosInstance.get('/api/top100players', {
             params: { token },
         });
@@ -83,6 +89,6 @@ export async function top100Players() {
         } else {
             console.error("Error fetching 100 players:", error);
         }
-        return [];
+        return { players: [] };
     }
 }
