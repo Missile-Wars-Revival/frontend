@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { SafeAreaView, StyleSheet, Text, View, TouchableOpacity, Switch, Modal, ScrollView, FlatList, Alert, Dimensions, TouchableWithoutFeedback, AlertButton, Linking, TextInput , useColorScheme } from 'react-native';
+import { StyleSheet, Text, View, Switch, Modal, ScrollView, FlatList, Alert, Dimensions, TouchableWithoutFeedback, AlertButton, Linking, TextInput, useColorScheme } from 'react-native';
 import { router } from 'expo-router';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from "expo-secure-store";
 import Ionicons from '@react-native-vector-icons/ionicons';
@@ -16,12 +17,12 @@ import useFetchFriends from '../../../hooks/websockets/friendshook';
 import { editUser } from '../../../api/editUser';
 import * as Clipboard from 'expo-clipboard';
 import { getImages } from '../../../api/store';
+import AnimatedEntrance from '../../../components/ui/AnimatedEntrance';
+import PressableScale from '../../../components/ui/PressableScale';
+import haptics from '../../../components/ui/haptics';
+import { getPalette, Gradients, Radius, Spacing, cardShadow } from '../../../components/ui/theme';
 
 const DEFAULT_IMAGE = require('../../../assets/mapassets/Female_Avatar_PNG.png');
-
-interface ItemImages {
-  [key: string]: any;
-}
 
 const { width } = Dimensions.get('window');
 
@@ -36,15 +37,13 @@ interface SelfProfile {
 export interface ApiResponse {
   success: boolean;
   userProfile: SelfProfile;
+  message?: string;
 }
 
-// Add this near the top of the file, after other imports
 const badgeImages: { [key: string]: any } = {
   Founder: require('../../../assets/icons/founder.png'),
   Staff: require('../../../assets/icons/staff.png'),
   Early: require('../../../assets/icons/earlysupporter.png'),
-
-  //leagues
   Bronze: require('../../../assets/leagues/bronze.png'),
   Silver: require('../../../assets/leagues/silver.png'),
   Gold: require('../../../assets/leagues/gold.png'),
@@ -52,13 +51,23 @@ const badgeImages: { [key: string]: any } = {
   Legend: require('../../../assets/leagues/legend.png'),
 };
 
+const STAT_META: { key: keyof Statistics; label: string; icon: any; colors: readonly [string, string] }[] = [
+  { key: 'numKills', label: 'Kills', icon: 'flame', colors: Gradients.fire },
+  { key: 'numDeaths', label: 'Deaths', icon: 'skull', colors: ['#94A3B8', '#475569'] },
+  { key: 'numMissilesPlaced', label: 'Missiles', icon: 'rocket', colors: ['#6D5BF8', '#9B5BF0'] },
+  { key: 'numLandminesPlaced', label: 'Landmines', icon: 'warning', colors: Gradients.gold },
+  { key: 'numLootPlaced', label: 'Loot Placed', icon: 'cube', colors: ['#38BDF8', '#0EA5E9'] },
+  { key: 'numLootPickups', label: 'Loot Pickups', icon: 'gift', colors: Gradients.success },
+];
+
 const ProfilePage: React.FC = () => {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
+  const c = getPalette(isDarkMode);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [userImageUrl, setUserImageUrl] = useState<string | null>(null);
-  const friends = useFetchFriends() //WS
+  const friends = useFetchFriends(); //WS
   const inventory = useFetchInventory();
   const [statistics, setStatistics] = useState<Statistics | null>(null);
   const [email, setEmail] = useState<string | null>(null);
@@ -109,10 +118,12 @@ const ProfilePage: React.FC = () => {
   }, [inventory]);
 
   const openSettings = () => {
+    haptics.select();
     router.navigate("/profile/settings");
   };
 
   const navigateToLeagues = () => {
+    haptics.select();
     router.navigate("/league");
   };
 
@@ -135,60 +146,44 @@ const ProfilePage: React.FC = () => {
   };
 
   const pickImage = async () => {
-    // Check media library permissions first
     const { status } = await ImagePicker.getMediaLibraryPermissionsAsync();
-    
     if (status !== 'granted') {
-      Alert.alert(
-        "Permission Denied",
-        "Sorry, we need camera roll permissions to make this work. Please enable it in your phone's settings.",
-        [{ text: "OK" }]
-      );
+      Alert.alert("Permission Denied", "Sorry, we need camera roll permissions to make this work. Please enable it in your phone's settings.", [{ text: "OK" }]);
       return;
     }
-
-    // If permission is granted, proceed with image picking
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [4, 3],
       quality: 1,
     });
-
     if (!result.canceled && result.assets && result.assets.length > 0) {
       const firstAsset = result.assets[0];
       if (firstAsset && firstAsset.uri) {
-        const url = await uploadImageToFirebase(firstAsset.uri);
-        await loadProfileImage(); // Reload the image to ensure it's updated in the UI
+        await uploadImageToFirebase(firstAsset.uri);
+        haptics.success();
+        await loadProfileImage();
       }
     }
   };
 
   const takePhoto = async () => {
-    // Check camera permissions first
     const { status } = await ImagePicker.getCameraPermissionsAsync();
-    
     if (status !== 'granted') {
-      Alert.alert(
-        "Permission Denied",
-        "Sorry, we need camera permissions to make this work. Please enable it in your phone's settings.",
-        [{ text: "OK" }]
-      );
+      Alert.alert("Permission Denied", "Sorry, we need camera permissions to make this work. Please enable it in your phone's settings.", [{ text: "OK" }]);
       return;
     }
-
-    // If permission is granted, proceed with taking a photo
     let result = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
       aspect: [4, 3],
       quality: 1,
     });
-
     if (!result.canceled && result.assets && result.assets.length > 0) {
       const firstAsset = result.assets[0];
       if (firstAsset && firstAsset.uri) {
-        const url = await uploadImageToFirebase(firstAsset.uri);
-        await loadProfileImage(); // Reload the image to ensure it's updated in the UI
+        await uploadImageToFirebase(firstAsset.uri);
+        haptics.success();
+        await loadProfileImage();
       }
     }
   };
@@ -196,29 +191,23 @@ const ProfilePage: React.FC = () => {
   const setdefaultasimage = async () => {
     setUserImageUrl(null);
     await AsyncStorage.removeItem(`profileImage_${username}`);
-    
-    // Remove the image from Firebase Storage
     try {
       await firebase.storage().ref(`profileImages/${username}`).delete();
     } catch (error) {
       console.error('Error deleting image from Firebase:', error);
     }
-    // Reload the default image
     await loadProfileImage();
   };
 
   const removePhoto = () => {
-    Alert.alert(
-      "Remove Profile Photo",
-      "Are you sure you want to remove your profile photo?",
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Remove", onPress: () => setdefaultasimage() },
-      ]
-    );
+    Alert.alert("Remove Profile Photo", "Are you sure you want to remove your profile photo?", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Remove", onPress: () => setdefaultasimage() },
+    ]);
   };
 
   const openImagePicker = async () => {
+    haptics.tap();
     const requestPermission = async (permissionType: 'camera' | 'mediaLibrary') => {
       let permission;
       if (permissionType === 'camera') {
@@ -234,14 +223,10 @@ const ProfilePage: React.FC = () => {
       if (hasPermission) {
         takePhoto();
       } else {
-        Alert.alert(
-          "Permission Required",
-          "Camera access is required to take a photo. Please grant permission in Settings.",
-          [
-            { text: "Cancel", style: "cancel" },
-            { text: "Open Settings", onPress: () => Linking.openSettings() }
-          ]
-        );
+        Alert.alert("Permission Required", "Camera access is required to take a photo. Please grant permission in Settings.", [
+          { text: "Cancel", style: "cancel" },
+          { text: "Open Settings", onPress: () => Linking.openSettings() }
+        ]);
       }
     };
 
@@ -250,14 +235,10 @@ const ProfilePage: React.FC = () => {
       if (hasPermission) {
         pickImage();
       } else {
-        Alert.alert(
-          "Permission Required",
-          "Photo library access is required to choose a photo. Please grant permission in Settings.",
-          [
-            { text: "Cancel", style: "cancel" },
-            { text: "Open Settings", onPress: () => Linking.openSettings() }
-          ]
-        );
+        Alert.alert("Permission Required", "Photo library access is required to choose a photo. Please grant permission in Settings.", [
+          { text: "Cancel", style: "cancel" },
+          { text: "Open Settings", onPress: () => Linking.openSettings() }
+        ]);
       }
     };
 
@@ -268,18 +249,12 @@ const ProfilePage: React.FC = () => {
       { text: "Cancel", style: "cancel" }
     ];
 
-    Alert.alert(
-      "Change Profile Photo",
-      "Choose an option",
-      options
-    );
+    Alert.alert("Change Profile Photo", "Choose an option", options);
   };
 
   const navigateToUserProfile = (username: string) => {
-    router.navigate({
-      pathname: "/profile/user-profile",
-      params: { username }
-    });
+    haptics.select();
+    router.navigate({ pathname: "/profile/user-profile", params: { username } });
   };
 
   useEffect(() => {
@@ -297,7 +272,6 @@ const ProfilePage: React.FC = () => {
         setStatistics(response.userProfile.statistics);
         setEmail(response.userProfile.email);
         await SecureStore.setItem("email", response.userProfile.email);
-
         setRankPoints(response.userProfile.rankpoints);
       } else if (response.message !== "Not signed in") {
         console.error('Failed to fetch user statistics: Invalid response structure');
@@ -317,7 +291,6 @@ const ProfilePage: React.FC = () => {
       const newFriendImages = Object.assign({}, ...imageResults);
       setFriendImages(newFriendImages);
     };
-
     if (friends.length > 0) {
       loadFriendImages();
     }
@@ -327,16 +300,9 @@ const ProfilePage: React.FC = () => {
     const badgeKey = Object.keys(badgeImages).find(key => badge.toLowerCase().includes(key.toLowerCase()));
     if (badgeKey) {
       return (
-        <TouchableOpacity 
-          key={badge} 
-          style={styles.badge}
-          onPress={() => setSelectedBadge(badge)}
-        >
-          <Image 
-            source={badgeImages[badgeKey]} 
-            style={styles.badgeImage} 
-          />
-        </TouchableOpacity>
+        <PressableScale key={badge} haptic="select" style={styles.badge} onPress={() => setSelectedBadge(badge)}>
+          <Image source={badgeImages[badgeKey]} style={styles.badgeImage} />
+        </PressableScale>
       );
     }
     return null;
@@ -364,810 +330,436 @@ const ProfilePage: React.FC = () => {
   };
 
   const handleDeleteAccount = () => {
-    Alert.alert(
-      "Delete Account",
-      "Are you sure you want to delete this account? This action cannot be undone.",
-      [
-        { text: "Cancel", style: "cancel" },
-        { 
-          text: "Delete", 
-          style: "destructive",
-          onPress: () => {
-            handleEditUser({ deleteAccount: true });
-            Alert.alert("Account Deleted", "The account has been successfully deleted.");
-          }
+    Alert.alert("Delete Account", "Are you sure you want to delete this account? This action cannot be undone.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () => {
+          handleEditUser({ deleteAccount: true });
+          Alert.alert("Account Deleted", "The account has been successfully deleted.");
         }
-      ]
-    );
+      }
+    ]);
   };
 
   const renderDebugMenu = () => (
-    <ScrollView style={styles.debugMenu}>
-      <Text style={styles.debugMenuTitle}>Debug Menu</Text>
-      <TextInput
-        style={styles.debugMenuInput}
-        placeholder="Enter username to edit"
-        value={selectedUsername}
-        onChangeText={setSelectedUsername}
-        placeholderTextColor="#999"
-      />
+    <ScrollView style={[styles.debugMenu, { backgroundColor: c.surface }]}>
+      <Text style={[styles.debugMenuTitle, { color: c.text }]}>Debug Menu</Text>
+      <TextInput style={[styles.debugMenuInput, { backgroundColor: c.surfaceAlt, color: c.text }]} placeholder="Enter username to edit" value={selectedUsername} onChangeText={setSelectedUsername} placeholderTextColor={c.textFaint} />
       <View style={styles.debugMenuSection}>
-        <Text style={styles.debugMenuSectionTitle}>User Details</Text>
-        <TextInput
-          style={styles.debugMenuInput}
-          placeholder="New username"
-          value={newUsername}
-          onChangeText={setNewUsername}
-          placeholderTextColor="#999"
-        />
-        <TouchableOpacity style={styles.debugMenuButton} onPress={() => handleEditUser({ username: newUsername })}>
+        <Text style={[styles.debugMenuSectionTitle, { color: c.text }]}>User Details</Text>
+        <TextInput style={[styles.debugMenuInput, { backgroundColor: c.surfaceAlt, color: c.text }]} placeholder="New username" value={newUsername} onChangeText={setNewUsername} placeholderTextColor={c.textFaint} />
+        <PressableScale haptic="tap" style={styles.debugMenuButton} onPress={() => handleEditUser({ username: newUsername })}>
           <Text style={styles.debugMenuButtonText}>Edit Username</Text>
-        </TouchableOpacity>
-        <TextInput
-          style={styles.debugMenuInput}
-          placeholder="New password"
-          value={newPassword}
-          onChangeText={setNewPassword}
-          secureTextEntry
-          placeholderTextColor="#999"
-        />
-        <TouchableOpacity style={styles.debugMenuButton} onPress={() => handleEditUser({ password: newPassword })}>
+        </PressableScale>
+        <TextInput style={[styles.debugMenuInput, { backgroundColor: c.surfaceAlt, color: c.text }]} placeholder="New password" value={newPassword} onChangeText={setNewPassword} secureTextEntry placeholderTextColor={c.textFaint} />
+        <PressableScale haptic="tap" style={styles.debugMenuButton} onPress={() => handleEditUser({ password: newPassword })}>
           <Text style={styles.debugMenuButtonText}>Edit Password</Text>
-        </TouchableOpacity>
-        <TextInput
-          style={styles.debugMenuInput}
-          placeholder="New email"
-          value={newEmail}
-          onChangeText={setNewEmail}
-          placeholderTextColor="#999"
-        />
-        <TouchableOpacity style={styles.debugMenuButton} onPress={() => handleEditUser({ email: newEmail })}>
+        </PressableScale>
+        <TextInput style={[styles.debugMenuInput, { backgroundColor: c.surfaceAlt, color: c.text }]} placeholder="New email" value={newEmail} onChangeText={setNewEmail} placeholderTextColor={c.textFaint} />
+        <PressableScale haptic="tap" style={styles.debugMenuButton} onPress={() => handleEditUser({ email: newEmail })}>
           <Text style={styles.debugMenuButtonText}>Edit Email</Text>
-        </TouchableOpacity>
+        </PressableScale>
       </View>
       <View style={styles.debugMenuSection}>
-        <Text style={styles.debugMenuSectionTitle}>Game Stats</Text>
-        <TextInput
-          style={styles.debugMenuInput}
-          placeholder="New money amount"
-          value={newMoney}
-          onChangeText={setNewMoney}
-          keyboardType="numeric"
-          placeholderTextColor="#999"
-        />
-        <TouchableOpacity style={styles.debugMenuButton} onPress={() => handleEditUser({ money: parseInt(newMoney) })}>
+        <Text style={[styles.debugMenuSectionTitle, { color: c.text }]}>Game Stats</Text>
+        <TextInput style={[styles.debugMenuInput, { backgroundColor: c.surfaceAlt, color: c.text }]} placeholder="New money amount" value={newMoney} onChangeText={setNewMoney} keyboardType="numeric" placeholderTextColor={c.textFaint} />
+        <PressableScale haptic="tap" style={styles.debugMenuButton} onPress={() => handleEditUser({ money: parseInt(newMoney) })}>
           <Text style={styles.debugMenuButtonText}>Edit Money</Text>
-        </TouchableOpacity>
-        <TextInput
-          style={styles.debugMenuInput}
-          placeholder="New rank points"
-          value={newRankPoints}
-          onChangeText={setNewRankPoints}
-          keyboardType="numeric"
-          placeholderTextColor="#999"
-        />
-        <TouchableOpacity style={styles.debugMenuButton} onPress={() => handleEditUser({ rankPoints: parseInt(newRankPoints) })}>
+        </PressableScale>
+        <TextInput style={[styles.debugMenuInput, { backgroundColor: c.surfaceAlt, color: c.text }]} placeholder="New rank points" value={newRankPoints} onChangeText={setNewRankPoints} keyboardType="numeric" placeholderTextColor={c.textFaint} />
+        <PressableScale haptic="tap" style={styles.debugMenuButton} onPress={() => handleEditUser({ rankPoints: parseInt(newRankPoints) })}>
           <Text style={styles.debugMenuButtonText}>Edit Rank Points</Text>
-        </TouchableOpacity>
-        <TextInput
-          style={styles.debugMenuInput}
-          placeholder="New health"
-          value={newHealth}
-          onChangeText={setNewHealth}
-          keyboardType="numeric"
-          placeholderTextColor="#999"
-        />
-        <TouchableOpacity style={styles.debugMenuButton} onPress={() => handleEditUser({ health: parseInt(newHealth) })}>
+        </PressableScale>
+        <TextInput style={[styles.debugMenuInput, { backgroundColor: c.surfaceAlt, color: c.text }]} placeholder="New health" value={newHealth} onChangeText={setNewHealth} keyboardType="numeric" placeholderTextColor={c.textFaint} />
+        <PressableScale haptic="tap" style={styles.debugMenuButton} onPress={() => handleEditUser({ health: parseInt(newHealth) })}>
           <Text style={styles.debugMenuButtonText}>Edit Health</Text>
-        </TouchableOpacity>
+        </PressableScale>
         <View style={styles.switchContainer}>
-          <Text style={styles.switchLabel}>Is Alive:</Text>
-          <Switch
-            value={newIsAlive}
-            onValueChange={setNewIsAlive}
-            trackColor={{ false: "#767577", true: "#81b0ff" }}
-            thumbColor={newIsAlive ? "#f5dd4b" : "#f4f3f4"}
-          />
+          <Text style={[styles.switchLabel, { color: c.text }]}>Is Alive:</Text>
+          <Switch value={newIsAlive} onValueChange={setNewIsAlive} trackColor={{ false: "#767577", true: "#81b0ff" }} thumbColor={newIsAlive ? "#f5dd4b" : "#f4f3f4"} />
         </View>
-        <TouchableOpacity style={styles.debugMenuButton} onPress={() => handleEditUser({ isAlive: newIsAlive })}>
+        <PressableScale haptic="tap" style={styles.debugMenuButton} onPress={() => handleEditUser({ isAlive: newIsAlive })}>
           <Text style={styles.debugMenuButtonText}>Edit Is Alive</Text>
-        </TouchableOpacity>
+        </PressableScale>
       </View>
       <View style={styles.debugMenuSection}>
-        <Text style={styles.debugMenuSectionTitle}>Location Settings</Text>
+        <Text style={[styles.debugMenuSectionTitle, { color: c.text }]}>Location Settings</Text>
         <View style={styles.switchContainer}>
-          <Text style={styles.switchLabel}>Location Active:</Text>
-          <Switch
-            value={isLocationActive}
-            onValueChange={setIsLocationActive}
-            trackColor={{ false: "#767577", true: "#81b0ff" }}
-            thumbColor={isLocationActive ? "#f5dd4b" : "#f4f3f4"}
-          />
-          <TouchableOpacity style={styles.debugMenuButton} onPress={() => handleEditUser({ isLocationActive: isLocationActive })}>
-          <Text style={styles.debugMenuButtonText}>Edit Is Loc Active</Text>
-        </TouchableOpacity>
+          <Text style={[styles.switchLabel, { color: c.text }]}>Location Active:</Text>
+          <Switch value={isLocationActive} onValueChange={setIsLocationActive} trackColor={{ false: "#767577", true: "#81b0ff" }} thumbColor={isLocationActive ? "#f5dd4b" : "#f4f3f4"} />
+          <PressableScale haptic="tap" style={styles.debugMenuButton} onPress={() => handleEditUser({ isLocationActive: isLocationActive })}>
+            <Text style={styles.debugMenuButtonText}>Edit Is Loc Active</Text>
+          </PressableScale>
         </View>
       </View>
-      
+
       <View style={styles.debugMenuSection}>
-        <Text style={styles.debugMenuSectionTitle}>Cached Data</Text>
-        <View style={styles.cachedDataItem}>
-          <Text style={styles.cachedDataLabel}>Cached Token:</Text>
-          <View style={styles.tokenContainer}>
-            <Text style={styles.cachedDataValue}>{truncateToken(token)}</Text>
-            <TouchableOpacity 
-              style={styles.copyButton} 
-              onPress={() => token && copyToClipboard(token)}
-            >
-              <Text style={styles.copyButtonText}>
-                {isCopied ? 'Copied!' : 'Copy'}
-              </Text>
-            </TouchableOpacity>
+        <Text style={[styles.debugMenuSectionTitle, { color: c.text }]}>Cached Data</Text>
+        {[
+          { label: 'Cached Token:', value: token },
+          { label: 'Cached Notification Token:', value: notificationToken },
+          { label: 'Cached Firebase Auth Token:', value: firebaseToken },
+        ].map((row) => (
+          <View key={row.label} style={styles.cachedDataItem}>
+            <Text style={[styles.cachedDataLabel, { color: c.text }]}>{row.label}</Text>
+            <View style={styles.tokenContainer}>
+              <Text style={[styles.cachedDataValue, { color: c.textMuted }]}>{truncateToken(row.value)}</Text>
+              <PressableScale haptic="select" style={styles.copyButton} onPress={() => row.value && copyToClipboard(row.value)}>
+                <Text style={styles.copyButtonText}>{isCopied ? 'Copied!' : 'Copy'}</Text>
+              </PressableScale>
+            </View>
           </View>
-        </View>
+        ))}
         <View style={styles.cachedDataItem}>
-          <Text style={styles.cachedDataLabel}>Cached Notification Token:</Text>
-          <View style={styles.tokenContainer}>
-            <Text style={styles.cachedDataValue}>{truncateToken(notificationToken)}</Text>
-            <TouchableOpacity 
-              style={styles.copyButton} 
-              onPress={() => notificationToken && copyToClipboard(notificationToken)}
-            >
-              <Text style={styles.copyButtonText}>
-                {isCopied ? 'Copied!' : 'Copy'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-        <View style={styles.cachedDataItem}>
-          <Text style={styles.cachedDataLabel}>Cached Firebase Auth Token:</Text>
-          <View style={styles.tokenContainer}>
-            <Text style={styles.cachedDataValue}>{truncateToken(firebaseToken)}</Text>
-            <TouchableOpacity 
-              style={styles.copyButton} 
-              onPress={() => firebaseToken && copyToClipboard(firebaseToken)}
-            >
-              <Text style={styles.copyButtonText}>
-                {isCopied ? 'Copied!' : 'Copy'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-        <View style={styles.cachedDataItem}>
-          <Text style={styles.cachedDataLabel}>Cached Username:</Text>
-          <Text style={styles.cachedDataValue}>{username}</Text>
+          <Text style={[styles.cachedDataLabel, { color: c.text }]}>Cached Username:</Text>
+          <Text style={[styles.cachedDataValue, { color: c.textMuted }]}>{username}</Text>
         </View>
       </View>
-      
+
       <View style={styles.debugMenuSection}>
-        <Text style={styles.debugMenuSectionTitle}>Danger Zone</Text>
-        <TouchableOpacity 
-          style={[styles.debugMenuButton, styles.deleteAccountButton]} 
-          onPress={handleDeleteAccount}
-        >
+        <Text style={[styles.debugMenuSectionTitle, { color: c.text }]}>Danger Zone</Text>
+        <PressableScale haptic="heavy" style={[styles.debugMenuButton, styles.deleteAccountButton]} onPress={handleDeleteAccount}>
           <Text style={styles.debugMenuButtonText}>Delete Account</Text>
-        </TouchableOpacity>
+        </PressableScale>
       </View>
     </ScrollView>
   );
 
+  const league = statistics?.league;
+
   return (
-    <SafeAreaView style={[styles.container, isDarkMode && styles.containerDark]}>
-      <View style={[styles.header, isDarkMode && styles.headerDark]}>
-        <Text style={[styles.headerText, isDarkMode && styles.headerTextDark]}>Profile</Text>
-        <View style={styles.headerButtons}>
-          {/* Leagues: */}
-          <TouchableOpacity style={styles.headerButton} onPress={navigateToLeagues}>
-            <MaterialCommunityIcons name="trophy" size={24} color={isDarkMode ? "white" : "white"} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.headerButton} onPress={openSettings}>
-            <Ionicons name="settings" size={24} color={isDarkMode ? "white" : "white"} />
-          </TouchableOpacity>
-        </View>
-      </View>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={[styles.profileContainer, isDarkMode && styles.profileContainerDark]}>
-          <TouchableOpacity onPress={openImagePicker}>
-            <Image
-              source={userImageUrl ? { uri: userImageUrl } : DEFAULT_IMAGE}
-              style={styles.profileImage}
-              cachePolicy="memory-disk"
-            />
-          </TouchableOpacity>
-          <Text style={[styles.profileName, isDarkMode && styles.profileNameDark]}>{username}</Text>
-          <Text style={[styles.profileDetails, isDarkMode && styles.profileDetailsDark]}>Email: {email}</Text>
-          
-          <View style={styles.rankPointsContainer}>
-            <Text style={[styles.rankPoints, isDarkMode && styles.rankPointsDark]}>
-              🏅 {rankPoints !== null ? rankPoints : 'Loading...'} Rank Points
-              {statistics && statistics.league && (
-                <Text style={[styles.leagueText, isDarkMode && styles.leagueTextDark]}> • {statistics.league}</Text>
-              )}
-            </Text>
-          </View>
-          
-          <View style={styles.badgesContainer}>
-            <Text style={[styles.sectionTitle, isDarkMode && styles.sectionTitleDark]}>Badges</Text>
-            <View style={styles.badgesList}>
-              {statistics && statistics.badges && statistics.badges.length > 0 ? (
-                statistics.badges.map(renderBadge)
-              ) : (
-                <Text style={[styles.emptyInventoryText, isDarkMode && styles.emptyInventoryTextDark]}>No badges yet</Text>
-              )}
+    <View style={[styles.container, { backgroundColor: c.bg }]}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Hero header */}
+        <LinearGradient
+          colors={isDarkMode ? ['#2A1F52', '#15172B'] : Gradients.brand}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.hero}
+        >
+          <View style={styles.heroTopRow}>
+            <Text style={styles.heroHeading}>Profile</Text>
+            <View style={styles.heroActions}>
+              <PressableScale haptic="select" style={styles.heroIconBtn} onPress={navigateToLeagues}>
+                <MaterialCommunityIcons name="trophy" size={22} color="#fff" />
+              </PressableScale>
+              <PressableScale haptic="select" style={styles.heroIconBtn} onPress={openSettings}>
+                <Ionicons name="settings-sharp" size={20} color="#fff" />
+              </PressableScale>
             </View>
           </View>
-        </View>
 
-        <View style={[styles.sectionContainer, isDarkMode && styles.sectionContainerDark]}>
-          <Text style={[styles.sectionTitle, isDarkMode && styles.sectionTitleDark]}>Statistics</Text>
+          <AnimatedEntrance fromScale={0.9} style={styles.heroBody}>
+            <PressableScale haptic="tap" onPress={openImagePicker} style={styles.avatarWrap}>
+              <Image
+                source={userImageUrl ? { uri: userImageUrl } : DEFAULT_IMAGE}
+                style={styles.avatar}
+                cachePolicy="memory-disk"
+                transition={250}
+              />
+              <View style={styles.cameraBadge}>
+                <Ionicons name="camera" size={14} color="#fff" />
+              </View>
+            </PressableScale>
+            <Text style={styles.heroName} numberOfLines={1}>{username}</Text>
+            {!!email && <Text style={styles.heroEmail} numberOfLines={1}>{email}</Text>}
+
+            <View style={styles.pillRow}>
+              <View style={styles.pill}>
+                <Ionicons name="medal" size={14} color="#FFD56B" />
+                <Text style={styles.pillText}>
+                  {rankPoints !== null ? rankPoints : '—'} RP
+                </Text>
+              </View>
+              {!!league && (
+                <View style={styles.pill}>
+                  <Ionicons name="ribbon" size={14} color="#fff" />
+                  <Text style={styles.pillText}>{league}</Text>
+                </View>
+              )}
+            </View>
+          </AnimatedEntrance>
+        </LinearGradient>
+
+        {/* Badges */}
+        <AnimatedEntrance index={0} style={[styles.card, { backgroundColor: c.surface }, cardShadow(isDarkMode)]}>
+          <Text style={[styles.sectionTitle, { color: c.text }]}>Badges</Text>
+          <View style={styles.badgesList}>
+            {statistics && statistics.badges && statistics.badges.length > 0 ? (
+              statistics.badges.map(renderBadge)
+            ) : (
+              <Text style={[styles.muted, { color: c.textMuted }]}>No badges yet</Text>
+            )}
+          </View>
+        </AnimatedEntrance>
+
+        {/* Statistics grid */}
+        <AnimatedEntrance index={1} style={styles.sectionWrap}>
+          <Text style={[styles.sectionHeading, { color: c.text }]}>Statistics</Text>
           {statistics ? (
-            <View style={styles.statisticsContainer}>
-              <Text style={[styles.statItem, isDarkMode && styles.statItemDark]}>Deaths: {statistics.numDeaths}</Text>
-              <Text style={[styles.statItem, isDarkMode && styles.statItemDark]}>Kills: {statistics.numKills}</Text>
-              <Text style={[styles.statItem, isDarkMode && styles.statItemDark]}>Missiles Fired: {statistics.numMissilesPlaced}</Text>
-              <Text style={[styles.statItem, isDarkMode && styles.statItemDark]}>Landmines Placed: {statistics.numLandminesPlaced}</Text>
-              <Text style={[styles.statItem, isDarkMode && styles.statItemDark]}>Loot Placed: {statistics.numLootPlaced}</Text>
-              <Text style={[styles.statItem, isDarkMode && styles.statItemDark]}>Loot Pickups: {statistics.numLootPickups}</Text>
+            <View style={styles.statsGrid}>
+              {STAT_META.map((s) => (
+                <View key={s.key} style={[styles.statCard, { backgroundColor: c.surface }, cardShadow(isDarkMode)]}>
+                  <LinearGradient colors={s.colors} style={styles.statIcon}>
+                    <Ionicons name={s.icon} size={18} color="#fff" />
+                  </LinearGradient>
+                  <Text style={[styles.statValue, { color: c.text }]}>{statistics[s.key] as number}</Text>
+                  <Text style={[styles.statLabel, { color: c.textMuted }]}>{s.label}</Text>
+                </View>
+              ))}
             </View>
           ) : (
-            <Text style={[styles.emptyInventoryText, isDarkMode && styles.emptyInventoryTextDark]}>Loading statistics...</Text>
+            <Text style={[styles.muted, { color: c.textMuted }]}>Loading statistics...</Text>
           )}
-        </View>
+        </AnimatedEntrance>
 
-        <View style={[styles.sectionContainer, isDarkMode && styles.sectionContainerDark]}>
-          <Text style={[styles.sectionTitle, isDarkMode && styles.sectionTitleDark]}>Inventory</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.slider}>
-            {filteredInventory.map(item => (
-              <TouchableOpacity key={item.id} onPress={() => setModalVisible(true)} style={styles.sliderItem}>
-                <Image
-                  source={getImageForProduct(item.name)}
-                  style={styles.itemImage}
-                  cachePolicy="memory-disk"
-                />
-                <Text style={[styles.itemName, isDarkMode && styles.itemNameDark]}>{item.name}</Text>
-                <Text style={[styles.itemQuantity, isDarkMode && styles.itemQuantityDark]}>x{item.quantity}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
+        {/* Inventory */}
+        <AnimatedEntrance index={2} style={styles.sectionWrap}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={[styles.sectionHeading, { color: c.text }]}>Inventory</Text>
+            {filteredInventory.length > 0 && (
+              <PressableScale haptic="select" onPress={() => setModalVisible(true)}>
+                <Text style={[styles.seeAll, { color: c.accent }]}>See all</Text>
+              </PressableScale>
+            )}
+          </View>
+          {filteredInventory.length > 0 ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sliderContent}>
+              {filteredInventory.map(item => (
+                <PressableScale key={item.id} haptic="select" onPress={() => setModalVisible(true)} style={[styles.sliderItem, { backgroundColor: c.surface }, cardShadow(isDarkMode)]}>
+                  <Image source={getImageForProduct(item.name)} style={styles.itemImage} cachePolicy="memory-disk" />
+                  <Text style={[styles.itemName, { color: c.text }]} numberOfLines={1}>{item.name}</Text>
+                  <Text style={[styles.itemQty, { color: c.accent }]}>x{item.quantity}</Text>
+                </PressableScale>
+              ))}
+            </ScrollView>
+          ) : (
+            <Text style={[styles.muted, { color: c.textMuted }]}>Your inventory is empty.</Text>
+          )}
+        </AnimatedEntrance>
 
-        <View style={[styles.sectionContainer, isDarkMode && styles.sectionContainerDark]}>
-          <Text style={[styles.sectionTitle, isDarkMode && styles.sectionTitleDark]}>Friends</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.slider}>
-            {friends.map((friend, index) => (
-              <TouchableOpacity 
-                key={index} 
-                style={styles.sliderItem}
-                onPress={() => navigateToUserProfile(friend.username)}
-              >
-                <Image
-                  source={{ uri: friendImages[friend.username] || DEFAULT_IMAGE }}
-                  style={styles.friendImage}
-                  cachePolicy="memory-disk"
-                />
-                <Text style={[styles.friendName, isDarkMode && styles.friendNameDark]}>{friend.username}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
+        {/* Friends */}
+        <AnimatedEntrance index={3} style={styles.sectionWrap}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={[styles.sectionHeading, { color: c.text }]}>Friends</Text>
+            <PressableScale haptic="select" onPress={() => router.navigate('/friends')}>
+              <Text style={[styles.seeAll, { color: c.accent }]}>View all</Text>
+            </PressableScale>
+          </View>
+          {friends.length > 0 ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sliderContent}>
+              {friends.map((friend, index) => (
+                <PressableScale key={index} haptic="select" style={styles.friendItem} onPress={() => navigateToUserProfile(friend.username)}>
+                  <Image
+                    source={friendImages[friend.username] ? { uri: friendImages[friend.username] } : DEFAULT_IMAGE}
+                    style={[styles.friendImage, { borderColor: c.surface }]}
+                    cachePolicy="memory-disk"
+                  />
+                  <Text style={[styles.friendName, { color: c.textMuted }]} numberOfLines={1}>{friend.username}</Text>
+                </PressableScale>
+              ))}
+            </ScrollView>
+          ) : (
+            <Text style={[styles.muted, { color: c.textMuted }]}>No friends yet.</Text>
+          )}
+        </AnimatedEntrance>
+
+        {statistics && statistics.badges.includes('Debug') && (
+          <PressableScale haptic="select" onPress={() => setIsDebugMenuVisible(!isDebugMenuVisible)}>
+            <Text style={[styles.debugMenuToggle, { color: c.accent }]}>
+              {isDebugMenuVisible ? 'Hide' : 'Show'} Debug Menu
+            </Text>
+          </PressableScale>
+        )}
+        {isDebugMenuVisible && renderDebugMenu()}
       </ScrollView>
 
+      {/* Inventory modal */}
       <Modal visible={modalVisible} animationType="slide" onRequestClose={() => setModalVisible(false)}>
-        <SafeAreaView style={[styles.modalSafeArea, isDarkMode && styles.modalSafeAreaDark]}>
-          <View style={[styles.modalHeader, isDarkMode && styles.modalHeaderDark]}>
-            <Text style={[styles.modalTitle, isDarkMode && styles.modalTitleDark]}>Your Inventory</Text>
-            <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
-              <Text style={[styles.closeButtonText, isDarkMode && styles.closeButtonTextDark]}>Close</Text>
-            </TouchableOpacity>
-          </View>
+        <View style={[styles.modalSafeArea, { backgroundColor: c.bg }]}>
+          <LinearGradient colors={isDarkMode ? ['#2A1F52', '#15172B'] : Gradients.brand} style={styles.modalHeader}>
+            <Text style={styles.modalHeaderTitle}>Your Inventory</Text>
+            <PressableScale haptic="select" style={styles.modalClose} onPress={() => setModalVisible(false)}>
+              <Ionicons name="close" size={22} color="#fff" />
+            </PressableScale>
+          </LinearGradient>
           <View style={styles.fullModalView}>
             {filteredInventory.length > 0 ? (
               <FlatList
                 data={filteredInventory}
                 keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                  <View style={[styles.inventoryItem, isDarkMode && styles.inventoryItemDark]}>
-                    <Image
-                      source={getImageForProduct(item.name)}
-                      style={styles.inventoryItemImage}
-                      cachePolicy="memory-disk"
-                    />
-                    <View style={styles.inventoryItemDetails}>
-                      <Text style={[styles.inventoryItemName, isDarkMode && styles.inventoryItemNameDark]}>{item.name}</Text>
-                      <Text style={[styles.inventoryItemQuantity, isDarkMode && styles.inventoryItemQuantityDark]}>Quantity: {item.quantity}</Text>
-                    </View>
-                  </View>
+                renderItem={({ item, index }) => (
+                  <AnimatedEntrance index={index} style={[styles.inventoryItem, { backgroundColor: c.surface }, cardShadow(isDarkMode)]}>
+                    <Image source={getImageForProduct(item.name)} style={styles.inventoryItemImage} cachePolicy="memory-disk" />
+                    <Text style={[styles.inventoryItemName, { color: c.text }]} numberOfLines={1}>{item.name}</Text>
+                    <Text style={[styles.inventoryItemQty, { color: c.textMuted }]}>Quantity: {item.quantity}</Text>
+                  </AnimatedEntrance>
                 )}
                 numColumns={2}
                 columnWrapperStyle={styles.inventoryColumnWrapper}
                 contentContainerStyle={styles.inventoryContentContainer}
               />
             ) : (
-              <Text style={[styles.emptyInventoryText, isDarkMode && styles.emptyInventoryTextDark]}>Your inventory is empty.</Text>
+              <Text style={[styles.muted, { color: c.textMuted }]}>Your inventory is empty.</Text>
             )}
           </View>
-        </SafeAreaView>
+        </View>
       </Modal>
 
-      <Modal
-        visible={!!selectedBadge}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setSelectedBadge(null)}
-      >
+      {/* Badge detail modal */}
+      <Modal visible={!!selectedBadge} transparent animationType="fade" onRequestClose={() => setSelectedBadge(null)}>
         <TouchableWithoutFeedback onPress={() => setSelectedBadge(null)}>
           <View style={styles.modalOverlay}>
-            <View style={[styles.modalContent, isDarkMode && styles.modalContentDark]}>
-              <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>{selectedBadge}</Text>
-            </View>
+            <AnimatedEntrance fromScale={0.9} style={[styles.badgeModal, { backgroundColor: c.surface }]}>
+              {(() => {
+                const key = selectedBadge && Object.keys(badgeImages).find(k => selectedBadge.toLowerCase().includes(k.toLowerCase()));
+                return key ? <Image source={badgeImages[key]} style={styles.badgeModalImage} /> : null;
+              })()}
+              <Text style={[styles.badgeModalText, { color: c.text }]}>{selectedBadge}</Text>
+            </AnimatedEntrance>
           </View>
         </TouchableWithoutFeedback>
       </Modal>
-      
-      {statistics && statistics.badges.includes('Debug') && (
-        <TouchableOpacity onPress={() => setIsDebugMenuVisible(!isDebugMenuVisible)}>
-          <Text style={styles.debugMenuToggle}>Toggle Debug Menu</Text>
-        </TouchableOpacity>
-      )}
-      {isDebugMenuVisible && renderDebugMenu()}
-    </SafeAreaView>
+    </View>
   );
 };
 
+const CARD_GAP = Spacing.md;
+const STAT_CARD_WIDTH = (width - Spacing.lg * 2 - CARD_GAP * 2) / 3;
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f0f2f5',
+  container: { flex: 1 },
+  scrollContent: { paddingBottom: Spacing.xxl * 2 },
+  hero: {
+    paddingTop: 60,
+    paddingHorizontal: Spacing.xl,
+    paddingBottom: Spacing.xl,
+    borderBottomLeftRadius: Radius.xl,
+    borderBottomRightRadius: Radius.xl,
   },
-  header: {
-    padding: 20,
-    backgroundColor: '#4a5568',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  headerText: {
-    fontSize: 24,
-    color: '#ffffff',
-    fontWeight: 'bold',
-  },
-  headerButtons: {
-    flexDirection: 'row',
-  },
-  headerButton: {
-    padding: 10,
-    marginLeft: 10,
-  },
-  scrollContent: {
-    flexGrow: 1,
-  },
-  profileContainer: {
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#ffffff',
-    borderRadius: 10,
-    margin: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  profileImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginBottom: 10,
-  },
-  emptyInventoryText: {
-    fontSize: 18,
-    textAlign: 'center',
-    color: '#666',
-    marginTop: 20,
-  },
-  profileName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  profileDetails: {
-    fontSize: 16,
-    color: '#718096',
-    marginBottom: 15,
-  },
-  badgesContainer: {
-    width: '100%',
-    marginBottom: 20,
-  },
-  badgesList: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  badge: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  heroTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  heroHeading: { color: '#fff', fontSize: 22, fontWeight: '800' },
+  heroActions: { flexDirection: 'row', gap: Spacing.sm },
+  heroIconBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.18)',
     justifyContent: 'center',
     alignItems: 'center',
-    margin: 5,
-    overflow: 'hidden',
   },
-  badgeImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'contain',
+  heroBody: { alignItems: 'center', marginTop: Spacing.lg },
+  avatarWrap: { position: 'relative' },
+  avatar: { width: 108, height: 108, borderRadius: 54, borderWidth: 3, borderColor: 'rgba(255,255,255,0.6)' },
+  cameraBadge: {
+    position: 'absolute',
+    right: 2,
+    bottom: 2,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#5B5BF0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
   },
-  settingContainer: {
+  heroName: { color: '#fff', fontSize: 24, fontWeight: '800', marginTop: Spacing.md },
+  heroEmail: { color: 'rgba(255,255,255,0.8)', fontSize: 14, marginTop: 2 },
+  pillRow: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.md },
+  pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    width: '100%',
-    marginBottom: 20,
+    gap: 6,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 7,
+    borderRadius: Radius.pill,
+    backgroundColor: 'rgba(255,255,255,0.18)',
   },
-  settingText: {
-    fontSize: 16,
-    color: '#4a5568',
+  pillText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  card: {
+    marginHorizontal: Spacing.lg,
+    marginTop: Spacing.lg,
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
   },
-  logoutButton: {
-    backgroundColor: '#e53e3e',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-  },
-  logoutButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  sectionContainer: {
-    marginBottom: 20,
-    padding: 10,
-    backgroundColor: '#ffffff',
-    borderRadius: 10,
-    margin: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#2d3748',
-  },
-  slider: {
-    flexDirection: 'row',
-  },
-  sliderItem: {
-    marginRight: 15,
+  sectionWrap: { marginTop: Spacing.xl, paddingHorizontal: Spacing.lg },
+  sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md },
+  sectionTitle: { fontSize: 17, fontWeight: '700', marginBottom: Spacing.md },
+  sectionHeading: { fontSize: 19, fontWeight: '800' },
+  seeAll: { fontSize: 14, fontWeight: '700' },
+  muted: { fontSize: 14, textAlign: 'left' },
+  badgesList: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md },
+  badge: { width: 46, height: 46, borderRadius: 23, overflow: 'hidden' },
+  badgeImage: { width: '100%', height: '100%', resizeMode: 'contain' },
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: CARD_GAP },
+  statCard: {
+    width: STAT_CARD_WIDTH,
+    borderRadius: Radius.md,
+    paddingVertical: Spacing.md,
     alignItems: 'center',
   },
-  itemImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-  },
-  itemName: {
-    marginTop: 5,
-    fontSize: 14,
-    textAlign: 'center',
-  },
-  itemQuantity: {
-    fontSize: 12,
-    color: '#718096',
-  },
-  friendImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-  },
-  friendName: {
-    marginTop: 5,
-    fontSize: 14,
-    textAlign: 'center',
-  },
-  modalSafeArea: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
+  statIcon: { width: 38, height: 38, borderRadius: 19, justifyContent: 'center', alignItems: 'center', marginBottom: Spacing.sm },
+  statValue: { fontSize: 20, fontWeight: '800' },
+  statLabel: { fontSize: 11, marginTop: 2, textAlign: 'center' },
+  sliderContent: { gap: Spacing.md, paddingVertical: Spacing.xs, paddingRight: Spacing.lg },
+  sliderItem: { width: 100, borderRadius: Radius.md, padding: Spacing.md, alignItems: 'center' },
+  itemImage: { width: 56, height: 56, borderRadius: 12, marginBottom: Spacing.sm },
+  itemName: { fontSize: 13, fontWeight: '600', textAlign: 'center' },
+  itemQty: { fontSize: 13, fontWeight: '800', marginTop: 2 },
+  friendItem: { width: 76, alignItems: 'center' },
+  friendImage: { width: 64, height: 64, borderRadius: 32, borderWidth: 2 },
+  friendName: { fontSize: 12, marginTop: 6, textAlign: 'center' },
+  debugMenuToggle: { padding: Spacing.lg, fontSize: 15, fontWeight: '700', textAlign: 'center' },
+  // Modals
+  modalSafeArea: { flex: 1 },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-    backgroundColor: '#ffffff',
+    paddingTop: 56,
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.lg,
   },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  fullModalView: {
-    flex: 1,
-    padding: 15,
-  },
-  closeButton: {
-    padding: 10,
-  },
-  closeButtonText: {
-    color: '#007AFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  inventoryItem: {
-    flex: 1,
-    margin: 8,
-    padding: 16,
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    alignItems: 'center',
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.23,
-    shadowRadius: 2.62,
-    elevation: 4,
-  },
-  inventoryItemImage: {
-    width: 80,
-    height: 80,
-    resizeMode: 'contain',
-    marginBottom: 10,
-  },
-  inventoryItemDetails: {
-    alignItems: 'center',
-  },
-  inventoryItemName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 5,
-  },
-  inventoryItemQuantity: {
-    fontSize: 14,
-    color: '#666',
-  },
-  inventoryColumnWrapper: {
-    justifyContent: 'space-between',
-  },
-  inventoryContentContainer: {
-    paddingBottom: 20,
-  },
-  statisticsContainer: {
-    padding: 10,
-  },
-  statItem: {
-    fontSize: 16,
-    marginBottom: 5,
-  },
-  defaultImageButton: {
-    backgroundColor: '#ddd',
-    padding: 10,
-    borderRadius: 5,
-    marginTop: 10,
-  },
-  defaultImageButtonText: {
-    color: '#333',
-  },
-  rankPointsContainer: {
-    alignSelf: 'flex-start',
-    marginBottom: 10,
-  },
-  rankPoints: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#4a5568',
-  },
-  leagueText: {
-    fontSize: 16,
-    color: '#718096',
-  },
-
-  // Dark mode styles
-  containerDark: {
-    backgroundColor: '#1E1E1E',
-  },
-  headerDark: {
-    backgroundColor: '#2C2C2C',
-  },
-  headerTextDark: {
-    color: '#FFF',
-  },
-  profileContainerDark: {
-    backgroundColor: '#2C2C2C',
-  },
-  profileNameDark: {
-    color: '#FFF',
-  },
-  profileDetailsDark: {
-    color: '#B0B0B0',
-  },
-  settingTextDark: {
-    color: '#FFF',
-  },
-  sectionContainerDark: {
-    backgroundColor: '#2C2C2C',
-  },
-  sectionTitleDark: {
-    color: '#FFF',
-  },
-  itemNameDark: {
-    color: '#FFF',
-  },
-  itemQuantityDark: {
-    color: '#B0B0B0',
-  },
-  friendNameDark: {
-    color: '#FFF',
-  },
-  modalSafeAreaDark: {
-    backgroundColor: '#1E1E1E',
-  },
-  modalHeaderDark: {
-    backgroundColor: '#2C2C2C',
-    borderBottomColor: '#3D3D3D',
-  },
-  modalTitleDark: {
-    color: '#FFF',
-  },
-  closeButtonTextDark: {
-    color: '#4CAF50',
-  },
-  inventoryItemDark: {
-    backgroundColor: '#2C2C2C',
-  },
-  inventoryItemNameDark: {
-    color: '#FFF',
-  },
-  inventoryItemQuantityDark: {
-    color: '#B0B0B0',
-  },
-  statItemDark: {
-    color: '#FFF',
-  },
-  emptyInventoryTextDark: {
-    color: '#B0B0B0',
-  },
-  rankPointsDark: {
-    color: '#4CAF50',
-  },
-  leagueTextDark: {
-    color: '#B0B0B0',
-  },
-  modalOverlay: {
-    flex: 1,
+  modalHeaderTitle: { fontSize: 22, fontWeight: '800', color: '#fff' },
+  modalClose: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
-  modalContent: {
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  modalContentDark: {
-    backgroundColor: '#2C2C2C',
-  },
-  modalText: {
-    fontSize: 18,
-    color: '#333',
-  },
-  modalTextDark: {
-    color: '#FFF',
-  },
-  deleteAccountButton: {
-    backgroundColor: '#FF3B30',
-  },
-  debugMenu: {
-    padding: 20,
-    backgroundColor: '#2C2C2C',
-    borderRadius: 10,
-    margin: 10,
-    maxHeight: 800, // Set a max height to ensure scrolling
-  },
-  debugMenuTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FFF',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  debugMenuSection: {
-    marginBottom: 20,
-  },
-  debugMenuSectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFF',
-    marginBottom: 10,
-  },
-  debugMenuInput: {
-    backgroundColor: '#444',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 10,
-    color: '#FFF',
-    fontSize: 16,
-  },
-  debugMenuButton: {
-    backgroundColor: '#007AFF',
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  debugMenuButtonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  debugMenuToggle: {
-    color: '#007AFF',
-    padding: 10,
-    fontSize: 16,
-    textAlign: 'center',
-  },
-  switchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  switchLabel: {
-    color: '#FFF',
-    fontSize: 16,
-  },
-  cachedDataItem: {
-    flexDirection: 'column',
-    alignItems: 'flex-start',
-    marginBottom: 10,
-  },
-  cachedDataLabel: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  cachedDataValue: {
-    color: '#B0B0B0',
-    fontSize: 14,
-  },
-  tokenContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  copyButton: {
-    backgroundColor: '#007AFF',
-    padding: 6,
-    borderRadius: 4,
-    marginLeft: 10,
-  },
-  copyButtonText: {
-    color: '#FFF',
-    fontSize: 12,
-  },
-  footerAdContainer: {
-    width: '100%',
-    height: 50, // Adjust based on your banner ad size
-    backgroundColor: 'transparent',
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'absolute',
-    bottom: 0,
-  },
-  dismissAdButton: {
-    position: 'absolute',
-    right: 5,
-    top: 5,
-    zIndex: 1,
-  },
+  fullModalView: { flex: 1, padding: Spacing.lg },
+  inventoryItem: { flex: 1, margin: Spacing.sm, padding: Spacing.lg, borderRadius: Radius.md, alignItems: 'center' },
+  inventoryItemImage: { width: 80, height: 80, resizeMode: 'contain', marginBottom: Spacing.md },
+  inventoryItemName: { fontSize: 15, fontWeight: '700', textAlign: 'center', marginBottom: 4 },
+  inventoryItemQty: { fontSize: 13 },
+  inventoryColumnWrapper: { justifyContent: 'space-between' },
+  inventoryContentContainer: { paddingBottom: Spacing.xl },
+  modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.55)', paddingHorizontal: Spacing.xl },
+  badgeModal: { borderRadius: Radius.lg, padding: Spacing.xl, alignItems: 'center' },
+  badgeModalImage: { width: 80, height: 80, resizeMode: 'contain', marginBottom: Spacing.md },
+  badgeModalText: { fontSize: 18, fontWeight: '700' },
+  // Debug menu
+  debugMenu: { padding: Spacing.lg, borderRadius: Radius.md, margin: Spacing.lg, maxHeight: 800 },
+  debugMenuTitle: { fontSize: 22, fontWeight: '800', marginBottom: Spacing.lg, textAlign: 'center' },
+  debugMenuSection: { marginBottom: Spacing.lg },
+  debugMenuSectionTitle: { fontSize: 16, fontWeight: '700', marginBottom: Spacing.md },
+  debugMenuInput: { padding: 12, borderRadius: Radius.sm, marginBottom: Spacing.md, fontSize: 16 },
+  debugMenuButton: { backgroundColor: '#5B5BF0', padding: 12, borderRadius: Radius.sm, alignItems: 'center', marginBottom: Spacing.md },
+  debugMenuButtonText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  deleteAccountButton: { backgroundColor: '#E11D48' },
+  switchContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.md },
+  switchLabel: { fontSize: 16 },
+  cachedDataItem: { flexDirection: 'column', alignItems: 'flex-start', marginBottom: Spacing.md },
+  cachedDataLabel: { fontSize: 15, fontWeight: '700', marginBottom: 5 },
+  cachedDataValue: { fontSize: 14 },
+  tokenContainer: { flexDirection: 'row', alignItems: 'center' },
+  copyButton: { backgroundColor: '#5B5BF0', padding: 6, borderRadius: 4, marginLeft: Spacing.md },
+  copyButtonText: { color: '#fff', fontSize: 12, fontWeight: '600' },
 });
 
 export default ProfilePage;

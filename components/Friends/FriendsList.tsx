@@ -1,6 +1,11 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
+import Ionicons from '@react-native-vector-icons/ionicons';
+import AnimatedEntrance from '../ui/AnimatedEntrance';
+import PressableScale from '../ui/PressableScale';
+import { getPalette, Gradients, Radius, Spacing, cardShadow } from '../ui/theme';
 
 export interface FriendListItem {
   username: string;
@@ -17,9 +22,14 @@ export interface FriendsListProps {
   onRemovePress: (username: string) => void;
 }
 
+const DEFAULT_IMAGE = require('../../assets/mapassets/Female_Avatar_PNG.png');
+
 /**
  * Default (web / fallback) implementation. Native platforms use the SwiftUI
  * (`.ios.tsx`) and Jetpack Compose (`.android.tsx`) variants resolved by Metro.
+ *
+ * Rows animate in with a staggered spring (react-native-ease) and every action
+ * is a haptic-backed PressableScale.
  */
 export default function FriendsList({
   friends,
@@ -29,58 +39,101 @@ export default function FriendsList({
   onFirePress,
   onRemovePress,
 }: FriendsListProps) {
+  const c = getPalette(isDarkMode);
+
   return (
     <FlatList
       data={friends}
       keyExtractor={(item) => item.username}
-      renderItem={({ item }) => (
-        <View style={[styles.row, isDarkMode && styles.rowDark]}>
-          <TouchableOpacity style={styles.info} onPress={() => onProfilePress(item.username)}>
-            <Image source={{ uri: item.profileImageUrl }} style={styles.avatar} cachePolicy="memory-disk" />
-            <Text style={[styles.name, isDarkMode && styles.nameDark]}>{item.username}</Text>
-          </TouchableOpacity>
-          <View style={styles.actions}>
-            {showFire && (
-              <TouchableOpacity style={[styles.btn, styles.fire]} onPress={() => onFirePress(item.username)}>
-                <Text style={styles.btnText}>🚀</Text>
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity style={[styles.btn, styles.remove]} onPress={() => onRemovePress(item.username)}>
-              <Text style={styles.btnText}>✕</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+      contentContainerStyle={styles.listContent}
+      showsVerticalScrollIndicator={false}
+      renderItem={({ item, index }) => (
+        <AnimatedEntrance index={index}>
+          <PressableScale
+            haptic="select"
+            onPress={() => onProfilePress(item.username)}
+            style={[styles.row, { backgroundColor: c.surface }, cardShadow(isDarkMode)]}
+          >
+            <View style={styles.info}>
+              <View style={styles.avatarWrap}>
+                <Image
+                  source={item.profileImageUrl ? { uri: item.profileImageUrl } : DEFAULT_IMAGE}
+                  style={styles.avatar}
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                  transition={200}
+                />
+                <View style={[styles.onlineDot, { borderColor: c.surface }]} />
+              </View>
+              <View style={styles.nameWrap}>
+                <Text style={[styles.name, { color: c.text }]} numberOfLines={1}>
+                  {item.username}
+                </Text>
+                <Text style={[styles.subtitle, { color: c.textFaint }]} numberOfLines={1}>
+                  Tap to message
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.actions}>
+              {showFire && (
+                <PressableScale
+                  haptic="none"
+                  onPress={() => onFirePress(item.username)}
+                  style={styles.iconBtn}
+                >
+                  <LinearGradient colors={Gradients.fire} style={styles.iconBtnFill}>
+                    <Ionicons name="rocket" size={18} color="#fff" />
+                  </LinearGradient>
+                </PressableScale>
+              )}
+              <PressableScale
+                haptic="none"
+                onPress={() => onRemovePress(item.username)}
+                style={[styles.iconBtn, styles.removeBtn, { backgroundColor: c.surfaceAlt }]}
+              >
+                <Ionicons name="person-remove" size={16} color={c.textMuted} />
+              </PressableScale>
+            </View>
+          </PressableScale>
+        </AnimatedEntrance>
       )}
     />
   );
 }
 
 const styles = StyleSheet.create({
+  listContent: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.xxl * 3,
+    gap: Spacing.md,
+  },
   row: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-    padding: 15,
-    marginBottom: 10,
-    borderRadius: 8,
-    marginHorizontal: 20,
+    padding: Spacing.md,
+    borderRadius: Radius.lg,
   },
-  rowDark: { backgroundColor: '#2C2C2C' },
   info: { flexDirection: 'row', alignItems: 'center', flex: 1 },
-  avatar: { width: 50, height: 50, borderRadius: 25, marginRight: 15 },
-  name: { fontSize: 18, fontWeight: 'bold', color: '#2d3748' },
-  nameDark: { color: '#FFF' },
-  actions: { flexDirection: 'row' },
-  btn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 10,
+  avatarWrap: { position: 'relative', marginRight: Spacing.md },
+  avatar: { width: 54, height: 54, borderRadius: 27 },
+  onlineDot: {
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#22C55E',
+    borderWidth: 2.5,
   },
-  fire: { backgroundColor: '#e53e3e' },
-  remove: { backgroundColor: '#718096' },
-  btnText: { color: '#ffffff', fontSize: 18 },
+  nameWrap: { flex: 1 },
+  name: { fontSize: 17, fontWeight: '700' },
+  subtitle: { fontSize: 13, marginTop: 2 },
+  actions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  iconBtn: { width: 42, height: 42, borderRadius: 21, overflow: 'hidden' },
+  iconBtnFill: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  removeBtn: { justifyContent: 'center', alignItems: 'center' },
 });

@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, SafeAreaView, Platform, StatusBar, Modal, useColorScheme, Alert } from 'react-native';
+import { View, Text, FlatList, StyleSheet, Modal, useColorScheme, Alert, ActivityIndicator } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useNotifications } from '../../../components/Notifications/useNotifications';
 import * as SecureStore from "expo-secure-store";
 import { addFriend } from '../../../api/friends';
@@ -8,6 +9,10 @@ import { useRouter } from 'expo-router';
 import { MissileLibrary } from '../../../components/Missile/missile';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getlocActive } from '../../../api/locationOptions';
+import AnimatedEntrance from '../../../components/ui/AnimatedEntrance';
+import PressableScale from '../../../components/ui/PressableScale';
+import haptics from '../../../components/ui/haptics';
+import { getPalette, Gradients, Radius, Spacing, cardShadow } from '../../../components/ui/theme';
 
 export interface Notification {
 	id: string;
@@ -25,18 +30,70 @@ const getTimeDifference = (timestamp: string): string => {
 	const differenceInSeconds = Math.floor((now.getTime() - notificationDate.getTime()) / 1000);
 
 	if (differenceInSeconds < 60) {
-		return `${differenceInSeconds} seconds ago`;
+		return `${differenceInSeconds}s ago`;
 	} else if (differenceInSeconds < 3600) {
 		const minutes = Math.floor(differenceInSeconds / 60);
-		return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+		return `${minutes}m ago`;
 	} else if (differenceInSeconds < 86400) {
 		const hours = Math.floor(differenceInSeconds / 3600);
-		return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+		return `${hours}h ago`;
 	} else {
 		const days = Math.floor(differenceInSeconds / 86400);
-		return `${days} day${days > 1 ? 's' : ''} ago`;
+		return `${days}d ago`;
 	}
 };
+
+/** Maps a notification title to an icon + accent colour for its avatar chip. */
+type GradientColors = readonly [string, string, ...string[]];
+
+const getNotificationVisual = (title: string): { icon: any; colors: GradientColors } => {
+	switch (title) {
+		case 'Friend Request':
+			return { icon: 'person-add', colors: ['#6D5BF8', '#9B5BF0'] };
+		case 'Friend Accepted':
+			return { icon: 'people', colors: Gradients.success };
+		case 'Friendly Bot':
+			return { icon: 'happy', colors: ['#38BDF8', '#0EA5E9'] };
+		case 'Incoming Missile!':
+		case 'Missile Alert!':
+		case 'Missile Impact Alert!':
+		case 'Missile Damage!':
+			return { icon: 'rocket', colors: Gradients.fire };
+		case 'Eliminated!':
+			return { icon: 'skull', colors: ['#F5365C', '#B91C1C'] };
+		case 'Landmine Nearby!':
+		case 'Landmine Damage!':
+			return { icon: 'warning', colors: Gradients.gold };
+		case 'Loot Nearby!':
+		case 'Loot Collected!':
+		case 'Loot Within Reach!':
+			return { icon: 'gift', colors: ['#F7B733', '#FC4A1A'] };
+		case 'Kill Reward':
+		case 'Elimination Reward':
+			return { icon: 'trophy', colors: Gradients.gold };
+		case 'Shield Destroyed!':
+			return { icon: 'shield-half', colors: ['#94A3B8', '#475569'] };
+		default:
+			return { icon: 'notifications', colors: ['#6D5BF8', '#9B5BF0'] };
+	}
+};
+
+const REWARD_TITLES = ['Missile Alert!', 'Missile Impact Alert!', 'Landmine Nearby!', 'Loot Nearby!', 'Loot Collected!', 'Loot Within Reach!', 'Kill Reward', 'Damaged!', 'Elimination Reward', 'Shield Destroyed!', 'Landmine Damage!', 'Missile Damage!', 'Airspace Alert!'];
+
+const PrimaryBtn = ({ label, icon, colors, onPress }: { label?: string; icon?: any; colors: GradientColors; onPress: () => void }) => (
+	<PressableScale haptic="none" onPress={onPress} style={styles.actionBtn}>
+		<LinearGradient colors={colors} style={styles.actionBtnFill}>
+			{icon && <Ionicons name={icon} size={16} color="#fff" />}
+			{label && <Text style={styles.actionBtnText}>{label}</Text>}
+		</LinearGradient>
+	</PressableScale>
+);
+
+const GhostBtn = ({ label, onPress, c }: { label: string; onPress: () => void; c: ReturnType<typeof getPalette> }) => (
+	<PressableScale haptic="select" onPress={onPress} style={[styles.ghostBtn, { backgroundColor: c.surfaceAlt }]}>
+		<Text style={[styles.ghostBtnText, { color: c.textMuted }]}>{label}</Text>
+	</PressableScale>
+);
 
 const NotificationsPage: React.FC = () => {
 	const { notifications, isLoading, error, fetchNotifications, markAsRead, deleteNotificationById, clearAllNotifications } = useNotifications();
@@ -49,54 +106,50 @@ const NotificationsPage: React.FC = () => {
 
 	const colorScheme = useColorScheme();
 	const isDarkMode = colorScheme === 'dark';
+	const c = getPalette(isDarkMode);
+
+	const fetchLocActiveStatus = async () => {
+		try {
+			const status = await getlocActive();
+			setLocActive(status);
+		} catch (error) {
+			console.error("Failed to fetch locActive status:", error);
+		}
+	};
 
 	useEffect(() => {
 		const initializeApp = async () => {
-		  try {
-			const isAliveStatusString = await AsyncStorage.getItem('isAlive');
-			if (isAliveStatusString) {
-			  const isAliveStatus = JSON.parse(isAliveStatusString);
-	
-			  setIsAlive(isAliveStatus.isAlive);
-			} else {
-				setIsAlive(true); // Default to true if no status is found
+			try {
+				const isAliveStatusString = await AsyncStorage.getItem('isAlive');
+				if (isAliveStatusString) {
+					const isAliveStatus = JSON.parse(isAliveStatusString);
+					setIsAlive(isAliveStatus.isAlive);
+				} else {
+					setIsAlive(true);
+				}
+			} catch (error) {
+				console.error('Error initializing app:', error);
 			}
-		  } catch (error) {
-			console.error('Error initializing app:', error);
-		  }
 		};
-
 		initializeApp();
 		fetchLocActiveStatus();
-
-	  }, []);
-
-	  const fetchLocActiveStatus = async () => {
-		try {
-		  const status = await getlocActive();
-		  setLocActive(status);
-		} catch (error) {
-		  console.error("Failed to fetch locActive status:", error);
-		} finally {
-		}
-	  };
+	}, []);
 
 	const handleAccept = useCallback(async (item: Notification) => {
-		console.log('Accept friend request:', item);
 		try {
 			const token = await SecureStore.getItemAsync("token");
 			if (!token) {
 				console.error('No token found');
 				return;
 			}
-
 			const response = await addFriend(token, item.sentby);
 			console.log('Friend request accepted:', response.message);
-
+			haptics.success();
 			await deleteNotificationById(item.id);
 			setHiddenIds(prev => new Set(prev).add(item.id));
 		} catch (error) {
 			console.error('Failed to accept friend request:', error);
+			haptics.error();
 			setHiddenIds(prev => {
 				const newSet = new Set(prev);
 				newSet.delete(item.id);
@@ -106,7 +159,7 @@ const NotificationsPage: React.FC = () => {
 	}, [deleteNotificationById]);
 
 	const handleDecline = useCallback(async (item: Notification) => {
-		console.log('Decline friend request:', item);
+		haptics.select();
 		setHiddenIds(prev => new Set(prev).add(item.id));
 		try {
 			await deleteNotificationById(item.id);
@@ -122,6 +175,7 @@ const NotificationsPage: React.FC = () => {
 
 	const handleFireBack = useCallback(async (item: Notification) => {
 		try {
+			haptics.tap();
 			setShowMissileLibrary(true);
 			setSelectedPlayer(item.sentby);
 		} catch (error) {
@@ -131,6 +185,7 @@ const NotificationsPage: React.FC = () => {
 
 	const dismissNotification = useCallback(async (item: Notification) => {
 		try {
+			haptics.select();
 			await deleteNotificationById(item.id);
 			setHiddenIds(prev => new Set(prev).add(item.id));
 		} catch (error) {
@@ -139,174 +194,180 @@ const NotificationsPage: React.FC = () => {
 	}, [deleteNotificationById]);
 
 	const handleClearAll = useCallback(async () => {
+		haptics.warning();
 		Alert.alert(
-		  "Clear All Notifications",
-		  "Are you sure you want to clear all notifications?",
-		  [
-			{
-			  text: "Cancel",
-			  style: "cancel"
-			},
-			{
-			  text: "Clear",
-			  onPress: async () => {
-				try {
-				  await clearAllNotifications();
-				  setHiddenIds(new Set(notifications.map(n => n.id)));
-				} catch (error) {
-				  console.error('Failed to clear all notifications:', error);
+			"Clear All Notifications",
+			"Are you sure you want to clear all notifications?",
+			[
+				{ text: "Cancel", style: "cancel" },
+				{
+					text: "Clear",
+					onPress: async () => {
+						try {
+							await clearAllNotifications();
+							setHiddenIds(new Set(notifications.map(n => n.id)));
+						} catch (error) {
+							console.error('Failed to clear all notifications:', error);
+						}
+					}
 				}
-			  }
-			}
-		  ]
+			]
 		);
-	  }, [notifications, clearAllNotifications]);
+	}, [notifications, clearAllNotifications]);
 
 	const handleRetry = useCallback(() => {
-		fetchNotifications(true); // Force fetch notifications
+		fetchNotifications(true);
 	}, [fetchNotifications]);
 
-	const renderNotificationItem = useCallback(({ item }: { item: Notification }) => {
+	const renderNotificationItem = useCallback(({ item, index }: { item: Notification; index: number }) => {
 		if (hiddenIds.has(item.id) || item.title === 'New Message') return null;
 
+		const visual = getNotificationVisual(item.title);
+
 		return (
-			<TouchableOpacity
-				style={[
-					styles.notificationItem,
-					!item.isRead && styles.unreadNotification,
-					isDarkMode && styles.notificationItemDark,
-					!item.isRead && isDarkMode && styles.unreadNotificationDark
-				]}
-				onPress={() => markAsRead(item.id)}
-			>
-				<View style={styles.notificationContent}>
-					<Text style={[
-						styles.notificationTitle,
-						!item.isRead && styles.unreadText,
-						isDarkMode && styles.notificationTitleDark
-					]}>{item.title}</Text>
-					<Text style={[
-						styles.notificationBody, 
-						!item.isRead && styles.unreadText,
-						isDarkMode && styles.notificationBodyDark
-					]}>{item.body}</Text>
-					<Text style={[
-						styles.notificationTime,
-						isDarkMode && styles.notificationTimeDark
-					]}>
-						{getTimeDifference(item.timestamp)}
-					</Text>
-				</View>
-				{item.title === 'Friend Request' && (
-					<View style={styles.actionButtons}>
-						<TouchableOpacity style={[styles.acceptButton, isDarkMode && styles.acceptButtonDark]} onPress={() => handleAccept(item)}>
-							<Text style={[styles.buttonText, isDarkMode && styles.buttonTextDark]}>Accept</Text>
-						</TouchableOpacity>
-						<TouchableOpacity style={[styles.declineButton, isDarkMode && styles.declineButtonDark]} onPress={() => handleDecline(item)}>
-							<Text style={[styles.buttonText, isDarkMode && styles.declineButtonDark]}>Decline</Text>
-						</TouchableOpacity>
+			<AnimatedEntrance index={index}>
+				<PressableScale
+					haptic="select"
+					onPress={() => markAsRead(item.id)}
+					style={[
+						styles.card,
+						{ backgroundColor: c.surface },
+						cardShadow(isDarkMode),
+						!item.isRead && { borderColor: c.accent, borderWidth: 1.5 },
+					]}
+				>
+					<View style={styles.cardTop}>
+						<LinearGradient colors={visual.colors} style={styles.iconChip}>
+							<Ionicons name={visual.icon} size={22} color="#fff" />
+						</LinearGradient>
+						<View style={styles.cardText}>
+							<View style={styles.titleRow}>
+								<Text style={[styles.cardTitle, { color: c.text }]} numberOfLines={1}>
+									{item.title}
+								</Text>
+								{!item.isRead && <View style={[styles.unreadDot, { backgroundColor: c.accent }]} />}
+							</View>
+							<Text style={[styles.cardBody, { color: c.textMuted }]} numberOfLines={2}>
+								{item.body}
+							</Text>
+							<Text style={[styles.cardTime, { color: c.textFaint }]}>
+								{getTimeDifference(item.timestamp)}
+							</Text>
+						</View>
 					</View>
-				)}
-				{item.title === 'Friend Accepted' && (
-					<View style={styles.actionButtons}>
-						<TouchableOpacity style={[styles.acceptButton, isDarkMode && styles.acceptButtonDark]} onPress={() => router.navigate('/friends')}>
-							<Text style={[styles.buttonText, isDarkMode && styles.buttonTextDark]}>View Friends</Text>
-						</TouchableOpacity>
-					</View>
-				)}
-				{item.title === 'Friendly Bot' && (
-					<View style={styles.actionButtons}>
-						<TouchableOpacity style={[styles.waveButton, isDarkMode && styles.waveButtonDark]} onPress={() => dismissNotification(item)}>
-							<Ionicons name="hand-left" size={24} color={isDarkMode ? "#4CAF50" : "white"} />
-						</TouchableOpacity>
-						<TouchableOpacity style={[styles.fireBackButton, isDarkMode && styles.fireBackButtonDark]} onPress={() => handleFireBack(item)}>
-							<Text style={[styles.buttonText, isDarkMode && styles.buttonTextDark]}>Fire!</Text>
-						</TouchableOpacity>
-					</View>
-				)}
-				{['Incoming Missile!', 'Eliminated!'].includes(item.title) && (
-					<View style={styles.actionButtons}>
-						{isAlive && locActive && (
-						<TouchableOpacity style={[styles.fireBackButton, isDarkMode && styles.fireBackButtonDark]} onPress={() => handleFireBack(item)}>
-							<Text style={[styles.buttonText, isDarkMode && styles.buttonTextDark]}>Fire Back!</Text>
-						</TouchableOpacity>
-						)}
-						<TouchableOpacity style={[styles.dismissButton, isDarkMode && styles.dismissButtonDark]} onPress={() => dismissNotification(item)}>
-							<Text style={[styles.buttonText, isDarkMode && styles.dismissTextDark]}>Dismiss</Text>
-						</TouchableOpacity>
-					</View>
-				)}
-				{['Missile Alert!', 'Missile Impact Alert!', 'Landmine Nearby!', 'Loot Nearby!', 'Loot Collected!', 'Loot Within Reach!', 'Kill Reward', `Damaged!`, `Elimination Reward`, `Shield Destroyed!`, `Landmine Damage!`, `Missile Damage!`, `Airspace Alert!`].includes(item.title) && (
-					<View style={styles.actionButtons}>
-						<TouchableOpacity style={[styles.dismissButton, isDarkMode && styles.dismissButtonDark]} onPress={() => dismissNotification(item)}>
-							<Text style={[styles.buttonText, isDarkMode && styles.dismissTextDark]}>Dismiss</Text>
-						</TouchableOpacity>
-					</View>
-				)}
-			</TouchableOpacity>
+
+					{item.title === 'Friend Request' && (
+						<View style={styles.actions}>
+							<PrimaryBtn label="Accept" icon="checkmark" colors={Gradients.success} onPress={() => handleAccept(item)} />
+							<GhostBtn label="Decline" onPress={() => handleDecline(item)} c={c} />
+						</View>
+					)}
+					{item.title === 'Friend Accepted' && (
+						<View style={styles.actions}>
+							<PrimaryBtn label="View Friends" icon="people" colors={Gradients.brand} onPress={() => router.navigate('/friends')} />
+						</View>
+					)}
+					{item.title === 'Friendly Bot' && (
+						<View style={styles.actions}>
+							<GhostBtn label="👋 Wave" onPress={() => dismissNotification(item)} c={c} />
+							<PrimaryBtn label="Fire!" icon="rocket" colors={Gradients.fire} onPress={() => handleFireBack(item)} />
+						</View>
+					)}
+					{['Incoming Missile!', 'Eliminated!'].includes(item.title) && (
+						<View style={styles.actions}>
+							{isAlive && locActive && (
+								<PrimaryBtn label="Fire Back!" icon="rocket" colors={Gradients.fire} onPress={() => handleFireBack(item)} />
+							)}
+							<GhostBtn label="Dismiss" onPress={() => dismissNotification(item)} c={c} />
+						</View>
+					)}
+					{REWARD_TITLES.includes(item.title) && (
+						<View style={styles.actions}>
+							<GhostBtn label="Dismiss" onPress={() => dismissNotification(item)} c={c} />
+						</View>
+					)}
+				</PressableScale>
+			</AnimatedEntrance>
 		);
-	}, [hiddenIds, markAsRead, handleAccept, handleDecline, handleFireBack, dismissNotification, isAlive, isDarkMode]);
+	}, [hiddenIds, markAsRead, handleAccept, handleDecline, handleFireBack, dismissNotification, isAlive, locActive, isDarkMode, c]);
 
 	return (
-		<SafeAreaView style={[styles.safeArea, isDarkMode && styles.safeAreaDark]}>
-			<View style={[styles.container, isDarkMode && styles.containerDark]}>
-				<View style={[styles.header, isDarkMode && styles.headerDark]}>
-					<TouchableOpacity onPress={() => router.navigate('/friends')} style={styles.backButton}>
-						<Ionicons name="arrow-back" size={24} color={isDarkMode ? "white" : "white"} />
-					</TouchableOpacity>
-					<Text style={[styles.headerText, isDarkMode && styles.headerTextDark]}>Notifications</Text>
-					<TouchableOpacity onPress={handleClearAll} style={styles.clearAllButton}>
-						<Text style={[styles.clearAllText, isDarkMode && styles.clearAllTextDark]}>Clear All</Text>
-					</TouchableOpacity>
+		<View style={[styles.container, { backgroundColor: c.bg }]}>
+			<LinearGradient
+				colors={isDarkMode ? ['#241B45', '#15172B'] : Gradients.brand}
+				start={{ x: 0, y: 0 }}
+				end={{ x: 1, y: 1 }}
+				style={styles.header}
+			>
+				<PressableScale haptic="select" onPress={() => router.navigate('/friends')} style={styles.backBtn}>
+					<Ionicons name="chevron-back" size={24} color="#fff" />
+				</PressableScale>
+				<Text style={styles.headerTitle}>Notifications</Text>
+				<PressableScale haptic="warning" onPress={handleClearAll} style={styles.clearBtn}>
+					<Text style={styles.clearText}>Clear all</Text>
+				</PressableScale>
+			</LinearGradient>
+
+			{isLoading ? (
+				<View style={styles.centerContainer}>
+					<ActivityIndicator size="large" color={c.accent} />
+					<Text style={[styles.centerText, { color: c.textMuted, marginTop: Spacing.md }]}>
+						Loading notifications...
+					</Text>
 				</View>
-				{isLoading ? (
-					<View style={styles.centerContainer}>
-						<Text style={[styles.loadingText, isDarkMode && styles.loadingTextDark]}>Loading notifications...</Text>
+			) : error ? (
+				<View style={styles.centerContainer}>
+					<View style={[styles.emptyIcon, { backgroundColor: c.surface }, cardShadow(isDarkMode)]}>
+						<Ionicons name="cloud-offline" size={36} color="#F5365C" />
 					</View>
-				) : error ? (
-					<View style={styles.centerContainer}>
-						<Text style={[styles.errorText, isDarkMode && styles.errorTextDark]}>{error}</Text>
-						<TouchableOpacity 
-							style={[styles.retryButton, isDarkMode && styles.retryButtonDark]} 
-							onPress={handleRetry}
-						>
-							<Text style={[styles.retryButtonText, isDarkMode && styles.retryButtonTextDark]}>Retry</Text>
-						</TouchableOpacity>
-					</View>
-				) : (
-					<FlatList
-						data={notifications}
-						renderItem={renderNotificationItem}
-						keyExtractor={(item) => item.id}
-						contentContainerStyle={styles.listContainer}
-						refreshing={isLoading}
-						onRefresh={() => fetchNotifications(true)} // Force fetch on pull-to-refresh
-						ListEmptyComponent={
-							<Text style={[styles.noNotifications, isDarkMode && styles.noNotificationsDark]}>No notifications</Text>
-						}
-					/>
-				)}
-			</View>
+					<Text style={[styles.centerText, { color: c.text, marginTop: Spacing.lg }]}>{error}</Text>
+					<PressableScale haptic="tap" onPress={handleRetry} style={styles.retryBtn}>
+						<LinearGradient colors={Gradients.brand} style={styles.retryBtnFill}>
+							<Ionicons name="refresh" size={18} color="#fff" />
+							<Text style={styles.retryText}>Retry</Text>
+						</LinearGradient>
+					</PressableScale>
+				</View>
+			) : (
+				<FlatList
+					data={notifications}
+					renderItem={renderNotificationItem}
+					keyExtractor={(item) => item.id}
+					contentContainerStyle={styles.listContainer}
+					showsVerticalScrollIndicator={false}
+					refreshing={isLoading}
+					onRefresh={() => fetchNotifications(true)}
+					ListEmptyComponent={
+						<AnimatedEntrance style={styles.centerContainer}>
+							<View style={[styles.emptyIcon, { backgroundColor: c.surface }, cardShadow(isDarkMode)]}>
+								<Ionicons name="notifications-off" size={36} color={c.accent} />
+							</View>
+							<Text style={[styles.centerText, { color: c.textMuted, marginTop: Spacing.lg }]}>
+								{"You're all caught up"}
+							</Text>
+						</AnimatedEntrance>
+					}
+				/>
+			)}
+
 			<Modal
 				animationType="slide"
-				transparent={true}
+				transparent
 				visible={showMissileLibrary}
 				onRequestClose={() => setShowMissileLibrary(false)}
 			>
-				<View style={[styles.modalContainer, isDarkMode && styles.modalContainerDark]}>
-					<View style={[styles.modalContent, isDarkMode && styles.modalContentDark]}>
-						<View style={[styles.modalHeader, isDarkMode && styles.modalHeaderDark]}>
-							<Text style={[styles.modalTitle, isDarkMode && styles.modalTitleDark]}>Missile Library</Text>
-							<TouchableOpacity
-								style={[styles.modalCloseButton, isDarkMode && styles.modalCloseButtonDark]}
-								onPress={() => setShowMissileLibrary(false)}
-							>
-								<Text style={[styles.modalCloseButtonText, isDarkMode && styles.modalCloseButtonTextDark]}>Done</Text>
-							</TouchableOpacity>
-						</View>
+				<View style={styles.modalOverlay}>
+					<View style={[styles.modalSheet, { backgroundColor: c.bg }]}>
+						<LinearGradient colors={Gradients.fire} style={styles.modalHeader}>
+							<Text style={styles.modalTitle}>Missile Library</Text>
+							<PressableScale haptic="select" onPress={() => setShowMissileLibrary(false)} style={styles.doneBtn}>
+								<Text style={styles.doneText}>Done</Text>
+							</PressableScale>
+						</LinearGradient>
 						<MissileLibrary
 							playerName={selectedPlayer}
 							onMissileFired={() => {
+								haptics.fire();
 								setShowMissileLibrary(false);
 							}}
 							onClose={() => setShowMissileLibrary(false)}
@@ -314,268 +375,107 @@ const NotificationsPage: React.FC = () => {
 					</View>
 				</View>
 			</Modal>
-		</SafeAreaView>
+		</View>
 	);
 };
 
 const styles = StyleSheet.create({
-	safeArea: {
-		flex: 1,
-		backgroundColor: '#f5f5f5',
-	},
-	safeAreaDark: {
-		backgroundColor: '#1E1E1E',
-	},
-	container: {
-		flex: 1,
-		backgroundColor: '#f5f5f5',
-	},
-	containerDark: {
-		backgroundColor: '#1E1E1E',
-	},
+	container: { flex: 1 },
 	header: {
 		flexDirection: 'row',
 		alignItems: 'center',
 		justifyContent: 'space-between',
-		padding: 16,
-		backgroundColor: '#4a5568',
-		paddingTop: 20,
+		paddingTop: 60,
+		paddingHorizontal: Spacing.lg,
+		paddingBottom: Spacing.lg,
+		borderBottomLeftRadius: Radius.xl,
+		borderBottomRightRadius: Radius.xl,
 	},
-	headerDark: {
-		backgroundColor: '#2C2C2C',
+	backBtn: {
+		width: 44,
+		height: 44,
+		borderRadius: 22,
+		backgroundColor: 'rgba(255,255,255,0.18)',
+		justifyContent: 'center',
+		alignItems: 'center',
 	},
-	backButton: {
-		padding: 8,
-		marginRight: 16,
+	headerTitle: { color: '#fff', fontSize: 20, fontWeight: '800' },
+	clearBtn: {
+		paddingHorizontal: Spacing.md,
+		height: 44,
+		borderRadius: Radius.pill,
+		backgroundColor: 'rgba(255,255,255,0.18)',
+		justifyContent: 'center',
 	},
-	headerText: {
-		fontSize: 20,
-		fontWeight: 'bold',
-		color: '#ffffff',
+	clearText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+	listContainer: { padding: Spacing.lg, gap: Spacing.md, paddingBottom: Spacing.xxl * 2 },
+	card: { borderRadius: Radius.lg, padding: Spacing.md },
+	cardTop: { flexDirection: 'row', alignItems: 'flex-start' },
+	iconChip: {
+		width: 46,
+		height: 46,
+		borderRadius: 23,
+		justifyContent: 'center',
+		alignItems: 'center',
+		marginRight: Spacing.md,
 	},
-	headerTextDark: {
-		color: '#FFF',
-	},
-	listContainer: {
-		padding: 10,
-	},
-	notificationItem: {
-		backgroundColor: '#fff',
-		borderRadius: 10,
-		padding: 15,
-		marginBottom: 10,
-		shadowColor: '#000',
-		shadowOffset: { width: 0, height: 1 },
-		shadowOpacity: 0.2,
-		shadowRadius: 1,
-		elevation: 2,
-	},
-	notificationItemDark: {
-		backgroundColor: '#2C2C2C',
-	},
-	notificationContent: {
-		marginBottom: 10,
-	},
-	notificationTitle: {
-		fontSize: 18,
-		fontWeight: 'bold',
-		marginBottom: 5,
-		color: '#2d3748',
-	},
-	notificationTitleDark: {
-		color: '#FFF',
-	},
-	notificationBody: {
-		fontSize: 16,
-		marginBottom: 5,
-		color: '#4a5568',
-	},
-	notificationBodyDark: {
-		color: '#B0B0B0',
-	},
-	notificationTime: {
-		fontSize: 12,
-		color: '#888',
-	},
-	notificationTimeDark: {
-		color: '#888',
-	},
-	actionButtons: {
+	cardText: { flex: 1 },
+	titleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+	cardTitle: { fontSize: 16, fontWeight: '700', flexShrink: 1 },
+	unreadDot: { width: 8, height: 8, borderRadius: 4 },
+	cardBody: { fontSize: 14, marginTop: 3, lineHeight: 19 },
+	cardTime: { fontSize: 12, marginTop: 6 },
+	actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: Spacing.sm, marginTop: Spacing.md },
+	actionBtn: { borderRadius: Radius.pill, overflow: 'hidden' },
+	actionBtnFill: {
 		flexDirection: 'row',
-		justifyContent: 'flex-end',
-		marginTop: 10,
-	},
-	acceptButton: {
-		backgroundColor: '#4CAF50',
-		padding: 8,
-		borderRadius: 5,
-		marginRight: 10,
-	},
-	acceptButtonDark: {
-		backgroundColor: '#3D3D3D',
-	},
-	declineButton: {
-		backgroundColor: '#F44336',
-		padding: 8,
-		borderRadius: 5,
-	},
-	declineButtonDark: {
-		backgroundColor: '#3D3D3D',
-	},
-	buttonText: {
-		color: '#fff',
-		fontWeight: 'bold',
-	  },
-	buttonTextDark: {
-		color: '#4CAF50',
-	},
-	centerContainer: {
-		flex: 1,
-		justifyContent: 'center',
 		alignItems: 'center',
+		gap: 6,
+		paddingHorizontal: Spacing.lg,
+		paddingVertical: Spacing.sm,
 	},
-	loadingText: {
-		fontSize: 18,
-		color: '#2d3748',
-	},
-	loadingTextDark: {
-		color: '#B0B0B0',
-	},
-	errorText: {
-		fontSize: 18,
-		color: '#F44336',
-		textAlign: 'center',
-	},
-	errorTextDark: {
-		color: '#FF6B6B',
-	},
-	retryButton: {
-		backgroundColor: '#4CAF50',
-		padding: 8,
-		borderRadius: 5,
-		marginTop: 10,
-	},
-	retryButtonDark: {
-		backgroundColor: '#3D3D3D',
-	},
-	retryButtonText: {
-		color: '#fff',
-		fontWeight: 'bold',
-	},
-	retryButtonTextDark: {
-		color: '#4CAF50',
-	},
-	noNotifications: {
-		fontSize: 16,
-		textAlign: 'center',
-		marginTop: 20,
-		color: '#4a5568',
-	},
-	noNotificationsDark: {
-		color: '#B0B0B0',
-	},
-	unreadNotification: {
-		backgroundColor: '#e6f7ff',
-	},
-	unreadNotificationDark: {
-		backgroundColor: '#1a3d2a', // Dark green for unread notifications in dark mode
-	},
-	unreadText: {
-		fontWeight: 'bold',
-	},
-	fireBackButton: {
-		backgroundColor: '#FF0000',
-		padding: 8,
-		borderRadius: 5,
-		marginRight: 10,
-	},
-	fireBackButtonDark: {
-		backgroundColor: '#3D3D3D',
-	},
-	waveButton: {
-		backgroundColor: '#4CAF50',
-		padding: 8,
-		borderRadius: 5,
-		marginRight: 10,
+	actionBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+	ghostBtn: {
+		paddingHorizontal: Spacing.lg,
+		paddingVertical: Spacing.sm,
+		borderRadius: Radius.pill,
 		justifyContent: 'center',
+	},
+	ghostBtnText: { fontWeight: '700', fontSize: 14 },
+	centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: Spacing.xxl * 3 },
+	centerText: { fontSize: 16, textAlign: 'center' },
+	emptyIcon: { width: 80, height: 80, borderRadius: 40, justifyContent: 'center', alignItems: 'center' },
+	retryBtn: { marginTop: Spacing.lg, borderRadius: Radius.pill, overflow: 'hidden' },
+	retryBtnFill: {
+		flexDirection: 'row',
 		alignItems: 'center',
+		gap: Spacing.sm,
+		paddingHorizontal: Spacing.xl,
+		paddingVertical: Spacing.md,
 	},
-	waveButtonDark: {
-		backgroundColor: '#3D3D3D',
-	},
-	dismissButton: {
-		backgroundColor: '#4a5568',
-		padding: 8,
-		borderRadius: 5,
-		marginRight: 10,
-	},
-	dismissButtonDark: {
-		backgroundColor: '#3D3D3D',
-	},
-	dismissTextDark: {
-		color: '#FF4136',
-	},
-	modalContainer: {
-		flex: 1,
-		justifyContent: 'flex-end',
-		backgroundColor: 'rgba(0, 0, 0, 0.5)',
-	},
-	modalContainerDark: {
-		backgroundColor: 'rgba(0, 0, 0, 0.7)',
-	},
-	modalContent: {
+	retryText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+	modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.55)' },
+	modalSheet: {
 		height: '90%',
-		backgroundColor: '#fff',
-		borderTopLeftRadius: 20,
-		borderTopRightRadius: 20,
+		borderTopLeftRadius: Radius.xl,
+		borderTopRightRadius: Radius.xl,
 		overflow: 'hidden',
-	},
-	modalContentDark: {
-		backgroundColor: '#1E1E1E',
 	},
 	modalHeader: {
 		flexDirection: 'row',
 		justifyContent: 'space-between',
 		alignItems: 'center',
-		padding: 16,
-		backgroundColor: '#f0f2f5',
+		paddingHorizontal: Spacing.lg,
+		paddingVertical: Spacing.md,
 	},
-	modalHeaderDark: {
-		backgroundColor: '#2C2C2C',
+	modalTitle: { fontSize: 20, fontWeight: '800', color: '#fff' },
+	doneBtn: {
+		backgroundColor: 'rgba(255,255,255,0.25)',
+		paddingHorizontal: Spacing.lg,
+		paddingVertical: Spacing.sm,
+		borderRadius: Radius.pill,
 	},
-	modalTitle: {
-		fontSize: 20,
-		fontWeight: 'bold',
-		color: '#2d3748',
-	},
-	modalTitleDark: {
-		color: '#FFF',
-	},
-	modalCloseButton: {
-		backgroundColor: '#4CAF50',
-		padding: 8,
-		borderRadius: 5,
-	},
-	modalCloseButtonDark: {
-		backgroundColor: '#3D3D3D',
-	},
-	modalCloseButtonText: {
-		color: '#fff',
-		fontWeight: 'bold',
-	},
-	modalCloseButtonTextDark: {
-		color: '#4CAF50',
-	},
-	clearAllButton: {
-		padding: 8,
-	},
-	clearAllText: {
-		color: '#ffffff',
-		fontWeight: 'bold',
-	},
-	clearAllTextDark: {
-		color: '#4CAF50',
-	},
+	doneText: { color: '#fff', fontWeight: '700' },
 });
 
 export default NotificationsPage;
