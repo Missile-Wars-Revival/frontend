@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Modal, View, Text, Pressable, StyleSheet, useColorScheme, Dimensions, Animated, Platform } from "react-native";
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { useOnboarding } from '../util/Context/onboardingContext';
+import { PressableScale } from './ui/PressableScale';
 
 const { width, height } = Dimensions.get('window');
 
@@ -75,12 +76,14 @@ export const FireType = (props: FireTypeProps) => {
 
   return (
     <View>
-      <Pressable
+      <PressableScale
         style={[styles.fireButton, isDarkMode && styles.fireButtonDark]}
         onPress={FireshowPopup}
+        haptic="tap"
+        pressedScale={0.9}
       >
         <Ionicons name="flame" size={24} color={isDarkMode ? "#FFF" : "#000"} />
-      </Pressable>
+      </PressableScale>
 
       <FireTypeStyle
         visible={FirepopupVisible}
@@ -161,42 +164,50 @@ export const FireTypeStyle = ({
             style={[styles.modalContent, isDarkMode && styles.modalContentDark]}
           >
             <Text style={[styles.modalTitle, isDarkMode && styles.modalTitleDark]}>Select Action</Text>
-            <Pressable
+            <PressableScale
               onPress={() => handleActionPress("firelandmine")}
               style={[styles.actionButton, isDarkMode && styles.actionButtonDark]}
+              haptic="select"
+              pressedScale={0.96}
             >
               <View style={styles.iconContainer}>
                 <Ionicons name="radio-button-on" size={24} color={isDarkMode ? "#FFF" : "#000"} />
               </View>
               <Text style={[styles.actionText, isDarkMode && styles.actionTextDark]}>Place Landmine</Text>
-            </Pressable>
-            <Pressable
+            </PressableScale>
+            <PressableScale
               onPress={() => handleActionPress("firemissile")}
               style={[styles.actionButton, isDarkMode && styles.actionButtonDark]}
+              haptic="select"
+              pressedScale={0.96}
             >
               <View style={styles.iconContainer}>
                 <Ionicons name="rocket" size={24} color={isDarkMode ? "#FFF" : "#000"} />
               </View>
               <Text style={[styles.actionText, isDarkMode && styles.actionTextDark]}>Fire Missile</Text>
-            </Pressable>
-            <Pressable
+            </PressableScale>
+            <PressableScale
               onPress={() => handleActionPress("lootdrop")}
               style={[styles.actionButton, isDarkMode && styles.actionButtonDark]}
+              haptic="select"
+              pressedScale={0.96}
             >
               <View style={styles.iconContainer}>
                 <Ionicons name="gift" size={24} color={isDarkMode ? "#FFF" : "#000"} />
               </View>
               <Text style={[styles.actionText, isDarkMode && styles.actionTextDark]}>Request Loot Drop</Text>
-            </Pressable>
-            <Pressable
+            </PressableScale>
+            <PressableScale
               onPress={() => handleActionPress("other")}
               style={[styles.actionButton, isDarkMode && styles.actionButtonDark]}
+              haptic="select"
+              pressedScale={0.96}
             >
               <View style={styles.iconContainer}>
                 <Ionicons name="sparkles-outline" size={24} color={isDarkMode ? "#FFF" : "#000"} />
               </View>
               <Text style={[styles.actionText, isDarkMode && styles.actionTextDark]}>Place Special Items</Text>
-            </Pressable>
+            </PressableScale>
           </Pressable>
         </Animated.View>
       </Pressable>

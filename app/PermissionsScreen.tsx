@@ -3,7 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
+  Pressable,
   Alert,
   Platform,
   Dimensions,
@@ -445,14 +445,14 @@ const PermissionsScreenInner: React.FC<PermissionsScreenProps> = ({ onPermission
 
         {/* Skip button */}
         {currentSlide < SLIDES.length - 1 && (
-          <TouchableOpacity
+          <Pressable
             style={styles.skipButton}
             onPress={() => setCurrentSlide(SLIDES.length - 1)}
           >
             <BlurView intensity={20} tint="dark" style={styles.skipButtonBlur}>
               <Text style={styles.skipText}>Skip</Text>
             </BlurView>
-          </TouchableOpacity>
+          </Pressable>
         )}
 
         {/* Main content */}
@@ -536,13 +536,13 @@ const PermissionsScreenInner: React.FC<PermissionsScreenProps> = ({ onPermission
                   accentColor={slide.accentColor}
                 />
 
-                <TouchableOpacity
+                <Pressable
                   style={styles.privacyRow}
                   onPress={() => {
                     setPrivacyAgreed(!privacyAgreed);
                     try { Presets.System.selection(); } catch { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }
                   }}
-                  activeOpacity={0.7}
+
                 >
                   <View
                     style={[
@@ -564,7 +564,7 @@ const PermissionsScreenInner: React.FC<PermissionsScreenProps> = ({ onPermission
                       Terms of Service
                     </Text>
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
 
                 <Text style={styles.permissionDisclosureText}>
                   Tracking permission is optional and does not block gameplay. Location is required for map-based gameplay.
@@ -620,27 +620,27 @@ const PermissionsScreenInner: React.FC<PermissionsScreenProps> = ({ onPermission
         {/* Navigation */}
         <View style={styles.navigationContainer}>
           {currentSlide > 0 ? (
-            <TouchableOpacity
+            <Pressable
               style={styles.navButton}
               onPress={goPrev}
-              activeOpacity={0.7}
+
             >
               <BlurView intensity={30} tint="dark" style={styles.navButtonBlur}>
                 <Ionicons name="arrow-back" size={24} color="#fff" />
               </BlurView>
-            </TouchableOpacity>
+            </Pressable>
           ) : (
             <View style={styles.navButtonPlaceholder} />
           )}
 
           <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-            <TouchableOpacity
+            <Pressable
               style={[
                 styles.mainButton,
                 isLastSlide && (!privacyAgreed || !locationPermission ? styles.disabledButton : styles.completeButton),
               ]}
               onPress={isLastSlide ? handleComplete : goNext}
-              activeOpacity={0.8}
+
               disabled={isLastSlide && (!privacyAgreed || !locationPermission)}
             >
               <LinearGradient
@@ -680,7 +680,7 @@ const PermissionsScreenInner: React.FC<PermissionsScreenProps> = ({ onPermission
                   />
                 )}
               </LinearGradient>
-            </TouchableOpacity>
+            </Pressable>
           </Animated.View>
 
           <View style={styles.navButtonPlaceholder} />
@@ -699,10 +699,10 @@ const PermissionRow: React.FC<{
   accentColor: string;
   required?: boolean;
 }> = ({ icon, title, description, isGranted, onPress, accentColor, required }) => (
-  <TouchableOpacity
+  <Pressable
     style={styles.permissionRow}
     onPress={onPress}
-    activeOpacity={0.7}
+
   >
     <View style={[styles.permissionIcon, { backgroundColor: accentColor + '40' }]}>
       <Ionicons name={icon} size={24} color="#fff" />
@@ -719,7 +719,7 @@ const PermissionRow: React.FC<{
     >
       <Ionicons name={isGranted ? 'checkmark' : 'add'} size={18} color="#fff" />
     </View>
-  </TouchableOpacity>
+  </Pressable>
 );
 
 const styles = StyleSheet.create({

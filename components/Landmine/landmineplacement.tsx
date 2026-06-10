@@ -5,7 +5,6 @@ import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplet
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { useUserName } from "../../util/fetchusernameglobal";
-import { mapstyles } from '../../map-themes/stylesheet';
 import { placelandmine } from '../../api/fireentities';
 import { loadLastKnownLocation, saveLocation } from '../../util/mapstore';
 import { AllOther } from '../Other/map-other';
@@ -27,7 +26,7 @@ import { androidRadarMapStyle } from '../../map-themes/Android-themes/radarMapSt
 import { useOnboarding } from '../../util/Context/onboardingContext';
 import { getLeagueAirspace } from '../player'; // Import the airspace calculation function
 import { triggerGameEffect } from '../effects/game-effects';
-import { gameHaptics } from '../../util/haptics';
+import { haptics } from '../ui/haptics';
 
 const GOOGLE_PLACES_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 
@@ -55,7 +54,6 @@ export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ 
   const [hasDbConnection, setDbConnection] = useState<boolean>(false);
   const [isAlive, setisAlive] = useState<boolean>(true);
   const [marker, setMarker] = useState<Region | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
   const [currentLocation, setCurrentLocation] = useState<Region | null>(null);
   const userName = useUserName();
   const mapRef = useRef<MapView>(null);
@@ -108,8 +106,6 @@ export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ 
   }, []);
 
   async function initializeLocation() {
-    setLoading(true);
-
     // First, try to load the last known location
     const lastKnownLocation = await loadLastKnownLocation();
     if (lastKnownLocation) {
@@ -125,7 +121,6 @@ export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ 
     if (status !== 'granted') {
       Alert.alert('Permission Denied', 'Location permission is required.');
       setIsLocationEnabled(false);
-      setLoading(false);
       return;
     }
 
@@ -152,8 +147,6 @@ export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ 
         setIsLocationEnabled(false);
       }
     }
-
-    setLoading(false);
   }
 
   useEffect(() => {
@@ -187,13 +180,13 @@ export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ 
 
   const handleLandminePlacement = () => {
     if (!marker || !currentLocation) {
-      gameHaptics.warning();
+      haptics.warning();
       Alert.alert('Not Ready', 'Waiting for your location. Please try again in a moment.');
       return;
     }
 
     if (!isValidPlacement) {
-      gameHaptics.error();
+      haptics.error();
       Alert.alert('Out of Range', 'You can only place landmines within your league airspace. Tap a location inside the green circle.');
       return;
     }
@@ -245,9 +238,9 @@ export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ 
     const isValid = currentLocation ? isWithinAirspace(newMarker, currentLocation) : false;
     // Distinct tick vs. warning so players can feel valid/invalid spots.
     if (isValid) {
-      gameHaptics.selection();
+      haptics.select();
     } else {
-      gameHaptics.warning();
+      haptics.warning();
     }
     setIsValidPlacement(isValid);
     setMarker(newMarker);

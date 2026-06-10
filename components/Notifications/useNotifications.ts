@@ -81,9 +81,8 @@ export const useNotifications = () => {
 			console.error('Failed to fetch notifications:', error);
 			setError('Failed to load notifications. Please try again.');
 			notificationEmitter.emit('error', error);
-		} finally {
-			setIsLoading(false);
 		}
+		setIsLoading(false);
 	}, []);
 
 	useEffect(() => {
@@ -171,9 +170,8 @@ export const useNotifications = () => {
 		} catch (error) {
 			console.error('Failed to clear all notifications:', error);
 			setError('Failed to clear notifications. Please try again.');
-		} finally {
-			setIsLoading(false);
 		}
+		setIsLoading(false);
 	}, [notifications]);
 
 	return {

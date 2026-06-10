@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, TouchableOpacity, Text, Modal, StyleSheet, Alert, useColorScheme } from 'react-native';
+import { View, Pressable, Text, Modal, StyleSheet, Alert, useColorScheme } from 'react-native';
 import { Image } from 'expo-image';
 import * as AlternateAppIcon from 'expo-alternate-app-icons';
 
@@ -55,9 +55,9 @@ const AppIconChanger: React.FC = () => {
 
   return (
     <View>
-      <TouchableOpacity onPress={() => setModalVisible(true)} style={[styles.button, isDarkMode && styles.buttonDark]}>
+      <Pressable onPress={() => setModalVisible(true)} style={[styles.button, isDarkMode && styles.buttonDark]}>
         <Text style={styles.buttonText}>Change App Icon</Text>
-      </TouchableOpacity>
+      </Pressable>
 
       <Modal
         animationType="slide"
@@ -69,7 +69,7 @@ const AppIconChanger: React.FC = () => {
           <View style={[styles.modalView, isDarkMode && styles.modalViewDark]}>
             <Text style={[styles.modalTitle, isDarkMode && styles.modalTitleDark]}>Choose an App Icon</Text>
             {iconOptions.map((icon) => (
-              <TouchableOpacity
+              <Pressable
                 key={icon.name}
                 style={[styles.iconOption, isDarkMode && styles.iconOptionDark]}
                 onPress={() => changeAppIcon(icon.name)}
@@ -79,14 +79,14 @@ const AppIconChanger: React.FC = () => {
                 {currentIcon === icon.name && (
                   <Text style={[styles.currentIcon, isDarkMode && styles.currentIconDark]}> (Current)</Text>
                 )}
-              </TouchableOpacity>
+              </Pressable>
             ))}
-            <TouchableOpacity
+            <Pressable
               style={[styles.closeButton, isDarkMode && styles.closeButtonDark]}
               onPress={() => setModalVisible(false)}
             >
               <Text style={styles.closeButtonText}>Close</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
       </Modal>

@@ -122,9 +122,11 @@ const Cart: React.FC<CartProps> = ({ cart, onRemove }) => {
         </View>
       ) : (
         <FlatList
+          style={styles.cartList}
           data={cart}
           keyExtractor={(item) => item.product.id.toString()}
           renderItem={renderItem}
+          showsVerticalScrollIndicator={false}
         />
       )}
       <View style={styles.totalRow}>
@@ -149,8 +151,14 @@ const Cart: React.FC<CartProps> = ({ cart, onRemove }) => {
 
 const getStyles = (palette: ThemePalette) => StyleSheet.create({
   cartContainer: {
+    flex: 1,
+    minHeight: 0,
     backgroundColor: palette.surface,
     paddingHorizontal: Spacing.lg,
+  },
+  cartList: {
+    flex: 1,
+    minHeight: 0,
   },
   cartItem: {
     flexDirection: 'row',
@@ -199,7 +207,9 @@ const getStyles = (palette: ThemePalette) => StyleSheet.create({
     justifyContent: 'center',
   },
   emptyState: {
+    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: Spacing.xxl,
     gap: Spacing.xs,
   },

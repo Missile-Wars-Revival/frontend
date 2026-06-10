@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Platform, ScrollView, Text, useColorScheme, Modal, TouchableOpacity } from "react-native";
+import { View, Platform, ScrollView, Text, useColorScheme, Modal, Pressable } from "react-native";
 import { Image } from "expo-image";
 import { Circle, Marker, Polyline } from "react-native-maps";
 import { GeoLocation, Missile } from "middle-earth";
@@ -207,12 +207,12 @@ export const MapMissile = (missileProps: MissileProps) => {
                         </View>
                     </View>
                 </ScrollView>
-                <TouchableOpacity
+                <Pressable
                     style={[styles.button, styles.buttonClose]}
                     onPress={() => setModalVisible(false)}
                 >
                     <Text style={styles.textStyle}>Close</Text>
-                </TouchableOpacity>
+                </Pressable>
             </View>
         );
     };

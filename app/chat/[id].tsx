@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, useColorScheme, KeyboardAvoidingView, Platform, SafeAreaView, Modal, Alert, Animated, Linking, Keyboard } from 'react-native';
+import { View, Text, FlatList, TextInput, Pressable, StyleSheet, useColorScheme, KeyboardAvoidingView, Platform, SafeAreaView, Modal, Alert, Animated, Linking, Keyboard } from 'react-native';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Ionicons from '@react-native-vector-icons/ionicons';
@@ -90,12 +90,12 @@ const LinkPreview = ({ data }: { data: LinkPreviewData }) => {
   };
 
   return (
-    <TouchableOpacity onPress={handlePress} style={[styles.linkPreview, { backgroundColor: `${getColor()}20` }]}>
+    <Pressable onPress={handlePress} style={[styles.linkPreview, { backgroundColor: `${getColor()}20` }]}>
       <Ionicons name={getIconName()} size={50} color={getColor()} />
       <Text style={[styles.linkPreviewText, { color: getColor() }]} numberOfLines={1} ellipsizeMode="tail">
         {data.url}
       </Text>
-    </TouchableOpacity>
+    </Pressable>
   );
 };
 
@@ -291,12 +291,12 @@ export default function ChatScreen() {
       ]}>
         <View style={styles.attachMenuHeader}>
           <Text style={[styles.attachMenuTitle, isDarkMode && styles.attachMenuTitleDark]}>Attach</Text>
-          <TouchableOpacity onPress={hideAttachMenu}>
+          <Pressable onPress={hideAttachMenu}>
             <Ionicons name="close" size={24} color={isDarkMode ? "#FFFFFF" : "#000000"} />
-          </TouchableOpacity>
+          </Pressable>
         </View>
         <View style={styles.attachMenuOptions}>
-          <TouchableOpacity style={styles.attachOption} onPress={() => {
+          <Pressable style={styles.attachOption} onPress={() => {
             hideAttachMenu();
             setShowInventoryMenu(true);
           }}>
@@ -304,8 +304,8 @@ export default function ChatScreen() {
               <Ionicons name="cube" size={30} color="#fff" />
             </View>
             <Text style={[styles.attachOptionText, isDarkMode && styles.attachOptionTextDark]}>Inventory Item</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.attachOption} onPress={() => {
+          </Pressable>
+          <Pressable style={styles.attachOption} onPress={() => {
             hideAttachMenu();
             pickImage();
           }}>
@@ -313,7 +313,7 @@ export default function ChatScreen() {
               <Ionicons name="image" size={30} color="#fff" />
             </View>
             <Text style={[styles.attachOptionText, isDarkMode && styles.attachOptionTextDark]}>Image</Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </Animated.View>
     );
@@ -473,7 +473,9 @@ export default function ChatScreen() {
           }
           Alert.alert('Success', 'Image saved to gallery!');
         } else {
-          throw new Error('Asset creation failed');
+          Alert.alert('Error', 'Failed to save the image.');
+          downloaded.delete();
+          return;
         }
 
         // Clean up the temporary file
@@ -537,7 +539,7 @@ export default function ChatScreen() {
           <LinkPreview key={index} data={preview} />
         ))}
         {item.imageUrl && (
-          <TouchableOpacity onPress={() => handleImagePress(item.imageUrl!)}>
+          <Pressable onPress={() => handleImagePress(item.imageUrl!)}>
             <Image
               source={{ uri: item.imageUrl }}
               style={styles.messageImage}
@@ -545,10 +547,10 @@ export default function ChatScreen() {
               cachePolicy="memory-disk"
               transition={200}
             />
-          </TouchableOpacity>
+          </Pressable>
         )}
         {item.inventoryItem && (
-          <TouchableOpacity
+          <Pressable
             style={styles.inventoryMessageItem}
             onPress={() => !isOwnMessage && item.inventoryItem && handleCollectItem({
               id: item.inventoryItem.id,
@@ -575,7 +577,7 @@ export default function ChatScreen() {
             {!isOwnMessage && (
               <Text style={styles.collectText}>Tap to collect</Text>
             )}
-          </TouchableOpacity>
+          </Pressable>
         )}
         {isOwnMessage && (
           <View style={styles.messageStatus}>
@@ -589,9 +591,9 @@ export default function ChatScreen() {
 
   const renderHeader = () => (
     <View style={[styles.header, isDarkMode && styles.headerDark]}>
-      <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+      <Pressable onPress={() => router.back()} style={styles.backButton}>
         <Ionicons name="arrow-back" size={24} color={isDarkMode ? "#FFFFFF" : "#000000"} />
-      </TouchableOpacity>
+      </Pressable>
       <Text style={[styles.headerTitle, isDarkMode && styles.headerTitleDark]}>
         {otherParticipant || 'Chat'}
       </Text>
@@ -656,24 +658,24 @@ export default function ChatScreen() {
                 {selectedInventoryItem.quantity} left in inventory
               </Text>
               <View style={styles.quantityControls}>
-                <TouchableOpacity
+                <Pressable
                   style={[styles.quantityButton, isDarkMode && styles.quantityButtonDark]}
                   onPress={() => setItemQuantity(Math.max(1, itemQuantity - 1))}
                 >
                   <Ionicons name="remove" size={18} color={isDarkMode ? "#FFF" : "#000"} />
-                </TouchableOpacity>
+                </Pressable>
                 <Text style={[styles.quantityText, isDarkMode && styles.quantityTextDark]}>
                   Send: {itemQuantity}
                 </Text>
-                <TouchableOpacity
+                <Pressable
                   style={[styles.quantityButton, isDarkMode && styles.quantityButtonDark]}
                   onPress={() => setItemQuantity(Math.min(selectedInventoryItem.quantity, itemQuantity + 1))}
                 >
                   <Ionicons name="add" size={18} color={isDarkMode ? "#FFF" : "#000"} />
-                </TouchableOpacity>
+                </Pressable>
               </View>
             </View>
-            <TouchableOpacity
+            <Pressable
               style={styles.removeSelectedItem}
               onPress={() => {
                 setSelectedInventoryItem(null);
@@ -681,7 +683,7 @@ export default function ChatScreen() {
               }}
             >
               <Ionicons name="close-circle" size={24} color="#FF3B30" />
-            </TouchableOpacity>
+            </Pressable>
           </View>
         )}
         {showInventoryMenu && (
@@ -689,7 +691,7 @@ export default function ChatScreen() {
             <FlatList
               data={inventory.filter(item => item.quantity > 0)}
               renderItem={({ item }) => (
-                <TouchableOpacity
+                <Pressable
                   onPress={() => handleSelectInventoryItem(item)}
                   style={[styles.inventoryItem, isDarkMode && styles.inventoryItemDark]}
                   disabled={item.quantity === 0}
@@ -704,7 +706,7 @@ export default function ChatScreen() {
                   <Text style={[styles.inventoryItemQuantity, isDarkMode && styles.inventoryItemQuantityDark]}>
                     {item.quantity} left
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               )}
               keyExtractor={(item) => item.id}
               horizontal
@@ -722,9 +724,9 @@ export default function ChatScreen() {
               cachePolicy="memory-disk"
             />
           )}
-          <TouchableOpacity onPress={handleAttachPress} style={styles.attachButton}>
+          <Pressable onPress={handleAttachPress} style={styles.attachButton}>
             <Ionicons name="attach" size={24} color={isDarkMode ? "#B0B0B0" : "#4a5568"} />
-          </TouchableOpacity>
+          </Pressable>
           <TextInput
             style={[
               styles.input,
@@ -740,9 +742,9 @@ export default function ChatScreen() {
               setInputHeight(event.nativeEvent.contentSize.height)
             }
           />
-          <TouchableOpacity onPress={handleSendMessage} style={styles.sendButton} disabled={isUploading}>
+          <Pressable onPress={handleSendMessage} style={styles.sendButton} disabled={isUploading}>
             <Ionicons name="send" size={24} color={isUploading ? "#B0B0B0" : (isDarkMode ? "#B0B0B0" : "#4a5568")} />
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </KeyboardAvoidingView>
 
@@ -754,12 +756,12 @@ export default function ChatScreen() {
             contentFit="contain"
             cachePolicy="memory-disk"
           />
-          <TouchableOpacity style={styles.closeButton} onPress={() => setFullScreenImage(null)}>
+          <Pressable style={styles.closeButton} onPress={() => setFullScreenImage(null)}>
             <Ionicons name="close" size={30} color="#FFFFFF" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.saveButton} onPress={handleSaveImage}>
+          </Pressable>
+          <Pressable style={styles.saveButton} onPress={handleSaveImage}>
             <Ionicons name="download" size={30} color="#FFFFFF" />
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </Modal>
       {imageUploadProgress > 0 && (

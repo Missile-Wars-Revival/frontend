@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, useColorScheme, Alert } from 'react-native';
+import { View, Text, FlatList, Pressable, StyleSheet, SafeAreaView, useColorScheme, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import Ionicons from '@react-native-vector-icons/ionicons';
@@ -12,7 +12,7 @@ const DEFAULT_IMAGE = require('../assets/mapassets/Female_Avatar_PNG.png');
 
 const FriendItem = React.memo(function FriendItem({ item, onPress, isDarkMode }: { item: Friend; onPress: (username: string) => void; isDarkMode: boolean }) {
   return (
-    <TouchableOpacity
+    <Pressable
       style={[styles.friendItem, isDarkMode && styles.friendItemDark]}
       onPress={() => onPress(item.username)}
       accessibilityLabel={`Start chat with ${item.username}`}
@@ -28,7 +28,7 @@ const FriendItem = React.memo(function FriendItem({ item, onPress, isDarkMode }:
         <Text style={[styles.friendName, isDarkMode && styles.friendNameDark]}>{item.username}</Text>
       </View>
       <Ionicons name="chevron-forward" size={24} color={isDarkMode ? "#8E8E93" : "#C7C7CC"} />
-    </TouchableOpacity>
+    </Pressable>
   );
 });
 
@@ -162,9 +162,9 @@ const FriendsList = () => {
   return (
     <SafeAreaView style={[styles.container, isDarkMode && styles.containerDark]}>
       <View style={[styles.header, isDarkMode && styles.headerDark]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <Pressable onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
+        </Pressable>
         <Text style={[styles.headerText, isDarkMode && styles.headerTextDark]}>Select a Friend</Text>
       </View>
       <FlatList

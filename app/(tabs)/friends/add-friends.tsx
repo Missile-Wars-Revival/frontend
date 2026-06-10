@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Text, View, FlatList, Alert, RefreshControl, TextInput, Keyboard, TouchableWithoutFeedback, useColorScheme, StyleSheet, ActivityIndicator } from "react-native";
+import { Text, View, FlatList, Alert, RefreshControl, TextInput, Keyboard, Pressable, useColorScheme, StyleSheet, ActivityIndicator } from "react-native";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
@@ -209,7 +209,7 @@ const QuickAddPage: React.FC = () => {
   };
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+    <Pressable onPress={Keyboard.dismiss} style={{ flex: 1 }}>
       <View style={[styles.container, { backgroundColor: c.bg }]}>
         <LinearGradient
           colors={isDarkMode ? ['#241B45', '#15172B'] : Gradients.brand}
@@ -305,7 +305,7 @@ const QuickAddPage: React.FC = () => {
           />
         )}
       </View>
-    </TouchableWithoutFeedback>
+    </Pressable>
   );
 };
 

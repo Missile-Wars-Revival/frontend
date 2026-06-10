@@ -1,7 +1,8 @@
 /**
- * Shared design tokens for the redesigned Friends / Notifications / Profile
- * surfaces. Provides a light/dark palette, spacing scale, radii, and a few
- * reusable gradient definitions so screens stay visually consistent.
+ * Shared design tokens for the redesigned surfaces (Friends / Notifications /
+ * Profile / Store / map overlays). Provides a light/dark palette, semantic
+ * status colours, a typography scale, spacing, radii, and reusable gradient
+ * definitions so screens stay visually consistent.
  */
 
 export type ThemePalette = {
@@ -21,8 +22,26 @@ export type ThemePalette = {
   textFaint: string;
   /** Brand accent (used for highlights, active states). */
   accent: string;
+  /** Translucent accent tint (chips, icon wells, selected rows). */
+  accentSoft: string;
+  /** Positive state (success, online, alive). */
+  success: string;
+  /** Translucent success tint. */
+  successSoft: string;
+  /** Caution state (warnings, pending). */
+  warning: string;
+  /** Translucent warning tint. */
+  warningSoft: string;
+  /** Destructive state (errors, remove, fire). */
+  danger: string;
+  /** Translucent danger tint. */
+  dangerSoft: string;
+  /** Coin / premium gold. */
+  gold: string;
   /** Translucent tint used behind glass/blur surfaces. */
   glass: string;
+  /** Dimmed backdrop behind modals and popups. */
+  overlay: string;
 };
 
 export const Palette: { light: ThemePalette; dark: ThemePalette } = {
@@ -35,7 +54,16 @@ export const Palette: { light: ThemePalette; dark: ThemePalette } = {
     textMuted: '#5A6178',
     textFaint: '#9AA0B4',
     accent: '#5B5BF0',
+    accentSoft: 'rgba(91, 91, 240, 0.12)',
+    success: '#16A34A',
+    successSoft: 'rgba(34, 197, 94, 0.14)',
+    warning: '#D97706',
+    warningSoft: 'rgba(245, 158, 11, 0.16)',
+    danger: '#E11D48',
+    dangerSoft: 'rgba(225, 29, 72, 0.12)',
+    gold: '#D9930D',
     glass: 'rgba(255, 255, 255, 0.65)',
+    overlay: 'rgba(10, 12, 26, 0.55)',
   },
   dark: {
     bg: '#0E1020',
@@ -46,7 +74,16 @@ export const Palette: { light: ThemePalette; dark: ThemePalette } = {
     textMuted: '#A6ACC8',
     textFaint: '#6E7494',
     accent: '#8E8EFF',
+    accentSoft: 'rgba(142, 142, 255, 0.18)',
+    success: '#4ADE80',
+    successSoft: 'rgba(74, 222, 128, 0.16)',
+    warning: '#FBBF24',
+    warningSoft: 'rgba(251, 191, 36, 0.16)',
+    danger: '#FB7185',
+    dangerSoft: 'rgba(251, 113, 133, 0.16)',
+    gold: '#F7B733',
     glass: 'rgba(26, 29, 51, 0.6)',
+    overlay: 'rgba(4, 5, 14, 0.7)',
   },
 };
 
@@ -76,6 +113,27 @@ export const Radius = {
   pill: 999,
 };
 
+/**
+ * Typography scale. Spread into text styles so size/weight pairs stay
+ * consistent across screens, e.g. `{ ...Type.title, color: palette.text }`.
+ */
+export const Type = {
+  /** Screen titles. */
+  display: { fontSize: 30, fontWeight: '800', letterSpacing: -0.5 },
+  /** Section / modal titles. */
+  title: { fontSize: 20, fontWeight: '800' },
+  /** Card titles, prominent rows. */
+  headline: { fontSize: 16, fontWeight: '700' },
+  /** Default body copy. */
+  body: { fontSize: 14, fontWeight: '400', lineHeight: 20 },
+  /** Secondary copy, list metadata. */
+  caption: { fontSize: 13, fontWeight: '600' },
+  /** Smallest labels (badges, timestamps). */
+  micro: { fontSize: 11, fontWeight: '700' },
+  /** Button labels. */
+  button: { fontSize: 15, fontWeight: '800' },
+} as const;
+
 export const getPalette = (isDark: boolean): ThemePalette =>
   isDark ? Palette.dark : Palette.light;
 
@@ -86,4 +144,13 @@ export const cardShadow = (isDark: boolean) => ({
   shadowOpacity: isDark ? 0.35 : 0.12,
   shadowRadius: 16,
   elevation: 6,
+});
+
+/** Tighter shadow for small floating controls (FABs, pills). */
+export const chipShadow = (isDark: boolean) => ({
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 3 },
+  shadowOpacity: isDark ? 0.3 : 0.1,
+  shadowRadius: 6,
+  elevation: 3,
 });

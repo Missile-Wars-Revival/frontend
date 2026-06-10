@@ -68,7 +68,8 @@ export default function RootLayout() {
       }
 
       if (!apiKey) {
-        throw new Error('RevenueCat API key is not set'); // Error if API key is missing
+        console.error('RevenueCat API key is not set');
+        return;
       }
 
       await Purchases.configure({ apiKey }); // Configure Purchases
@@ -182,9 +183,8 @@ function OnboardingGate({ children }: { children: React.ReactNode }) {
       setNeedsOnboarding(value === null);
     } catch (error) {
       console.error('Error checking onboarding status:', error);
-    } finally {
-      setOnboardingChecked(true);
     }
+    setOnboardingChecked(true);
   }, []);
 
   useEffect(() => {

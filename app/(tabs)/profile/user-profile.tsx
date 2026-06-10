@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { SafeAreaView, StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert, useColorScheme, Platform, Dimensions, Modal, TouchableWithoutFeedback } from 'react-native';
+import { SafeAreaView, StyleSheet, Text, View, ScrollView, Pressable, Alert, useColorScheme, Platform, Dimensions, Modal } from 'react-native';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as SecureStore from "expo-secure-store";
@@ -140,7 +140,7 @@ const UserProfilePage: React.FC = () => {
     const badgeKey = Object.keys(badgeImages).find(key => badge.toLowerCase().includes(key.toLowerCase()));
     if (badgeKey) {
       return (
-        <TouchableOpacity 
+        <Pressable 
           key={badge} 
           style={styles.badge}
           onPress={() => setSelectedBadge(badge)}
@@ -150,7 +150,7 @@ const UserProfilePage: React.FC = () => {
             style={styles.badgeImage}
             contentFit="contain"
           />
-        </TouchableOpacity>
+        </Pressable>
       );
     }
     return null;
@@ -175,9 +175,9 @@ const UserProfilePage: React.FC = () => {
   return (
     <SafeAreaView style={[styles.container, isDarkMode && styles.containerDark]}>
       <View style={[styles.header, isDarkMode && styles.headerDark]}>
-        <TouchableOpacity onPress={() => router.back()}>
+        <Pressable onPress={() => router.back()}>
           <Text style={[styles.backButton, isDarkMode && styles.backButtonDark]}>← Back</Text>
-        </TouchableOpacity>
+        </Pressable>
         <Text style={[styles.headerText, isDarkMode && styles.headerTextDark]}>{userProfile.username}'s Profile</Text>
       </View>
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -188,9 +188,9 @@ const UserProfilePage: React.FC = () => {
           />
           <Text style={[styles.profileName, isDarkMode && styles.profileNameDark]}>{userProfile.username}</Text>
           {!isFriend && (
-            <TouchableOpacity style={styles.addFriendButton} onPress={handleAddFriend}>
+            <Pressable style={styles.addFriendButton} onPress={handleAddFriend}>
               <Text style={styles.addFriendButtonText}>Add Friend</Text>
-            </TouchableOpacity>
+            </Pressable>
           )}
           <View style={styles.rankPointsContainer}>
             <Text style={[styles.rankPoints, isDarkMode && styles.rankPointsDark]}>
@@ -229,13 +229,13 @@ const UserProfilePage: React.FC = () => {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.slider}>
             {userProfile.mutualFriends && userProfile.mutualFriends.length > 0 ? (
               userProfile.mutualFriends.map((friend, index) => (
-                <TouchableOpacity key={index} style={styles.sliderItem}>
+                <Pressable key={index} style={styles.sliderItem}>
                   <Image 
                     source={friendImages[friend] ? { uri: friendImages[friend] } : DEFAULT_IMAGE}
                     style={styles.friendImage} 
                   />
                   <Text style={[styles.friendName, isDarkMode && styles.friendNameDark]}>{friend}</Text>
-                </TouchableOpacity>
+                </Pressable>
               ))
             ) : (
               <Text style={[styles.text, isDarkMode && styles.textDark]}>No mutual friends</Text>
@@ -250,13 +250,13 @@ const UserProfilePage: React.FC = () => {
         animationType="fade"
         onRequestClose={() => setSelectedBadge(null)}
       >
-        <TouchableWithoutFeedback onPress={() => setSelectedBadge(null)}>
+        <Pressable onPress={() => setSelectedBadge(null)}>
           <View style={styles.modalOverlay}>
             <View style={[styles.modalContent, isDarkMode && styles.modalContentDark]}>
               <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>{selectedBadge}</Text>
             </View>
           </View>
-        </TouchableWithoutFeedback>
+        </Pressable>
       </Modal>
     </SafeAreaView>
   );

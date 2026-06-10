@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text, ScrollView, TouchableOpacity, SafeAreaView, useColorScheme, ImageSourcePropType, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, Text, ScrollView, Pressable, SafeAreaView, useColorScheme, ImageSourcePropType, ActivityIndicator } from 'react-native';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import Ionicons from '@react-native-vector-icons/ionicons';
@@ -83,9 +83,8 @@ const LeagueRankingPage: React.FC = () => {
         setTop100(top100WithImages);
       } catch (error) {
         console.error('Error fetching data:', error);
-      } finally {
-        setIsLoading(false);
       }
+      setIsLoading(false);
     };
 
     fetchData();
@@ -103,7 +102,7 @@ const LeagueRankingPage: React.FC = () => {
   };
 
   const renderPlayerRow = (player: Player, index: number) => (
-    <TouchableOpacity
+    <Pressable
       key={player.id}
       style={[styles.row, player.isCurrentUser && styles.currentUserRow]}
       onPress={() => navigateToProfile(player.username)}
@@ -121,7 +120,7 @@ const LeagueRankingPage: React.FC = () => {
         {player.username} {player.isCurrentUser && '(You)'}
       </Text>
       <Text style={styles.points}>{player.points} pts</Text>
-    </TouchableOpacity>
+    </Pressable>
   );
 
   if (isLoading) {
@@ -149,14 +148,14 @@ const LeagueRankingPage: React.FC = () => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerText}>Rankings</Text>
-        <TouchableOpacity onPress={toggleViewMode} style={styles.headerButton}>
+        <Pressable onPress={toggleViewMode} style={styles.headerButton}>
           <Ionicons 
             name={viewMode === 'players' ? 'trophy-outline' : 'people-outline'} 
             size={24} 
             color={scheme === 'dark' ? '#FFF' : '#FFF'} 
           />
           <Text style={styles.headerButtonText}>{viewMode === 'players' ? 'Leagues' : 'Players'}</Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
       <ScrollView style={styles.content}>
         {viewMode === 'leagues' ? (

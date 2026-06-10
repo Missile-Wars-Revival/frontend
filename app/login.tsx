@@ -106,7 +106,10 @@ export default function Auth() {
           AppleAuthentication.AppleAuthenticationScope.EMAIL,
         ],
       });
-      if (!credential.identityToken) throw new Error('No identity token');
+      if (!credential.identityToken) {
+        setError('Apple sign-in failed. Please try again.');
+        return;
+      }
       const derivedName = [credential.fullName?.givenName, credential.fullName?.familyName]
         .filter(Boolean).join(' ').trim();
       const user = await signInWithApple(credential.identityToken, derivedName);
@@ -122,7 +125,10 @@ export default function Auth() {
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       const info = await GoogleSignin.signIn();
       const idToken = info.data?.idToken;
-      if (!idToken) throw new Error('No ID token from Google');
+      if (!idToken) {
+        setError('Google sign-in failed. Please try again.');
+        return;
+      }
       const user = await signInWithGoogle(idToken);
       await finishOAuth(user.idToken, user.displayName);
     } catch (err: any) {

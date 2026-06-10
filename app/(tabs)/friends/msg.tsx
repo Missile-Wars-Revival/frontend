@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, useColorScheme, PanResponder, Animated, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, FlatList, Pressable, StyleSheet, SafeAreaView, useColorScheme, PanResponder, Animated } from 'react-native';
 import { Image } from 'expo-image';
 import { Link, useRouter, Stack , useFocusEffect } from 'expo-router';
 import Ionicons from '@react-native-vector-icons/ionicons';
@@ -252,16 +252,16 @@ const ConversationList = () => {
         ]}
         {...panResponder.panHandlers}
       >
-        <TouchableOpacity
+        <Pressable
           style={[styles.deleteButton, { right: -70 }]}
           onPress={() => deleteConversation(item.id)}
         >
           <Ionicons name="trash-bin" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-        <TouchableWithoutFeedback onPress={() => isOpenRefs.current[item.id] ? closeSwipe(item.id) : undefined}>
+        </Pressable>
+        <Pressable onPress={() => isOpenRefs.current[item.id] ? closeSwipe(item.id) : undefined}>
           <View>
             <Link href={{ pathname: '/chat/[id]', params: { id: item.id } }} asChild>
-              <TouchableOpacity 
+              <Pressable 
                 style={[
                   styles.conversationItem, 
                   isDarkMode && styles.conversationItemDark,
@@ -304,10 +304,10 @@ const ConversationList = () => {
                     <Text style={styles.unreadCount}>{item.unreadCount}</Text>
                   </View>
                 )}
-              </TouchableOpacity>
+              </Pressable>
             </Link>
           </View>
-        </TouchableWithoutFeedback>
+        </Pressable>
       </Animated.View>
     );
   }, [friends, isDarkMode, avatarUris, deleteConversation, closeSwipe, username]);
@@ -317,13 +317,13 @@ const ConversationList = () => {
       <Stack.Screen options={{ headerShown: false }} />
       <View style={[styles.header, isDarkMode && styles.headerDark]}>
         <Text style={[styles.headerText, isDarkMode && styles.headerTextDark]}>Messages</Text>
-        <TouchableOpacity 
+        <Pressable 
           style={styles.newMessageButton}
           onPress={() => router.push('/friendslist')}
           accessibilityLabel="Create new message"
         >
           <Ionicons name="create-outline" size={24} color={isDarkMode ? "#FFFFFF" : "#FFFFFF"} />
-        </TouchableOpacity>
+        </Pressable>
       </View>
       <FlatList
         data={sortedConversations}

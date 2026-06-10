@@ -24,7 +24,7 @@ import { androidColorblindMapStyle } from '../../map-themes/Android-themes/colou
 import { androidCyberpunkMapStyle } from '../../map-themes/Android-themes/cyberpunkstyle';
 import { androidRadarMapStyle } from '../../map-themes/Android-themes/radarMapStyle';
 import { triggerGameEffect } from '../effects/game-effects';
-import { gameHaptics } from '../../util/haptics';
+import { haptics } from '../ui/haptics';
 
 const GOOGLE_PLACES_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 
@@ -52,7 +52,6 @@ export const LootPlacementPopup: React.FC<LootPlacementPopupProps> = ({ visible,
   const [hasDbConnection, setDbConnection] = useState<boolean>(false);
   const [isAlive, setisAlive] = useState<boolean>(true);
   const [marker, setMarker] = useState<Region | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
   const [currentLocation, setCurrentLocation] = useState<Region | null>(null);
   const userName = useUserName();
   const mapRef = useRef<MapView>(null);
@@ -102,8 +101,6 @@ export const LootPlacementPopup: React.FC<LootPlacementPopupProps> = ({ visible,
   }, []);
 
   async function initializeLocation() {
-    setLoading(true);
-
     // First, try to load the last known location
     const lastKnownLocation = await loadLastKnownLocation();
     if (lastKnownLocation) {
@@ -117,7 +114,6 @@ export const LootPlacementPopup: React.FC<LootPlacementPopupProps> = ({ visible,
     if (status !== 'granted') {
       Alert.alert('Permission Denied', 'Location permission is required.');
       setIsLocationEnabled(false);
-      setLoading(false);
       return;
     }
 
@@ -142,8 +138,6 @@ export const LootPlacementPopup: React.FC<LootPlacementPopupProps> = ({ visible,
         setIsLocationEnabled(false);
       }
     }
-
-    setLoading(false);
   }
 
   useEffect(() => {
@@ -302,12 +296,15 @@ export const LootPlacementPopup: React.FC<LootPlacementPopupProps> = ({ visible,
             scrollEnabled={true}
             zoomEnabled={true}
             customMapStyle={currentMapStyle}
-            onPress={(e) => setMarker({
-              latitude: e.nativeEvent.coordinate.latitude,
-              longitude: e.nativeEvent.coordinate.longitude,
-              latitudeDelta: 0.001,
-              longitudeDelta: 0.001
-            })}
+            onPress={(e) => {
+              haptics.select();
+              setMarker({
+                latitude: e.nativeEvent.coordinate.latitude,
+                longitude: e.nativeEvent.coordinate.longitude,
+                latitudeDelta: 0.001,
+                longitudeDelta: 0.001
+              });
+            }}
           >
             {marker && (
               <Circle

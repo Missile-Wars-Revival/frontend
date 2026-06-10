@@ -25,7 +25,7 @@ import { androidColorblindMapStyle } from '../../map-themes/Android-themes/colou
 import { androidCyberpunkMapStyle } from '../../map-themes/Android-themes/cyberpunkstyle';
 import { androidRadarMapStyle } from '../../map-themes/Android-themes/radarMapStyle';
 import { triggerGameEffect } from '../effects/game-effects';
-import { gameHaptics } from '../../util/haptics';
+import { haptics } from '../ui/haptics';
 
 const GOOGLE_PLACES_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 
@@ -50,7 +50,6 @@ export const MissilePlacementPopup: React.FC<MissilePlacementPopupProps> = ({ vi
 
   const [region, setRegion] = useState<Region | null>(null);
   const [marker, setMarker] = useState<Region | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
   const [currentLocation, setCurrentLocation] = useState<Region | null>(null);
   const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(true);
   const [hasDbConnection, setDbConnection] = useState<boolean>(false);
@@ -104,8 +103,6 @@ export const MissilePlacementPopup: React.FC<MissilePlacementPopupProps> = ({ vi
 
   // Function to handle location permission and fetch current location
   async function initializeLocation() {
-    setLoading(true);
-
     // First, try to load the last known location
     const lastKnownLocation = await loadLastKnownLocation();
     if (lastKnownLocation) {
@@ -119,7 +116,6 @@ export const MissilePlacementPopup: React.FC<MissilePlacementPopupProps> = ({ vi
     if (status !== 'granted') {
       Alert.alert('Permission Denied', 'Location permission is required.');
       setIsLocationEnabled(false);
-      setLoading(false);
       return;
     }
 
@@ -144,8 +140,6 @@ export const MissilePlacementPopup: React.FC<MissilePlacementPopupProps> = ({ vi
         setIsLocationEnabled(false);
       }
     }
-
-    setLoading(false);
   }
 
   // Load last known location from cache or request current location on modal open
@@ -193,13 +187,13 @@ export const MissilePlacementPopup: React.FC<MissilePlacementPopupProps> = ({ vi
   // }
   const handleMissilePlacement = () => {
     if (!marker || !currentLocation) {
-      gameHaptics.warning();
+      haptics.warning();
       Alert.alert('Not Ready', 'Waiting for your location. Please try again in a moment.');
       return;
     }
 
     if (marker.latitude === currentLocation.latitude && marker.longitude === currentLocation.longitude) {
-      gameHaptics.warning();
+      haptics.warning();
       Alert.alert('Warning', 'Firing a Missile at your current location is not recommended! Move the target pin to a different location.');
       return;
     }
@@ -326,7 +320,7 @@ export const MissilePlacementPopup: React.FC<MissilePlacementPopupProps> = ({ vi
             scrollEnabled={true}
             zoomEnabled={true}
             onPress={(e) => {
-              gameHaptics.selection();
+              haptics.select();
               setMarker({
                 latitude: e.nativeEvent.coordinate.latitude,
                 longitude: e.nativeEvent.coordinate.longitude,

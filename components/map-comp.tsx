@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useMemo } from "react";
-import { View, Text, Switch, Alert, TouchableOpacity, useColorScheme } from "react-native";
+import React, { useEffect, useState, useMemo, useRef } from "react";
+import { View, Text, Switch, Alert, Pressable, useColorScheme } from "react-native";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Circle } from "react-native-maps";
 import { AllLootDrops } from "./Loot/map-loot";
@@ -212,9 +212,10 @@ export const MapComp = (props: MapCompProps) => {
         console.log("Mode changed to:", visibilitymode);
     };
 
+    const dispatchCounterRef = useRef(0);
+
     useEffect(() => {
         let isSubscribed = true;
-        let dispatchCounter = 0;
 
         const updateLocation = async () => {
             try {
@@ -227,9 +228,9 @@ export const MapComp = (props: MapCompProps) => {
 
                     // Dispatch location to backend every 5 seconds so missile/landmine
                     // endpoints can look up the user's current location from the DB.
-                    dispatchCounter++;
-                    if (dispatchCounter >= 5) {
-                        dispatchCounter = 0;
+                    dispatchCounterRef.current += 1;
+                    if (dispatchCounterRef.current >= 5) {
+                        dispatchCounterRef.current = 0;
                         const token = await SecureStore.getItemAsync('token');
                         if (token) {
                             dispatch(token, location.latitude, location.longitude).catch(
@@ -315,11 +316,11 @@ export const MapComp = (props: MapCompProps) => {
                     <AllMissiles missileData={missileData} />
                 </MapView>
             </View>
-            <TouchableOpacity
+            <Pressable
                 style={[mainmapstyles.relocateButton, { bottom: insets.bottom + 40 }]}
                 onPress={relocate}>
                 <FontAwesome name="location-arrow" size={24} color="#ffffff" />
-            </TouchableOpacity>
+            </Pressable>
             {(!isAlive) && (
                 <View style={mainmapstyles.overlay}>
                     <Text style={mainmapstyles.overlayText}>Map is disabled due to your death</Text>

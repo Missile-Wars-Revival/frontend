@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, FlatList, Text, Pressable, SafeAreaView, StyleSheet, useColorScheme, Animated, Modal, ActivityIndicator, Alert, ScrollView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Cart from '../../components/Store/cart';
@@ -19,6 +20,7 @@ import { getPalette, Gradients, Spacing, Radius, cardShadow, type ThemePalette }
 import { PressableScale } from '../../components/ui/PressableScale';
 import { AnimatedEntrance } from '../../components/ui/AnimatedEntrance';
 import { haptics } from '../../components/ui/haptics';
+import { triggerGameEffect } from '../../components/effects/game-effects';
 
 const DEV_OFFLINE_TOKEN = 'dev-offline-token';
 
@@ -54,7 +56,8 @@ const StorePage: React.FC = () => {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
   const palette = getPalette(isDarkMode);
-  const styles = getStyles(palette, isDarkMode);
+  const insets = useSafeAreaInsets();
+  const styles = getStyles(palette, isDarkMode, insets.bottom);
 
   useEffect(() => {
     const loadImages = async () => {
@@ -239,7 +242,8 @@ const StorePage: React.FC = () => {
 
   const addToCart = useCallback((product: Product) => {
     if (currencyAmount >= product.price) {
-      haptics.success();
+      // Coin-clink haptic + full-screen Skia coin burst.
+      triggerGameEffect('coinBurst');
       setCart((prevCart) => {
         const cartItem = prevCart.find((item) => item.product.id === product.id);
         let newCart;
@@ -550,8 +554,10 @@ const StorePage: React.FC = () => {
           if (!isPurchasing) {
             buyItem(item).then(result => {
               if (result.status === 'success') {
-                haptics.success();
-                Alert.alert('Success', result.message);
+                // Triumph haptic + full-screen Skia celebration; let the burst
+                // play before the alert covers the centre of the screen.
+                triggerGameEffect('purchaseSuccess');
+                setTimeout(() => Alert.alert('Success', result.message), 700);
               } else if (result.status !== 'user_cancelled') {
                 haptics.error();
                 Alert.alert('Purchase Failed', `${result.status}. ${result.error || ''}`);
@@ -591,7 +597,6 @@ const StorePage: React.FC = () => {
     <InventoryBottomSheet
       visible={isCartVisible}
       onClose={hideCart}
-      fitToContents
       backgroundColor={palette.surface}
     >
       <View style={styles.cartSheetContent}>
@@ -641,54 +646,57 @@ const StorePage: React.FC = () => {
         })}
       </View>
 
-      {!isPremiumStore ? (
-        <>
-          {renderCategoryChips()}
-          <FlatList
-            data={filteredWeapons}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={renderProductCard}
-            numColumns={2}
-            columnWrapperStyle={styles.columnWrapper}
-            contentContainerStyle={styles.listContent}
-            showsVerticalScrollIndicator={false}
-          />
-          {/* Cart bar */}
-          <PressableScale haptic="tap" onPress={handleShowCart} style={styles.cartBarWrap}>
-            <LinearGradient colors={Gradients.brand} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.cartBar}>
-              <View style={styles.cartBarLeft}>
-                <Ionicons name="cart" size={20} color="#FFFFFF" />
-                {cartCount > 0 && (
-                  <View style={styles.cartBadge}>
-                    <Text style={styles.cartBadgeText}>{cartCount}</Text>
-                  </View>
-                )}
-              </View>
-              <Text style={styles.cartBarText}>
-                {cartCount > 0 ? `View Cart  ·  🪙 ${cartTotal}` : 'View Cart'}
-              </Text>
-              <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.8)" />
-            </LinearGradient>
-          </PressableScale>
-        </>
-      ) : (
-        isLoadingPremium ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={palette.accent} />
-            <Text style={styles.loadingText}>Loading premium products...</Text>
-          </View>
+      <View style={styles.catalogBody}>
+        {!isPremiumStore ? (
+          <>
+            {renderCategoryChips()}
+            <FlatList
+              style={styles.catalogList}
+              data={filteredWeapons}
+              keyExtractor={(item) => item.id.toString()}
+              renderItem={renderProductCard}
+              numColumns={2}
+              columnWrapperStyle={styles.columnWrapper}
+              contentContainerStyle={styles.listContent}
+              showsVerticalScrollIndicator={false}
+            />
+            <PressableScale haptic="tap" onPress={handleShowCart} style={styles.cartBarWrap}>
+              <LinearGradient colors={Gradients.brand} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.cartBar}>
+                <View style={styles.cartBarLeft}>
+                  <Ionicons name="cart" size={20} color="#FFFFFF" />
+                  {cartCount > 0 && (
+                    <View style={styles.cartBadge}>
+                      <Text style={styles.cartBadgeText}>{cartCount}</Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={styles.cartBarText}>
+                  {cartCount > 0 ? `View Cart  ·  🪙 ${cartTotal}` : 'View Cart'}
+                </Text>
+                <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.8)" />
+              </LinearGradient>
+            </PressableScale>
+          </>
         ) : (
-          <FlatList
-            data={premiumProducts}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={renderPremiumCard}
-            numColumns={2}
-            columnWrapperStyle={styles.columnWrapper}
-            contentContainerStyle={styles.listContent}
-            showsVerticalScrollIndicator={false}
-          />
-        )
-      )}
+          isLoadingPremium ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={palette.accent} />
+              <Text style={styles.loadingText}>Loading premium products...</Text>
+            </View>
+          ) : (
+            <FlatList
+              style={styles.catalogList}
+              data={premiumProducts}
+              keyExtractor={(item) => item.id.toString()}
+              renderItem={renderPremiumCard}
+              numColumns={2}
+              columnWrapperStyle={styles.columnWrapper}
+              contentContainerStyle={styles.listContent}
+              showsVerticalScrollIndicator={false}
+            />
+          )
+        )}
+      </View>
 
       {renderCartSheet()}
 
@@ -724,7 +732,7 @@ const StorePage: React.FC = () => {
   );
 }
 
-const getStyles = (palette: ThemePalette, isDark: boolean) => StyleSheet.create({
+const getStyles = (palette: ThemePalette, isDark: boolean, bottomInset: number) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: palette.bg,
@@ -820,6 +828,14 @@ const getStyles = (palette: ThemePalette, isDark: boolean) => StyleSheet.create(
     paddingHorizontal: Spacing.lg,
     gap: Spacing.md,
   },
+  catalogBody: {
+    flex: 1,
+    minHeight: 0,
+  },
+  catalogList: {
+    flex: 1,
+    minHeight: 0,
+  },
   listContent: {
     paddingBottom: Spacing.md,
     gap: Spacing.md,
@@ -891,12 +907,14 @@ const getStyles = (palette: ThemePalette, isDark: boolean) => StyleSheet.create(
   },
   cartBarWrap: {
     marginHorizontal: Spacing.lg,
-    marginVertical: Spacing.sm,
+    marginTop: Spacing.sm,
+    marginBottom: Math.max(bottomInset, Spacing.sm),
   },
   cartBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    minHeight: 52,
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md + 2,
     borderRadius: Radius.lg,
@@ -938,8 +956,9 @@ const getStyles = (palette: ThemePalette, isDark: boolean) => StyleSheet.create(
     color: palette.textMuted,
   },
   cartSheetContent: {
+    flex: 1,
     backgroundColor: palette.surface,
-    paddingBottom: Spacing.md,
+    paddingBottom: Math.max(bottomInset, Spacing.md),
   },
   cartSheetHeader: {
     flexDirection: 'row',

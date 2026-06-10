@@ -22,6 +22,7 @@ import {
   ChevronRight, ExternalLink, Palette,
 } from 'lucide-react-native';
 import * as SecureStore from 'expo-secure-store';
+import * as Updates from 'expo-updates';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { changeEmail, changePassword, changeUsername, deleteAcc } from '../../../api/changedetails';
 import { updateFriendsOnlyStatus } from '../../../api/visibility';
@@ -113,13 +114,14 @@ const SettingsPage: React.FC = () => {
 
   const fetchLocActiveStatus = async () => {
     setIsLoading(true);
-    try {
-      setLocActive(await getlocActive());
-    } catch (e) {
+    const status = await getlocActive().catch((e) => {
       console.error('Failed to fetch locActive:', e);
-    } finally {
-      setIsLoading(false);
+      return undefined;
+    });
+    if (status !== undefined) {
+      setLocActive(status);
     }
+    setIsLoading(false);
   };
 
   const fetchRandomLocActiveStatus = async () => {
@@ -327,7 +329,7 @@ const SettingsPage: React.FC = () => {
             if (__DEV__) {
               DevSettings.reload();
             } else {
-              import('expo-updates').then(u => u.reloadAsync()).catch(console.error);
+              Updates.reloadAsync().catch(console.error);
             }
           }, 100);
         },

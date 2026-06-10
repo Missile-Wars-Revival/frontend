@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { StyleSheet, Text, View, Switch, Modal, ScrollView, FlatList, Alert, Dimensions, TouchableWithoutFeedback, AlertButton, Linking, TextInput, useColorScheme } from 'react-native';
+import { StyleSheet, Text, View, Switch, Modal, ScrollView, FlatList, Alert, Dimensions, Pressable, AlertButton, Linking, TextInput, useColorScheme } from 'react-native';
 import { router } from 'expo-router';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -610,7 +610,7 @@ const ProfilePage: React.FC = () => {
 
       {/* Badge detail modal */}
       <Modal visible={!!selectedBadge} transparent animationType="fade" onRequestClose={() => setSelectedBadge(null)}>
-        <TouchableWithoutFeedback onPress={() => setSelectedBadge(null)}>
+        <Pressable onPress={() => setSelectedBadge(null)}>
           <View style={styles.modalOverlay}>
             <AnimatedEntrance fromScale={0.9} style={[styles.badgeModal, { backgroundColor: c.surface }]}>
               {(() => {
@@ -620,7 +620,7 @@ const ProfilePage: React.FC = () => {
               <Text style={[styles.badgeModalText, { color: c.text }]}>{selectedBadge}</Text>
             </AnimatedEntrance>
           </View>
-        </TouchableWithoutFeedback>
+        </Pressable>
       </Modal>
     </View>
   );
