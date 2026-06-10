@@ -13,10 +13,7 @@ export interface InventoryBottomSheetProps {
    * Defaults to false to preserve the legacy fixed-height behavior.
    */
   fitToContents?: boolean;
-  /**
-   * Background colour for the native sheet chrome (drag-handle zone / container),
-   * so it matches the themed content card. Defaults to the platform system background.
-   */
+  /** Background colour for the sheet panel. Defaults to white. */
   backgroundColor?: ColorValue;
 }
 

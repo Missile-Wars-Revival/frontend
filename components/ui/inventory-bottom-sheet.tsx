@@ -1,13 +1,23 @@
 import React from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import {
+  Dimensions,
+  Modal,
+  Pressable,
+  StyleSheet,
+  View,
+  type ViewStyle,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SHEET_HEIGHT_FRACTION, type InventoryBottomSheetProps } from './inventory-bottom-sheet.types';
 
+const { height: WINDOW_HEIGHT } = Dimensions.get('window');
+const SHEET_HEIGHT = Math.round(WINDOW_HEIGHT * SHEET_HEIGHT_FRACTION);
+
 /**
- * Fallback implementation (web / non-iOS-or-Android) used when the native `@expo/ui`
- * sheets are unavailable. Renders a simple bottom-anchored React Native modal so the
- * library pickers keep working everywhere. Metro resolves `.ios.tsx` / `.android.tsx`
- * on device; TypeScript and web resolve to this file.
+ * Bottom sheet for inventory / store pickers. Uses a single React Native `Modal` on all
+ * platforms so presentation lines up with the placement `Modal`s (iOS serializes RN
+ * modals one at a time; native SwiftUI / Compose sheets fought that ordering).
  */
 export function InventoryBottomSheet({
   visible,
@@ -16,37 +26,67 @@ export function InventoryBottomSheet({
   fitToContents,
   backgroundColor,
 }: InventoryBottomSheetProps) {
+  const insets = useSafeAreaInsets();
+
+  const sheetStyle: ViewStyle[] = [
+    styles.sheet,
+    fitToContents ? styles.sheetFitToContents : styles.sheetFixed,
+    backgroundColor ? { backgroundColor } : null,
+    { paddingBottom: Math.max(insets.bottom, 8) },
+  ].filter(Boolean) as ViewStyle[];
+
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose} />
-      <View
-        style={[
-          styles.sheet,
-          fitToContents ? styles.sheetFitToContents : styles.sheetFixed,
-          backgroundColor ? { backgroundColor } : null,
-        ]}>
-        {children}
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+      statusBarTranslucent
+    >
+      <View style={styles.overlay}>
+        <Pressable style={styles.backdrop} onPress={onClose} accessibilityRole="button" accessibilityLabel="Close" />
+        <View style={sheetStyle}>
+          <View style={styles.handle} />
+          <View style={styles.content}>{children}</View>
+        </View>
       </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.5)' },
+  overlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
   sheet: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: `${Math.round(SHEET_HEIGHT_FRACTION * 100)}%`,
+    width: '100%',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
   },
   sheetFixed: {
-    height: `${Math.round(SHEET_HEIGHT_FRACTION * 100)}%`,
+    height: SHEET_HEIGHT,
   },
   sheetFitToContents: {
-    maxHeight: `${Math.round(SHEET_HEIGHT_FRACTION * 100)}%`,
+    maxHeight: SHEET_HEIGHT,
+  },
+  handle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(0, 0, 0, 0.18)',
+    alignSelf: 'center',
+    marginTop: 10,
+    marginBottom: 6,
+  },
+  content: {
+    flex: 1,
+    minHeight: 0,
   },
 });

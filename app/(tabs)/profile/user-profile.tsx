@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { SafeAreaView, StyleSheet, Text, View, ScrollView, Pressable, Alert, useColorScheme, Platform, Dimensions, Modal } from 'react-native';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -53,32 +53,25 @@ const UserProfilePage: React.FC = () => {
   const [friendImages, setFriendImages] = useState<{ [key: string]: string }>({});
   const router = useRouter();
   const friends = useFetchFriends();
-  const [isFriend, setIsFriend] = useState(false);
   const [selectedBadge, setSelectedBadge] = useState<string | null>(null);
+  const [addedAsFriend, setAddedAsFriend] = useState(false);
 
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
 
+  const isFriend = useMemo(
+    () =>
+      addedAsFriend ||
+      Boolean(username && friends.some((friend) => friend.username === username)),
+    [addedAsFriend, username, friends],
+  );
+
   useEffect(() => {
-    if (username) {
-      fetchUserProfile();
-      loadProfileImage();
-    }
+    setAddedAsFriend(false);
   }, [username]);
 
-  useEffect(() => {
-    if (userProfile && userProfile.mutualFriends) {
-      loadFriendImages();
-    }
-  }, [userProfile]);
-
-  useEffect(() => {
-    if (username && friends) {
-      setIsFriend(friends.some(friend => friend.username === username));
-    }
-  }, [username, friends]);
-
-  const fetchUserProfile = async () => {
+  const fetchUserProfile = useCallback(async () => {
+    if (!username) return;
     try {
       const response = await getuserprofile(username) as ApiResponse;
       if (response.success && response.userProfile) {
@@ -89,24 +82,33 @@ const UserProfilePage: React.FC = () => {
     } catch (error) {
       console.error('Failed to fetch user profile', error);
     }
-  };
+  }, [username]);
 
-  const loadProfileImage = async () => {
-    if (username) {
-      const imageUrl = await fetchAndCacheImage(username);
-      setUserImageUrl(imageUrl);
-    }
-  };
+  const loadProfileImage = useCallback(async () => {
+    if (!username) return;
+    const imageUrl = await fetchAndCacheImage(username);
+    setUserImageUrl(imageUrl);
+  }, [username]);
 
-  const loadFriendImages = async () => {
-    if (userProfile && userProfile.mutualFriends) {
-      const images: { [key: string]: string } = {};
-      for (const friend of userProfile.mutualFriends) {
-        images[friend] = await fetchAndCacheImage(friend);
-      }
-      setFriendImages(images);
+  const loadFriendImages = useCallback(async () => {
+    if (!userProfile?.mutualFriends?.length) return;
+    const images: { [key: string]: string } = {};
+    for (const friend of userProfile.mutualFriends) {
+      images[friend] = await fetchAndCacheImage(friend);
     }
-  };
+    setFriendImages(images);
+  }, [userProfile]);
+
+  useEffect(() => {
+    if (!username) return;
+    fetchUserProfile();
+    loadProfileImage();
+  }, [username, fetchUserProfile, loadProfileImage]);
+
+  useEffect(() => {
+    if (!userProfile?.mutualFriends?.length) return;
+    loadFriendImages();
+  }, [userProfile, loadFriendImages]);
 
   const handleAddFriend = async () => {
     const token = await SecureStore.getItemAsync("token");
@@ -122,8 +124,7 @@ const UserProfilePage: React.FC = () => {
       const result = await addFriend(token, userProfile.username);
       // Assuming successful addition if no errors thrown and possibly checking a status or message
       if (result.message === "Friend added successfully") {
-        // Update UI state to reflect the new friend status
-        setIsFriend(true);
+        setAddedAsFriend(true);
         Alert.alert("Success", "Friend added successfully!");
       } else {
         // Handle any other messages or default case

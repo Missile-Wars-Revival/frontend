@@ -9,12 +9,12 @@ export default function TabLayout() {
   const { isSignedIn } = useAuth();
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
+  const { unreadCount, unreadChatCount } = useNotifications();
+  const totalUnread = unreadCount + unreadChatCount;
 
   if (!isSignedIn) {
     return <Redirect href="/login" />;
   }
-  const { unreadCount, unreadChatCount } = useNotifications();
-  const totalUnread = unreadCount + unreadChatCount;
 
   return (
     <NativeTabs tintColor={isDarkMode ? '#4CAF50' : '#0000FF'}>
