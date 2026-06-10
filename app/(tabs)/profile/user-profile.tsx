@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { SafeAreaView, StyleSheet, Text, View, Image, ScrollView, TouchableOpacity, Alert, useColorScheme, Platform, Dimensions, Modal, TouchableWithoutFeedback } from 'react-native';
+import { SafeAreaView, StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert, useColorScheme, Platform, Dimensions, Modal, TouchableWithoutFeedback } from 'react-native';
+import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as SecureStore from "expo-secure-store";
 import { getuserprofile } from '../../../api/getprofile';
@@ -144,9 +145,10 @@ const UserProfilePage: React.FC = () => {
           style={styles.badge}
           onPress={() => setSelectedBadge(badge)}
         >
-          <Image 
-            source={badgeImages[badgeKey as keyof typeof badgeImages]} 
-            style={styles.badgeImage} 
+          <Image
+            source={badgeImages[badgeKey as keyof typeof badgeImages]}
+            style={styles.badgeImage}
+            contentFit="contain"
           />
         </TouchableOpacity>
       );
@@ -181,7 +183,7 @@ const UserProfilePage: React.FC = () => {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={[styles.profileContainer, isDarkMode && styles.profileContainerDark]}>
           <Image
-            source={{ uri: userImageUrl || Image.resolveAssetSource(DEFAULT_IMAGE).uri }}
+            source={userImageUrl ? { uri: userImageUrl } : DEFAULT_IMAGE}
             style={styles.profileImage}
           />
           <Text style={[styles.profileName, isDarkMode && styles.profileNameDark]}>{userProfile.username}</Text>
@@ -229,7 +231,7 @@ const UserProfilePage: React.FC = () => {
               userProfile.mutualFriends.map((friend, index) => (
                 <TouchableOpacity key={index} style={styles.sliderItem}>
                   <Image 
-                    source={{ uri: friendImages[friend] || Image.resolveAssetSource(DEFAULT_IMAGE).uri }} 
+                    source={friendImages[friend] ? { uri: friendImages[friend] } : DEFAULT_IMAGE}
                     style={styles.friendImage} 
                   />
                   <Text style={[styles.friendName, isDarkMode && styles.friendNameDark]}>{friend}</Text>

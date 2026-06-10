@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, FlatList, Text, TouchableOpacity, ImageBackground, SafeAreaView, StyleSheet, useColorScheme, Animated, Modal, ActivityIndicator, Alert, ScrollView } from 'react-native';
-import { Image } from 'expo-image';
+import { View, FlatList, Text, TouchableOpacity, SafeAreaView, StyleSheet, useColorScheme, Animated, Modal, ActivityIndicator, Alert, ScrollView } from 'react-native';
+import { Image, ImageBackground } from 'expo-image';
 import Cart from '../../components/Store/cart';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axiosInstance from '../../api/axios-instance';

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { View, Image } from "react-native";
+import { View } from "react-native";
+import { Image } from "expo-image";
 import { Marker, Circle } from "react-native-maps";
 import { GeoLocation, Loot } from "middle-earth";
 import { convertimestampfuture } from "../../util/get-time-difference";

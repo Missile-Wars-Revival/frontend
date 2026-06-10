@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Image, StyleSheet, useColorScheme } from 'react-native';
+import { View, StyleSheet, useColorScheme } from 'react-native';
+import { Image } from 'expo-image';
 import { getImages } from '../../api/store';
 import { EaseView, type Transition } from 'react-native-ease';
 import { Presets } from 'react-native-pulsar';
@@ -96,7 +97,8 @@ const ItemCollectAnimation: React.FC<ItemCollectAnimationProps> = ({ itemName, o
         >
           <Image
             source={getImageForProduct(itemName)}
-            style={{ width: '100%', height: '100%', resizeMode: 'contain' }}
+            style={{ width: '100%', height: '100%' }}
+            contentFit="contain"
           />
         </EaseView>
 

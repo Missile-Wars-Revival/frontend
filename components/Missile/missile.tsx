@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Missilelib , InventoryItem } from "../../types/types";
-import { Text, View, TouchableOpacity, Image, Dimensions, Modal, ScrollView, StyleSheet, useColorScheme } from "react-native";
+import { Text, View, TouchableOpacity, Dimensions, Modal, ScrollView, StyleSheet, useColorScheme } from "react-native";
+import { Image } from "expo-image";
 import { MissilePlacementPopup } from './missileplacement';
 import { firemissileplayer } from "../../api/fireentities";
 import useFetchInventory from "../../hooks/websockets/inventoryhook";

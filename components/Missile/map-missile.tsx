@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { View, Image, Platform, ScrollView, Text, useColorScheme, Modal, TouchableOpacity } from "react-native";
+import { View, Platform, ScrollView, Text, useColorScheme, Modal, TouchableOpacity } from "react-native";
+import { Image } from "expo-image";
 import { Circle, Marker, Polyline } from "react-native-maps";
 import { GeoLocation, Missile } from "middle-earth";
 import { convertimestampfuturemissile } from "../../util/get-time-difference";

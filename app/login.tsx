@@ -1,8 +1,9 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
-  Image, StyleSheet, Dimensions, Alert, Text, Pressable, View, useColorScheme, Platform,
+  StyleSheet, Dimensions, Alert, Text, Pressable, View, useColorScheme, Platform,
   TextInput as NativeTextInput,
 } from 'react-native';
+import { Image } from 'expo-image';
 import Svg, { Path } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';

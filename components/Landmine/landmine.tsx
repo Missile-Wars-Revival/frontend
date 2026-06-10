@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, TouchableOpacity, FlatList, Text, Image , useColorScheme } from 'react-native';
+import { View, TouchableOpacity, FlatList, Text, useColorScheme } from 'react-native';
+import { Image } from 'expo-image';
 import { LandminePlacementPopup } from './landmineplacement';
 import { InventoryBottomSheet } from '../ui/inventory-bottom-sheet';
 import { InventoryItem } from '../../types/types';

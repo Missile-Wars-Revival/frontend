@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, TouchableOpacity, Text, Modal, StyleSheet, Image, Alert, useColorScheme } from 'react-native';
+import { View, TouchableOpacity, Text, Modal, StyleSheet, Alert, useColorScheme } from 'react-native';
+import { Image } from 'expo-image';
 import * as AlternateAppIcon from 'expo-alternate-app-icons';
 
 const iconOptions = [

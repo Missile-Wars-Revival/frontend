@@ -11,9 +11,9 @@ import {
   Animated,
   PanResponder,
   Linking,
-  Image,
   ScrollView,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';

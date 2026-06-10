@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { View, Text, StyleSheet, Image, Animated, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, Animated, useWindowDimensions } from 'react-native';
+import { Image } from 'expo-image';
 import { Canvas, Path, Skia, Group, Circle, Rect } from '@shopify/react-native-skia';
 import { useSharedValue, withRepeat, withTiming, useDerivedValue, Easing } from 'react-native-reanimated';
 import * as SecureStore from 'expo-secure-store';
@@ -174,7 +175,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
       </Canvas>
 
       <Animated.View style={[styles.bannerContainer, { opacity: fadeAnim }]}>
-        <Image source={require('../assets/icons/MissleWarsTitle.png')} style={styles.banner} />
+        <Image source={require('../assets/icons/MissleWarsTitle.png')} style={styles.banner} contentFit="contain" />
       </Animated.View>
 
       <Text style={styles.text}>{loadingText}</Text>

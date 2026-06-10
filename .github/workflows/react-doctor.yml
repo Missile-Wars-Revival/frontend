@@ -46,8 +46,9 @@ jobs:
       - uses: millionco/react-doctor@v1
         # Common configuration knobs — uncomment any to override the default.
         # Full reference: https://www.react.doctor/ci
-        # with:
-        #   non-blocking: true       # Report findings but always exit 0 (won't fail the PR check)
+        with:
+          non-blocking: true       # Report findings but always exit 0 (won't fail the PR check)
+        # more knobs:
         #   fail-on: warning         # Gate level: "error" (default) | "warning" | "none"
         #   comment: false           # Disable the sticky PR summary comment
         #   annotations: false       # Disable inline GitHub Actions annotations on changed files

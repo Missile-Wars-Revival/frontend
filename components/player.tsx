@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { View, Image, Text, Modal, Dimensions, StyleSheet, TouchableOpacity, useColorScheme } from "react-native";
+import { View, Text, Modal, Dimensions, StyleSheet, TouchableOpacity, useColorScheme } from "react-native";
+import { Image } from "expo-image";
 import { Circle, Marker } from "react-native-maps";
 import { MissileLibrary } from "./Missile/missile";
 import { Players } from "./map-players";
