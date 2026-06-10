@@ -48,6 +48,10 @@ REST calls live in `api/` — one file per domain, all using `api/axios-instance
 
 Expo Router file-based routes in `app/`. `(tabs)/_layout.tsx` uses **`expo-router/unstable-native-tabs`** (NativeTabs) with five tabs: index (map), store, league, friends, profile. Non-tab routes: `login`, `chat/[id]`, `friendslist`, `PermissionsScreen`, `splashscreen`.
 
+### Modal / bottom-sheet sequencing
+
+The fire/placement flows stack three layers: the "Select Action" RN `Modal` (`fire-type-popup.tsx`) → a **native** bottom sheet (`components/ui/inventory-bottom-sheet.*` — SwiftUI sheet on iOS, Compose ModalBottomSheet on Android) → a placement RN `Modal` with a map. iOS runs only one modal transition at a time, so presentations/dismissals must be serialized: trigger the next open/close from the previous modal's `onDismiss` on iOS (immediately on Android), never flip two modal `visible` states in the same tick. Placement popups must stay mounted (toggle `visible`, don't conditionally unmount) because unmounting an open RN Modal on iOS skips `onDismiss`. Never render an RN `Modal` inside the bottom sheet's children — the Android sheet unmounts its content on close and the iOS sheet can't reliably present from hosted views; hoist popups to the sheet's sibling level (see `MissileLibraryView` in `missile-confirmation-popup.tsx`).
+
 ### Map entities
 
 `app/(tabs)/index.tsx` hosts the map (`components/map-comp.tsx`, react-native-maps with Google provider). Each entity type follows the same pattern in `components/<Entity>/`: `map-<entity>.tsx` (renders markers from the websocket hook), `<entity>.tsx` (entity UI), `<entity>placement.tsx` (firing/placing flow). Map visual themes live in `map-themes/` (Android JSON styles; iOS handled separately).

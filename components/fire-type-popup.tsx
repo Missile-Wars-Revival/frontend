@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Modal, View, Text, TouchableOpacity, StyleSheet, useColorScheme, Dimensions, Animated } from "react-native";
+import { Modal, View, Text, Pressable, StyleSheet, useColorScheme, Dimensions, Animated, Platform } from "react-native";
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { useOnboarding } from '../util/Context/onboardingContext';
 
@@ -29,18 +29,16 @@ export const FireType = (props: FireTypeProps) => {
     setFirePopupVisible(false);
   };
 
-  const selectFiretype = (style: string) => {
-    // Always close this selector before opening another sheet.
-    // This avoids stale visibility state after swipe-dismiss or navigation.
-    FireclosePopup();
+  const pendingActionRef = useRef<string | null>(null);
 
-    // Trigger the handler to open the next modal
+  const runPendingAction = () => {
+    const style = pendingActionRef.current;
+    pendingActionRef.current = null;
+    if (!style) return;
+
     switch (style) {
       case "firelandmine":
         props.landmineFireHandler();
-        if (currentStep === 'fire_landmine') {
-          moveToNextStep();
-        }
         break;
       case "firemissile":
         props.missileFireHandler();
@@ -56,19 +54,39 @@ export const FireType = (props: FireTypeProps) => {
     }
   };
 
+  const selectFiretype = (style: string) => {
+    if (style === "firelandmine" && currentStep === 'fire_landmine') {
+      moveToNextStep();
+    }
+
+    // Always close this selector before opening another sheet.
+    // This avoids stale visibility state after swipe-dismiss or navigation.
+    pendingActionRef.current = style;
+    FireclosePopup();
+
+    // iOS can only run one modal transition at a time: presenting the native
+    // bottom sheet while this modal is still dismissing silently fails, so the
+    // action is deferred to the modal's onDismiss. Android windows don't
+    // conflict, so open the next sheet immediately.
+    if (Platform.OS !== 'ios') {
+      runPendingAction();
+    }
+  };
+
   return (
     <View>
-      <TouchableOpacity
+      <Pressable
         style={[styles.fireButton, isDarkMode && styles.fireButtonDark]}
         onPress={FireshowPopup}
       >
         <Ionicons name="flame" size={24} color={isDarkMode ? "#FFF" : "#000"} />
-      </TouchableOpacity>
+      </Pressable>
 
       <FireTypeStyle
         visible={FirepopupVisible}
         transparent={true}
         onClose={FireclosePopup}
+        onDismissed={runPendingAction}
         onSelect={selectFiretype}
         isDarkMode={isDarkMode}
       />
@@ -80,6 +98,7 @@ interface MapStylePopupProps {
   visible: boolean;
   transparent: boolean;
   onClose: () => void;
+  onDismissed?: () => void;
   onSelect: (style: string) => void;
   isDarkMode: boolean;
 }
@@ -88,6 +107,7 @@ export const FireTypeStyle = ({
   visible,
   transparent,
   onClose,
+  onDismissed,
   onSelect,
   isDarkMode,
 }: MapStylePopupProps) => {
@@ -122,10 +142,10 @@ export const FireTypeStyle = ({
       transparent={transparent}
       visible={visible}
       onRequestClose={onClose}
+      onDismiss={onDismissed}
     >
-      <TouchableOpacity
+      <Pressable
         style={[styles.modalOverlay, isDarkMode && styles.modalOverlayDark]}
-        activeOpacity={1}
         onPress={onClose}
       >
         <Animated.View
@@ -136,13 +156,12 @@ export const FireTypeStyle = ({
             }
           ]}
         >
-          <TouchableOpacity
-            activeOpacity={1}
+          <Pressable
             onPress={(e) => e.stopPropagation()}
             style={[styles.modalContent, isDarkMode && styles.modalContentDark]}
           >
             <Text style={[styles.modalTitle, isDarkMode && styles.modalTitleDark]}>Select Action</Text>
-            <TouchableOpacity
+            <Pressable
               onPress={() => handleActionPress("firelandmine")}
               style={[styles.actionButton, isDarkMode && styles.actionButtonDark]}
             >
@@ -150,8 +169,8 @@ export const FireTypeStyle = ({
                 <Ionicons name="radio-button-on" size={24} color={isDarkMode ? "#FFF" : "#000"} />
               </View>
               <Text style={[styles.actionText, isDarkMode && styles.actionTextDark]}>Place Landmine</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
+            </Pressable>
+            <Pressable
               onPress={() => handleActionPress("firemissile")}
               style={[styles.actionButton, isDarkMode && styles.actionButtonDark]}
             >
@@ -159,8 +178,8 @@ export const FireTypeStyle = ({
                 <Ionicons name="rocket" size={24} color={isDarkMode ? "#FFF" : "#000"} />
               </View>
               <Text style={[styles.actionText, isDarkMode && styles.actionTextDark]}>Fire Missile</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
+            </Pressable>
+            <Pressable
               onPress={() => handleActionPress("lootdrop")}
               style={[styles.actionButton, isDarkMode && styles.actionButtonDark]}
             >
@@ -168,8 +187,8 @@ export const FireTypeStyle = ({
                 <Ionicons name="gift" size={24} color={isDarkMode ? "#FFF" : "#000"} />
               </View>
               <Text style={[styles.actionText, isDarkMode && styles.actionTextDark]}>Request Loot Drop</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
+            </Pressable>
+            <Pressable
               onPress={() => handleActionPress("other")}
               style={[styles.actionButton, isDarkMode && styles.actionButtonDark]}
             >
@@ -177,10 +196,10 @@ export const FireTypeStyle = ({
                 <Ionicons name="sparkles-outline" size={24} color={isDarkMode ? "#FFF" : "#000"} />
               </View>
               <Text style={[styles.actionText, isDarkMode && styles.actionTextDark]}>Place Special Items</Text>
-            </TouchableOpacity>
-          </TouchableOpacity>
+            </Pressable>
+          </Pressable>
         </Animated.View>
-      </TouchableOpacity>
+      </Pressable>
     </Modal>
   );
 };

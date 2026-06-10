@@ -20,6 +20,7 @@ import { LandmineProvider } from '../util/Context/landminecontext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import PermissionsScreen from './PermissionsScreen';
 import { OnboardingProvider } from '../util/Context/onboardingContext';
+import GameEffectsOverlay from '../components/effects/GameEffectsOverlay';
 
 const WebSocketProvider = ({ children }: WebSocketProviderProps) => {
   const { missiledata, landminedata, lootdata, otherdata, healthdata, friendsdata, inventorydata, playerlocations, leaguesData, sendWebsocket } = useWebSocket();
@@ -292,6 +293,8 @@ function RootLayoutNav() {
             <CountdownTimer duration={30} onExpire={stopCountdown} />
           </View>
         )}
+        {/* One-shot Skia celebrations (missile launch, purchases, …) play above everything. */}
+        <GameEffectsOverlay />
       </View>
     </SafeAreaProvider>
   );

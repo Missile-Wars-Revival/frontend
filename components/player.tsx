@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { View, Text, Modal, Dimensions, StyleSheet, TouchableOpacity, useColorScheme } from "react-native";
+import { View, Text, Modal, Dimensions, StyleSheet, Pressable, useColorScheme } from "react-native";
 import { Image } from "expo-image";
 import { Circle, Marker } from "react-native-maps";
 import { MissileLibrary } from "./Missile/missile";
@@ -283,12 +283,12 @@ export const PlayerComp = (props: PlayerProps) => {
           <Text style={styles.username}>{props.player.username}</Text>
 
           {selectedMarkerIndex !== null && selectedMarkerIndex === props.index && props.player.username !== userName && (
-            <TouchableOpacity
-              style={styles.fireMissileButton}
+            <Pressable
+              style={({ pressed }) => [styles.fireMissileButton, pressed && { opacity: 0.7 }]}
               onPress={() => fireMissile(props.player.username)}
             >
               <Text style={styles.fireMissileText}>Fire Missile</Text>
-            </TouchableOpacity>
+            </Pressable>
           )}
 
           <Modal
@@ -301,12 +301,16 @@ export const PlayerComp = (props: PlayerProps) => {
               <View style={[styles.modalContent, isDarkMode && styles.modalContentDark]}>
                 <View style={[styles.modalHeader, isDarkMode && styles.modalHeaderDark]}>
                   <Text style={[styles.modalTitle, isDarkMode && styles.modalTitleDark]}>Missile Library</Text>
-                  <TouchableOpacity
-                    style={[styles.doneButton, isDarkMode && styles.doneButtonDark]}
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.doneButton,
+                      isDarkMode && styles.doneButtonDark,
+                      pressed && { opacity: 0.7 },
+                    ]}
                     onPress={() => setShowMissileLibrary(false)}
                   >
                     <Text style={[styles.doneButtonText, isDarkMode && styles.doneButtonTextDark]}>Done</Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 </View>
                 <MissileLibrary 
                   playerName={props.player.username} 

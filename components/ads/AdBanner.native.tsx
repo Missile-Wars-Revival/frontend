@@ -18,14 +18,18 @@ const AdBanner: React.FC = () => {
   const [showAds, setShowAds] = useState(false);
   const [nonPersonalizedAdsOnly, setNonPersonalizedAdsOnly] = useState(false);
   const [loading, setLoading] = useState(true);
-  const entitlementKeys = useMemo(parseEntitlementKeys, []);
+  const entitlementKeys = useMemo(() => parseEntitlementKeys(), []);
 
   useEffect(() => {
     let isMounted = true;
 
     const loadAdPolicy = async () => {
-      try {
-        const customerInfo = await Purchases.getCustomerInfo();
+      const customerInfo = await Purchases.getCustomerInfo().catch((error) => {
+        console.warn('Ad policy check failed, defaulting to ads enabled:', error);
+        return null;
+      });
+
+      if (customerInfo) {
         const activeEntitlements = Object.keys(customerInfo.entitlements.active ?? {}).map((key) => key.toLowerCase());
         const hasAdFree = activeEntitlements.some((key) => entitlementKeys.includes(key));
 
@@ -39,16 +43,13 @@ const AdBanner: React.FC = () => {
           setShowAds(!hasAdFree);
           setNonPersonalizedAdsOnly(shouldUseNonPersonalizedAds);
         }
-      } catch (error) {
-        console.warn('Ad policy check failed, defaulting to ads enabled:', error);
-        if (isMounted) {
-          setShowAds(true);
-          setNonPersonalizedAdsOnly(Platform.OS === 'ios');
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+      } else if (isMounted) {
+        setShowAds(true);
+        setNonPersonalizedAdsOnly(Platform.OS === 'ios');
+      }
+
+      if (isMounted) {
+        setLoading(false);
       }
     };
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Modal, Text, View, Dimensions, Alert, StyleSheet, TouchableOpacity, Platform , useColorScheme } from 'react-native';
+import { Modal, Text, View, Dimensions, Alert, StyleSheet, Pressable, Platform , useColorScheme } from 'react-native';
 import MapView, { Marker, Circle } from 'react-native-maps';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -23,12 +23,15 @@ import { androidCherryBlossomMapStyle } from '../../map-themes/Android-themes/ch
 import { androidColorblindMapStyle } from '../../map-themes/Android-themes/colourblindstyle';
 import { androidCyberpunkMapStyle } from '../../map-themes/Android-themes/cyberpunkstyle';
 import { androidRadarMapStyle } from '../../map-themes/Android-themes/radarMapStyle';
+import { triggerGameEffect } from '../effects/game-effects';
+import { gameHaptics } from '../../util/haptics';
 
 const GOOGLE_PLACES_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 
 interface LootPlacementPopupProps {
   visible: boolean;
   onClose: () => void;
+  onDismissed?: () => void;
   selectedLoot: { type: string };
   onLootPlaced: () => void;
 }
@@ -40,7 +43,7 @@ interface Region {
   longitudeDelta: number;
 }
 
-export const LootPlacementPopup: React.FC<LootPlacementPopupProps> = ({ visible, onClose, selectedLoot, onLootPlaced }) => {
+export const LootPlacementPopup: React.FC<LootPlacementPopupProps> = ({ visible, onClose, onDismissed, selectedLoot, onLootPlaced }) => {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
 
@@ -174,9 +177,11 @@ export const LootPlacementPopup: React.FC<LootPlacementPopupProps> = ({ visible,
 
   const handleLootPlacement = () => {
     if (marker && currentLocation) {
-      // Close the popup and trigger callback immediately
+      // Drop feedback: thud haptic + full-screen Skia supply-drop animation.
+      triggerGameEffect('lootDrop');
+
+      // The parent owns closing: it dismisses this popup first, then the sheet.
       onLootPlaced();
-      onClose();
 
       // Place the Loot in the background
       console.log(`PLACING Loot: Dest coords: ${marker.latitude}, ${marker.longitude}; sentbyUser: ${userName} Loot Type: ${selectedLoot.type}, current coords: ${currentLocation.latitude}, ${currentLocation.longitude}`);
@@ -219,6 +224,7 @@ export const LootPlacementPopup: React.FC<LootPlacementPopupProps> = ({ visible,
       transparent={true}
       visible={visible}
       onRequestClose={onClose}
+      onDismiss={onDismissed}
     >
       <View style={[styles.modalContainer, isDarkMode && styles.modalContainerDark]}>
         <View style={[styles.modalContent, isDarkMode && styles.modalContentDark]}>
@@ -341,12 +347,12 @@ export const LootPlacementPopup: React.FC<LootPlacementPopupProps> = ({ visible,
             </View>
           )}
           <View style={styles.buttonContainer}>
-            <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={onClose}>
+            <Pressable style={[styles.button, styles.cancelButton]} onPress={onClose}>
               <Text style={styles.buttonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.button, styles.placeButton]} onPress={handleLootPlacement}>
+            </Pressable>
+            <Pressable style={[styles.button, styles.placeButton]} onPress={handleLootPlacement}>
               <Text style={styles.buttonText}>Place</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
       </View>

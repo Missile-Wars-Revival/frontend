@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Modal, Text, View, Button, Dimensions, ActivityIndicator, Alert, Platform, StyleSheet, TouchableOpacity , useColorScheme } from 'react-native';
+import { Modal, Text, View, Button, Dimensions, ActivityIndicator, Alert, Platform, StyleSheet, Pressable , useColorScheme } from 'react-native';
 import MapView, { Marker, Circle } from 'react-native-maps';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -24,12 +24,15 @@ import { androidCherryBlossomMapStyle } from '../../map-themes/Android-themes/ch
 import { androidColorblindMapStyle } from '../../map-themes/Android-themes/colourblindstyle';
 import { androidCyberpunkMapStyle } from '../../map-themes/Android-themes/cyberpunkstyle';
 import { androidRadarMapStyle } from '../../map-themes/Android-themes/radarMapStyle';
+import { triggerGameEffect } from '../effects/game-effects';
+import { gameHaptics } from '../../util/haptics';
 
 const GOOGLE_PLACES_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 
 interface MissilePlacementPopupProps {
   visible: boolean;
   onClose: () => void;
+  onDismissed?: () => void;
   selectedMissile: string;
   onMissileFired: () => void;
 }
@@ -41,7 +44,7 @@ interface Region {
   longitudeDelta: number;
 }
 
-export const MissilePlacementPopup: React.FC<MissilePlacementPopupProps> = ({ visible, onClose, selectedMissile, onMissileFired }) => {
+export const MissilePlacementPopup: React.FC<MissilePlacementPopupProps> = ({ visible, onClose, onDismissed, selectedMissile, onMissileFired }) => {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
 
@@ -190,18 +193,23 @@ export const MissilePlacementPopup: React.FC<MissilePlacementPopupProps> = ({ vi
   // }
   const handleMissilePlacement = () => {
     if (!marker || !currentLocation) {
+      gameHaptics.warning();
       Alert.alert('Not Ready', 'Waiting for your location. Please try again in a moment.');
       return;
     }
 
     if (marker.latitude === currentLocation.latitude && marker.longitude === currentLocation.longitude) {
+      gameHaptics.warning();
       Alert.alert('Warning', 'Firing a Missile at your current location is not recommended! Move the target pin to a different location.');
       return;
     }
 
-    // Close the popup and trigger the onMissileFired callback immediately
+    // Launch feedback: rumble + full-screen Skia launch animation (plays at the
+    // app root, so it becomes visible as the modal stack dismisses).
+    triggerGameEffect('missileLaunch');
+
+    // The parent owns closing: it dismisses this popup first, then the sheet.
     onMissileFired();
-    onClose();
 
     // Fire the missile in the background
     console.log(`FIRING Missile: Dest coords: ${marker.latitude}, ${marker.longitude}; sentbyUser: ${userName} Missile Type: ${selectedMissile}, current coords: ${currentLocation.latitude}, ${currentLocation.longitude}`);
@@ -240,6 +248,7 @@ export const MissilePlacementPopup: React.FC<MissilePlacementPopupProps> = ({ vi
       transparent={true}
       visible={visible}
       onRequestClose={onClose}
+      onDismiss={onDismissed}
     >
       <View style={[styles.modalContainer, isDarkMode && styles.modalContainerDark]}>
         <View style={[styles.modalContent, isDarkMode && styles.modalContentDark]}>
@@ -316,12 +325,15 @@ export const MissilePlacementPopup: React.FC<MissilePlacementPopupProps> = ({ vi
             rotateEnabled={true}
             scrollEnabled={true}
             zoomEnabled={true}
-            onPress={(e) => setMarker({
-              latitude: e.nativeEvent.coordinate.latitude,
-              longitude: e.nativeEvent.coordinate.longitude,
-              latitudeDelta: 0.01,
-              longitudeDelta: 0.01
-            })}
+            onPress={(e) => {
+              gameHaptics.selection();
+              setMarker({
+                latitude: e.nativeEvent.coordinate.latitude,
+                longitude: e.nativeEvent.coordinate.longitude,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01
+              });
+            }}
             customMapStyle={currentMapStyle}
           >
             {marker && (
@@ -360,12 +372,12 @@ export const MissilePlacementPopup: React.FC<MissilePlacementPopupProps> = ({ vi
             </View>
           )}
           <View style={styles.buttonContainer}>
-            <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={onClose}>
+            <Pressable style={[styles.button, styles.cancelButton]} onPress={onClose}>
               <Text style={styles.buttonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.button, styles.fireButton]} onPress={handleMissilePlacement}>
+            </Pressable>
+            <Pressable style={[styles.button, styles.fireButton]} onPress={handleMissilePlacement}>
               <Text style={styles.buttonText}>Fire</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
       </View>

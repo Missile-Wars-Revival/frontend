@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Modal, Text, View, Dimensions, Alert, StyleSheet, TouchableOpacity, Platform , useColorScheme } from 'react-native';
+import { Modal, Text, View, Dimensions, Alert, StyleSheet, Pressable, Platform , useColorScheme } from 'react-native';
 import MapView, { Marker, Circle } from 'react-native-maps';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -23,12 +23,15 @@ import { androidCherryBlossomMapStyle } from '../../map-themes/Android-themes/ch
 import { androidColorblindMapStyle } from '../../map-themes/Android-themes/colourblindstyle';
 import { androidCyberpunkMapStyle } from '../../map-themes/Android-themes/cyberpunkstyle';
 import { androidRadarMapStyle } from '../../map-themes/Android-themes/radarMapStyle';
+import { triggerGameEffect } from '../effects/game-effects';
+import { gameHaptics } from '../../util/haptics';
 
 const GOOGLE_PLACES_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 
 interface OtherPlacementPopupProps {
   visible: boolean;
   onClose: () => void;
+  onDismissed?: () => void;
   selectedOther: { type: string };
   onOtherPlaced: () => void;
 }
@@ -40,7 +43,7 @@ interface Region {
   longitudeDelta: number;
 }
 
-export const OtherPlacementPopup: React.FC<OtherPlacementPopupProps> = ({ visible, onClose, selectedOther, onOtherPlaced }) => {
+export const OtherPlacementPopup: React.FC<OtherPlacementPopupProps> = ({ visible, onClose, onDismissed, selectedOther, onOtherPlaced }) => {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
 
@@ -182,9 +185,11 @@ export const OtherPlacementPopup: React.FC<OtherPlacementPopupProps> = ({ visibl
 
   const handleOtherPlacement = () => {
     if (marker && currentLocation) {
-      // Close the popup and trigger callback immediately
+      // Power-up feedback: pulsing haptic + full-screen Skia shield animation.
+      triggerGameEffect('shieldUp');
+
+      // The parent owns closing: it dismisses this popup first, then the sheet.
       onOtherPlaced();
-      onClose();
 
       // Place the Other in the background
       console.log(`PLACING Other: Dest coords: ${marker.latitude}, ${marker.longitude}; sentbyUser: ${userName} Other Type: ${selectedOther.type}, current coords: ${currentLocation.latitude}, ${currentLocation.longitude}`);
@@ -224,6 +229,7 @@ export const OtherPlacementPopup: React.FC<OtherPlacementPopupProps> = ({ visibl
       transparent={true}
       visible={visible}
       onRequestClose={onClose}
+      onDismiss={onDismissed}
     >
       <View style={[styles.modalContainer, isDarkMode && styles.modalContainerDark]}>
         <View style={[styles.modalContent, isDarkMode && styles.modalContentDark]}>
@@ -346,12 +352,12 @@ export const OtherPlacementPopup: React.FC<OtherPlacementPopupProps> = ({ visibl
             </View>
           )}
           <View style={styles.buttonContainer}>
-            <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={onClose}>
+            <Pressable style={[styles.button, styles.cancelButton]} onPress={onClose}>
               <Text style={styles.buttonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.button, styles.placeButton]} onPress={handleOtherPlacement}>
+            </Pressable>
+            <Pressable style={[styles.button, styles.placeButton]} onPress={handleOtherPlacement}>
               <Text style={styles.buttonText}>Place</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
       </View>

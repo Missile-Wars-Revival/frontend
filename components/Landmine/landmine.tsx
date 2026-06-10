@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, TouchableOpacity, FlatList, Text, useColorScheme } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Pressable, FlatList, Text, useColorScheme, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { LandminePlacementPopup } from './landmineplacement';
 import { InventoryBottomSheet } from '../ui/inventory-bottom-sheet';
@@ -32,14 +32,12 @@ interface LandmineImages {
 const useLandmineLib = (): LandmineType[] => {
   const inventory = useFetchInventory();
 
-  const landmineLibrary = inventory
-    .filter((item: InventoryItem) => item.category === "Landmines" && item.quantity > 0)
-    .map((item: InventoryItem) => ({
-      type: item.name,
-      quantity: item.quantity
-    }));
-
-  return landmineLibrary;
+  return inventory.reduce<LandmineType[]>((acc, item: InventoryItem) => {
+    if (item.category === "Landmines" && item.quantity > 0) {
+      acc.push({ type: item.name, quantity: item.quantity });
+    }
+    return acc;
+  }, []);
 };
 
 const LandmineSelector = ({ onSelect, landmines }: { onSelect: (landmine: string) => void, landmines: LandmineType[] }) => {
@@ -59,18 +57,22 @@ const LandmineSelector = ({ onSelect, landmines }: { onSelect: (landmine: string
       data={landmines}
       keyExtractor={(item, index) => `${item.type}-${index}`}
       renderItem={({ item: landmine }) => (
-        <TouchableOpacity 
-          onPress={() => onSelect(landmine.type)} 
-          style={tw`flex-row items-center ${isDarkMode ? 'bg-gray-900' : 'bg-white'} p-2 mb-1 rounded-lg shadow`}
+        <Pressable
+          onPress={() => onSelect(landmine.type)}
+          style={({ pressed }) => [
+            tw`flex-row items-center p-2 mb-1 rounded-lg shadow`,
+            isDarkMode ? tw`bg-gray-900` : tw`bg-white`,
+            pressed && { opacity: 0.7 },
+          ]}
         >
           <Image source={getImageForProduct(landmine.type)} style={tw`w-8 h-8 mr-2`} />
           <View style={tw`flex-1`}>
-            <Text style={tw`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>{landmine.type}</Text>
-            <Text style={tw`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Quantity: {landmine.quantity}</Text>
+            <Text style={[tw`text-sm font-semibold`, isDarkMode ? tw`text-white` : tw`text-gray-800`]}>{landmine.type}</Text>
+            <Text style={[tw`text-xs`, isDarkMode ? tw`text-gray-400` : tw`text-gray-500`]}>Quantity: {landmine.quantity}</Text>
           </View>
-        </TouchableOpacity>
+        </Pressable>
       )}
-      style={tw`flex-1 ${isDarkMode ? 'bg-black' : 'bg-white'}`}
+      style={[tw`flex-1`, isDarkMode ? tw`bg-black` : tw`bg-white`]}
       contentContainerStyle={tw`p-2`}
     />
   );
@@ -95,6 +97,26 @@ export const LandmineLibraryView: React.FC<LandmineLibraryViewProps> = ({ Landmi
     setShowplacementPopup(false);
   };
 
+  const closeLibraryAfterPopupRef = useRef(false);
+
+  const handleLandminePlaced = () => {
+    // Close the placement popup first; the sheet is closed once the popup has
+    // fully dismissed (iOS serializes modal transitions, so dismissing both at
+    // once leaves one of them stuck).
+    closeLibraryAfterPopupRef.current = true;
+    setShowplacementPopup(false);
+    if (Platform.OS !== 'ios') {
+      landminePlaceHandler();
+    }
+  };
+
+  const handlePopupDismissed = () => {
+    if (closeLibraryAfterPopupRef.current) {
+      closeLibraryAfterPopupRef.current = false;
+      landminePlaceHandler();
+    }
+  };
+
   const noItems = landmineLibrary.length === 0;
 
   return (
@@ -104,41 +126,41 @@ export const LandmineLibraryView: React.FC<LandmineLibraryViewProps> = ({ Landmi
         onClose={landminePlaceHandler}
         backgroundColor={isDarkMode ? '#000000' : '#ffffff'}
       >
-        <View style={tw`flex-1 ${isDarkMode ? 'bg-black' : 'bg-white'} px-4 pt-2 pb-4`}>
-          <Text style={tw`text-xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Select your Landmine:</Text>
+        <View style={[tw`flex-1 px-4 pt-2 pb-4`, isDarkMode ? tw`bg-black` : tw`bg-white`]}>
+          <Text style={[tw`text-xl font-bold mb-2`, isDarkMode ? tw`text-white` : tw`text-gray-800`]}>Select your Landmine:</Text>
           {noItems ? (
             <View style={tw`flex-1 justify-center items-center`}>
-              <Text style={tw`text-center mb-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>No items in inventory</Text>
-              <TouchableOpacity
+              <Text style={[tw`text-center mb-4`, isDarkMode ? tw`text-gray-400` : tw`text-gray-500`]}>No items in inventory</Text>
+              <Pressable
                 onPress={() => {
                   landminePlaceHandler(); // Close the landmine sheet
                   router.navigate('/store'); // Navigate to the store
                 }}
-                style={tw`bg-blue-500 px-6 py-3 rounded-lg`}
+                style={({ pressed }) => [tw`bg-blue-500 px-6 py-3 rounded-lg`, pressed && { opacity: 0.7 }]}
               >
                 <Text style={tw`text-white font-bold`}>Go to Shop</Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           ) : (
             <LandmineSelector onSelect={handleLandmineClick} landmines={landmineLibrary} />
           )}
-          <TouchableOpacity
-            style={tw`bg-red-500 px-6 py-2 rounded-lg mt-4 self-end`}
+          <Pressable
+            style={({ pressed }) => [tw`bg-red-500 px-6 py-2 rounded-lg mt-4 self-end`, pressed && { opacity: 0.7 }]}
             onPress={landminePlaceHandler}
           >
             <Text style={tw`text-white font-bold`}>Done</Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </InventoryBottomSheet>
-      {showplacmentPopup && selectedLandmine && (
+      {/* Stays mounted while hidden: unmounting an open RN Modal on iOS skips
+          onDismiss, which would break the close sequencing above. */}
+      {selectedLandmine && (
         <LandminePlacementPopup
           visible={showplacmentPopup}
           onClose={handleClosePopup}
+          onDismissed={handlePopupDismissed}
           selectedLandmine={selectedLandmine}
-          onLandminePlaced={() => {
-            setShowplacementPopup(false);
-            landminePlaceHandler(); // This should close the entire library
-          }}
+          onLandminePlaced={handleLandminePlaced}
         />
       )}
     </>

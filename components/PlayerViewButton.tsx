@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, Modal, FlatList, StyleSheet, useColorScheme, Dimensions, ActivityIndicator, Animated, Alert, Platform } from 'react-native';
+import { View, Text, Pressable, Modal, FlatList, StyleSheet, useColorScheme, Dimensions, ActivityIndicator, Animated, Alert, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { fetchAndCacheImage } from "../util/imagecache";
@@ -167,15 +167,12 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
         return;
       }
 
-      // Create a Map to remove duplicates and filter out inactive players
       const uniquePlayers = new Map();
-      otherPlayersData
-        .filter(player => !isInactiveFor12Hours(player.updatedAt))
-        .forEach(player => {
-          if (player.username !== currentUserUsername) {
-            uniquePlayers.set(player.username, player);
-          }
-        });
+      for (const player of otherPlayersData) {
+        if (!isInactiveFor12Hours(player.updatedAt) && player.username !== currentUserUsername) {
+          uniquePlayers.set(player.username, player);
+        }
+      }
 
       const playersWithImages = await Promise.all(
         Array.from(uniquePlayers.values()).map(async (player) => ({
@@ -250,7 +247,7 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
   const renderPlayerItem = ({ item }: { item: Player }) => {
     const { text } = getTimeDifference(item.updatedAt);
     return (
-      <TouchableOpacity 
+      <Pressable 
         style={[styles.playerItem, isDarkMode && styles.playerItemDark]}
         onPress={() => navigateToUserProfile(item.username)}
       >
@@ -265,7 +262,7 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
         </View>
         <View style={styles.actionButtons}>
           {isAlive && locActive && (
-            <TouchableOpacity
+            <Pressable
               style={[styles.actionButton, styles.fireButton]}
               onPress={(e) => {
                 e.stopPropagation();
@@ -276,10 +273,10 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
               }}
             >
               <Text style={styles.actionButtonText}>ENGAGE</Text>
-            </TouchableOpacity>
+            </Pressable>
           )}
           {!item.isFriend && (
-            <TouchableOpacity
+            <Pressable
               style={[styles.actionButton, styles.addButton]}
               onPress={(e) => {
                 e.stopPropagation();
@@ -287,15 +284,15 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
               }}
             >
               <Text style={styles.actionButtonText}>RECRUIT</Text>
-            </TouchableOpacity>
+            </Pressable>
           )}
         </View>
-      </TouchableOpacity>
+      </Pressable>
     );
   };
 
   const renderMissileItem = ({ item }: { item: Missile }) => (
-    <TouchableOpacity 
+    <Pressable 
       style={[styles.playerItem, isDarkMode && styles.playerItemDark]}
       onPress={() => setSelectedMissile(item)}
     >
@@ -311,7 +308,7 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
           Status: {item.status} • ETA: {convertimestampfuturemissile(item.etatimetoimpact).text}
         </Text>
       </View>
-    </TouchableOpacity>
+    </Pressable>
   );
 
   const renderMissileList = () => {
@@ -352,12 +349,12 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
 
     return (
       <View style={[styles.missileDetails, isDarkMode && styles.missileDetailsDark]}>
-        <TouchableOpacity
+        <Pressable
           style={styles.backButton}
           onPress={() => setSelectedMissile(null)}
         >
           <Text style={[styles.backButtonText, isDarkMode && styles.backButtonTextDark]}>← Back</Text>
-        </TouchableOpacity>
+        </Pressable>
         <Image 
           source={getImageForProduct(selectedMissile.type) || require('../assets/logo.png')} 
           style={styles.missileDetailImage} 
@@ -407,7 +404,7 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity
+      <Pressable
         style={[
           styles.playerViewButton,
           isDarkMode && styles.playerViewButtonDark,
@@ -421,7 +418,7 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
         }}
       >
         <Ionicons name="clipboard-outline" size={24} color={isDarkMode ? '#FFFFFF' : '#000000'} />
-      </TouchableOpacity>
+      </Pressable>
 
       <Modal
         animationType="fade"
@@ -432,24 +429,24 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
         <View style={styles.modalContainer}>
           <View style={[styles.modalContent, isDarkMode && styles.modalContentDark]}>
             <View style={[styles.modalHeader, isDarkMode && styles.modalHeaderDark]}>
-              <TouchableOpacity
+              <Pressable
                 style={[styles.tabButton, activeTab === 'players' && styles.activeTabButton]}
                 onPress={() => switchTab('players')}
               >
                 <Text style={[styles.tabButtonText, activeTab === 'players' && styles.activeTabButtonText]}>PLAYERS</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </Pressable>
+              <Pressable
                 style={[styles.tabButton, activeTab === 'missiles' && styles.activeTabButton]}
                 onPress={() => switchTab('missiles')}
               >
                 <Text style={[styles.tabButtonText, activeTab === 'missiles' && styles.activeTabButtonText]}>MY MISSILES</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </Pressable>
+              <Pressable
                 style={styles.closeButton}
                 onPress={() => setModalVisible(false)}
               >
                 <Text style={[styles.closeButtonText, isDarkMode && styles.closeButtonTextDark]}>X</Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
             <Animated.View style={[styles.contentContainer, { opacity: fadeAnim }]}>
               {isLoading ? (

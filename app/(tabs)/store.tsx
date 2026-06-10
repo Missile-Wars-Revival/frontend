@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, FlatList, Text, TouchableOpacity, SafeAreaView, StyleSheet, useColorScheme, Animated, Modal, ActivityIndicator, Alert, ScrollView } from 'react-native';
-import { Image, ImageBackground } from 'expo-image';
+import { View, FlatList, Text, Pressable, SafeAreaView, StyleSheet, useColorScheme, Animated, Modal, ActivityIndicator, Alert, ScrollView } from 'react-native';
+import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import Cart from '../../components/Store/cart';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axiosInstance from '../../api/axios-instance';
@@ -10,21 +11,27 @@ import Purchases from 'react-native-purchases';
 import { addmoney } from '../../api/money';
 import { additem } from '../../api/add-item';
 import { getWeaponTypes, mapProductType, PremProduct, Product, getImages } from '../../api/store';
-import { getShopStyles } from '../../map-themes/stylesheet';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { useOnboarding } from '../../util/Context/onboardingContext';
 import AdBanner from '../../components/ads/AdBanner';
 import { InventoryBottomSheet } from '../../components/ui/inventory-bottom-sheet';
+import { getPalette, Gradients, Spacing, Radius, cardShadow, type ThemePalette } from '../../components/ui/theme';
+import { PressableScale } from '../../components/ui/PressableScale';
+import { AnimatedEntrance } from '../../components/ui/AnimatedEntrance';
+import { haptics } from '../../components/ui/haptics';
 
 const DEV_OFFLINE_TOKEN = 'dev-offline-token';
 
-export const products: Product[] = [
-  // { id: "20", name: 'LootDrop', price: 400, image: require('../assets/mapassets/Airdropicon.png'), description: 'A Loot Drop', type: 'Loot Drops' },
-  // { id: "21", name: 'Shield', price: 2000, image: require('../assets/mapassets/shield.png'), description: 'A Standard Shield', type: 'Other' },
-  // { id: "22", name: 'UltraShield', price: 5000, image: require('../assets/mapassets/shield.png'), description: 'A Ultra Shield', type: 'Other' },
+export const products: Product[] = [];
 
-];
+const CATEGORIES = ['All', 'Missiles', 'Landmines', 'Other'] as const;
 
+const CATEGORY_ICONS: Record<string, React.ComponentProps<typeof Ionicons>['name']> = {
+  All: 'grid',
+  Missiles: 'rocket',
+  Landmines: 'radio-button-on',
+  Other: 'sparkles',
+};
 
 const StorePage: React.FC = () => {
   const [cart, setCart] = useState<{ product: Product; quantity: number }[]>([]);
@@ -43,6 +50,11 @@ const StorePage: React.FC = () => {
   const [getImageForProduct, setGetImageForProduct] = useState<(imageName: string) => any>(() => () => require('../../assets/logo.png'));
   const [imagesLoaded, setImagesLoaded] = useState(false);
   const { currentStep, moveToNextStep } = useOnboarding();
+
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark';
+  const palette = getPalette(isDarkMode);
+  const styles = getStyles(palette, isDarkMode);
 
   useEffect(() => {
     const loadImages = async () => {
@@ -69,6 +81,19 @@ const StorePage: React.FC = () => {
   const sortedWeapons = React.useMemo(() => {
     return [...weapons].sort((a, b) => a.price - b.price);
   }, [weapons]);
+
+  const filteredWeapons = React.useMemo(() => {
+    if (selectedCategory === 'All') return sortedWeapons;
+    return sortedWeapons.filter(p =>
+      p.type === selectedCategory ||
+      (selectedCategory === 'Other' && (p.type === 'Other' || p.type === 'Loot Drops'))
+    );
+  }, [sortedWeapons, selectedCategory]);
+
+  const cartCount = React.useMemo(
+    () => cart.reduce((sum, item) => sum + item.quantity, 0),
+    [cart]
+  );
 
   const updateCartTotal = useCallback((currentCart: { product: Product; quantity: number }[]) => {
     const total = currentCart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
@@ -138,28 +163,26 @@ const StorePage: React.FC = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       setIsLoadingPremium(true);
-      try {
-        const offerings = await Purchases.getOfferings();
-        if (offerings.current) {
-          const mappedProducts = offerings.current.availablePackages.map(pkg => ({
-            id: pkg.product.identifier,
-            name: pkg.product.title.trim(),
-            type: mapProductType(pkg.product.identifier),
-            price: pkg.product.price,
-            displayprice: pkg.product.priceString,
-            image: getImageSource(pkg.product.identifier),
-            description: pkg.product.description,
-            sku: pkg.product.identifier,
-          }));
-          setPremiumProducts(mappedProducts);
-        } else {
-          console.log('No offerings available');
-        }
-      } catch (error) {
+      const offerings = await Purchases.getOfferings().catch((error) => {
         console.error('Failed to fetch offerings:', error);
-      } finally {
-        setIsLoadingPremium(false);
+        return null;
+      });
+      if (offerings?.current) {
+        const mappedProducts = offerings.current.availablePackages.map(pkg => ({
+          id: pkg.product.identifier,
+          name: pkg.product.title.trim(),
+          type: mapProductType(pkg.product.identifier),
+          price: pkg.product.price,
+          displayprice: pkg.product.priceString,
+          image: getImageSource(pkg.product.identifier),
+          description: pkg.product.description,
+          sku: pkg.product.identifier,
+        }));
+        setPremiumProducts(mappedProducts);
+      } else if (offerings) {
+        console.log('No offerings available');
       }
+      setIsLoadingPremium(false);
     };
 
     fetchProducts();
@@ -216,6 +239,7 @@ const StorePage: React.FC = () => {
 
   const addToCart = useCallback((product: Product) => {
     if (currencyAmount >= product.price) {
+      haptics.success();
       setCart((prevCart) => {
         const cartItem = prevCart.find((item) => item.product.id === product.id);
         let newCart;
@@ -232,7 +256,8 @@ const StorePage: React.FC = () => {
       });
       setCurrencyAmount(prevAmount => prevAmount - product.price);
     } else {
-      alert('Not enough currency!');
+      haptics.warning();
+      Alert.alert('Not enough coins', 'Earn more coins or top up in the Premium store.');
     }
   }, [currencyAmount, updateCartTotal]);
 
@@ -335,31 +360,6 @@ const StorePage: React.FC = () => {
     }
   };
 
-  const colorScheme = useColorScheme();
-  const isDarkMode = colorScheme === 'dark';
-  const styles = getShopStyles(isDarkMode ? 'dark' : 'light');
-
-  // Add these new styles or modify existing ones
-  const updatedStyles = StyleSheet.create({
-    ...styles,
-    productImage: {
-      ...styles.productImage,
-      width: 80,  // Set a fixed width
-      height: 80, // Set a fixed height
-      resizeMode: 'contain', // This ensures the image fits within the dimensions while maintaining aspect ratio
-    },
-    modalImage: {
-      ...styles.modalImage,
-      width: 120, // Larger size for the modal
-      height: 120,
-      resizeMode: 'contain',
-    },
-    cartSheetContent: {
-      backgroundColor: isDarkMode ? '#1E1E1E' : '#FFFFFF',
-      paddingBottom: 12,
-    },
-  });
-
   const handlePress = (product: Product) => {
     setSelectedProduct(product);
     setModalVisible(true);
@@ -378,81 +378,6 @@ const StorePage: React.FC = () => {
       setModalVisible(false);
       setSelectedProduct(null);
     });
-  };
-
-  const renderProductDetails = () => {
-    if (!selectedProduct) return null;
-
-    const formatDuration = (minutes: number | undefined) => {
-      if (minutes === undefined) return 'N/A';
-      
-      const hours = Math.floor(minutes / 60);
-      const remainingMinutes = minutes % 60;
-      if (hours === 0) {
-        return `${remainingMinutes} mins`;
-      } else if (remainingMinutes === 0) {
-        return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
-      } else {
-        return `${hours} ${hours === 1 ? 'hour' : 'hours'} ${remainingMinutes} mins`;
-      }
-    };
-
-    return (
-      <ScrollView style={[updatedStyles.modalContainer, isDarkMode && updatedStyles.modalContainerDark]}>
-        <View style={updatedStyles.modalHeader}>
-          <Image
-            source={selectedProduct.image}
-            style={updatedStyles.modalImage}
-            contentFit="contain"
-            transition={200}
-            cachePolicy="memory-disk"
-          />
-          <View style={updatedStyles.modalTitleContainer}>
-            <Text style={[updatedStyles.modalTitle, isDarkMode && updatedStyles.modalTitleDark]}>{selectedProduct.name}</Text>
-            <Text style={[updatedStyles.modalPrice, isDarkMode && updatedStyles.modalPriceDark]}>🪙{selectedProduct.price}</Text>
-          </View>
-        </View>
-        <View style={updatedStyles.modalContent}>
-          <Text style={[updatedStyles.modalDescription, isDarkMode && updatedStyles.modalDescriptionDark]}>{selectedProduct.description}</Text>
-          <View style={updatedStyles.modalStatsContainer}>
-            {selectedProduct.type === 'Missiles' && (
-              <>
-                <Text style={[updatedStyles.modalText, isDarkMode && updatedStyles.modalTextDark]}>Speed: {selectedProduct.speed} m/s</Text>
-                <Text style={[updatedStyles.modalText, isDarkMode && updatedStyles.modalTextDark]}>Radius: {selectedProduct.radius} m</Text>
-                <Text style={[updatedStyles.modalText, isDarkMode && updatedStyles.modalTextDark]}>Fallout: {selectedProduct.fallout} mins</Text>
-                <Text style={[updatedStyles.modalText, isDarkMode && updatedStyles.modalTextDark]}>Damage: {selectedProduct.damage} per 30 seconds</Text>
-              </>
-            )}
-            {selectedProduct.type === 'Landmines' && (
-              <>
-                <Text style={[updatedStyles.modalText, isDarkMode && updatedStyles.modalTextDark]}>Duration: {selectedProduct.duration} hours</Text>
-                <Text style={[updatedStyles.modalText, isDarkMode && updatedStyles.modalTextDark]}>Damage: {selectedProduct.damage}</Text>
-              </>
-            )}
-            {selectedProduct.type === 'Other' && (
-              <>
-                <Text style={[updatedStyles.modalText, isDarkMode && updatedStyles.modalTextDark]}>
-                  Duration: {formatDuration(selectedProduct.duration)}
-                </Text>
-                <Text style={[updatedStyles.modalText, isDarkMode && updatedStyles.modalTextDark]}>
-                  Radius: {selectedProduct.radius !== undefined ? `${selectedProduct.radius} m` : 'N/A'}
-                </Text>
-              </>
-            )}
-          </View>
-        </View>
-        <TouchableOpacity 
-          style={[updatedStyles.addToCartButton, isDarkMode && updatedStyles.addToCartButtonDark]} 
-          onPress={() => {
-            addToCart(selectedProduct);
-            closeModal();
-          }}
-        >
-          <Ionicons name="cart" size={24} color={isDarkMode ? "black" : "white"} />
-          <Text style={[updatedStyles.addToCartButtonText, isDarkMode && updatedStyles.addToCartButtonTextDark]}>Add to Cart</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    );
   };
 
   const handleCategorySelect = (category: string) => {
@@ -480,314 +405,665 @@ const StorePage: React.FC = () => {
     }
   }, [currentStep, moveToNextStep, showCart]);
 
-  const renderTabs = () => (
-    <View style={updatedStyles.tabContainerMissiles}>
-      {['All', 'Missiles', 'Landmines', 'Other'].map((category) => (
-        <TouchableOpacity 
-          key={category} 
-          onPress={() => handleCategorySelect(category)} 
-          style={[
-            updatedStyles.tabMissiles,
-            selectedCategory === category && updatedStyles.selectedTab
-          ]}
-        >
-          <Text style={[
-            updatedStyles.missileTabText,
-            selectedCategory === category && updatedStyles.selectedTabText
-          ]}>
-            {category}
-          </Text>
-        </TouchableOpacity>
-      ))}
+  const formatDuration = (minutes: number | undefined) => {
+    if (minutes === undefined) return 'N/A';
+
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    if (hours === 0) {
+      return `${remainingMinutes} mins`;
+    } else if (remainingMinutes === 0) {
+      return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+    } else {
+      return `${hours} ${hours === 1 ? 'hour' : 'hours'} ${remainingMinutes} mins`;
+    }
+  };
+
+  const renderDetailStat = (icon: React.ComponentProps<typeof Ionicons>['name'], label: string, value: string) => (
+    <View style={styles.statRow} key={label}>
+      <View style={styles.statIconWrap}>
+        <Ionicons name={icon} size={16} color={palette.accent} />
+      </View>
+      <Text style={styles.statLabel}>{label}</Text>
+      <Text style={styles.statValue}>{value}</Text>
     </View>
   );
 
-  const renderButton = ({ item }: { item: Product }) => (
-    <TouchableOpacity
-      style={updatedStyles.productButton}
-      onPress={() => handlePress(item)}
-    >
-      <Image
-        source={getImageSource(item.name)}
-        style={updatedStyles.productImage}
-        placeholder={require('../../assets/logo.png')}
-        contentFit="contain"
-        transition={200}
-        cachePolicy="memory-disk"
-      />
-      <Text
-        style={[updatedStyles.productName, isDarkMode && updatedStyles.productNameDark]}
-        numberOfLines={2}
-        ellipsizeMode="tail"
-      >
-        {item.name}
-      </Text>
-      <Text style={[updatedStyles.productPrice, isDarkMode && updatedStyles.productPriceDark]}>🪙{item.price}</Text>
-      <TouchableOpacity
-        style={[updatedStyles.addToCartButtonSmall, isDarkMode && updatedStyles.addToCartButtonSmallDark]}
-        onPress={() => handleAddToCart(item)}
-      >
-        <Ionicons name="cart" size={14} color={isDarkMode ? "black" : "white"} />
-        <Text style={[updatedStyles.addToCartButtonTextSmall, isDarkMode && updatedStyles.addToCartButtonTextSmallDark]}>Add</Text>
-      </TouchableOpacity>
-    </TouchableOpacity>
+  const renderProductDetails = () => {
+    if (!selectedProduct) return null;
+
+    return (
+      <View style={styles.detailCard}>
+        <ScrollView showsVerticalScrollIndicator={false}>
+          <View style={styles.detailImageWrap}>
+            <Image
+              source={selectedProduct.image}
+              style={styles.detailImage}
+              contentFit="contain"
+              transition={200}
+              cachePolicy="memory-disk"
+            />
+          </View>
+          <Text style={styles.detailTitle}>{selectedProduct.name}</Text>
+          <View style={styles.detailPriceRow}>
+            <View style={styles.coinChipSmall}>
+              <Text style={styles.coinChipSmallText}>🪙 {selectedProduct.price}</Text>
+            </View>
+            <View style={styles.typeChip}>
+              <Text style={styles.typeChipText}>{selectedProduct.type}</Text>
+            </View>
+          </View>
+          <Text style={styles.detailDescription}>{selectedProduct.description}</Text>
+          <View style={styles.statsCard}>
+            {selectedProduct.type === 'Missiles' && (
+              <>
+                {renderDetailStat('speedometer', 'Speed', `${selectedProduct.speed} m/s`)}
+                {renderDetailStat('radio', 'Radius', `${selectedProduct.radius} m`)}
+                {renderDetailStat('cloud', 'Fallout', `${selectedProduct.fallout} mins`)}
+                {renderDetailStat('flash', 'Damage', `${selectedProduct.damage} / 30s`)}
+              </>
+            )}
+            {selectedProduct.type === 'Landmines' && (
+              <>
+                {renderDetailStat('time', 'Duration', `${selectedProduct.duration} hours`)}
+                {renderDetailStat('flash', 'Damage', `${selectedProduct.damage}`)}
+              </>
+            )}
+            {selectedProduct.type === 'Other' && (
+              <>
+                {renderDetailStat('time', 'Duration', formatDuration(selectedProduct.duration))}
+                {renderDetailStat('radio', 'Radius', selectedProduct.radius !== undefined ? `${selectedProduct.radius} m` : 'N/A')}
+              </>
+            )}
+          </View>
+          <PressableScale
+            haptic="tap"
+            onPress={() => {
+              addToCart(selectedProduct);
+              closeModal();
+            }}
+          >
+            <LinearGradient colors={Gradients.brand} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.detailAddButton}>
+              <Ionicons name="cart" size={20} color="#FFFFFF" />
+              <Text style={styles.detailAddButtonText}>Add to Cart</Text>
+            </LinearGradient>
+          </PressableScale>
+        </ScrollView>
+      </View>
+    );
+  };
+
+  const renderCategoryChips = () => (
+    <View style={styles.chipRow}>
+      {CATEGORIES.map((category) => {
+        const active = selectedCategory === category;
+        return (
+          <PressableScale
+            key={category}
+            haptic="select"
+            onPress={() => handleCategorySelect(category)}
+            style={[styles.chip, active && styles.chipActive]}
+          >
+            <Ionicons
+              name={CATEGORY_ICONS[category] ?? 'grid'}
+              size={14}
+              color={active ? '#FFFFFF' : palette.textMuted}
+            />
+            <Text style={[styles.chipText, active && styles.chipTextActive]}>{category}</Text>
+          </PressableScale>
+        );
+      })}
+    </View>
   );
 
-  const premrenderButton = ({ item }: { item: PremProduct }) => (
-    <TouchableOpacity 
-      style={updatedStyles.productButton} 
-      onPress={() => {
-        if (!isPurchasing) {
-          buyItem(item).then(result => {
-            if (result.status === 'success') {
-              Alert.alert('Success', result.message);
-            } else {
-              Alert.alert('Purchase Failed', `${result.status}. ${result.error || ''}`);
-            }
-          });
-        }
-      }}
-      disabled={isPurchasing}
-    >
-      {isPurchasing ? (
-        <ActivityIndicator size="small" color="#4CAF50" />
-      ) : (
-        <>
+  const renderProductCard = ({ item, index }: { item: Product; index: number }) => (
+    <AnimatedEntrance index={index} stagger={30} style={styles.cardWrap}>
+      <PressableScale haptic="select" style={styles.card} onPress={() => handlePress(item)}>
+        <View style={styles.cardImageWrap}>
           <Image
-            source={item.image}
-            style={updatedStyles.productImage}
+            source={getImageSource(item.name)}
+            style={styles.cardImage}
             placeholder={require('../../assets/logo.png')}
             contentFit="contain"
             transition={200}
             cachePolicy="memory-disk"
           />
-          <Text style={[updatedStyles.productName, isDarkMode && updatedStyles.productNameDark]}>{item.name}</Text>
-          <Text style={[updatedStyles.productPrice, isDarkMode && updatedStyles.productPriceDark]}>{item.displayprice}</Text>
-        </>
-      )}
-    </TouchableOpacity>
+        </View>
+        <Text style={styles.cardName} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
+        <Text style={styles.cardPrice}>🪙 {item.price}</Text>
+        <PressableScale haptic="tap" onPress={() => handleAddToCart(item)}>
+          <LinearGradient colors={Gradients.brand} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.cardAddButton}>
+            <Ionicons name="add" size={16} color="#FFFFFF" />
+            <Text style={styles.cardAddButtonText}>Add</Text>
+          </LinearGradient>
+        </PressableScale>
+      </PressableScale>
+    </AnimatedEntrance>
+  );
+
+  const renderPremiumCard = ({ item, index }: { item: PremProduct; index: number }) => (
+    <AnimatedEntrance index={index} stagger={30} style={styles.cardWrap}>
+      <PressableScale
+        haptic="tap"
+        style={styles.card}
+        onPress={() => {
+          if (!isPurchasing) {
+            buyItem(item).then(result => {
+              if (result.status === 'success') {
+                haptics.success();
+                Alert.alert('Success', result.message);
+              } else if (result.status !== 'user_cancelled') {
+                haptics.error();
+                Alert.alert('Purchase Failed', `${result.status}. ${result.error || ''}`);
+              }
+            });
+          }
+        }}
+        disabled={isPurchasing}
+      >
+        {isPurchasing ? (
+          <ActivityIndicator size="small" color={palette.accent} />
+        ) : (
+          <>
+            <View style={styles.cardImageWrap}>
+              <Image
+                source={item.image}
+                style={styles.cardImage}
+                placeholder={require('../../assets/logo.png')}
+                contentFit="contain"
+                transition={200}
+                cachePolicy="memory-disk"
+              />
+            </View>
+            <Text style={styles.cardName} numberOfLines={2} ellipsizeMode="tail">{item.name}</Text>
+            <View style={styles.premiumPricePill}>
+              <Text style={styles.premiumPriceText}>{item.displayprice}</Text>
+            </View>
+          </>
+        )}
+      </PressableScale>
+    </AnimatedEntrance>
   );
 
   // The cart "purchase mode" rendered as a native bottom sheet (shared with the
-  // landmine/loot/missile pickers). Defined once and used in both theme branches.
+  // landmine/loot/missile pickers).
   const renderCartSheet = () => (
     <InventoryBottomSheet
       visible={isCartVisible}
       onClose={hideCart}
       fitToContents
-      backgroundColor={isDarkMode ? '#1E1E1E' : '#FFFFFF'}
+      backgroundColor={palette.surface}
     >
-      <View style={updatedStyles.cartSheetContent}>
+      <View style={styles.cartSheetContent}>
+        <View style={styles.cartSheetHeader}>
+          <Text style={styles.cartSheetTitle}>Your Cart</Text>
+          <Pressable onPress={hideCart} hitSlop={8}>
+            <Ionicons name="close-circle" size={26} color={palette.textFaint} />
+          </Pressable>
+        </View>
         <Cart cart={cart} onRemove={handleRemove} />
-        <TouchableOpacity onPress={hideCart} style={updatedStyles.cartButton}>
-          <Text style={updatedStyles.cartButtonText}>Back to Products</Text>
-        </TouchableOpacity>
       </View>
     </InventoryBottomSheet>
   );
 
   return (
-    <SafeAreaView style={[updatedStyles.container, isDarkMode && updatedStyles.containerDark]}>
-      {!isDarkMode && (
-        <ImageBackground source={require('../../assets/store/mapbackdrop.png')} style={updatedStyles.backgroundImage}>
-          <Image source={require('../../assets/MissleWarsTitle.png')} style={updatedStyles.titleImage} />
-          <Image source={require('../../assets/store/SHOP.png')} style={updatedStyles.shopImage} />
-          <View style={updatedStyles.headerContainer}>
-            <View style={updatedStyles.currencyContainer}>
-              <Text style={[updatedStyles.currencyText, isDarkMode && updatedStyles.currencyTextDark]}>
-                🪙{currencyAmount}
-              </Text>
-            </View>
-            <View style={updatedStyles.switchContainer}>
-              <TouchableOpacity
-                style={[
-                  updatedStyles.toggleButton,
-                  isPremiumStore ? updatedStyles.coinsButton : updatedStyles.premiumButton,
-                ]}
-                onPress={() => setIsPremiumStore(!isPremiumStore)}
-              >
-                <Text style={updatedStyles.toggleButtonText}>
-                  {isPremiumStore ? 'Premium' : 'Coins'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {!isPremiumStore && (
-        <>
-          {renderTabs()}
-          <View style={updatedStyles.container}>
-            <FlatList
-              data={selectedCategory === 'All' 
-                ? sortedWeapons 
-                : sortedWeapons.filter(p => p.type === selectedCategory || (selectedCategory === 'Other' && (p.type === 'Other' || p.type === 'Loot Drops')))}
-              keyExtractor={(item) => item.id.toString()}
-              renderItem={renderButton}
-              numColumns={3}
-              columnWrapperStyle={updatedStyles.columnWrapper}
-              contentContainerStyle={updatedStyles.contentContainer}
-            />
-            <TouchableOpacity onPress={handleShowCart} style={updatedStyles.cartButton}>
-              <Text style={updatedStyles.cartButtonText}>Go to Cart</Text>
-            </TouchableOpacity>
-          </View>
-        </>
-      )}
-
-          {isPremiumStore && (
-            <View style={updatedStyles.container}>
-              {isLoadingPremium ? (
-                <View style={updatedStyles.loadingContainer}>
-                  <ActivityIndicator size="large" color="#4CAF50" />
-                  <Text style={updatedStyles.loadingText}>Loading premium products...</Text>
-                </View>
-              ) : (
-                <FlatList
-                  data={premiumProducts}
-                  keyExtractor={(item) => item.id.toString()}
-                  renderItem={premrenderButton}
-                  numColumns={3}
-                  columnWrapperStyle={updatedStyles.columnWrapper}
-                  contentContainerStyle={updatedStyles.contentContainer}
-                />
-              )}
-            </View>
-          )}
-
-          {renderCartSheet()}
-
-          <Modal
-            visible={modalVisible}
-            transparent={true}
-            animationType="fade"
-            onRequestClose={closeModal}
-          >
-            <TouchableOpacity
-              style={updatedStyles.modalOverlay}
-              activeOpacity={1}
-              onPress={closeModal}
-            >
-              <Animated.View
-                style={[
-                  {
-                    transform: [
-                      {
-                        scale: animation.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [0.8, 1],
-                        }),
-                      },
-                    ],
-                    opacity: animation,
-                  },
-                ]}
-              >
-                {renderProductDetails()}
-              </Animated.View>
-            </TouchableOpacity>
-          </Modal>
-        </ImageBackground>
-      )}
-      {isDarkMode && (
-        <View style={updatedStyles.containerDark}>
-          <Image source={require('../../assets/MissleWarsTitle.png')} style={updatedStyles.titleImage} />
-          <Image source={require('../../assets/store/SHOP.png')} style={updatedStyles.shopImage} />
-          <View style={updatedStyles.headerContainer}>
-            <View style={updatedStyles.currencyContainer}>
-              <Text style={[updatedStyles.currencyText, isDarkMode && updatedStyles.currencyTextDark]}>
-                🪙{currencyAmount}
-              </Text>
-            </View>
-            <View style={updatedStyles.switchContainer}>
-              <TouchableOpacity
-                style={[
-                  updatedStyles.toggleButton,
-                  isPremiumStore ? updatedStyles.coinsButton : updatedStyles.premiumButton,
-                ]}
-                onPress={() => setIsPremiumStore(!isPremiumStore)}
-              >
-                <Text style={updatedStyles.toggleButtonText}>
-                  {isPremiumStore ? 'Premium' : 'Coins'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {!isPremiumStore && (
-            <>
-              {renderTabs()}
-              <View style={updatedStyles.container}>
-                <FlatList
-                  data={selectedCategory === 'All' ? sortedWeapons : sortedWeapons.filter(p => p.type === selectedCategory || (selectedCategory === 'Other' && (p.type === 'Other' || p.type === 'Loot Drops')))}
-                  keyExtractor={(item) => item.id.toString()}
-                  renderItem={renderButton}
-                  numColumns={3}
-                  columnWrapperStyle={updatedStyles.columnWrapper}
-                  contentContainerStyle={updatedStyles.contentContainer}
-                />
-                <TouchableOpacity onPress={handleShowCart} style={updatedStyles.cartButton}>
-                  <Text style={updatedStyles.cartButtonText}>Go to Cart</Text>
-                </TouchableOpacity>
-              </View>
-            </>
-          )}
-
-          {isPremiumStore && (
-            <View style={updatedStyles.container}>
-              {isLoadingPremium ? (
-                <View style={updatedStyles.loadingContainer}>
-                  <ActivityIndicator size="large" color="#4CAF50" />
-                  <Text style={updatedStyles.loadingText}>Loading premium products...</Text>
-                </View>
-              ) : (
-                <FlatList
-                  data={premiumProducts}
-                  keyExtractor={(item) => item.id.toString()}
-                  renderItem={premrenderButton}
-                  numColumns={3}
-                  columnWrapperStyle={updatedStyles.columnWrapper}
-                  contentContainerStyle={updatedStyles.contentContainer}
-                />
-              )}
-            </View>
-          )}
-
-          {renderCartSheet()}
-
-          <Modal
-            visible={modalVisible}
-            transparent={true}
-            animationType="fade"
-            onRequestClose={closeModal}
-          >
-            <TouchableOpacity
-              style={updatedStyles.modalOverlay}
-              activeOpacity={1}
-              onPress={closeModal}
-            >
-              <Animated.View
-                style={[
-                  {
-                    transform: [
-                      {
-                        scale: animation.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [0.8, 1],
-                        }),
-                      },
-                    ],
-                    opacity: animation,
-                  },
-                ]}
-              >
-                {renderProductDetails()}
-              </Animated.View>
-            </TouchableOpacity>
-          </Modal>
+    <SafeAreaView style={styles.container}>
+      {/* Header: title + coin balance */}
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.headerTitle}>Store</Text>
+          <Text style={styles.headerSubtitle}>Stock up your arsenal</Text>
         </View>
+        <LinearGradient colors={Gradients.gold} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.coinPill}>
+          <Text style={styles.coinPillText}>🪙 {currencyAmount}</Text>
+        </LinearGradient>
+      </View>
+
+      {/* Coins / Premium segmented control */}
+      <View style={styles.segment}>
+        {(['Coins', 'Premium'] as const).map((mode) => {
+          const active = (mode === 'Premium') === isPremiumStore;
+          return (
+            <PressableScale
+              key={mode}
+              haptic="select"
+              style={[styles.segmentButton, active && styles.segmentButtonActive]}
+              onPress={() => setIsPremiumStore(mode === 'Premium')}
+            >
+              <Ionicons
+                name={mode === 'Coins' ? 'wallet' : 'diamond'}
+                size={15}
+                color={active ? '#FFFFFF' : palette.textMuted}
+              />
+              <Text style={[styles.segmentText, active && styles.segmentTextActive]}>{mode}</Text>
+            </PressableScale>
+          );
+        })}
+      </View>
+
+      {!isPremiumStore ? (
+        <>
+          {renderCategoryChips()}
+          <FlatList
+            data={filteredWeapons}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={renderProductCard}
+            numColumns={2}
+            columnWrapperStyle={styles.columnWrapper}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+          />
+          {/* Cart bar */}
+          <PressableScale haptic="tap" onPress={handleShowCart} style={styles.cartBarWrap}>
+            <LinearGradient colors={Gradients.brand} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.cartBar}>
+              <View style={styles.cartBarLeft}>
+                <Ionicons name="cart" size={20} color="#FFFFFF" />
+                {cartCount > 0 && (
+                  <View style={styles.cartBadge}>
+                    <Text style={styles.cartBadgeText}>{cartCount}</Text>
+                  </View>
+                )}
+              </View>
+              <Text style={styles.cartBarText}>
+                {cartCount > 0 ? `View Cart  ·  🪙 ${cartTotal}` : 'View Cart'}
+              </Text>
+              <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.8)" />
+            </LinearGradient>
+          </PressableScale>
+        </>
+      ) : (
+        isLoadingPremium ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={palette.accent} />
+            <Text style={styles.loadingText}>Loading premium products...</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={premiumProducts}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={renderPremiumCard}
+            numColumns={2}
+            columnWrapperStyle={styles.columnWrapper}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+          />
+        )
       )}
+
+      {renderCartSheet()}
+
+      {/* Product detail modal */}
+      <Modal
+        visible={modalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={closeModal}
+      >
+        <Pressable style={styles.modalOverlay} onPress={closeModal}>
+          <Animated.View
+            style={{
+              width: '100%',
+              transform: [
+                {
+                  scale: animation.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.8, 1],
+                  }),
+                },
+              ],
+              opacity: animation,
+            }}
+          >
+            {renderProductDetails()}
+          </Animated.View>
+        </Pressable>
+      </Modal>
+
       <AdBanner />
     </SafeAreaView>
   );
 }
+
+const getStyles = (palette: ThemePalette, isDark: boolean) => StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: palette.bg,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.md,
+  },
+  headerTitle: {
+    fontSize: 30,
+    fontWeight: '800',
+    color: palette.text,
+    letterSpacing: -0.5,
+  },
+  headerSubtitle: {
+    fontSize: 13,
+    color: palette.textMuted,
+    marginTop: 2,
+  },
+  coinPill: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    borderRadius: Radius.pill,
+    ...cardShadow(isDark),
+  },
+  coinPillText: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  segment: {
+    flexDirection: 'row',
+    marginHorizontal: Spacing.lg,
+    backgroundColor: palette.surfaceAlt,
+    borderRadius: Radius.pill,
+    padding: 4,
+    marginBottom: Spacing.md,
+  },
+  segmentButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: Spacing.sm + 2,
+    borderRadius: Radius.pill,
+  },
+  segmentButtonActive: {
+    backgroundColor: palette.accent,
+  },
+  segmentText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: palette.textMuted,
+  },
+  segmentTextActive: {
+    color: '#FFFFFF',
+  },
+  chipRow: {
+    flexDirection: 'row',
+    paddingHorizontal: Spacing.lg,
+    gap: Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: Radius.pill,
+    backgroundColor: palette.surface,
+    borderWidth: 1,
+    borderColor: palette.border,
+  },
+  chipActive: {
+    backgroundColor: palette.accent,
+    borderColor: palette.accent,
+  },
+  chipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: palette.textMuted,
+  },
+  chipTextActive: {
+    color: '#FFFFFF',
+  },
+  columnWrapper: {
+    paddingHorizontal: Spacing.lg,
+    gap: Spacing.md,
+  },
+  listContent: {
+    paddingBottom: Spacing.md,
+    gap: Spacing.md,
+  },
+  cardWrap: {
+    flex: 1,
+  },
+  card: {
+    flex: 1,
+    backgroundColor: palette.surface,
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: palette.border,
+    ...cardShadow(isDark),
+  },
+  cardImageWrap: {
+    width: '100%',
+    height: 84,
+    borderRadius: Radius.md,
+    backgroundColor: palette.surfaceAlt,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.sm,
+  },
+  cardImage: {
+    width: 64,
+    height: 64,
+  },
+  cardName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: palette.text,
+    textAlign: 'center',
+  },
+  cardPrice: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: palette.textMuted,
+    marginTop: 2,
+    marginBottom: Spacing.sm,
+  },
+  cardAddButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    borderRadius: Radius.pill,
+  },
+  cardAddButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  premiumPricePill: {
+    marginTop: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs + 2,
+    borderRadius: Radius.pill,
+    backgroundColor: palette.surfaceAlt,
+  },
+  premiumPriceText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: palette.accent,
+  },
+  cartBarWrap: {
+    marginHorizontal: Spacing.lg,
+    marginVertical: Spacing.sm,
+  },
+  cartBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md + 2,
+    borderRadius: Radius.lg,
+    ...cardShadow(isDark),
+  },
+  cartBarLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cartBadge: {
+    marginLeft: -8,
+    marginTop: -12,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#FF4D67',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  cartBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  cartBarText: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: palette.textMuted,
+  },
+  cartSheetContent: {
+    backgroundColor: palette.surface,
+    paddingBottom: Spacing.md,
+  },
+  cartSheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.sm,
+  },
+  cartSheetTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: palette.text,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    padding: Spacing.xl,
+  },
+  detailCard: {
+    width: '100%',
+    maxHeight: '100%',
+    backgroundColor: palette.surface,
+    borderRadius: Radius.xl,
+    padding: Spacing.xl,
+    ...cardShadow(isDark),
+  },
+  detailImageWrap: {
+    alignSelf: 'center',
+    width: 140,
+    height: 140,
+    borderRadius: Radius.lg,
+    backgroundColor: palette.surfaceAlt,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.lg,
+  },
+  detailImage: {
+    width: 110,
+    height: 110,
+  },
+  detailTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: palette.text,
+    textAlign: 'center',
+  },
+  detailPriceRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  coinChipSmall: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs + 1,
+    borderRadius: Radius.pill,
+    backgroundColor: palette.surfaceAlt,
+  },
+  coinChipSmallText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: palette.text,
+  },
+  typeChip: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs + 1,
+    borderRadius: Radius.pill,
+    backgroundColor: isDark ? 'rgba(142, 142, 255, 0.18)' : 'rgba(91, 91, 240, 0.12)',
+  },
+  typeChipText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: palette.accent,
+  },
+  detailDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: palette.textMuted,
+    textAlign: 'center',
+    marginBottom: Spacing.lg,
+  },
+  statsCard: {
+    backgroundColor: palette.surfaceAlt,
+    borderRadius: Radius.md,
+    padding: Spacing.md,
+    gap: Spacing.sm,
+    marginBottom: Spacing.lg,
+  },
+  statRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  statIconWrap: {
+    width: 26,
+    alignItems: 'flex-start',
+  },
+  statLabel: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '600',
+    color: palette.textMuted,
+  },
+  statValue: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: palette.text,
+  },
+  detailAddButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    paddingVertical: Spacing.md + 2,
+    borderRadius: Radius.lg,
+  },
+  detailAddButtonText: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+});
+
 export default StorePage;

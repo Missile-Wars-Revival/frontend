@@ -1,12 +1,18 @@
 import React, { useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, GestureResponderEvent, Alert, StyleSheet, useColorScheme } from 'react-native'; // make sure to install axios or use fetch
+import { View, Text, FlatList, GestureResponderEvent, Alert, StyleSheet, useColorScheme } from 'react-native';
+import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import axiosInstance from '../../api/axios-instance';
 import * as SecureStore from "expo-secure-store";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from "expo-router";
 import { Product } from '../../api/store';
+import Ionicons from '@react-native-vector-icons/ionicons';
 import CartPurchaseAnimation from '../Animations/CartPurchaseAnimation';
 import { useOnboarding } from '../../util/Context/onboardingContext';
+import { getPalette, Gradients, Spacing, Radius, type ThemePalette } from '../ui/theme';
+import { PressableScale } from '../ui/PressableScale';
+import { haptics } from '../ui/haptics';
 
 interface CartItem {
   product: Product;
@@ -21,21 +27,33 @@ interface CartProps {
 const Cart: React.FC<CartProps> = ({ cart, onRemove }) => {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
+  const palette = getPalette(isDarkMode);
+  const styles = getStyles(palette);
   const { currentStep, setCurrentStep, moveToNextStep } = useOnboarding();
 
   const totalPrice = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
 
-  const styles = getStyles(isDarkMode);
-
   const renderItem = ({ item }: { item: CartItem }) => (
     <View style={styles.cartItem}>
-      <Text style={styles.productName}>{item.product.name}</Text>
-      <Text style={styles.productPrice}>
-        {item.quantity} x 🪙{item.product.price.toFixed(2)}
-      </Text>
-      <TouchableOpacity onPress={() => onRemove(item.product.id)} style={styles.removeButton}>
-        <Text style={styles.removeButtonText}>Remove</Text>
-      </TouchableOpacity>
+      <View style={styles.itemImageWrap}>
+        <Image
+          source={item.product.image}
+          style={styles.itemImage}
+          placeholder={require('../../assets/logo.png')}
+          contentFit="contain"
+          cachePolicy="memory-disk"
+        />
+      </View>
+      <View style={styles.itemInfo}>
+        <Text style={styles.productName} numberOfLines={1} ellipsizeMode="tail">{item.product.name}</Text>
+        <Text style={styles.productPrice}>
+          {item.quantity} × 🪙 {item.product.price}
+        </Text>
+      </View>
+      <Text style={styles.lineTotal}>🪙 {item.product.price * item.quantity}</Text>
+      <PressableScale haptic="heavy" onPress={() => onRemove(item.product.id)} style={styles.removeButton}>
+        <Ionicons name="trash-outline" size={18} color="#FF4D67" />
+      </PressableScale>
     </View>
   );
 
@@ -43,6 +61,7 @@ const Cart: React.FC<CartProps> = ({ cart, onRemove }) => {
 
   async function checkout(event: GestureResponderEvent): Promise<void> {
     if (cart.length === 0) {
+      haptics.warning();
       Alert.alert("Checkout Unavailable", "Your cart is empty.");
       return;
     }
@@ -72,12 +91,14 @@ const Cart: React.FC<CartProps> = ({ cart, onRemove }) => {
       money: totalPrice,
     })
       .then(async response => {
+        haptics.success();
         setShowAnimation(true);
         if (currentStep === 'checkout') {
           moveToNextStep();
         }
       })
       .catch(error => {
+        haptics.error();
         Alert.alert("Checkout Failed", error.response?.data.message || "An error occurred during checkout.");
         console.error('Checkout failed', error);
       });
@@ -93,74 +114,134 @@ const Cart: React.FC<CartProps> = ({ cart, onRemove }) => {
 
   return (
     <View style={styles.cartContainer}>
-      <FlatList
-        data={cart}
-        keyExtractor={(item) => item.product.id.toString()}
-        renderItem={renderItem}
-      />
-      <Text style={styles.totalPrice}>Total: {totalPrice} Coins</Text>
-      <TouchableOpacity onPress={checkout} style={styles.checkoutButton}>
-        <Text style={styles.checkoutButtonText}>Checkout All Items</Text>
-      </TouchableOpacity>
+      {cart.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Ionicons name="cart-outline" size={44} color={palette.textFaint} />
+          <Text style={styles.emptyTitle}>Your cart is empty</Text>
+          <Text style={styles.emptySubtitle}>Add weapons and gear from the store.</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={cart}
+          keyExtractor={(item) => item.product.id.toString()}
+          renderItem={renderItem}
+        />
+      )}
+      <View style={styles.totalRow}>
+        <Text style={styles.totalLabel}>Total</Text>
+        <Text style={styles.totalPrice}>🪙 {totalPrice}</Text>
+      </View>
+      <PressableScale haptic="tap" onPress={checkout}>
+        <LinearGradient colors={Gradients.success} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.checkoutButton}>
+          <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
+          <Text style={styles.checkoutButtonText}>Checkout All Items</Text>
+        </LinearGradient>
+      </PressableScale>
       {showAnimation && (
-        <CartPurchaseAnimation 
-          cartItems={cart} 
-          onAnimationComplete={handleAnimationComplete} 
+        <CartPurchaseAnimation
+          cartItems={cart}
+          onAnimationComplete={handleAnimationComplete}
         />
       )}
     </View>
   );
 };
 
-const getStyles = (isDarkMode: boolean) => StyleSheet.create({
+const getStyles = (palette: ThemePalette) => StyleSheet.create({
   cartContainer: {
-    backgroundColor: isDarkMode ? '#1E1E1E' : '#FFFFFF',
+    backgroundColor: palette.surface,
+    paddingHorizontal: Spacing.lg,
   },
   cartItem: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: isDarkMode ? '#3D3D3D' : '#E0E0E0',
+    paddingVertical: Spacing.sm + 2,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: palette.border,
+    gap: Spacing.md,
+  },
+  itemImageWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: Radius.sm,
+    backgroundColor: palette.surfaceAlt,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  itemImage: {
+    width: 34,
+    height: 34,
+  },
+  itemInfo: {
+    flex: 1,
   },
   productName: {
-    flex: 1,
-    fontSize: 16,
-    color: isDarkMode ? '#FFFFFF' : '#000000',
+    fontSize: 15,
+    fontWeight: '700',
+    color: palette.text,
   },
   productPrice: {
+    fontSize: 12,
+    color: palette.textMuted,
+    marginTop: 2,
+  },
+  lineTotal: {
     fontSize: 14,
-    color: isDarkMode ? '#B0B0B0' : '#666666',
-    marginRight: 10,
+    fontWeight: '800',
+    color: palette.text,
   },
   removeButton: {
-    backgroundColor: '#FF6B6B',
-    padding: 5,
-    borderRadius: 5,
+    width: 34,
+    height: 34,
+    borderRadius: Radius.sm,
+    backgroundColor: 'rgba(255, 77, 103, 0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  removeButtonText: {
-    color: '#FFFFFF',
-    fontSize: 12,
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: Spacing.xxl,
+    gap: Spacing.xs,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: palette.text,
+    marginTop: Spacing.sm,
+  },
+  emptySubtitle: {
+    fontSize: 13,
+    color: palette.textMuted,
+  },
+  totalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
+  },
+  totalLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: palette.textMuted,
   },
   totalPrice: {
     fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'right',
-    padding: 10,
-    color: isDarkMode ? '#FFFFFF' : '#000000',
+    fontWeight: '800',
+    color: palette.text,
   },
   checkoutButton: {
-    backgroundColor: '#4CAF50',
-    padding: 15,
-    borderRadius: 5,
-    margin: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    paddingVertical: Spacing.md + 2,
+    borderRadius: Radius.lg,
+    marginBottom: Spacing.sm,
   },
   checkoutButtonText: {
-    color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: 'bold',
-    textAlign: 'center',
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
 });
 

@@ -48,23 +48,25 @@ export const AllLandMines = (props: AllLandmineProps) => {
 
     return (
         <>
-        {props.landminedata
-            .filter(landmine => {
+        {props.landminedata.flatMap((landmine, index) => {
                 const distance = calculateDistance(userLocation, landmine.location);
-                return (showAllLandmines && distance <= leagueairspace) || landmine.placedby === userNAME;
-            })
-            .map(({ type, location, placedby, placedtime, etaexpiretime }, index) => (
-                <React.Fragment key={index}>
-                    <MapLandmine 
-                        location={location} 
-                        type={type} 
-                        placedby={placedby} 
-                        placedtime={placedtime} 
-                        etaexpiretime={etaexpiretime} 
-                        getImageForProduct={getImageForProduct}
-                    />
-                </React.Fragment>
-            ))}
+                if (!((showAllLandmines && distance <= leagueairspace) || landmine.placedby === userNAME)) {
+                    return [];
+                }
+                const { type, location, placedby, placedtime, etaexpiretime } = landmine;
+                return (
+                    <React.Fragment key={index}>
+                        <MapLandmine
+                            location={location}
+                            type={type}
+                            placedby={placedby}
+                            placedtime={placedtime}
+                            etaexpiretime={etaexpiretime}
+                            getImageForProduct={getImageForProduct}
+                        />
+                    </React.Fragment>
+                );
+            })}
         </>
     );
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Modal, Text, View, Dimensions, Alert, StyleSheet, TouchableOpacity, Platform , useColorScheme } from 'react-native';
+import { Modal, Text, View, Dimensions, Alert, StyleSheet, Pressable, Platform , useColorScheme } from 'react-native';
 import MapView, { Marker, Circle, Polygon } from 'react-native-maps';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -26,12 +26,15 @@ import { androidCyberpunkMapStyle } from '../../map-themes/Android-themes/cyberp
 import { androidRadarMapStyle } from '../../map-themes/Android-themes/radarMapStyle';
 import { useOnboarding } from '../../util/Context/onboardingContext';
 import { getLeagueAirspace } from '../player'; // Import the airspace calculation function
+import { triggerGameEffect } from '../effects/game-effects';
+import { gameHaptics } from '../../util/haptics';
 
 const GOOGLE_PLACES_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 
 interface LandminePlacementPopupProps {
   visible: boolean;
   onClose: () => void;
+  onDismissed?: () => void;
   selectedLandmine: { type: string };
   onLandminePlaced: () => void;
 }
@@ -43,7 +46,7 @@ interface Region {
   longitudeDelta: number;
 }
 
-export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ visible, onClose, selectedLandmine, onLandminePlaced }) => {
+export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ visible, onClose, onDismissed, selectedLandmine, onLandminePlaced }) => {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
 
@@ -184,18 +187,22 @@ export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ 
 
   const handleLandminePlacement = () => {
     if (!marker || !currentLocation) {
+      gameHaptics.warning();
       Alert.alert('Not Ready', 'Waiting for your location. Please try again in a moment.');
       return;
     }
 
     if (!isValidPlacement) {
+      gameHaptics.error();
       Alert.alert('Out of Range', 'You can only place landmines within your league airspace. Tap a location inside the green circle.');
       return;
     }
 
-    // Close the popup and trigger callback immediately
+    // Arming feedback: click-clack haptic + full-screen Skia arming animation.
+    triggerGameEffect('landmineArm');
+
+    // The parent owns closing: it dismisses this popup first, then the sheet.
     onLandminePlaced();
-    onClose();
 
     // Place the Landmine in the background
     console.log(`PLACING Landmine: Dest coords: ${marker.latitude}, ${marker.longitude}; sentbyUser: ${userName} Landmine Type: ${selectedLandmine.type}, current coords: ${currentLocation.latitude}, ${currentLocation.longitude}`);
@@ -236,6 +243,12 @@ export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ 
     };
 
     const isValid = currentLocation ? isWithinAirspace(newMarker, currentLocation) : false;
+    // Distinct tick vs. warning so players can feel valid/invalid spots.
+    if (isValid) {
+      gameHaptics.selection();
+    } else {
+      gameHaptics.warning();
+    }
     setIsValidPlacement(isValid);
     setMarker(newMarker);
 
@@ -275,6 +288,7 @@ export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ 
       transparent={true}
       visible={visible}
       onRequestClose={onClose}
+      onDismiss={onDismissed}
     >
       <View style={[styles.modalContainer, isDarkMode && styles.modalContainerDark]}>
         <View style={[styles.modalContent, isDarkMode && styles.modalContentDark]}>
@@ -430,10 +444,10 @@ export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ 
             </View>
           )}
           <View style={styles.buttonContainer}>
-            <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={onClose}>
+            <Pressable style={[styles.button, styles.cancelButton]} onPress={onClose}>
               <Text style={styles.buttonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
+            </Pressable>
+            <Pressable
               style={[
                 styles.button,
                 styles.placeButton,
@@ -443,7 +457,7 @@ export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ 
               disabled={!isValidPlacement}
             >
               <Text style={styles.buttonText}>Place</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
       </View>
