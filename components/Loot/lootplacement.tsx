@@ -141,12 +141,6 @@ export const LootPlacementPopup: React.FC<LootPlacementPopupProps> = ({ visible,
   }
 
   useEffect(() => {
-    if (visible) {
-      initializeLocation();
-    }
-  }, [visible]);
-
-  useEffect(() => {
     const initializeApp = async () => {
       try {
         const isDBConnection = await AsyncStorage.getItem('dbconnection');
@@ -219,6 +213,7 @@ export const LootPlacementPopup: React.FC<LootPlacementPopupProps> = ({ visible,
       visible={visible}
       onRequestClose={onClose}
       onDismiss={onDismissed}
+      onShow={() => { void initializeLocation(); }}
     >
       <View style={[styles.modalContainer, isDarkMode && styles.modalContainerDark]}>
         <View style={[styles.modalContent, isDarkMode && styles.modalContentDark]}>

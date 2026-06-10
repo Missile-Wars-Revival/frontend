@@ -142,13 +142,6 @@ export const MissilePlacementPopup: React.FC<MissilePlacementPopupProps> = ({ vi
     }
   }
 
-  // Load last known location from cache or request current location on modal open
-  useEffect(() => {
-    if (visible) {
-      initializeLocation();
-    }
-  }, [visible]);
-
   useEffect(() => {
     const initializeApp = async () => {
       try {
@@ -243,6 +236,7 @@ export const MissilePlacementPopup: React.FC<MissilePlacementPopupProps> = ({ vi
       visible={visible}
       onRequestClose={onClose}
       onDismiss={onDismissed}
+      onShow={() => { void initializeLocation(); }}
     >
       <View style={[styles.modalContainer, isDarkMode && styles.modalContainerDark]}>
         <View style={[styles.modalContent, isDarkMode && styles.modalContentDark]}>

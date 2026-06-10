@@ -150,12 +150,6 @@ export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ 
   }
 
   useEffect(() => {
-    if (visible) {
-      initializeLocation();
-    }
-  }, [visible]);
-
-  useEffect(() => {
     const initializeApp = async () => {
       try {
         const isDBConnection = await AsyncStorage.getItem('dbconnection');
@@ -282,6 +276,7 @@ export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ 
       visible={visible}
       onRequestClose={onClose}
       onDismiss={onDismissed}
+      onShow={() => { void initializeLocation(); }}
     >
       <View style={[styles.modalContainer, isDarkMode && styles.modalContainerDark]}>
         <View style={[styles.modalContent, isDarkMode && styles.modalContentDark]}>
