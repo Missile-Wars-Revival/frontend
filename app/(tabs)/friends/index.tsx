@@ -371,7 +371,7 @@ const FriendsPage: React.FC = () => {
         <PressableScale
           haptic="tap"
           onPress={() => router.navigate("/friends/msg")}
-          style={[styles.fab, { bottom: floatingAboveTabBar(insets.bottom) }]}
+          style={[styles.fab, { bottom: floatingAboveTabBar(insets.bottom, 0) }]}
         >
           <LinearGradient colors={Gradients.brand} style={styles.fabFill}>
             <Ionicons name="chatbubble-ellipses" size={26} color="#fff" />

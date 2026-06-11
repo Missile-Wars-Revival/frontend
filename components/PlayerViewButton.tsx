@@ -13,13 +13,7 @@ import { useRouter } from "expo-router";
 import useFetchMissiles from '../hooks/websockets/missilehook';
 import { Missile } from "middle-earth";
 import MapView, { Marker } from 'react-native-maps';
-import { MapStyle } from '../types/types';
-import { androidCherryBlossomMapStyle } from '../map-themes/Android-themes/cherryBlossomMapStyle';
-import { androidColorblindMapStyle } from '../map-themes/Android-themes/colourblindstyle';
-import { androidCyberpunkMapStyle } from '../map-themes/Android-themes/cyberpunkstyle';
-import { androidDefaultMapStyle } from '../map-themes/Android-themes/defaultMapStyle';
-import { androidRadarMapStyle } from '../map-themes/Android-themes/radarMapStyle';
-import { IOSDefaultMapStyle, IOSRadarMapStyle, IOSCherryBlossomMapStyle, IOSCyberpunkMapStyle, IOSColorblindMapStyle } from '../map-themes/IOS-themes/themestemp';
+import { useStoredMapStyle } from '../hooks/useStoredMapStyle';
 import FriendAddedAnimation from "../components/Animations/FriendAddedAnimation";
 import { getImages } from '../api/store';
 import { useOnboarding } from '../util/Context/onboardingContext';
@@ -64,7 +58,7 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
   const [fadeAnim] = useState(() => new Animated.Value(1));
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const mapRef = useRef<MapView>(null);
-  const [currentMapStyle, setCurrentMapStyle] = useState<MapStyle[]>(Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle);
+  const currentMapStyle = useStoredMapStyle();
   const [showAnimation, setShowAnimation] = useState(false);
   const [getImageForProduct, setGetImageForProduct] = useState<(imageName: string) => any>(() => () => require('../assets/logo.png'));
   const { currentStep, moveToNextStep } = useOnboarding();
@@ -151,47 +145,6 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
     };
 
     initializeApp();
-  }, []);
-
-  useEffect(() => {
-    const loadStoredMapStyle = async () => {
-      try {
-        const storedStyle = await AsyncStorage.getItem('selectedMapStyle');
-        if (storedStyle) {
-          // Check if the stored value is a simple string (like "default")
-          if (['default', 'radar', 'cherry', 'cyber', 'colourblind'].includes(storedStyle)) {
-            // Convert the string to the corresponding map style
-            switch (storedStyle) {
-              case 'default':
-                setCurrentMapStyle(Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle);
-                break;
-              case 'radar':
-                setCurrentMapStyle(Platform.OS === 'android' ? androidRadarMapStyle : IOSRadarMapStyle);
-                break;
-              case 'cherry':
-                setCurrentMapStyle(Platform.OS === 'android' ? androidCherryBlossomMapStyle : IOSCherryBlossomMapStyle);
-                break;
-              case 'cyber':
-                setCurrentMapStyle(Platform.OS === 'android' ? androidCyberpunkMapStyle : IOSCyberpunkMapStyle);
-                break;
-              case 'colourblind':
-                setCurrentMapStyle(Platform.OS === 'android' ? androidColorblindMapStyle : IOSColorblindMapStyle);
-                break;
-            }
-          } else {
-            // If it's not a simple string, try to parse it as JSON
-            const parsedStyle = JSON.parse(storedStyle) as MapStyle[];
-            setCurrentMapStyle(parsedStyle);
-          }
-        }
-      } catch (error) {
-        console.error('Error loading stored map style:', error);
-        // Fallback to default style
-        setCurrentMapStyle(Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle);
-      }
-    };
-
-    loadStoredMapStyle();
   }, []);
 
   const handleAddFriend = async (friendUsername: string) => {

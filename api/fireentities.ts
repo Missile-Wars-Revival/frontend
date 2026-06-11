@@ -1,177 +1,76 @@
 import axiosInstance from "./axios-instance";
 import * as SecureStore from "expo-secure-store";
 
-export const firemissileloc = async (destlat: string, destlong: string, type: string,) => {
+// All entity endpoints share the same shape: attach the stored auth token to
+// the body and post. `label` names the action in logs and thrown errors.
+const postWithToken = async (
+  endpoint: string,
+  label: string,
+  body: Record<string, unknown>
+) => {
   const token = await SecureStore.getItemAsync("token");
   try {
     if (!token) {
-      console.log('Token not found');
+      console.log("Token not found");
       return;
     }
 
-    const destLat = destlat.toString();
-    const destLong = destlong.toString();
-
-    const response = await axiosInstance.post("/api/firemissile@loc", {
-      token,
-      destLat,
-      destLong,
-      type,
-    });
-    return response.data
+    const response = await axiosInstance.post(endpoint, { token, ...body });
+    return response.data;
   } catch (error) {
-    console.error("Failed to update isAlive status:", error);
-    throw new Error('Failed to update isAlive mode.');
+    console.error(`Failed to ${label}:`, error);
+    throw new Error(`Failed to ${label}.`);
   }
 };
 
-export const firemissileplayer = async (playerusername: string, type: string,) => {
-  const token = await SecureStore.getItemAsync("token");
-  try {
-    if (!token) {
-      console.log('Token not found');
-      return;
-    }
+export const firemissileloc = (destlat: string, destlong: string, type: string) =>
+  postWithToken("/api/firemissile@loc", "fire missile at location", {
+    destLat: destlat.toString(),
+    destLong: destlong.toString(),
+    type,
+  });
 
-    const response = await axiosInstance.post("/api/firemissile@player", {
-      token,
-      playerusername,
-      type,
-    });
-    return response.data
-  } catch (error) {
-    console.error("Failed to update isAlive status:", error);
-    throw new Error('Failed to update isAlive mode.');
-  }
-};
+export const firemissileplayer = (playerusername: string, type: string) =>
+  postWithToken("/api/firemissile@player", "fire missile at player", {
+    playerusername,
+    type,
+  });
 
-export const placelandmine = async (loclat: string, loclong: string, landminetype: string,) => {
-  const token = await SecureStore.getItemAsync("token");
-  try {
-    if (!token) {
-      console.log('Token not found');
-      return;
-    }
+export const placelandmine = (loclat: string, loclong: string, landminetype: string) =>
+  postWithToken("/api/placelandmine", "place landmine", {
+    locLat: loclat.toString(),
+    locLong: loclong.toString(),
+    landminetype,
+  });
 
-    const locLat = loclat.toString();
-    const locLong = loclong.toString();
+export const steppedonlandmine = (landmineid: number, landminedamage: number) =>
+  postWithToken("/api/steppedonlandmine", "process landmine hit", {
+    landmineid,
+    landminedamage,
+  });
 
-    const response = await axiosInstance.post("/api/placelandmine", {
-      token,
-      locLat,
-      locLong,
-      landminetype,
-    });
-    return response.data
-  } catch (error) {
-    console.error("Failed to update isAlive status:", error);
-    throw new Error('Failed to update isAlive mode.');
-  }
-};
+export const placeLoot = (loclat: string, loclong: string) =>
+  postWithToken("/api/placeloot", "place loot", {
+    locLat: loclat.toString(),
+    locLong: loclong.toString(),
+  });
 
-export const steppedonlandmine = async (landmineid: number, landminedamage: number) => {
-  const token = await SecureStore.getItemAsync("token");
-  try {
-    if (!token) {
-      console.log('Token not found');
-      return;
-    }
+export const lootpickup = (lootid: number, amount: number) =>
+  postWithToken("/api/lootpickup", "pick up loot", {
+    lootid,
+    amount,
+  });
 
-    const response = await axiosInstance.post("/api/steppedonlandmine", {
-      token,
-      landmineid,
-      landminedamage,
-    });
-    return response.data
-  } catch (error) {
-    console.error("Failed to update isAlive status:", error);
-    throw new Error('Failed to update isAlive mode.');
-  }
-};
+export const initreward = (itemType: string, type: string, sentby: string) =>
+  postWithToken("/api/deathreward", "process death reward", {
+    itemType,
+    type,
+    sentby,
+  });
 
-export const placeLoot = async (loclat: string, loclong: string) => {
-  const token = await SecureStore.getItemAsync("token");
-  try {
-    if (!token) {
-      console.log('Token not found');
-      return;
-    }
-
-    const locLat = loclat.toString();
-    const locLong = loclong.toString();
-
-    const response = await axiosInstance.post("/api/placeloot", {
-      token,
-      locLat,
-      locLong,
-    });
-    return response.data
-  } catch (error) {
-    console.error("Failed to update isAlive status:", error);
-    throw new Error('Failed to update isAlive mode.');
-  }
-};
-
-export const lootpickup = async (lootid: number, amount: number) => {
-  const token = await SecureStore.getItemAsync("token");
-  try {
-    if (!token) {
-      console.log('Token not found');
-      return;
-    }
-
-    const response = await axiosInstance.post("/api/lootpickup", {
-      token,
-      lootid,
-      amount,
-    });
-    return response.data
-  } catch (error) {
-    console.error("Failed to update isAlive status:", error);
-    throw new Error('Failed to update isAlive mode.');
-  }
-};
-
-export const initreward = async (itemType: string, type: string, sentby: string) => {
-  const token = await SecureStore.getItemAsync("token");
-  try {
-    if (!token) {
-      console.log('Token not found');
-      return;
-    }
-
-
-
-    const response = await axiosInstance.post("/api/deathreward", {
-      token,
-      itemType,
-      type,
-      sentby,
-    });
-    return response.data
-  } catch (error) {
-    console.error("Failed to update isAlive status:", error);
-    throw new Error('Failed to update isAlive mode.');
-  }
-};
-
-export const placeOther = async (loclat: string, loclong: string, type: string) => {
-  const token = await SecureStore.getItemAsync("token");
-  try {
-    if (!token) {
-      console.log('Token not found');
-      return;
-    }
-    const response = await axiosInstance.post("/api/placeshield", {
-      token,
-      type,
-      loclat,
-      loclong,
-    });
-    return response.data
-
-  } catch (error) {
-    console.error("Failed to update isAlive status:", error);
-    throw new Error('Failed to update isAlive mode.');
-  }
-};
+export const placeOther = (loclat: string, loclong: string, type: string) =>
+  postWithToken("/api/placeshield", "place shield", {
+    type,
+    loclat,
+    loclong,
+  });

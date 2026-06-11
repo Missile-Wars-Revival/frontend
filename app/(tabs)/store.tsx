@@ -15,7 +15,7 @@ import { additem } from '../../api/add-item';
 import { getWeaponTypes, mapProductType, PremProduct, Product, getImages } from '../../api/store';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { useOnboarding } from '../../util/Context/onboardingContext';
-import { getPalette, Gradients, Spacing, Radius, cardShadow, tabContentBottomGap, type ThemePalette } from '../../components/ui/theme';
+import { getPalette, Gradients, Spacing, Radius, cardShadow, floatingAboveTabBar, type ThemePalette } from '../../components/ui/theme';
 import { SegmentedControl } from '../../components/ui/SegmentedControl';
 import { PressableScale } from '../../components/ui/PressableScale';
 import { AnimatedEntrance } from '../../components/ui/AnimatedEntrance';
@@ -724,7 +724,7 @@ const StorePage: React.FC = () => {
 const CART_BAR_HEIGHT = 56;
 
 const getStyles = (palette: ThemePalette, isDark: boolean, bottomInset: number) => {
-  const cartBarBottom = tabContentBottomGap(Spacing.sm);
+  const cartBarBottom = floatingAboveTabBar(bottomInset, Spacing.md);
 
   return StyleSheet.create({
   container: {
@@ -888,6 +888,8 @@ const getStyles = (palette: ThemePalette, isDark: boolean, bottomInset: number) 
     left: Spacing.lg,
     right: Spacing.lg,
     bottom: cartBarBottom,
+    zIndex: 20,
+    elevation: 20,
   },
   cartBar: {
     flexDirection: 'row',
