@@ -22,7 +22,7 @@ export const FireSelector = (props: FireSelectorProps) => {
     return (
         <View>
             {/* Missile library popup */}
-            <MissileLibraryView MissileModalVisible={MissileModalVisible} MissileModalHandler={() => setMissileModalVisible(false)} selectedPlayerUsername={""} />
+            <MissileLibraryView MissileModalVisible={MissileModalVisible} MissileModalHandler={() => setMissileModalVisible(false)} />
 
             {/* Landmine library popup */}
             <LandmineLibraryView LandmineModalVisible={LandmineModalVisible} landminePlaceHandler={() => setLandmineModalVisible(false)} />
