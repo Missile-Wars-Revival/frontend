@@ -737,7 +737,7 @@ const StorePage: React.FC = () => {
 const CART_BAR_HEIGHT = 56;
 
 const getStyles = (palette: ThemePalette, isDark: boolean, bottomInset: number) => {
-  const cartBarBottom = floatingAboveTabBar(bottomInset, Spacing.xs);
+  const cartBarBottom = floatingAboveTabBar(bottomInset, 0);
 
   return StyleSheet.create({
   container: {

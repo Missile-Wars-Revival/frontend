@@ -50,7 +50,7 @@ const INNER_WIDTH = width - 32;
 
 export default function Auth() {
   const { expoPushToken } = usePushNotifications();
-  const notificationToken = expoPushToken?.data ?? 'No token';
+  const notificationToken = expoPushToken?.data ?? '';
   const { setIsSignedIn } = useAuth();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';

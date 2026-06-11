@@ -1,0 +1,13 @@
+diff --git a/node_modules/@react-native-google-signin/google-signin/expo/ios/ExpoAdapterGoogleSignIn.podspec b/node_modules/@react-native-google-signin/google-signin/expo/ios/ExpoAdapterGoogleSignIn.podspec
+index 2d04cb7..033fa46 100644
+--- a/node_modules/@react-native-google-signin/google-signin/expo/ios/ExpoAdapterGoogleSignIn.podspec
++++ b/node_modules/@react-native-google-signin/google-signin/expo/ios/ExpoAdapterGoogleSignIn.podspec
+@@ -10,7 +10,7 @@ Pod::Spec.new do |s|
+   s.license        = package['license']
+   s.author         = package['author']
+   s.homepage       = package['homepage']
+-  s.platform       = :ios, '13.4'
++  s.platform       = :ios, '16.4'
+   s.swift_version  = '5.4'
+   s.source         = { :git => 'https://github.com/react-native-google-signin/google-signin.git', :tag => "v#{package['version']}" }
+   s.static_framework = true

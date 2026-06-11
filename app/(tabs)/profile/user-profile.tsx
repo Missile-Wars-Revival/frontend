@@ -3,6 +3,7 @@ import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Tex
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import * as SecureStore from 'expo-secure-store';
 import { addFriend } from '../../../api/friends';
@@ -11,7 +12,7 @@ import useFetchFriends from '../../../hooks/websockets/friendshook';
 import { Avatar } from '../../../components/ui/Avatar';
 import { AnimatedEntrance } from '../../../components/ui/AnimatedEntrance';
 import { PressableScale } from '../../../components/ui/PressableScale';
-import { getPalette, Gradients, Radius, Spacing, cardShadow } from '../../../components/ui/theme';
+import { getPalette, Gradients, Radius, Spacing, cardShadow, floatingAboveTabBar } from '../../../components/ui/theme';
 
 const badgeImages = {
   Founder: require('../../../assets/icons/founder.png'),
@@ -68,6 +69,7 @@ const UserProfilePage: React.FC = () => {
   const friends = useFetchFriends();
   const isDarkMode = useColorScheme() === 'dark';
   const c = getPalette(isDarkMode);
+  const insets = useSafeAreaInsets();
 
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [selectedBadge, setSelectedBadge] = useState<string | null>(null);
@@ -157,7 +159,13 @@ const UserProfilePage: React.FC = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: c.bg }]}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: floatingAboveTabBar(insets.bottom, Spacing.xl) },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
         <LinearGradient
           colors={isDarkMode ? ['#241B45', '#15172B'] : Gradients.brand}
           start={{ x: 0, y: 0 }}

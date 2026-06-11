@@ -1,0 +1,13 @@
+diff --git a/node_modules/@bacons/apple-targets/ios/ExtensionStorage.podspec b/node_modules/@bacons/apple-targets/ios/ExtensionStorage.podspec
+index ba12b6c..c65b189 100644
+--- a/node_modules/@bacons/apple-targets/ios/ExtensionStorage.podspec
++++ b/node_modules/@bacons/apple-targets/ios/ExtensionStorage.podspec
+@@ -5,7 +5,7 @@ Pod::Spec.new do |s|
+   s.description    = 'A sample project description'
+   s.author         = ''
+   s.homepage       = 'https://docs.expo.dev/modules/'
+-  s.platform       = :ios, '15.1'
++  s.platform       = :ios, '16.4'
+   s.source         = { git: '' }
+   s.static_framework = true
+ 

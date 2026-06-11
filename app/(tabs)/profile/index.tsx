@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { StyleSheet, Text, View, Switch, Modal, ScrollView, FlatList, Alert, Dimensions, Pressable, AlertButton, Linking, TextInput, useColorScheme, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from "expo-secure-store";
 import Ionicons from '@react-native-vector-icons/ionicons';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
@@ -20,7 +20,7 @@ import { getImages } from '../../../api/store';
 import AnimatedEntrance from '../../../components/ui/AnimatedEntrance';
 import PressableScale from '../../../components/ui/PressableScale';
 import haptics from '../../../components/ui/haptics';
-import { getPalette, Gradients, Radius, Spacing, cardShadow } from '../../../components/ui/theme';
+import { getPalette, Gradients, Radius, Spacing, cardShadow, floatingAboveTabBar } from '../../../components/ui/theme';
 
 const { width } = Dimensions.get('window');
 
@@ -63,6 +63,7 @@ const ProfilePage: React.FC = () => {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
   const c = getPalette(isDarkMode);
+  const insets = useSafeAreaInsets();
 
   const [modalVisible, setModalVisible] = useState(false);
   const [userImageUrl, setUserImageUrl] = useState<string | null>(null);
@@ -94,7 +95,7 @@ const ProfilePage: React.FC = () => {
       const name = await SecureStore.getItemAsync("username");
       const token = await SecureStore.getItemAsync("token");
       const cachedFirebaseToken = await SecureStore.getItemAsync("firebaseUID");
-      const cachedNotificationToken = await AsyncStorage.getItem('notificaitonToken');
+      const cachedNotificationToken = await SecureStore.getItemAsync("notificationToken");
       setUsername(name);
       setToken(token);
       setFirebaseToken(cachedFirebaseToken);
@@ -407,7 +408,13 @@ const ProfilePage: React.FC = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: c.bg }]}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: floatingAboveTabBar(insets.bottom, Spacing.xl) },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Hero header */}
         <LinearGradient
           colors={isDarkMode ? ['#2A1F52', '#15172B'] : Gradients.brand}

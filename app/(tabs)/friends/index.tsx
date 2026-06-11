@@ -187,6 +187,7 @@ const FriendsPage: React.FC = () => {
   const showEmpty = isSearchActive
     ? filteredFriends.length === 0
     : friends.length === 0;
+  const unreadBadgeLabel = localUnreadCount > 99 ? '99+' : localUnreadCount.toString();
 
   return (
     <View style={[styles.container, { backgroundColor: c.bg }]}>
@@ -212,9 +213,9 @@ const FriendsPage: React.FC = () => {
             >
               <Ionicons name="notifications" size={22} color="#fff" />
               {localUnreadCount > 0 && (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>
-                    {localUnreadCount > 99 ? '99+' : localUnreadCount}
+                <View style={[styles.badge, unreadBadgeLabel.length > 2 && styles.badgeWide]}>
+                  <Text style={styles.badgeText} numberOfLines={1} adjustsFontSizeToFit>
+                    {unreadBadgeLabel}
                   </Text>
                 </View>
               )}
@@ -430,17 +431,23 @@ const styles = StyleSheet.create({
   },
   badge: {
     position: 'absolute',
-    top: -2,
-    right: -2,
-    minWidth: 20,
-    height: 20,
-    paddingHorizontal: 4,
-    borderRadius: 10,
+    top: -4,
+    right: -4,
+    minWidth: 22,
+    height: 22,
+    paddingHorizontal: 5,
+    borderRadius: 11,
     backgroundColor: '#F5365C',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
   },
-  badgeText: { color: '#fff', fontSize: 11, fontWeight: '800' },
+  badgeWide: {
+    minWidth: 30,
+    paddingHorizontal: 6,
+  },
+  badgeText: { color: '#fff', fontSize: 10, fontWeight: '900', textAlign: 'center' },
   searchWrap: { marginTop: Spacing.lg, borderRadius: Radius.pill, overflow: 'hidden' },
   searchBlur: {
     flexDirection: 'row',

@@ -15,7 +15,24 @@
         "origin": false
       },
       "eas": {
-        "projectId": "250fd3fc-22b2-411d-abfc-63f3a6b81328"
+        "projectId": "250fd3fc-22b2-411d-abfc-63f3a6b81328",
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "bundleIdentifier": "com.longtimenoc.missilewars.notification-service",
+                  "targetName": "notification-service",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.com.longtimenoc.missilewars"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        }
       }
     },
     "assetBundlePatterns": [
@@ -24,7 +41,14 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.longtimenoc.missilewars",
+      "appleTeamId": "23FQ4A4Q35",
       "googleServicesFile": "./GoogleService-Info.plist",
+      "deploymentTarget": "18.0",
+      "entitlements": {
+        "com.apple.security.application-groups": [
+          "group.com.longtimenoc.missilewars"
+        ]
+      },
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Your location is used to show your position on the game map and enable gameplay features like player interaction and loot collection!",
         "NSUserTrackingUsageDescription": "We use your device identifier to measure ad performance and limit repeated ads so we can keep Missile Wars free. For example, this helps us show fewer duplicate promotions after you install or view an ad campaign.",
@@ -75,10 +99,12 @@
           "icon": "./assets/logo.png",
           "color": "#ffffff",
           "defaultChannel": "default",
-          "sounds": []
+          "sounds": [],
+          "enableBackgroundRemoteNotifications": true
         }
       ],
       "expo-secure-store",
+      "@bacons/apple-targets",
       [
         "expo-build-properties",
         {
@@ -134,13 +160,71 @@
         "react-native-google-mobile-ads",
         {
           "androidAppId": "ca-app-pub-3940256099942544~3347511713",
-          "iosAppId": "ca-app-pub-3940256099942544~1458002511"
+          "iosAppId": "ca-app-pub-3940256099942544~1458002511",
+          "userTrackingUsageDescription": "Missile Wars Revival uses this identifier to show you relevant ads while keeping the app free.",
+          "delayAppMeasurementInit": true,
+          "optimizeInitialization": true,
+          "optimizeAdLoading": true,
+          "skAdNetworkItems": [
+            "cstr6suwn9.skadnetwork",
+            "4fzdc2evr5.skadnetwork",
+            "2fnua5tdw4.skadnetwork",
+            "ydx93a7ass.skadnetwork",
+            "p78axxw29g.skadnetwork",
+            "v72qych5uu.skadnetwork",
+            "ludvb6z3bs.skadnetwork",
+            "cp8zw746q7.skadnetwork",
+            "3sh42y64q3.skadnetwork",
+            "c6k4g5qg8m.skadnetwork",
+            "s39g8k73mm.skadnetwork",
+            "wg4vff78zm.skadnetwork",
+            "3qy4746246.skadnetwork",
+            "f38h382jlk.skadnetwork",
+            "hs6bdukanm.skadnetwork",
+            "mlmmfzh3r3.skadnetwork",
+            "v4nxqhlyqp.skadnetwork",
+            "wzmmz9fp6w.skadnetwork",
+            "su67r6k2v3.skadnetwork",
+            "yclnxrl5pm.skadnetwork",
+            "t38b2kh725.skadnetwork",
+            "7ug5zh24hu.skadnetwork",
+            "gta9lk7p23.skadnetwork",
+            "vutu7akeur.skadnetwork",
+            "y5ghdn5j9k.skadnetwork",
+            "v9wttpbfk9.skadnetwork",
+            "n38lu8286q.skadnetwork",
+            "47vhws6wlr.skadnetwork",
+            "kbd757ywx3.skadnetwork",
+            "9t245vhmpl.skadnetwork",
+            "a2p9lx4jpn.skadnetwork",
+            "22mmun2rn5.skadnetwork",
+            "44jx6755aq.skadnetwork",
+            "k674qkevps.skadnetwork",
+            "4468km3ulz.skadnetwork",
+            "2u9pt9hc89.skadnetwork",
+            "8s468mfl3y.skadnetwork",
+            "klf5c3l5u5.skadnetwork",
+            "ppxm28t8ap.skadnetwork",
+            "kbmxgpxpgc.skadnetwork",
+            "uw77j35x4d.skadnetwork",
+            "578prtvx9j.skadnetwork",
+            "4dzt52r2t5.skadnetwork",
+            "tl55sbb4fm.skadnetwork",
+            "c3frkrj4fj.skadnetwork",
+            "e5fvkxwrpn.skadnetwork",
+            "8c4e2ghe7u.skadnetwork",
+            "3rd42ekr43.skadnetwork",
+            "97r2b46745.skadnetwork",
+            "3qcr597p9d.skadnetwork"
+          ]
         }
       ],
       "@react-native-vector-icons/ionicons",
       "@react-native-vector-icons/fontawesome",
       "@react-native-vector-icons/material-design-icons",
-      "expo-splash-screen"
+      "expo-splash-screen",
+      "expo-audio",
+      "expo-image"
     ],
     "owner": "osog",
     "experiments": {
