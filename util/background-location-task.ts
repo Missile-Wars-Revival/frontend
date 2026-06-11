@@ -28,7 +28,7 @@ async function hasBackgroundLocationPermission() {
 async function getBackgroundToken() {
   try {
     return await SecureStore.getItemAsync('token');
-  } catch (error) {
+  } catch {
     // iOS can deny keychain access to background launches while the device is
     // locked. Treat that as "not dispatchable right now" instead of failing
     // the background task and causing repeated retries/noisy logs.
