@@ -24,6 +24,8 @@ missile-wars-432403-163f7b34c51e.json
 *.key
 *.mobileprovision
 
+/store
+
 # Firebase credentials
 *.p8
 *.p12

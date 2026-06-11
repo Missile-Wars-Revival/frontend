@@ -14,10 +14,33 @@
           "location",
           "movement"
         ],
+        "releaseNotes": "Whats New:\nNew Onboarding Process\nRevamped Store Page\nImproved Firing Logic\nFixed:\nUpdated SDK \nUpdated backend api\nUpdated NavBar",
         "marketingUrl": "https://www.oakforgestudios.co.uk/missilewars",
+        "promoText": "Missile Wars",
         "supportUrl": "https://www.oakforgestudios.co.uk/missilewars/support",
         "title": "Missile Wars Revival",
-        "privacyPolicyUrl": "https://www.oakforgestudios.co.uk/missilewars/privacy-policy"
+        "privacyPolicyUrl": "https://www.oakforgestudios.co.uk/missilewars/privacy-policy",
+        "screenshots": {
+          "APP_IPAD_PRO_3GEN_129": [
+            "store\\apple\\screenshot\\en-GB\\APP_IPAD_PRO_3GEN_129\\IMG_2458.png",
+            "store\\apple\\screenshot\\en-GB\\APP_IPAD_PRO_3GEN_129\\IMG_2463.png",
+            "store\\apple\\screenshot\\en-GB\\APP_IPAD_PRO_3GEN_129\\IMG_2461.png",
+            "store\\apple\\screenshot\\en-GB\\APP_IPAD_PRO_3GEN_129\\IMG_2462.png",
+            "store\\apple\\screenshot\\en-GB\\APP_IPAD_PRO_3GEN_129\\IMG_2465.png",
+            "store\\apple\\screenshot\\en-GB\\APP_IPAD_PRO_3GEN_129\\IMG_2459.png",
+            "store\\apple\\screenshot\\en-GB\\APP_IPAD_PRO_3GEN_129\\IMG_2464.png",
+            "store\\apple\\screenshot\\en-GB\\APP_IPAD_PRO_3GEN_129\\IMG_2460.png"
+          ],
+          "APP_IPHONE_67": [
+            "store\\apple\\screenshot\\en-GB\\APP_IPHONE_67\\IMG_0471.png",
+            "store\\apple\\screenshot\\en-GB\\APP_IPHONE_67\\IMG_0479.png",
+            "store\\apple\\screenshot\\en-GB\\APP_IPHONE_67\\IMG_0478.png",
+            "store\\apple\\screenshot\\en-GB\\APP_IPHONE_67\\IMG_0469.png",
+            "store\\apple\\screenshot\\en-GB\\APP_IPHONE_67\\IMG_0487.PNG",
+            "store\\apple\\screenshot\\en-GB\\APP_IPHONE_67\\IMG_0493.PNG",
+            "store\\apple\\screenshot\\en-GB\\APP_IPHONE_67\\IMG_0492.PNG"
+          ]
+        }
       }
     },
     "categories": [
@@ -44,9 +67,18 @@
       "sexualContentGraphicAndNudity": "NONE",
       "sexualContentOrNudity": "NONE",
       "unrestrictedWebAccess": false,
-      "violenceCartoonOrFantasy": "INFREQUENT_OR_MILD",
+      "violenceCartoonOrFantasy": "INFREQUENT",
       "violenceRealistic": "NONE",
-      "violenceRealisticProlongedGraphicOrSadistic": "NONE"
+      "violenceRealisticProlongedGraphicOrSadistic": "NONE",
+      "advertising": true,
+      "ageAssurance": false,
+      "ageRatingOverrideV2": "NONE",
+      "developerAgeRatingInfoUrl": null,
+      "gunsOrOtherWeapons": "FREQUENT_OR_INTENSE",
+      "healthOrWellnessTopics": false,
+      "messagingAndChat": true,
+      "parentalControls": false,
+      "userGeneratedContent": false
     },
     "review": {
       "firstName": "Tristan ",
