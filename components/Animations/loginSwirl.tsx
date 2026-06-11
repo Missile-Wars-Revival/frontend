@@ -352,7 +352,7 @@ const LoginSwirl: React.FC<LoginSwirlProps> = ({ onAnimationComplete }) => {
 
 const styles = StyleSheet.create({
   container: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 100,
   },
 });

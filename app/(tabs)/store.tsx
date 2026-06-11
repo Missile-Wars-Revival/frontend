@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Cart from '../../components/Store/cart';
+import { CartBottomSheet } from '../../components/Store/CartBottomSheet';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axiosInstance from '../../api/axios-instance';
 import * as SecureStore from "expo-secure-store";
@@ -14,7 +15,6 @@ import { additem } from '../../api/add-item';
 import { getWeaponTypes, mapProductType, PremProduct, Product, getImages } from '../../api/store';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { useOnboarding } from '../../util/Context/onboardingContext';
-import AdBanner from '../../components/ads/AdBanner';
 import { getPalette, Gradients, Spacing, Radius, cardShadow, type ThemePalette } from '../../components/ui/theme';
 import { SegmentedControl } from '../../components/ui/SegmentedControl';
 import { PressableScale } from '../../components/ui/PressableScale';
@@ -596,29 +596,16 @@ const StorePage: React.FC = () => {
     </AnimatedEntrance>
   );
 
-  // The cart rendered as a plain RN bottom-sheet modal: it never stacks with
-  // other native sheets, so it doesn't need the iOS/Android sheet sequencing.
   const renderCartSheet = () => (
-    <Modal
+    <CartBottomSheet
       visible={isCartVisible}
-      transparent={true}
-      animationType="slide"
-      onRequestClose={hideCart}
+      onClose={hideCart}
+      palette={palette}
+      isDark={isDarkMode}
+      bottomInset={insets.bottom}
     >
-      <View style={styles.cartModalRoot}>
-        <Pressable style={styles.cartBackdrop} onPress={hideCart} />
-        <View style={styles.cartSheet}>
-          <View style={styles.cartHandle} />
-          <View style={styles.cartSheetHeader}>
-            <Text style={styles.cartSheetTitle}>Your Cart</Text>
-            <Pressable onPress={hideCart} hitSlop={8}>
-              <Ionicons name="close-circle" size={26} color={palette.textFaint} />
-            </Pressable>
-          </View>
-          <Cart cart={cart} onRemove={handleRemove} />
-        </View>
-      </View>
-    </Modal>
+      <Cart cart={cart} onRemove={handleRemove} />
+    </CartBottomSheet>
   );
 
   return (
@@ -730,7 +717,6 @@ const StorePage: React.FC = () => {
         </Pressable>
       </Modal>
 
-      <AdBanner />
     </SafeAreaView>
   );
 }
@@ -947,43 +933,6 @@ const getStyles = (palette: ThemePalette, isDark: boolean, bottomInset: number) 
   loadingText: {
     fontSize: 14,
     color: palette.textMuted,
-  },
-  cartModalRoot: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  cartBackdrop: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: palette.overlay,
-  },
-  cartSheet: {
-    height: '70%',
-    backgroundColor: palette.surface,
-    borderTopLeftRadius: Radius.xl,
-    borderTopRightRadius: Radius.xl,
-    paddingBottom: Math.max(bottomInset, Spacing.md),
-    ...cardShadow(isDark),
-  },
-  cartHandle: {
-    alignSelf: 'center',
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: palette.border,
-    marginTop: Spacing.sm,
-  },
-  cartSheetHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.sm,
-  },
-  cartSheetTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: palette.text,
   },
   modalOverlay: {
     flex: 1,
