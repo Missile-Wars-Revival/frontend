@@ -21,7 +21,7 @@ import FontAwesome from '@react-native-vector-icons/fontawesome';
 import useFetchOther from "../hooks/websockets/otherhook";
 import { AllOther } from "./Other/map-other";
 import { getLeagueAirspace } from "./player";
-import { useUserLeague } from "@/hooks/api/useUserLeague";
+import { useUserLeague } from "@/hooks/api/useUserLeagues";
 
 interface MapCompProps {
     selectedMapStyle: any;
