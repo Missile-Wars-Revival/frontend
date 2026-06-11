@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, FlatList, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from '@react-native-vector-icons/ionicons';
@@ -45,11 +45,6 @@ export function InventoryLibraryShell({
         </PressableScale>
       </LinearGradient>
       <View style={styles.body}>{children}</View>
-      <View style={[styles.footer, { borderTopColor: c.border }]}>
-        <PressableScale haptic="select" onPress={onClose} style={styles.doneBtn}>
-          <Text style={[styles.doneText, { color: c.textMuted }]}>Done</Text>
-        </PressableScale>
-      </View>
     </View>
   );
 }
@@ -71,68 +66,47 @@ export function InventoryItemList({
 }: InventoryItemListProps) {
   const c = getPalette(isDark);
 
-  const renderItem = ({ item, index }: { item: InventoryLibraryItem; index: number }) => (
-    <AnimatedEntrance index={index}>
+  const renderCard = (item: InventoryLibraryItem, index: number) => (
+    <AnimatedEntrance key={`${item.type}-${index}`} index={index} stagger={30} style={styles.cardWrap}>
       <PressableScale
         haptic="select"
         onPress={() => onSelect(item.type)}
-        style={[styles.itemRow, { backgroundColor: c.surfaceAlt }, cardShadow(isDark)]}
+        style={[styles.card, { backgroundColor: c.surfaceAlt, borderColor: c.border }, cardShadow(isDark)]}
       >
-        <View style={[styles.itemImageWrap, { backgroundColor: c.surface }]}>
+        <View style={[styles.qtyBadge, { backgroundColor: c.accentSoft }]}>
+          <Text style={[styles.qtyBadgeText, { color: c.accent }]}>×{item.quantity}</Text>
+        </View>
+        <View style={[styles.cardImageWell, { backgroundColor: c.surface }]}>
           <Image
             source={getImageSource(item.type) as number}
-            style={styles.itemImage}
+            style={styles.cardImage}
             contentFit="contain"
             cachePolicy="memory-disk"
           />
         </View>
-        <View style={styles.itemText}>
-          <Text style={[styles.itemName, { color: c.text }]} numberOfLines={1}>
-            {item.type}
-          </Text>
-          <Text style={[styles.itemQty, { color: c.textMuted }]}>
-            {item.quantity} in inventory
-          </Text>
-        </View>
-        <View style={[styles.qtyPill, { backgroundColor: c.accentSoft }]}>
-          <Text style={[styles.qtyPillText, { color: c.accent }]}>×{item.quantity}</Text>
-        </View>
-        <Ionicons name="chevron-forward" size={18} color={c.textFaint} />
+        <Text style={[styles.cardName, { color: c.text }]} numberOfLines={1}>
+          {item.type}
+        </Text>
+        <Text style={[styles.cardQty, { color: c.textMuted }]}>
+          {item.quantity} in inventory
+        </Text>
       </PressableScale>
     </AnimatedEntrance>
   );
 
-  if (!scrollable) {
-    return (
-      <View style={styles.listContent}>
-        {items.map((item, index) => (
-          <React.Fragment key={`${item.type}-${index}`}>
-            {renderItem({ item, index })}
-          </React.Fragment>
-        ))}
-      </View>
-    );
-  }
+  const grid = <View style={styles.grid}>{items.map(renderCard)}</View>;
 
-  if (items.length > 8) {
-    return (
-      <FlatList
-        data={items}
-        keyExtractor={(item, index) => `${item.type}-${index}`}
-        renderItem={renderItem}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-      />
-    );
+  if (!scrollable) {
+    return grid;
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}>
-      {items.map((item, index) => (
-        <React.Fragment key={`${item.type}-${index}`}>
-          {renderItem({ item, index })}
-        </React.Fragment>
-      ))}
+    <ScrollView
+      style={styles.gridScroll}
+      contentContainerStyle={styles.gridContent}
+      showsVerticalScrollIndicator={false}
+    >
+      {grid}
     </ScrollView>
   );
 }
@@ -170,8 +144,9 @@ export function InventoryEmptyState({
 }
 
 const styles = StyleSheet.create({
+  // Content-sized so the sheet can hug its contents (fitToContents).
   shell: {
-    flex: 1,
+    flexShrink: 1,
     minHeight: 0,
   },
   header: {
@@ -203,68 +178,68 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   body: {
-    flex: 1,
+    flexShrink: 1,
     minHeight: 0,
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.md,
   },
-  footer: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    alignItems: 'flex-end',
+  gridScroll: {
+    flexGrow: 0,
+    flexShrink: 1,
   },
-  doneBtn: {
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.sm,
-  },
-  doneText: {
-    ...Type.button,
-    fontSize: 16,
-  },
-  listContent: {
-    gap: Spacing.sm,
+  gridContent: {
     paddingBottom: Spacing.md,
   },
-  itemRow: {
+  grid: {
     flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: Radius.lg,
-    padding: Spacing.md,
-    gap: Spacing.md,
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: Spacing.md,
   },
-  itemImageWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: Radius.sm,
+  cardWrap: {
+    width: '48.5%',
+  },
+  card: {
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    padding: Spacing.md,
+    alignItems: 'center',
+  },
+  qtyBadge: {
+    position: 'absolute',
+    top: Spacing.sm,
+    right: Spacing.sm,
+    zIndex: 1,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 3,
+    borderRadius: Radius.pill,
+  },
+  qtyBadgeText: {
+    ...Type.micro,
+  },
+  cardImageWell: {
+    width: 72,
+    height: 72,
+    borderRadius: Radius.md,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: Spacing.sm,
   },
-  itemImage: {
-    width: 36,
-    height: 36,
+  cardImage: {
+    width: 54,
+    height: 54,
   },
-  itemText: {
-    flex: 1,
-  },
-  itemName: {
+  cardName: {
     ...Type.headline,
+    fontSize: 15,
+    textAlign: 'center',
   },
-  itemQty: {
+  cardQty: {
     ...Type.caption,
     fontWeight: '500',
     marginTop: 2,
   },
-  qtyPill: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
-    borderRadius: Radius.pill,
-  },
-  qtyPillText: {
-    ...Type.micro,
-  },
   emptyWrap: {
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: Spacing.xxl,

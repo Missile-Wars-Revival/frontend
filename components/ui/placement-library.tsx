@@ -70,11 +70,27 @@ export type PlacementLibraryViewProps = {
 function usePlacementFlow(onCloseLibrary: () => void) {
   const [showPlacementPopup, setShowPlacementPopup] = useState(false);
   const [selectedType, setSelectedType] = useState<string | null>(null);
-  const closeLibraryAfterPopupRef = useRef(false);
+  const openPopupAfterSheetRef = useRef(false);
 
   const openPlacement = useCallback((type: string) => {
     setSelectedType(type);
-    setShowPlacementPopup(true);
+    // iOS runs one modal transition at a time: presenting the placement modal
+    // while the inventory sheet modal is still up silently fails. Close the
+    // sheet first and present the placement modal from its onDismiss; Android
+    // never fires Modal onDismiss, so it opens immediately instead.
+    onCloseLibrary();
+    if (Platform.OS === 'ios') {
+      openPopupAfterSheetRef.current = true;
+    } else {
+      setShowPlacementPopup(true);
+    }
+  }, [onCloseLibrary]);
+
+  const handleSheetDismissed = useCallback(() => {
+    if (openPopupAfterSheetRef.current) {
+      openPopupAfterSheetRef.current = false;
+      setShowPlacementPopup(true);
+    }
   }, []);
 
   const handleClosePopup = useCallback(() => {
@@ -82,26 +98,18 @@ function usePlacementFlow(onCloseLibrary: () => void) {
   }, []);
 
   const handlePlaced = useCallback(() => {
-    // Close placement popup first; dismiss the sheet from onDismiss on iOS
-    // (only one RN modal transition at a time).
-    closeLibraryAfterPopupRef.current = true;
+    // The library sheet is already closed by this point; just dismiss the
+    // placement popup.
     setShowPlacementPopup(false);
-    if (Platform.OS !== 'ios') {
-      onCloseLibrary();
-    }
-  }, [onCloseLibrary]);
+  }, []);
 
-  const handlePopupDismissed = useCallback(() => {
-    if (closeLibraryAfterPopupRef.current) {
-      closeLibraryAfterPopupRef.current = false;
-      onCloseLibrary();
-    }
-  }, [onCloseLibrary]);
+  const handlePopupDismissed = useCallback(() => {}, []);
 
   return {
     showPlacementPopup,
     selectedType,
     openPlacement,
+    handleSheetDismissed,
     handleClosePopup,
     handlePlaced,
     handlePopupDismissed,
@@ -126,6 +134,7 @@ export function PlacementLibraryView({
     showPlacementPopup,
     selectedType,
     openPlacement,
+    handleSheetDismissed,
     handleClosePopup,
     handlePlaced,
     handlePopupDismissed,
@@ -155,7 +164,12 @@ export function PlacementLibraryView({
 
   return (
     <>
-      <InventoryBottomSheet visible={visible} onClose={onClose}>
+      <InventoryBottomSheet
+        visible={visible}
+        onClose={onClose}
+        onDismissed={handleSheetDismissed}
+        fitToContents
+      >
         <InventoryLibraryShell
           title={title}
           subtitle={subtitle}

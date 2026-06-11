@@ -6,6 +6,12 @@ export interface InventoryBottomSheetProps {
   visible: boolean;
   /** Called when the user dismisses the sheet (swipe, scrim tap, back press) or taps Done. */
   onClose: () => void;
+  /**
+   * Called once the sheet's modal has fully dismissed (iOS only — RN Modal's
+   * onDismiss). Used to serialize presenting a follow-up modal, since iOS
+   * runs one modal transition at a time.
+   */
+  onDismissed?: () => void;
   /** The content rendered inside the sheet (regular React Native views). */
   children: ReactNode;
   /**

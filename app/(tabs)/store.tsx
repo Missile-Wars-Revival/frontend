@@ -409,6 +409,16 @@ const StorePage: React.FC = () => {
     }
   }, [currentStep, moveToNextStep, showCart]);
 
+  const handleCheckoutComplete = useCallback(() => {
+    setCart([]);
+    updateCartTotal([]);
+    setCartVisible(false);
+    // Play the celebration after the cart modal has dismissed — the Skia
+    // overlay lives below RN Modals, so firing it while the sheet is up
+    // would hide it (and its triumph haptics would feel disconnected).
+    setTimeout(() => triggerGameEffect('purchaseSuccess'), 350);
+  }, [updateCartTotal]);
+
   const formatDuration = (minutes: number | undefined) => {
     if (minutes === undefined) return 'N/A';
 
@@ -604,7 +614,7 @@ const StorePage: React.FC = () => {
       isDark={isDarkMode}
       bottomInset={insets.bottom}
     >
-      <Cart cart={cart} onRemove={handleRemove} bottomInset={insets.bottom} />
+      <Cart cart={cart} onRemove={handleRemove} onCheckoutComplete={handleCheckoutComplete} bottomInset={insets.bottom} />
     </CartBottomSheet>
   );
 

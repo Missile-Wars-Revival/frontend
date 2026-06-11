@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, FlatList, GestureResponderEvent, Alert, StyleSheet, useColorScheme } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -8,7 +8,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from "expo-router";
 import { Product } from '../../api/store';
 import Ionicons from '@react-native-vector-icons/ionicons';
-import CartPurchaseAnimation from '../Animations/CartPurchaseAnimation';
 import { useOnboarding } from '../../util/Context/onboardingContext';
 import { getPalette, Gradients, Spacing, Radius, type ThemePalette } from '../ui/theme';
 import { PressableScale } from '../ui/PressableScale';
@@ -22,15 +21,16 @@ interface CartItem {
 interface CartProps {
   cart: CartItem[];
   onRemove: (productId: string) => void;
+  onCheckoutComplete: () => void;
   bottomInset?: number;
 }
 
-const Cart: React.FC<CartProps> = ({ cart, onRemove, bottomInset = 0 }) => {
+const Cart: React.FC<CartProps> = ({ cart, onRemove, onCheckoutComplete, bottomInset = 0 }) => {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
   const palette = getPalette(isDarkMode);
   const styles = getStyles(palette, bottomInset);
-  const { currentStep, setCurrentStep, moveToNextStep } = useOnboarding();
+  const { currentStep, moveToNextStep } = useOnboarding();
 
   const totalPrice = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
 
@@ -57,8 +57,6 @@ const Cart: React.FC<CartProps> = ({ cart, onRemove, bottomInset = 0 }) => {
       </PressableScale>
     </View>
   );
-
-  const [showAnimation, setShowAnimation] = useState(false);
 
   async function checkout(event: GestureResponderEvent): Promise<void> {
     if (cart.length === 0) {
@@ -92,10 +90,13 @@ const Cart: React.FC<CartProps> = ({ cart, onRemove, bottomInset = 0 }) => {
       money: totalPrice,
     })
       .then(async response => {
-        haptics.success();
-        setShowAnimation(true);
+        await AsyncStorage.removeItem('cartitems');
+        // Parent clears the cart, closes the sheet, refreshes the coin
+        // balance, and plays the purchase celebration once the sheet is gone.
+        onCheckoutComplete();
         if (currentStep === 'checkout') {
           moveToNextStep();
+          router.navigate("/");
         }
       })
       .catch(error => {
@@ -104,14 +105,6 @@ const Cart: React.FC<CartProps> = ({ cart, onRemove, bottomInset = 0 }) => {
         console.error('Checkout failed', error);
       });
   }
-
-  const handleAnimationComplete = async () => {
-    setShowAnimation(false);
-    await AsyncStorage.removeItem('cartitems');
-    setCurrentStep('fire')
-    router.navigate("/");
-    Alert.alert("Success", "Checkout successful!");
-  };
 
   return (
     <View style={styles.cartContainer}>
@@ -142,12 +135,6 @@ const Cart: React.FC<CartProps> = ({ cart, onRemove, bottomInset = 0 }) => {
           </LinearGradient>
         </PressableScale>
       </View>
-      {showAnimation && (
-        <CartPurchaseAnimation
-          cartItems={cart}
-          onAnimationComplete={handleAnimationComplete}
-        />
-      )}
     </View>
   );
 };

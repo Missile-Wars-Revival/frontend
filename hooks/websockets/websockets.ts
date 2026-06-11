@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { AppState } from "react-native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { unzip, WebSocketMessage, zip } from "middle-earth";
 import * as SecureStore from "expo-secure-store";
@@ -32,7 +33,28 @@ const useWebSocket = () => {
     const [playerlocations, setplayerlocations] = useState<any>(null);
     const [leaguesData, setLeaguesData] = useState<any>(null);
     const websocketRef = useRef<WebSocket | null>(null);
-    const [reconnectAttempts, setReconnectAttempts] = useState(0);
+    const reconnectAttemptsRef = useRef(0);
+    const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // Set when a reconnect was deferred because the app was backgrounded; the
+    // AppState listener performs it as soon as the app is active again.
+    const reconnectOnForegroundRef = useRef(false);
+
+    const clearReconnectTimer = () => {
+        if (reconnectTimerRef.current) {
+            clearTimeout(reconnectTimerRef.current);
+            reconnectTimerRef.current = null;
+        }
+    };
+
+    // Intentional close (sign-out, offline mode): detach onclose first so it
+    // doesn't schedule a reconnect.
+    const closeWebsocket = () => {
+        if (websocketRef.current) {
+            websocketRef.current.onclose = null;
+            websocketRef.current.close();
+            websocketRef.current = null;
+        }
+    };
 
     const connectWebsocket = (token: string): Promise<WebSocket> => {
         return new Promise(async (resolve, reject) => {
@@ -68,17 +90,15 @@ const useWebSocket = () => {
     };
 
     const initializeWebSocket = async () => {
+        clearReconnectTimer();
         try {
             const token = await SecureStore.getItemAsync("token");
 
             // Dev-only offline sessions should not attempt websocket/network reconnect loops.
             if (isDevOfflineToken(token)) {
-                if (websocketRef.current) {
-                    websocketRef.current.close();
-                    websocketRef.current = null;
-                }
+                closeWebsocket();
                 await AsyncStorage.setItem('dbconnection', 'true');
-                setReconnectAttempts(0);
+                reconnectAttemptsRef.current = 0;
                 return;
             }
 
@@ -89,7 +109,7 @@ const useWebSocket = () => {
 
             const ws = await connectWebsocket(token);
             websocketRef.current = ws;
-            setReconnectAttempts(0); // Reset reconnect attempts on successful connection
+            reconnectAttemptsRef.current = 0; // Reset reconnect attempts on successful connection
 
             ws.onclose = () => {
                 console.log('WebSocket connection closed');
@@ -187,29 +207,59 @@ const useWebSocket = () => {
             return;
         }
 
-        if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+        // While backgrounded the OS suspends networking, so retries would just
+        // burn through the backoff budget. Defer instead; the AppState listener
+        // reconnects immediately (with a fresh budget) on foreground.
+        if (AppState.currentState !== 'active') {
+            reconnectOnForegroundRef.current = true;
+            return;
+        }
+
+        if (reconnectAttemptsRef.current >= MAX_RECONNECT_ATTEMPTS) {
             console.error("Max reconnect attempts reached. Could not connect to WebSocket.");
             return;
         }
 
-        setReconnectAttempts(prevAttempts => prevAttempts + 1);
-        const retryInterval = RECONNECT_INTERVAL_BASE * Math.pow(2, reconnectAttempts);
+        const retryInterval = RECONNECT_INTERVAL_BASE * Math.pow(2, reconnectAttemptsRef.current);
+        reconnectAttemptsRef.current += 1;
 
         console.log(`Retrying to connect to websocket in ${retryInterval / 1000} seconds...`);
 
-        setTimeout(initializeWebSocket, retryInterval);
+        clearReconnectTimer();
+        reconnectTimerRef.current = setTimeout(initializeWebSocket, retryInterval);
     };
 
     useEffect(() => {
         if (isSignedIn) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
             initializeWebSocket();
         } else {
-            if (websocketRef.current) {
-                websocketRef.current.close();
-                websocketRef.current = null;
-            }
+            clearReconnectTimer();
+            closeWebsocket();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isSignedIn]);
+
+    // Reconnect promptly when the app returns to the foreground — the OS
+    // usually drops the socket in the background and backoff timers may be
+    // far in the future (or exhausted) by the time the user comes back.
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', (state) => {
+            if (state !== 'active' || !isSignedIn) return;
+
+            const ws = websocketRef.current;
+            const socketDown =
+                !ws ||
+                ws.readyState === WebSocket.CLOSING ||
+                ws.readyState === WebSocket.CLOSED;
+
+            if (reconnectOnForegroundRef.current || socketDown) {
+                reconnectOnForegroundRef.current = false;
+                reconnectAttemptsRef.current = 0;
+                clearReconnectTimer();
+                initializeWebSocket();
+            }
+        });
+        return () => subscription.remove();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isSignedIn]);
 

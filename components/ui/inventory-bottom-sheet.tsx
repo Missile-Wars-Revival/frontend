@@ -24,6 +24,7 @@ const SHEET_HEIGHT = Math.round(WINDOW_HEIGHT * SHEET_HEIGHT_FRACTION);
 export function InventoryBottomSheet({
   visible,
   onClose,
+  onDismissed,
   children,
   fitToContents,
   backgroundColor,
@@ -45,6 +46,7 @@ export function InventoryBottomSheet({
       transparent
       animationType="slide"
       onRequestClose={onClose}
+      onDismiss={onDismissed}
       statusBarTranslucent
     >
       <View style={styles.overlay}>
@@ -56,7 +58,7 @@ export function InventoryBottomSheet({
         />
         <View style={sheetStyle}>
           <View style={[styles.handle, { backgroundColor: c.border }]} />
-          <View style={styles.content}>{children}</View>
+          <View style={fitToContents ? styles.contentFit : styles.content}>{children}</View>
         </View>
       </View>
     </Modal>
@@ -93,6 +95,12 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    minHeight: 0,
+  },
+  // fitToContents: let children drive the height (sheet only has maxHeight,
+  // so flex: 1 would resolve to zero height here).
+  contentFit: {
+    flexShrink: 1,
     minHeight: 0,
   },
 });

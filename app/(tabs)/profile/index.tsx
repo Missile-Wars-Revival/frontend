@@ -14,7 +14,7 @@ import { Statistics } from './user-profile';
 import firebase from '../../../util/firebase/config';
 import useFetchFriends from '../../../hooks/websockets/friendshook';
 import { Avatar } from '../../../components/ui/Avatar';
-import { editUser } from '../../../api/editUser';
+import { editUser, uploadProfileImage } from '../../../api/editUser';
 import * as Clipboard from 'expo-clipboard';
 import { getImages } from '../../../api/store';
 import AnimatedEntrance from '../../../components/ui/AnimatedEntrance';
@@ -125,37 +125,14 @@ const ProfilePage: React.FC = () => {
     router.navigate("/league");
   };
 
-  const uriToBlob = (uri: string) =>
-    new Promise<Blob>((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.onload = () => resolve(xhr.response);
-      xhr.onerror = () => reject(new Error('Failed to read selected image.'));
-      xhr.responseType = 'blob';
-      xhr.open('GET', uri, true);
-      xhr.send(null);
-    });
-
-  const uploadImageToFirebase = async (uri: string) => {
-    const name = await SecureStore.getItemAsync("username");
-    if (!name) throw new Error('Username not found');
-
-    const blob = await uriToBlob(uri);
-    const ref = firebase.storage().ref().child(`profileImages/${name}`);
-    try {
-      await ref.put(blob);
-      const url = await ref.getDownloadURL();
-      setUserImageUrl(url); // reflect the freshly uploaded image immediately
-      return url;
-    } finally {
-      (blob as Blob & { close?: () => void }).close?.();
-    }
-  };
-
-  const uploadSelectedProfileImage = async (uri: string) => {
+  const uploadSelectedProfileImage = async (imageBase64: string) => {
     setIsUploadingProfileImage(true);
     haptics.soft();
     try {
-      await uploadImageToFirebase(uri);
+      // The backend converts with sharp (HEIC/odd formats -> JPEG) and
+      // returns the stable image URL.
+      const url = await uploadProfileImage(imageBase64);
+      setUserImageUrl(url); // reflect the freshly uploaded image immediately
       haptics.success();
     } catch (error) {
       console.error('Failed to upload profile image:', error);
@@ -175,13 +152,14 @@ const ProfilePage: React.FC = () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
+      aspect: [1, 1],
+      quality: 0.9,
+      base64: true,
     });
     if (!result.canceled && result.assets && result.assets.length > 0) {
       const firstAsset = result.assets[0];
-      if (firstAsset && firstAsset.uri) {
-        await uploadSelectedProfileImage(firstAsset.uri);
+      if (firstAsset?.base64) {
+        await uploadSelectedProfileImage(firstAsset.base64);
       }
     }
   };
@@ -194,13 +172,14 @@ const ProfilePage: React.FC = () => {
     }
     let result = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
+      aspect: [1, 1],
+      quality: 0.9,
+      base64: true,
     });
     if (!result.canceled && result.assets && result.assets.length > 0) {
       const firstAsset = result.assets[0];
-      if (firstAsset && firstAsset.uri) {
-        await uploadSelectedProfileImage(firstAsset.uri);
+      if (firstAsset?.base64) {
+        await uploadSelectedProfileImage(firstAsset.base64);
       }
     }
   };

@@ -1,72 +1,34 @@
 import React, { useEffect, useState } from "react";
-import { View, Platform, ScrollView, Text, useColorScheme, Modal, Pressable } from "react-native";
+import { View, Platform, ScrollView, Text, useColorScheme, Modal, Pressable, StyleSheet } from "react-native";
 import { Image } from "expo-image";
 import { Circle, Marker, Polyline } from "react-native-maps";
 import { GeoLocation, Missile } from "middle-earth";
 import { convertimestampfuturemissile } from "../../util/get-time-difference";
-import { getWeaponTypes, Product , getImages } from "../../api/store";
-
-import { getShopStyles } from "../../map-themes/stylesheet";
+import { getWeaponTypes, Product, getImages } from "../../api/store";
+import { getPalette, Radius, Spacing, Type, cardShadow } from "../ui/theme";
 import * as geolib from 'geolib';
+
+const fallbackImage = require('../../assets/logo.png');
 
 interface AllMissilesProps {
     missileData: Missile[];
 }
 
-interface TrajectCalc {
-    latitude: number, longitude: number
-
-}
-
 interface MissileProps {
     destination: GeoLocation;
     currentLocation: GeoLocation;
-    trajectoryCoordinates: TrajectCalc[];
     sentbyusername: string;
     radius: number;
     type: string;
     status: string;
-    etatimetoimpact: string
+    etatimetoimpact: string;
+    weapons: Product[];
+    getImageForProduct: (imageName: string) => any;
 }
 
 export const AllMissiles = (props: AllMissilesProps) => {
-
-    return (
-        <>
-            {props.missileData.map(({ destination, currentLocation, radius, type, status, etatimetoimpact, sentbyusername }, index) => {
-
-                // Define a mapping of image paths with an index signature (paths found in components)
-
-                // Calculate coordinates for trajectory line
-                const trajectoryCoordinates = [
-                    { latitude: currentLocation.latitude, longitude: currentLocation.longitude },
-                    { latitude: destination.latitude, longitude: destination.longitude },
-                ];
-
-                return (
-                    <React.Fragment key={index}>
-                        <MapMissile destination={destination}
-                            currentLocation={currentLocation}
-                            trajectoryCoordinates={trajectoryCoordinates}
-                            sentbyusername={sentbyusername}
-                            radius={radius}
-                            type={type}
-                            status={status}
-                            etatimetoimpact={etatimetoimpact} />
-                    </React.Fragment>
-                );
-            })}
-        </>
-    );
-}
-
-export const MapMissile = (missileProps: MissileProps) => {
-
     const [weapons, setWeapons] = useState<Product[]>([]);
-    const [selectedMissile, setSelectedMissile] = useState<MissileProps | null>(null);
-    const [missileDetails, setMissileDetails] = useState<Product | null>(null);
-    const [modalVisible, setModalVisible] = useState(false);
-    const [getImageForProduct, setGetImageForProduct] = useState<(imageName: string) => any>(() => () => require('../../assets/logo.png'));
+    const [getImageForProduct, setGetImageForProduct] = useState<(imageName: string) => any>(() => () => fallbackImage);
 
     useEffect(() => {
         const loadImages = async () => {
@@ -78,31 +40,55 @@ export const MapMissile = (missileProps: MissileProps) => {
 
     useEffect(() => {
         const fetchWeapons = async () => {
-          try {
-            const response = await getWeaponTypes();
-            const { missileTypes } = response;
-    
-            const mappedMissiles = missileTypes.map((missile: any) => ({
-              id: missile.name,
-              name: missile.name,
-              type: 'Missiles',
-              price: missile.price,
-              image: getImageForProduct(missile.name),
-              description: missile.description,
-              speed: missile.speed,
-              radius: missile.radius,
-              damage: missile.damage,
-              fallout: missile.fallout,
-            }));
-    
-            setWeapons([...mappedMissiles]);
-          } catch (error) {
-            console.error('Error fetching weapons:', error);
-          }
+            try {
+                const response = await getWeaponTypes();
+                const { missileTypes } = response;
+
+                const mappedMissiles = missileTypes.map((missile: any) => ({
+                    id: missile.name,
+                    name: missile.name,
+                    type: 'Missiles',
+                    price: missile.price,
+                    image: getImageForProduct(missile.name),
+                    description: missile.description,
+                    speed: missile.speed,
+                    radius: missile.radius,
+                    damage: missile.damage,
+                    fallout: missile.fallout,
+                }));
+
+                setWeapons([...mappedMissiles]);
+            } catch (error) {
+                console.error('Error fetching weapons:', error);
+            }
         };
-    
+
         fetchWeapons();
-      }, [getImageForProduct]);
+    }, [getImageForProduct]);
+
+    return (
+        <>
+            {props.missileData.map(({ destination, currentLocation, radius, type, status, etatimetoimpact, sentbyusername }, index) => (
+                <React.Fragment key={index}>
+                    <MapMissile destination={destination}
+                        currentLocation={currentLocation}
+                        sentbyusername={sentbyusername}
+                        radius={radius}
+                        type={type}
+                        status={status}
+                        etatimetoimpact={etatimetoimpact}
+                        weapons={weapons}
+                        getImageForProduct={getImageForProduct} />
+                </React.Fragment>
+            ))}
+        </>
+    );
+}
+
+export const MapMissile = (missileProps: MissileProps) => {
+
+    const { weapons, getImageForProduct } = missileProps;
+    const [modalVisible, setModalVisible] = useState(false);
 
     const generateTrajectory = (start: any, end: any, segments: number) => {
         const totalDistance = geolib.getDistance(start, end);
@@ -130,92 +116,90 @@ export const MapMissile = (missileProps: MissileProps) => {
     const resizedmissileimage = getImageForProduct(missileProps.type);
     const standardMissileSize = { width: 50, height: 50 }; // Fixed size for all missile images
 
-    // Convert timestamp to a future time in a readable format
-
-    // Determine the description based on the missile status
-    let description = `${missileProps.status}`;
-    if (missileProps.status === `Incoming. Sent by: ${missileProps.sentbyusername}`) {
-        const { text } = convertimestampfuturemissile(missileProps.etatimetoimpact);
-        description += ` ETA: ${text}`;
-    }
-
     const isAndroid = Platform.OS === 'android';
 
     const colorScheme = useColorScheme();
-  const isDarkMode = colorScheme === 'dark';
-  const styles = getShopStyles(isDarkMode ? 'dark' : 'light');
+    const isDarkMode = colorScheme === 'dark';
+    const c = getPalette(isDarkMode);
+
+    const missileDetails = weapons.find(weapon => weapon.name === missileProps.type) || null;
 
     const handleMarkerPress = () => {
-        setSelectedMissile(missileProps);
-        const missileProduct = weapons.find(weapon => weapon.name === missileProps.type) || null;
-        setMissileDetails(missileProduct);
         setModalVisible(true);
     };
 
-    const renderMissileDetails = () => {
-        if (!selectedMissile || !missileDetails) return null;
+    const isIncoming = missileProps.status?.startsWith('Incoming');
+    const eta = missileProps.etatimetoimpact
+        ? convertimestampfuturemissile(missileProps.etatimetoimpact).text
+        : 'Unknown';
 
-        const fallbackImage = require('../../assets/logo.png');
+    const renderStatRow = (label: string, value: string, prominent = false) => (
+        <View style={styles.statRow}>
+            <Text style={[styles.statLabel, { color: c.textMuted }]}>{label}</Text>
+            <Text
+                style={[
+                    prominent ? styles.statValueProminent : styles.statValue,
+                    { color: prominent ? c.text : c.textMuted },
+                ]}
+            >
+                {value}
+            </Text>
+        </View>
+    );
 
-        return (
-            <View style={[styles.modalContainer, isDarkMode && styles.modalContainerDark]}>
-                <ScrollView>
-                    <View style={styles.modalHeader}>
-                        <Image 
-                            source={getImageForProduct(selectedMissile.type) || fallbackImage} 
+    const renderMissileDetails = () => (
+        <Pressable
+            onPress={(e) => e.stopPropagation()}
+            style={[styles.modalCard, { backgroundColor: c.surface }, cardShadow(isDarkMode)]}
+        >
+            <ScrollView bounces={false}>
+                <View style={styles.modalHeader}>
+                    <View style={[styles.modalImageWell, { backgroundColor: c.surfaceAlt }]}>
+                        <Image
+                            source={resizedmissileimage || fallbackImage}
                             style={styles.modalImage}
-                            defaultSource={fallbackImage}
+                            contentFit="contain"
                         />
-                        <View style={styles.modalTitleContainer}>
-                            <Text style={[styles.modalTitle, isDarkMode && styles.modalTitleDark]}>
-                                {selectedMissile.type || 'Unknown Missile'}
-                            </Text>
-                            <Text style={[styles.modalPrice, isDarkMode && styles.modalPriceDark]}>
-                                🪙{missileDetails.price || 'N/A'}
-                            </Text>
-                        </View>
                     </View>
-                    <View style={styles.modalContent}>
-                        <Text style={[styles.modalDescription, isDarkMode && styles.modalDescriptionDark]}>
-                            {missileDetails.description || 'No description available'}
+                    <View style={styles.modalTitleContainer}>
+                        <Text style={[styles.modalTitle, { color: c.text }]}>
+                            {missileProps.type || 'Unknown Missile'}
                         </Text>
-                        <View style={styles.modalStatsContainer}>
-                            <Text style={[styles.modalTextProminent, isDarkMode && styles.modalTextProminentDark]}>
-                                Status: {selectedMissile.status || 'Unknown'}
-                            </Text>
-                            <Text style={[styles.modalTextProminent, isDarkMode && styles.modalTextProminentDark]}>
-                                Sent by: {selectedMissile.sentbyusername || 'Unknown'}
-                            </Text>
-                            <Text style={[styles.modalTextProminent, isDarkMode && styles.modalTextProminentDark]}>
-                                ETA: {selectedMissile.etatimetoimpact ? convertimestampfuturemissile(selectedMissile.etatimetoimpact).text : 'Unknown'}
-                            </Text>
-
-                            <View style={styles.lessImportantDetails}>
-                                <Text style={[styles.modalTextSecondary, isDarkMode && styles.modalTextSecondaryDark]}>
-                                    Speed: {missileDetails.speed || 'N/A'} m/s
-                                </Text>
-                                <Text style={[styles.modalTextSecondary, isDarkMode && styles.modalTextSecondaryDark]}>
-                                    Radius: {selectedMissile.radius || 'N/A'} m
-                                </Text>
-                                <Text style={[styles.modalTextSecondary, isDarkMode && styles.modalTextSecondaryDark]}>
-                                    Fallout: {missileDetails.fallout || 'N/A'} mins
-                                </Text>
-                                <Text style={[styles.modalTextSecondary, isDarkMode && styles.modalTextSecondaryDark]}>
-                                    Damage: {missileDetails.damage || 'N/A'} per 30 seconds
-                                </Text>
-                            </View>
-                        </View>
+                        <Text style={[styles.modalPrice, { color: c.gold }]}>
+                            🪙{missileDetails?.price ?? 'N/A'}
+                        </Text>
                     </View>
-                </ScrollView>
-                <Pressable
-                    style={[styles.button, styles.buttonClose]}
-                    onPress={() => setModalVisible(false)}
-                >
-                    <Text style={styles.textStyle}>Close</Text>
-                </Pressable>
-            </View>
-        );
-    };
+                </View>
+
+                <View style={[styles.statusChip, { backgroundColor: isIncoming ? c.dangerSoft : c.warningSoft }]}>
+                    <Text style={[styles.statusChipText, { color: isIncoming ? c.danger : c.warning }]}>
+                        {missileProps.status || 'Unknown'}
+                    </Text>
+                </View>
+
+                {missileDetails?.description ? (
+                    <Text style={[styles.modalDescription, { color: c.textMuted }]}>
+                        {missileDetails.description}
+                    </Text>
+                ) : null}
+
+                <View style={[styles.statsContainer, { backgroundColor: c.surfaceAlt }]}>
+                    {renderStatRow('Sent by', missileProps.sentbyusername || 'Unknown', true)}
+                    {renderStatRow('ETA', eta, true)}
+                    {renderStatRow('Speed', `${missileDetails?.speed ?? 'N/A'} m/s`)}
+                    {renderStatRow('Radius', `${missileProps.radius || 'N/A'} m`)}
+                    {renderStatRow('Fallout', `${missileDetails?.fallout ?? 'N/A'} mins`)}
+                    {renderStatRow('Damage', `${missileDetails?.damage ?? 'N/A'} per 30s`)}
+                </View>
+            </ScrollView>
+            <Pressable
+                style={[styles.closeButton, { backgroundColor: c.accent }]}
+                onPress={() => setModalVisible(false)}
+            >
+                <Text style={styles.closeButtonText}>Close</Text>
+            </Pressable>
+        </Pressable>
+    );
 
     return (
         <View>
@@ -240,15 +224,13 @@ export const MapMissile = (missileProps: MissileProps) => {
                     latitude: Number(missileProps.currentLocation.latitude),
                     longitude: Number(missileProps.currentLocation.longitude)
                 }}
-                title={`Missile: ${missileProps.type}`}
-                description={description}
                 onPress={handleMarkerPress}
                 zIndex={1}
             >
-                <Image 
-                    source={resizedmissileimage} 
-                    style={standardMissileSize} 
-                    resizeMode="contain"
+                <Image
+                    source={resizedmissileimage}
+                    style={standardMissileSize}
+                    contentFit="contain"
                 />
             </Marker>
             {/* Render trajectory line */}
@@ -260,13 +242,109 @@ export const MapMissile = (missileProps: MissileProps) => {
             <Modal
                 animationType="fade"
                 transparent={true}
+                statusBarTranslucent
                 visible={modalVisible}
                 onRequestClose={() => setModalVisible(false)}
             >
-                <View style={styles.centeredView}>
+                <Pressable
+                    style={[styles.modalOverlay, { backgroundColor: c.overlay }]}
+                    onPress={() => setModalVisible(false)}
+                >
                     {renderMissileDetails()}
-                </View>
+                </Pressable>
             </Modal>
         </View>
     )
 }
+
+const styles = StyleSheet.create({
+    modalOverlay: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: Spacing.xl,
+    },
+    modalCard: {
+        width: '100%',
+        maxWidth: 400,
+        maxHeight: '80%',
+        borderRadius: Radius.xl,
+        padding: Spacing.xl,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.lg,
+        marginBottom: Spacing.md,
+    },
+    modalImageWell: {
+        width: 72,
+        height: 72,
+        borderRadius: Radius.md,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalImage: {
+        width: 56,
+        height: 56,
+    },
+    modalTitleContainer: {
+        flex: 1,
+    },
+    modalTitle: {
+        ...Type.title,
+    },
+    modalPrice: {
+        ...Type.headline,
+        marginTop: Spacing.xs,
+    },
+    statusChip: {
+        alignSelf: 'flex-start',
+        borderRadius: Radius.pill,
+        paddingHorizontal: Spacing.md,
+        paddingVertical: Spacing.xs + 2,
+        marginBottom: Spacing.md,
+    },
+    statusChipText: {
+        ...Type.caption,
+    },
+    modalDescription: {
+        ...Type.body,
+        marginBottom: Spacing.md,
+    },
+    statsContainer: {
+        borderRadius: Radius.md,
+        padding: Spacing.md,
+        gap: Spacing.sm,
+    },
+    statRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        gap: Spacing.md,
+    },
+    statLabel: {
+        ...Type.caption,
+    },
+    statValue: {
+        ...Type.body,
+        flexShrink: 1,
+        textAlign: 'right',
+    },
+    statValueProminent: {
+        ...Type.headline,
+        fontSize: 14,
+        flexShrink: 1,
+        textAlign: 'right',
+    },
+    closeButton: {
+        marginTop: Spacing.lg,
+        borderRadius: Radius.lg,
+        paddingVertical: Spacing.md,
+        alignItems: 'center',
+    },
+    closeButtonText: {
+        ...Type.button,
+        color: '#fff',
+    },
+});
