@@ -651,16 +651,18 @@ const StorePage: React.FC = () => {
         {!isPremiumStore ? (
           <>
             {renderCategoryChips()}
-            <FlatList
-              style={styles.catalogList}
-              data={filteredWeapons}
-              keyExtractor={(item) => item.id.toString()}
-              renderItem={renderProductCard}
-              numColumns={2}
-              columnWrapperStyle={styles.columnWrapper}
-              contentContainerStyle={styles.listContent}
-              showsVerticalScrollIndicator={false}
-            />
+            <View style={styles.catalogListWrap}>
+              <FlatList
+                style={styles.catalogList}
+                data={filteredWeapons}
+                keyExtractor={(item) => item.id.toString()}
+                renderItem={renderProductCard}
+                numColumns={2}
+                columnWrapperStyle={styles.columnWrapper}
+                contentContainerStyle={styles.listContent}
+                showsVerticalScrollIndicator={false}
+              />
+            </View>
             <PressableScale haptic="tap" onPress={handleShowCart} style={styles.cartBarWrap}>
               <LinearGradient colors={Gradients.brand} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.cartBar}>
                 <View style={styles.cartBarLeft}>
@@ -733,7 +735,12 @@ const StorePage: React.FC = () => {
   );
 }
 
-const getStyles = (palette: ThemePalette, isDark: boolean, bottomInset: number) => StyleSheet.create({
+const CART_BAR_HEIGHT = 56;
+
+const getStyles = (palette: ThemePalette, isDark: boolean, bottomInset: number) => {
+  const cartBarBottom = Math.max(bottomInset, Spacing.sm);
+
+  return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: palette.bg,
@@ -811,13 +818,18 @@ const getStyles = (palette: ThemePalette, isDark: boolean, bottomInset: number) 
   catalogBody: {
     flex: 1,
     minHeight: 0,
+    position: 'relative',
+  },
+  catalogListWrap: {
+    flex: 1,
+    minHeight: 0,
   },
   catalogList: {
     flex: 1,
     minHeight: 0,
   },
   listContent: {
-    paddingBottom: Spacing.md,
+    paddingBottom: CART_BAR_HEIGHT + cartBarBottom + Spacing.lg,
     gap: Spacing.md,
   },
   cardWrap: {
@@ -886,9 +898,10 @@ const getStyles = (palette: ThemePalette, isDark: boolean, bottomInset: number) 
     color: palette.accent,
   },
   cartBarWrap: {
-    marginHorizontal: Spacing.lg,
-    marginTop: Spacing.sm,
-    marginBottom: Math.max(bottomInset, Spacing.sm),
+    position: 'absolute',
+    left: Spacing.lg,
+    right: Spacing.lg,
+    bottom: cartBarBottom,
   },
   cartBar: {
     flexDirection: 'row',
@@ -1083,5 +1096,6 @@ const getStyles = (palette: ThemePalette, isDark: boolean, bottomInset: number) 
     color: '#FFFFFF',
   },
 });
+};
 
 export default StorePage;

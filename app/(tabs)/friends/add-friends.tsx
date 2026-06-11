@@ -8,6 +8,7 @@ import { addFriend } from "../../../api/friends";
 import { router } from "expo-router";
 import { getCurrentLocation, location } from "../../../util/locationreq";
 import * as SecureStore from "expo-secure-store";
+import { useAuth } from "../../../util/Context/authcontext";
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { fetchAndCacheImage } from "../../../util/imagecache";
 import FriendAddedAnimation from "../../../components/Animations/FriendAddedAnimation";
@@ -36,6 +37,7 @@ const EmptyState = ({ icon, label, c, isDarkMode }: { icon: any; label: string; 
 );
 
 const QuickAddPage: React.FC = () => {
+  const { signOut } = useAuth();
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [playersData, setPlayersData] = useState<any[]>([]);
@@ -54,11 +56,12 @@ const QuickAddPage: React.FC = () => {
       const username = await SecureStore.getItemAsync("username");
       if (!username) {
         console.log('Credentials not found, please log in');
+        await signOut();
         router.navigate("/login");
       }
     };
     fetchCredentials();
-  }, []);
+  }, [signOut]);
 
   const fetchPlayers = useCallback((latitude: number, longitude: number) => {
     NearbyPlayersData(latitude, longitude)

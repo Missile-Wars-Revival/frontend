@@ -28,13 +28,11 @@ import Animated, {
   useSharedValue,
   withRepeat,
   withSequence,
-  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import { getlocation } from '../util/locationreq';
 import MissileSkiaBackground from '../components/onboarding/MissileSkiaBackground';
 import { OnboardingHero } from '../components/onboarding/OnboardingHero';
-import { AnimatedEntrance } from '../components/ui/AnimatedEntrance';
 import { PressableScale } from '../components/ui/PressableScale';
 import { haptics } from '../components/ui/haptics';
 
@@ -169,40 +167,26 @@ const PermissionsScreenInner: React.FC<PermissionsScreenProps> = ({ onPermission
   }, [currentSlide]);
 
   // --- Reanimated values -------------------------------------------------
-  // Slide transition (content fades / shifts / scales between slides).
+  // Slide transition: opacity-only crossfade keeps text crisp (no scale jitter).
   const fade = useSharedValue(1);
-  const shift = useSharedValue(0);
-  const zoom = useSharedValue(1);
-  // Hero float + CTA pulse loops (UI-thread only — no JS re-renders).
+  // Subtle hero float — kept small so copy does not feel like it is shaking.
   const float = useSharedValue(0);
-  const pulse = useSharedValue(1);
 
   useEffect(() => {
     float.value = withRepeat(
       withSequence(
-        withTiming(-12, { duration: 2000, easing: Easing.inOut(Easing.quad) }),
-        withTiming(0, { duration: 2000, easing: Easing.inOut(Easing.quad) })
+        withTiming(-5, { duration: 2800, easing: Easing.inOut(Easing.quad) }),
+        withTiming(0, { duration: 2800, easing: Easing.inOut(Easing.quad) })
       ),
       -1
     );
-    pulse.value = withRepeat(
-      withSequence(
-        withTiming(1.03, { duration: 1200, easing: Easing.inOut(Easing.quad) }),
-        withTiming(1, { duration: 1200, easing: Easing.inOut(Easing.quad) })
-      ),
-      -1
-    );
-  }, [float, pulse]);
+  }, [float]);
 
   const contentStyle = useAnimatedStyle(() => ({
     opacity: fade.value,
-    transform: [{ translateX: shift.value }, { scale: zoom.value }],
   }));
   const floatStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: float.value }],
-  }));
-  const pulseStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: pulse.value }],
   }));
 
   const checkPermissions = async () => {
@@ -253,12 +237,9 @@ const PermissionsScreenInner: React.FC<PermissionsScreenProps> = ({ onPermission
 
   // Spring the next slide's content in (runs on the JS thread via runOnJS once
   // the exit animation has finished on the UI thread).
-  const commitSlide = (nextSlide: number, direction: 'next' | 'prev') => {
+  const commitSlide = (nextSlide: number) => {
     setCurrentSlide(nextSlide);
-    shift.value = direction === 'next' ? 56 : -56;
-    fade.value = withSpring(1, { damping: 18, stiffness: 180 });
-    shift.value = withSpring(0, { damping: 18, stiffness: 180 });
-    zoom.value = withSpring(1, { damping: 18, stiffness: 180 });
+    fade.value = withTiming(1, { duration: 220, easing: Easing.out(Easing.quad) });
   };
 
   const animateSlideChange = (direction: 'next' | 'prev', target?: number) => {
@@ -273,11 +254,9 @@ const PermissionsScreenInner: React.FC<PermissionsScreenProps> = ({ onPermission
 
     haptics.select();
 
-    fade.value = withTiming(0, { duration: 140 });
-    zoom.value = withTiming(0.92, { duration: 140 });
-    shift.value = withTiming(direction === 'next' ? -56 : 56, { duration: 140 }, (finished) => {
+    fade.value = withTiming(0, { duration: 160, easing: Easing.in(Easing.quad) }, (finished) => {
       if (finished) {
-        runOnJS(commitSlide)(nextSlide, direction);
+        runOnJS(commitSlide)(nextSlide);
       }
     });
   };
@@ -421,94 +400,82 @@ const PermissionsScreenInner: React.FC<PermissionsScreenProps> = ({ onPermission
               bounces={true}
             >
               {/* Helper layout: image left, text right */}
-              <AnimatedEntrance key={`${slide.id}-header`} offsetY={14}>
-                <View style={styles.helperContainer}>
-                  <Animated.View style={[styles.helperImageContainer, floatStyle]}>
-                    <Image
-                      source={slide.image}
-                      style={styles.helperImage}
-                      contentFit="contain"
-                    />
-                  </Animated.View>
-                  <View style={styles.helperTextContainer}>
-                    <Text style={styles.helperTitle}>{slide.title}</Text>
-                    <Text style={[styles.helperSubtitle, { color: slide.accentColor }]}>
-                      {slide.subtitle}
-                    </Text>
-                  </View>
+              <View style={styles.helperContainer}>
+                <Animated.View style={[styles.helperImageContainer, floatStyle]}>
+                  <Image
+                    source={slide.image}
+                    style={styles.helperImage}
+                    contentFit="contain"
+                  />
+                </Animated.View>
+                <View style={styles.helperTextContainer}>
+                  <Text style={styles.helperTitle}>{slide.title}</Text>
+                  <Text style={[styles.helperSubtitle, { color: slide.accentColor }]}>
+                    {slide.subtitle}
+                  </Text>
                 </View>
-              </AnimatedEntrance>
+              </View>
 
-              <AnimatedEntrance key={`${slide.id}-desc`} index={1} stagger={60} offsetY={14}>
-                <Text style={styles.helperDescription}>{slide.description}</Text>
-              </AnimatedEntrance>
+              <Text style={styles.helperDescription}>{slide.description}</Text>
 
               {/* Permissions section */}
               <View style={styles.permissionsContainer}>
-                <AnimatedEntrance key={`${slide.id}-p1`} index={2} stagger={60} offsetY={14}>
-                  <PermissionRow
-                    icon="analytics-outline"
-                    title="App Tracking Transparency"
-                    description="Lets us measure ad performance and reduce repeated ads"
-                    isGranted={trackingPermissionResolved}
-                    onPress={requestTrackingPermission}
-                    accentColor={slide.accentColor}
-                  />
-                </AnimatedEntrance>
+                <PermissionRow
+                  icon="analytics-outline"
+                  title="App Tracking Transparency"
+                  description="Lets us measure ad performance and reduce repeated ads"
+                  isGranted={trackingPermissionResolved}
+                  onPress={requestTrackingPermission}
+                  accentColor={slide.accentColor}
+                />
 
-                <AnimatedEntrance key={`${slide.id}-p2`} index={3} stagger={60} offsetY={14}>
-                  <PermissionRow
-                    icon="location-outline"
-                    title="Location (Required)"
-                    description="Essential for gameplay and map features"
-                    isGranted={locationPermission}
-                    onPress={requestLocationPermission}
-                    accentColor={slide.accentColor}
-                    required
-                  />
-                </AnimatedEntrance>
+                <PermissionRow
+                  icon="location-outline"
+                  title="Location (Required)"
+                  description="Essential for gameplay and map features"
+                  isGranted={locationPermission}
+                  onPress={requestLocationPermission}
+                  accentColor={slide.accentColor}
+                  required
+                />
 
-                <AnimatedEntrance key={`${slide.id}-p3`} index={4} stagger={60} offsetY={14}>
-                  <PermissionRow
-                    icon="notifications-outline"
-                    title="Notifications"
-                    description="Get alerts when you're under attack"
-                    isGranted={notificationPermission}
-                    onPress={requestNotifications}
-                    accentColor={slide.accentColor}
-                  />
-                </AnimatedEntrance>
+                <PermissionRow
+                  icon="notifications-outline"
+                  title="Notifications"
+                  description="Get alerts when you're under attack"
+                  isGranted={notificationPermission}
+                  onPress={requestNotifications}
+                  accentColor={slide.accentColor}
+                />
 
-                <AnimatedEntrance key={`${slide.id}-p4`} index={5} stagger={60} offsetY={14}>
-                  <Pressable
-                    style={styles.privacyRow}
-                    onPress={() => {
-                      setPrivacyAgreed(!privacyAgreed);
-                      haptics.select();
-                    }}
+                <Pressable
+                  style={styles.privacyRow}
+                  onPress={() => {
+                    setPrivacyAgreed(!privacyAgreed);
+                    haptics.select();
+                  }}
+                >
+                  <View
+                    style={[
+                      styles.checkbox,
+                      privacyAgreed && styles.checkboxChecked,
+                    ]}
                   >
-                    <View
-                      style={[
-                        styles.checkbox,
-                        privacyAgreed && styles.checkboxChecked,
-                      ]}
-                    >
-                      {privacyAgreed && (
-                        <Ionicons name="checkmark" size={16} color="#fff" />
-                      )}
-                    </View>
-                    <Text style={styles.privacyText}>
-                      I agree to the{' '}
-                      <Text style={styles.privacyLink} onPress={openPrivacyPolicy}>
-                        Privacy Policy
-                      </Text>
-                      {' '}and{' '}
-                      <Text style={styles.privacyLink} onPress={openEULA}>
-                        Terms of Service
-                      </Text>
+                    {privacyAgreed && (
+                      <Ionicons name="checkmark" size={16} color="#fff" />
+                    )}
+                  </View>
+                  <Text style={styles.privacyText}>
+                    I agree to the{' '}
+                    <Text style={styles.privacyLink} onPress={openPrivacyPolicy}>
+                      Privacy Policy
                     </Text>
-                  </Pressable>
-                </AnimatedEntrance>
+                    {' '}and{' '}
+                    <Text style={styles.privacyLink} onPress={openEULA}>
+                      Terms of Service
+                    </Text>
+                  </Text>
+                </Pressable>
 
                 <Text style={styles.permissionDisclosureText}>
                   Tracking permission is optional and does not block gameplay. Location is required for map-based gameplay.
@@ -532,23 +499,16 @@ const PermissionsScreenInner: React.FC<PermissionsScreenProps> = ({ onPermission
                 />
               </Animated.View>
 
-              {/* Text content (staggered entrance, replayed per slide) */}
               <View style={styles.textContainer}>
-                <AnimatedEntrance key={`${slide.id}-title`} offsetY={16}>
-                  <Text style={styles.title}>{slide.title}</Text>
-                </AnimatedEntrance>
-                <AnimatedEntrance key={`${slide.id}-subtitle`} index={1} stagger={70} offsetY={16}>
-                  <View style={styles.subtitleContainer}>
-                    <View style={[styles.subtitleLine, { backgroundColor: slide.accentColor }]} />
-                    <Text style={[styles.subtitle, { color: slide.accentColor }]}>
-                      {slide.subtitle}
-                    </Text>
-                    <View style={[styles.subtitleLine, { backgroundColor: slide.accentColor }]} />
-                  </View>
-                </AnimatedEntrance>
-                <AnimatedEntrance key={`${slide.id}-description`} index={2} stagger={70} offsetY={16}>
-                  <Text style={styles.description}>{slide.description}</Text>
-                </AnimatedEntrance>
+                <Text style={styles.title}>{slide.title}</Text>
+                <View style={styles.subtitleContainer}>
+                  <View style={[styles.subtitleLine, { backgroundColor: slide.accentColor }]} />
+                  <Text style={[styles.subtitle, { color: slide.accentColor }]}>
+                    {slide.subtitle}
+                  </Text>
+                  <View style={[styles.subtitleLine, { backgroundColor: slide.accentColor }]} />
+                </View>
+                <Text style={styles.description}>{slide.description}</Text>
               </View>
             </>
           )}
@@ -566,55 +526,53 @@ const PermissionsScreenInner: React.FC<PermissionsScreenProps> = ({ onPermission
             <View style={styles.navButtonPlaceholder} />
           )}
 
-          <Animated.View style={pulseStyle}>
-            <PressableScale
-              style={[
-                styles.mainButton,
-                isLastSlide && (!privacyAgreed || !locationPermission ? styles.disabledButton : styles.completeButton),
-              ]}
-              onPress={isLastSlide ? handleComplete : goNext}
-              haptic={isLastSlide ? 'tap' : 'none'}
-              disabled={isLastSlide && (!privacyAgreed || !locationPermission)}
+          <PressableScale
+            style={[
+              styles.mainButton,
+              isLastSlide && (!privacyAgreed || !locationPermission ? styles.disabledButton : styles.completeButton),
+            ]}
+            onPress={isLastSlide ? handleComplete : goNext}
+            haptic={isLastSlide ? 'tap' : 'none'}
+            disabled={isLastSlide && (!privacyAgreed || !locationPermission)}
+          >
+            <LinearGradient
+              colors={
+                isLastSlide
+                  ? privacyAgreed && locationPermission
+                    ? ['#4CAF50', '#45a049']
+                    : ['#666', '#555']
+                  : [slide.accentColor, slide.gradientColors[1]]
+              }
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.mainButtonGradient}
             >
-              <LinearGradient
-                colors={
-                  isLastSlide
-                    ? privacyAgreed && locationPermission
-                      ? ['#4CAF50', '#45a049']
-                      : ['#666', '#555']
-                    : [slide.accentColor, slide.gradientColors[1]]
-                }
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.mainButtonGradient}
+              <Text
+                style={[
+                  styles.mainButtonText,
+                  isLastSlide && privacyAgreed && locationPermission && styles.completeButtonText,
+                ]}
               >
-                <Text
-                  style={[
-                    styles.mainButtonText,
-                    isLastSlide && privacyAgreed && locationPermission && styles.completeButtonText,
-                  ]}
-                >
-                  {isLastSlide ? "Let's Go!" : 'Continue'}
-                </Text>
-                {!isLastSlide && (
-                  <Ionicons
-                    name="arrow-forward"
-                    size={20}
-                    color="#fff"
-                    style={{ marginLeft: 8 }}
-                  />
-                )}
-                {isLastSlide && privacyAgreed && locationPermission && (
-                  <Ionicons
-                    name="rocket"
-                    size={20}
-                    color="#fff"
-                    style={{ marginLeft: 8 }}
-                  />
-                )}
-              </LinearGradient>
-            </PressableScale>
-          </Animated.View>
+                {isLastSlide ? "Let's Go!" : 'Continue'}
+              </Text>
+              {!isLastSlide && (
+                <Ionicons
+                  name="arrow-forward"
+                  size={20}
+                  color="#fff"
+                  style={{ marginLeft: 8 }}
+                />
+              )}
+              {isLastSlide && privacyAgreed && locationPermission && (
+                <Ionicons
+                  name="rocket"
+                  size={20}
+                  color="#fff"
+                  style={{ marginLeft: 8 }}
+                />
+              )}
+            </LinearGradient>
+          </PressableScale>
 
           <View style={styles.navButtonPlaceholder} />
         </View>
@@ -632,7 +590,7 @@ const ProgressDot: React.FC<{
   const w = useSharedValue(active ? 30 : 9);
 
   useEffect(() => {
-    w.value = withSpring(active ? 30 : 9, { damping: 16, stiffness: 260 });
+    w.value = withTiming(active ? 30 : 9, { duration: 220, easing: Easing.out(Easing.quad) });
   }, [active, w]);
 
   const style = useAnimatedStyle(() => ({ width: w.value }));
@@ -664,8 +622,7 @@ const PermissionRow: React.FC<{
 
   useEffect(() => {
     if (isGranted && !wasGranted.current) {
-      badgeScale.value = 0.3;
-      badgeScale.value = withSpring(1, { damping: 9, stiffness: 320 });
+      badgeScale.value = withTiming(1, { duration: 180, easing: Easing.out(Easing.quad) });
     }
     wasGranted.current = isGranted;
   }, [isGranted, badgeScale]);

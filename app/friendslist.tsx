@@ -7,6 +7,7 @@ import useFetchFriends from '../hooks/websockets/friendshook';
 import { Friend } from '../types/types';
 import { getDatabase, ref, push, set, update, serverTimestamp, query, orderByChild, equalTo, get } from 'firebase/database';
 import * as SecureStore from 'expo-secure-store';
+import { useAuth } from '../util/Context/authcontext';
 
 const DEFAULT_IMAGE = require('../assets/mapassets/Female_Avatar_PNG.png');
 
@@ -34,6 +35,7 @@ const FriendItem = React.memo(function FriendItem({ item, onPress, isDarkMode }:
 
 const FriendsList = () => {
   const router = useRouter();
+  const { signOut } = useAuth();
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
   const friends = useFetchFriends();
@@ -46,12 +48,13 @@ const FriendsList = () => {
         setUsername(storedUsername);
       } else {
         Alert.alert("Not Signed In", "Please sign in to view your friends list.");
-        router.replace('/login'); // Adjust this path to your login route
+        await signOut();
+        router.replace('/login');
       }
     };
 
     checkAuthentication();
-  }, [router]);
+  }, [router, signOut]);
 
   const createNewConversation = useCallback(async (friendUsername: string) => {
     if (!username) {

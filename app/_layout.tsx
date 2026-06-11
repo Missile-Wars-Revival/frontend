@@ -150,8 +150,8 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <CountdownProvider>
-        <AuthProvider initialIsSignedIn={isAuthenticated}>
-          <OnboardingGate>
+        <OnboardingGate>
+          <AuthProvider initialIsSignedIn={isAuthenticated}>
             <WebSocketProvider>
               <LandmineProvider>
                 <OnboardingProvider>
@@ -161,19 +161,18 @@ export default function RootLayout() {
                 </OnboardingProvider>
               </LandmineProvider>
             </WebSocketProvider>
-          </OnboardingGate>
-        </AuthProvider>
+          </AuthProvider>
+        </OnboardingGate>
       </CountdownProvider>
     </QueryClientProvider>
   );
 }
 
 /**
- * Gates onboarding / permissions behind authentication.
- * If `alreadyLaunchedV3` is missing for a signed-in user, show permissions.
+ * Gates onboarding / permissions before login.
+ * If `alreadyLaunchedV3` is missing, show the intro slides first.
  */
 function OnboardingGate({ children }: { children: React.ReactNode }) {
-  const { isSignedIn } = useAuth();
   const [onboardingChecked, setOnboardingChecked] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
@@ -188,23 +187,12 @@ function OnboardingGate({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!isSignedIn) {
-      setOnboardingChecked(false);
-      setNeedsOnboarding(false);
-      return;
-    }
-
-    // Trigger a fresh read on mount.
-    setOnboardingChecked(false);
     checkOnboardingStatus();
-  }, [isSignedIn, checkOnboardingStatus]);
+  }, [checkOnboardingStatus]);
 
   useEffect(() => {
-    if (!isSignedIn) return;
-
     const subscription = AppState.addEventListener('change', (nextState) => {
       if (nextState === 'active') {
-        // Re-check when returning to foreground so manual key resets are reflected.
         checkOnboardingStatus();
       }
     });
@@ -212,7 +200,7 @@ function OnboardingGate({ children }: { children: React.ReactNode }) {
     return () => {
       subscription.remove();
     };
-  }, [isSignedIn, checkOnboardingStatus]);
+  }, [checkOnboardingStatus]);
 
   const handlePermissionGranted = useCallback(async () => {
     try {
@@ -223,7 +211,11 @@ function OnboardingGate({ children }: { children: React.ReactNode }) {
     setNeedsOnboarding(false);
   }, []);
 
-  if (isSignedIn && onboardingChecked && needsOnboarding) {
+  if (!onboardingChecked) {
+    return <View style={styles.onboardingPlaceholder} />;
+  }
+
+  if (needsOnboarding) {
     return <PermissionsScreen onPermissionGranted={handlePermissionGranted} />;
   }
 
@@ -300,6 +292,10 @@ function RootLayoutNav() {
   );
 }
 const styles = StyleSheet.create({
+  onboardingPlaceholder: {
+    flex: 1,
+    backgroundColor: '#060818',
+  },
   countdownContainer: {
     position: 'absolute',
     bottom: 90,

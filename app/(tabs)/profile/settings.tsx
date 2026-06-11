@@ -27,7 +27,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { changeEmail, changePassword, changeUsername, deleteAcc } from '../../../api/changedetails';
 import { updateFriendsOnlyStatus } from '../../../api/visibility';
 import { updatelocActive, getlocActive, getRandomLocation, randomLocation } from '../../../api/locationOptions';
-import { clearCredentials } from '../../../util/logincache';
 import { useAuth } from '../../../util/Context/authcontext';
 import AppIconChanger from '../../../components/appiconchanger';
 import * as StoreReview from 'expo-store-review';
@@ -48,7 +47,7 @@ const SettingsPage: React.FC = () => {
   const [passwordError, setPasswordError] = useState('');
   const [locActive, setLocActive] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
-  const { setIsSignedIn } = useAuth();
+  const { signOut } = useAuth();
   const [showAccountDetails, setShowAccountDetails] = useState(false);
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
   const [showCredits, setShowCredits] = useState(false);
@@ -269,9 +268,7 @@ const SettingsPage: React.FC = () => {
   };
 
   const handleLogout = async () => {
-    await clearCredentials();
-    await AsyncStorage.setItem('signedIn', 'false');
-    setIsSignedIn(false);
+    await signOut();
     router.navigate('/login');
   };
 

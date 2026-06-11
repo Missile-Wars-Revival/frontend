@@ -69,8 +69,8 @@ const MissileSkiaBackground: React.FC<Props> = ({ accentColor = '#64b5f6' }) => 
 
   // Diagonal drift for the battlefield grid (modulo spacing for a seamless loop).
   const gridDrift = useDerivedValue(() => {
-    const d = (clock.value / 70) % GRID;
-    return [{ translateX: -d * 0.4 }, { translateY: d }];
+    const d = (clock.value / 140) % GRID;
+    return [{ translateX: -d * 0.2 }, { translateY: d * 0.5 }];
   });
 
   // Rotating radar sweep.

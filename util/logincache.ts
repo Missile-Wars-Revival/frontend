@@ -18,6 +18,11 @@ export async function saveCredentials(
   }
 }
 
+export async function signOut(): Promise<void> {
+  await clearCredentials();
+  await AsyncStorage.setItem('signedIn', 'false');
+}
+
 export async function clearCredentials(): Promise<void> {
   try {
     await logout();

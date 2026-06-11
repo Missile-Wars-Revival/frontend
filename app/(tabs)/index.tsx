@@ -28,6 +28,7 @@ import { FireSelector } from "../../components/fire-selector";
 import { MapComp } from "../../components/map-comp";
 import { MapStyle } from "../../types/types";
 import { router } from "expo-router";
+import { useAuth } from "../../util/Context/authcontext";
 import HealthBar from "../../components/healthbar";
 import { getisAlive, setHealth, updateisAlive } from "../../api/health";
 import { playDeathSound } from "../../util/sounds/deathsound";
@@ -44,6 +45,7 @@ const { width, height } = Dimensions.get('window');
 const DEV_OFFLINE_TOKEN = "dev-offline-token";
 
 export default function Map() {
+  const { signOut } = useAuth();
   const [selectedMapStyle, setSelectedMapStyle] = useState<MapStyle[]>(Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle);
   const [themePopupVisible, setThemePopupVisible] = useState(false);
   const [isAlive, setIsAlive] = useState<boolean | null>(null);
@@ -111,7 +113,7 @@ export default function Map() {
     const fetchCredentials = async () => {
       const credentials = await SecureStore.getItemAsync("username");
       if (!credentials) {
-        await AsyncStorage.setItem('signedIn', 'false');
+        await signOut();
         router.navigate("/login");
       } else {
         setIsLoggedIn(true);
@@ -119,7 +121,7 @@ export default function Map() {
     };
 
     fetchCredentials();
-  }, []);
+  }, [signOut]);
 
 
   useEffect(() => {
