@@ -5,6 +5,7 @@ import {
   StyleSheet,
   Pressable,
   Alert,
+  AppState,
   Platform,
   Dimensions,
   StatusBar,
@@ -157,6 +158,7 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = (props) => {
 const PermissionsScreenInner: React.FC<PermissionsScreenProps> = ({ onPermissionGranted }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [locationPermission, setLocationPermission] = useState(false);
+  const [backgroundLocationPermission, setBackgroundLocationPermission] = useState(false);
   const [notificationPermission, setNotificationPermission] = useState(false);
   const [trackingPermissionResolved, setTrackingPermissionResolved] = useState(false);
   const [privacyAgreed, setPrivacyAgreed] = useState(false);
@@ -194,6 +196,9 @@ const PermissionsScreenInner: React.FC<PermissionsScreenProps> = ({ onPermission
       const locationStatus = await Location.getForegroundPermissionsAsync();
       setLocationPermission(locationStatus.status === 'granted');
 
+      const backgroundStatus = await Location.getBackgroundPermissionsAsync();
+      setBackgroundLocationPermission(backgroundStatus.status === 'granted');
+
       const notifStatus = await Notifications.getPermissionsAsync();
       setNotificationPermission(notifStatus.status === 'granted');
 
@@ -214,6 +219,17 @@ const PermissionsScreenInner: React.FC<PermissionsScreenProps> = ({ onPermission
     // updates are async (not a synchronous cascading render) and safe here.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     checkPermissions();
+  }, []);
+
+  // Re-check when returning from system settings — Android 11+ grants
+  // background location there, not via an in-app dialog.
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        checkPermissions();
+      }
+    });
+    return () => subscription.remove();
   }, []);
 
   const requestTrackingPermission = async () => {
@@ -299,6 +315,33 @@ const PermissionsScreenInner: React.FC<PermissionsScreenProps> = ({ onPermission
       }
     } catch (error) {
       console.error('Error requesting location:', error);
+    }
+  };
+
+  const requestBackgroundLocationPermission = async () => {
+    try {
+      // Background access requires foreground permission first.
+      const foreground = await Location.getForegroundPermissionsAsync();
+      if (foreground.status !== 'granted') {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        setLocationPermission(status === 'granted');
+        if (status !== 'granted') {
+          haptics.warning();
+          Alert.alert(
+            'Location Needed First',
+            'Grant location access before enabling background location.'
+          );
+          return;
+        }
+      }
+
+      // On Android 11+ this sends the user to system settings ("Allow all the
+      // time"); on iOS it upgrades the permission to "Always".
+      const { status } = await Location.requestBackgroundPermissionsAsync();
+      setBackgroundLocationPermission(status === 'granted');
+      if (status === 'granted') haptics.success(); else haptics.warning();
+    } catch (error) {
+      console.error('Error requesting background location:', error);
     }
   };
 
@@ -445,6 +488,15 @@ const PermissionsScreenInner: React.FC<PermissionsScreenProps> = ({ onPermission
                 />
 
                 <PermissionRow
+                  icon="navigate-outline"
+                  title="Background Location"
+                  description="Keeps your position fresh for accurate missile & landmine placement while you're away"
+                  isGranted={backgroundLocationPermission}
+                  onPress={requestBackgroundLocationPermission}
+                  accentColor={slide.accentColor}
+                />
+
+                <PermissionRow
                   icon="notifications-outline"
                   title="Notifications"
                   description="Get alerts when you're under attack"
@@ -483,7 +535,7 @@ const PermissionsScreenInner: React.FC<PermissionsScreenProps> = ({ onPermission
                 </Pressable>
 
                 <Text style={styles.permissionDisclosureText}>
-                  Tracking permission is optional and does not block gameplay. Location is required for map-based gameplay.
+                  Tracking and background location permissions are optional and do not block gameplay. Location is required for map-based gameplay.
                 </Text>
               </View>
 

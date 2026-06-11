@@ -44,9 +44,17 @@ export async function searchOtherPlayersData(searchTerm: string): Promise<any[]>
                 searchTerm,
             }
         });
-       // console.log(response.data);
-        // The backend already returns the data in the correct format, so we don't need to map it again
-        return response.data;
+        const data = response.data;
+        if (Array.isArray(data)) {
+            return data;
+        }
+
+        if (data && Array.isArray(data.results)) {
+            return data.results;
+        }
+
+        console.warn("Unexpected search players response:", data);
+        return [];
     } catch (error) {
         if (isAxiosError(error)) {
             console.error("Error fetching other players data:", error.response?.data || error.message);

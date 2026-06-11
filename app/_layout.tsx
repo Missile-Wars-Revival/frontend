@@ -21,6 +21,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PermissionsScreen } from './PermissionsScreen';
 import { OnboardingProvider } from '../util/Context/onboardingContext';
 import GameEffectsOverlay from '../components/effects/GameEffectsOverlay';
+import { registerAndSyncPushToken } from '../components/Notifications/registerPushToken';
+// Imported for its side effect too: TaskManager.defineTask must run in module
+// scope so the task exists when the OS launches the app headless.
+import {
+  registerBackgroundLocationTask,
+  unregisterBackgroundLocationTask,
+} from '../util/background-location-task';
 
 const BACKGROUND_THRESHOLD = 2 * 60 * 1000; // 2 minutes in milliseconds
 
@@ -260,6 +267,30 @@ function RootLayoutNav() {
     AdService.initialize().catch((error) => {
       console.error('Failed to initialize AdService:', error);
     });
+  }, [isSignedIn]);
+
+  // Re-register the Expo push token every signed-in session. Login sends it
+  // too, but the token is often unavailable at that moment (async fetch or
+  // permission granted later), and the backend wipes tokens it deems invalid —
+  // this is the recovery path. Silent: never prompts for permission here.
+  useEffect(() => {
+    if (!isSignedIn) return;
+    registerAndSyncPushToken().then((result) => {
+      console.log('Push token sync:', result.status);
+    }).catch((error) => {
+      console.error('Failed to sync push token:', error);
+    });
+  }, [isSignedIn]);
+
+  // Periodic background location dispatch so the backend has a fresh position
+  // for missile/landmine placement even while the app is backgrounded. The
+  // task itself no-ops unless background location permission is granted.
+  useEffect(() => {
+    if (isSignedIn) {
+      registerBackgroundLocationTask();
+    } else {
+      unregisterBackgroundLocationTask();
+    }
   }, [isSignedIn]);
 
   const backgroundColor = colorScheme === 'dark' ? '#1E1E1E' : '#FFFFFF';

@@ -64,6 +64,7 @@
         "com.android.vending.BILLING",
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
         "android.permission.INTERNET",
         "android.permission.NOTIFICATIONS",
         "android.permission.FOREGROUND_SERVICE",
@@ -148,8 +149,8 @@
           "locationAlwaysAndWhenInUsePermission": "Allow Missile Wars to use your location for real-time gameplay and map features.",
           "locationAlwaysPermission": "Allow Missile Wars to use your location in the background for continuous gameplay updates.",
           "locationWhenInUsePermission": "Allow Missile Wars to use your location while using the app for accurate gameplay.",
-          "isIosBackgroundLocationEnabled": false,
-          "isAndroidBackgroundLocationEnabled": false,
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true,
           "isAndroidForegroundServiceEnabled": true
         }
       ],
@@ -224,7 +225,8 @@
       "@react-native-vector-icons/material-design-icons",
       "expo-splash-screen",
       "expo-audio",
-      "expo-image"
+      "expo-image",
+      "expo-background-task"
     ],
     "owner": "osog",
     "experiments": {

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Alert, Linking, Platform, DevSettings,
   View, Text, ScrollView, Pressable, Switch as RNSwitch,
-  StyleSheet, useColorScheme, ActionSheetIOS,
+  StyleSheet, useColorScheme, ActionSheetIOS, ActivityIndicator,
 } from 'react-native';
 import { Stack, router } from 'expo-router';
 import {
@@ -20,7 +20,12 @@ import {
   User, Smartphone, Bell, MessageSquare, Star, Heart,
   Info, Shield, FileText, HelpCircle, LogOut, Trash2,
   ChevronRight, ExternalLink, Palette,
+  BellRing, BellOff, Send, Rocket, Flame, Radar, Trophy,
+  Gift, UserPlus, Medal, Crown, Server, Users,
 } from 'lucide-react-native';
+import * as Notifications from 'expo-notifications';
+import * as Device from 'expo-device';
+import Constants from 'expo-constants';
 import * as SecureStore from 'expo-secure-store';
 import * as Updates from 'expo-updates';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -30,13 +35,52 @@ import { updatelocActive, getlocActive, getRandomLocation, randomLocation } from
 import { useAuth } from '../../../util/Context/authcontext';
 import AppIconChanger from '../../../components/appiconchanger';
 import * as StoreReview from 'expo-store-review';
-import { getNotificationPreferences, updateNotificationPreferences } from '../../../api/notifications';
+import {
+  getNotificationPreferences,
+  updateNotificationPreferences,
+  getNotificationTokenStatus,
+  sendTestNotification,
+} from '../../../api/notifications';
+import { registerAndSyncPushToken } from '../../../components/Notifications/registerPushToken';
 
 const IMAGE_PREFERENCES = [
   { label: '🚀  Default', value: 'default' },
   { label: '🥕  Fruit & Veg', value: 'fruitandveg' },
   { label: '🎃  Halloween', value: 'halloween' },
 ];
+
+type NotificationIcon = React.ComponentType<{ size?: number; color?: string }>;
+
+const NOTIFICATION_OPTIONS: {
+  key: 'incomingEntities' | 'entityDamage' | 'entitiesInAirspace' | 'eliminationReward' | 'lootDrops' | 'friendRequests' | 'leagues';
+  label: string;
+  description: string;
+  icon: NotificationIcon;
+}[] = [
+  { key: 'incomingEntities', label: 'Incoming Entities', description: 'A missile is heading your way', icon: Rocket },
+  { key: 'entityDamage', label: 'Entity Damage', description: 'You take damage from missiles or landmines', icon: Flame },
+  { key: 'entitiesInAirspace', label: 'Airspace Alerts', description: 'Missiles or landmines enter your airspace', icon: Radar },
+  { key: 'eliminationReward', label: 'Elimination Rewards', description: 'Rewards for eliminating other players', icon: Trophy },
+  { key: 'lootDrops', label: 'Loot Drops', description: 'Loot appears or is collected near you', icon: Gift },
+  { key: 'friendRequests', label: 'Friend Requests', description: 'Incoming and accepted friend requests', icon: UserPlus },
+  { key: 'leagues', label: 'League Updates', description: 'Promotions and league changes', icon: Medal },
+];
+
+const CREDITS_SECTIONS: {
+  title: string;
+  icon: NotificationIcon;
+  color: string;
+  names: string[];
+}[] = [
+  { title: 'Lead Developers', icon: Crown, color: '#FF9500', names: ['Tristan', 'Clxud'] },
+  { title: 'Frontend Developers', icon: Smartphone, color: '#007AFF', names: ['Tristan', 'NightSpark', 'TheVin', 'Luc'] },
+  { title: 'Backend Developers', icon: Server, color: '#34C759', names: ['Tristan', 'Clxud', 'SwissArmywrench', 'manaf941'] },
+  { title: 'Concept & UI', icon: Palette, color: '#AF52DE', names: ['Gubb0', 'ryaaab', 'arapeggio'] },
+  { title: 'Staff', icon: Users, color: '#FF2D55', names: ['Sophie', 'ToxicSans', 'Nero'] },
+];
+
+// Push registration state shown at the top of the notification sheet.
+type PushStatus = 'checking' | 'active' | 'unregistered' | 'disabled' | 'unsupported';
 
 const SettingsPage: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -271,6 +315,17 @@ const SettingsPage: React.FC = () => {
     // signOut emits APP_RELAUNCH_EVENT; the root layout restarts the shell
     // (splash → onboarding → login), so no navigation is needed here.
     await signOut();
+  };
+
+  const confirmLogout = () => {
+    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Sign Out',
+        style: 'destructive',
+        onPress: () => { void handleLogout(); },
+      },
+    ]);
   };
 
   const handleDeleteAccount = async () => {
@@ -548,7 +603,7 @@ const SettingsPage: React.FC = () => {
 
         {/* ── Danger Zone ───────────────────────────────────── */}
         <View style={[s.card, { marginTop: 8 }]}>
-          <Pressable style={s.row} onPress={handleLogout}>
+          <Pressable style={s.row} onPress={confirmLogout}>
             <View style={[s.iconCircle, { backgroundColor: '#FF3B3022' }]}>
               <LogOut size={18} color="#FF3B30" />
             </View>

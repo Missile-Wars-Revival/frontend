@@ -121,6 +121,68 @@ export const deleteNotification = async (notificationId: string) => {
 	}
 };
 
+// Registers/refreshes this device's Expo push token with the backend.
+// Returns true when the server has confirmed the token.
+export const updateNotificationToken = async (notificationToken: string): Promise<boolean> => {
+	try {
+		const token = await SecureStore.getItemAsync("token");
+		if (!token) {
+			return false;
+		}
+
+		if (token === DEV_OFFLINE_TOKEN) {
+			await SecureStore.setItemAsync("notificationToken", notificationToken);
+			return true;
+		}
+
+		await axiosInstance.patch("/api/updateNotificationToken", {
+			token,
+			notificationToken,
+		});
+
+		// Cache only after the server confirms, so the cached value mirrors
+		// what the backend actually holds.
+		await SecureStore.setItemAsync("notificationToken", notificationToken);
+		return true;
+	} catch (error) {
+		console.error("Failed to update notification token:", error);
+		return false;
+	}
+};
+
+// Whether the backend currently holds a valid push token for this account.
+export const getNotificationTokenStatus = async (): Promise<boolean> => {
+	const token = await SecureStore.getItemAsync("token");
+	if (!token) {
+		return false;
+	}
+
+	if (token === DEV_OFFLINE_TOKEN) {
+		return !!(await SecureStore.getItemAsync("notificationToken"));
+	}
+
+	const response = await axiosInstance.get<{ registered: boolean }>(
+		"/api/notificationTokenStatus",
+		{ params: { token } },
+	);
+	return response.data.registered;
+};
+
+// Asks the backend to send a push notification to this account so the user
+// can verify their token end-to-end. Throws on failure.
+export const sendTestNotification = async (): Promise<void> => {
+	const token = await SecureStore.getItemAsync("token");
+	if (!token) {
+		throw new Error("Authentication token not found");
+	}
+
+	if (token === DEV_OFFLINE_TOKEN) {
+		return;
+	}
+
+	await axiosInstance.post("/api/testNotification", { token });
+};
+
 interface NotificationPreferences {
 	id: number;
 	userId: number;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Text, View, FlatList, Alert, RefreshControl, TextInput, Keyboard, Pressable, useColorScheme, StyleSheet, ActivityIndicator } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
@@ -15,6 +15,7 @@ import { AnimatedEntrance } from "../../../components/ui/AnimatedEntrance";
 import { PressableScale } from "../../../components/ui/PressableScale";
 import { haptics } from "../../../components/ui/haptics";
 import { getPalette, Gradients, Radius, Spacing, cardShadow } from "../../../components/ui/theme";
+import useFetchFriends from "../../../hooks/websockets/friendshook";
 
 interface Filterddata {
   username: string,
@@ -23,6 +24,29 @@ interface Filterddata {
   profileImageUrl: string | null;
   isFriend?: string;
 }
+
+const visibleUsername = (username: unknown) =>
+  typeof username === "string" ? username.replace(/[\s\u200B-\u200D\uFEFF]/g, "") : "";
+
+const filterPlayerList = (
+  players: any[],
+  currentUsername: string | null,
+  excludedUsernames: Set<string>
+) => {
+  const currentUsernameKey = visibleUsername(currentUsername).toLowerCase();
+  if (!Array.isArray(players)) {
+    return [];
+  }
+
+  return players.filter((player) => {
+    const usernameKey = visibleUsername(player?.username).toLowerCase();
+    return (
+      usernameKey.length > 0 &&
+      usernameKey !== currentUsernameKey &&
+      !excludedUsernames.has(usernameKey)
+    );
+  });
+};
 
 const EmptyState = ({ icon, label, c, isDarkMode }: { icon: any; label: string; c: ReturnType<typeof getPalette>; isDarkMode: boolean }) => (
   <AnimatedEntrance style={styles.emptyWrap}>
@@ -36,6 +60,7 @@ const EmptyState = ({ icon, label, c, isDarkMode }: { icon: any; label: string; 
 const QuickAddPage: React.FC = () => {
   const { signOut } = useAuth();
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [currentUsername, setCurrentUsername] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [playersData, setPlayersData] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -43,14 +68,33 @@ const QuickAddPage: React.FC = () => {
   const [filteredData, setFilteredData] = useState<Filterddata[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showAnimation, setShowAnimation] = useState(false);
+  const friends = useFetchFriends();
 
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
   const c = getPalette(isDarkMode);
+  const friendUsernames = useMemo(
+    () =>
+      new Set(
+        friends
+          .map((friend) => visibleUsername(friend.username).toLowerCase())
+          .filter(Boolean)
+      ),
+    [friends]
+  );
+  const visiblePlayersData = useMemo(
+    () => filterPlayerList(playersData, currentUsername, friendUsernames),
+    [playersData, currentUsername, friendUsernames]
+  );
+  const visibleFilteredData = useMemo(
+    () => filterPlayerList(filteredData, currentUsername, friendUsernames),
+    [filteredData, currentUsername, friendUsernames]
+  );
 
   useEffect(() => {
     const fetchCredentials = async () => {
       const username = await SecureStore.getItemAsync("username");
+      setCurrentUsername(username);
       if (!username) {
         console.log('Credentials not found, please log in');
         // signOut relaunches the app shell back to splash → onboarding → login.
@@ -60,16 +104,15 @@ const QuickAddPage: React.FC = () => {
     fetchCredentials();
   }, [signOut]);
 
-  const fetchPlayers = useCallback((latitude: number, longitude: number) => {
-    NearbyPlayersData(latitude, longitude)
-      .then(data => {
-        setPlayersData(data);
-        setLoading(false);
-      })
-      .catch(error => {
-        console.error("Failed to fetch players:", error);
-        setLoading(false);
-      });
+  const fetchPlayers = useCallback(async (latitude: number, longitude: number) => {
+    try {
+      const data = await NearbyPlayersData(latitude, longitude);
+      setPlayersData(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Failed to fetch players:", error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -97,14 +140,10 @@ const QuickAddPage: React.FC = () => {
       if (result.message === "Friend added successfully") {
         haptics.success();
         setPlayersData(prevData =>
-          prevData.map(player =>
-            player.username === friendUsername ? { ...player, isFriend: "You are already friends with this person." } : player
-          )
+          prevData.filter(player => player.username !== friendUsername)
         );
         setFilteredData(prevData =>
-          prevData.map(player =>
-            player.username === friendUsername ? { ...player, isFriend: "You are already friends with this person." } : player
-          )
+          prevData.filter(player => player.username !== friendUsername)
         );
         setShowAnimation(true);
       } else {
@@ -138,20 +177,19 @@ const QuickAddPage: React.FC = () => {
 
     setIsSearching(true);
     try {
-      const currentUserUsername = await SecureStore.getItemAsync("username");
+      const currentUserUsername = currentUsername ?? await SecureStore.getItemAsync("username");
       if (currentUserUsername === null) {
         console.error("No username found in secure storage.");
         setFilteredData([]);
         setIsSearching(false);
         return;
       }
+      setCurrentUsername(currentUserUsername);
       const result = await searchOtherPlayersData(text);
       // profileImageUrl is resolved server-side and already present on each
       // result. Skip blank usernames defensively — ghost accounts rendered as
       // empty rows before the server-side filter existed.
-      const filteredResult = result.filter(
-        player => player.username && player.username !== currentUserUsername
-      );
+      const filteredResult = filterPlayerList(result, currentUserUsername, friendUsernames);
       setFilteredData(filteredResult);
     } catch (error) {
       console.error("Failed to search for players:", error);
@@ -254,7 +292,7 @@ const QuickAddPage: React.FC = () => {
 
         {isSearching ? (
           <FlatList
-            data={filteredData}
+            data={visibleFilteredData}
             renderItem={renderPlayerItem}
             keyExtractor={item => item.username}
             contentContainerStyle={styles.listContent}
@@ -273,7 +311,7 @@ const QuickAddPage: React.FC = () => {
           </View>
         ) : (
           <FlatList
-            data={playersData}
+            data={visiblePlayersData}
             renderItem={renderPlayerItem}
             keyExtractor={(item) => item.username}
             contentContainerStyle={styles.listContent}
