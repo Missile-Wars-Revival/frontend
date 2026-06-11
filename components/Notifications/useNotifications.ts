@@ -63,7 +63,6 @@ export const useNotifications = () => {
 			setError(null);
 			const data = await getNotifications();
 			setNotifications(data);
-			notificationEmitter.emit('notificationsUpdated', data);
 			lastFetchTimeRef.current = Date.now();
 
 			// Store the latest notification
@@ -94,18 +93,26 @@ export const useNotifications = () => {
 		};
 		notificationEmitter.on('newNotification', handleNewNotification);
 
-		const handleNotificationsUpdated = (data: { type: string, count: number }) => {
-			if (data.type === 'chat') {
-				setUnreadChatCount(prevCount => Math.max(0, prevCount - data.count));
+		const handleNotificationsUpdated = (data?: { type?: string, count?: number }) => {
+			const count = data?.count;
+			if (data?.type === 'chat' && typeof count === 'number') {
+				setUnreadChatCount(prevCount => Math.max(0, prevCount - count));
 			}
-			// Fetch all notifications to ensure all counts are up to date
-			fetchNotifications();
+			// Fetch all notifications to ensure all counts are up to date.
+			fetchNotifications(true);
 		};
 		notificationEmitter.on('notificationsUpdated', handleNotificationsUpdated);
+
+		const handleUnreadCountUpdated = (data?: { count?: number, chatCount?: number }) => {
+			if (typeof data?.count === 'number') setUnreadCount(data.count);
+			if (typeof data?.chatCount === 'number') setUnreadChatCount(data.chatCount);
+		};
+		notificationEmitter.on('unreadCountUpdated', handleUnreadCountUpdated);
 
 		return () => {
 			notificationEmitter.off('newNotification', handleNewNotification);
 			notificationEmitter.off('notificationsUpdated', handleNotificationsUpdated);
+			notificationEmitter.off('unreadCountUpdated', handleUnreadCountUpdated);
 		};
 	}, [fetchNotifications]);
 
@@ -125,6 +132,7 @@ export const useNotifications = () => {
 						: notification
 				)
 			);
+			notificationEmitter.emit('notificationsUpdated', { type: 'read', count: 1 });
 		} catch (error) {
 			console.error('Failed to mark notification as read:', error);
 		}
@@ -150,6 +158,7 @@ export const useNotifications = () => {
 			setNotifications(prevNotifications => 
 				prevNotifications.filter(notification => notification.id !== notificationId)
 			);
+			notificationEmitter.emit('notificationsUpdated', { type: 'delete', count: 1 });
 		} catch (error) {
 			console.error('Failed to delete notification:', error);
 		}
@@ -167,6 +176,8 @@ export const useNotifications = () => {
 			
 			setNotifications([]);
 			notificationEmitter.emit('notificationsCleared');
+			notificationEmitter.emit('unreadCountUpdated', { count: 0, chatCount: 0 });
+			notificationEmitter.emit('notificationsUpdated', { type: 'clear' });
 		} catch (error) {
 			console.error('Failed to clear all notifications:', error);
 			setError('Failed to clear notifications. Please try again.');

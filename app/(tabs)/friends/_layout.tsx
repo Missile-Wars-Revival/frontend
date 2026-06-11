@@ -15,6 +15,7 @@ export default function FriendsLayout() {
       <Stack.Screen name="notifications" />
       <Stack.Screen name="add-friends" />
       <Stack.Screen name="msg" />
+      <Stack.Screen name="user-profile" />
     </Stack>
   );
 }

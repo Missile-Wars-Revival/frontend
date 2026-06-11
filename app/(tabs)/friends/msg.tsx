@@ -2,12 +2,13 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { View, Text, FlatList, StyleSheet, useColorScheme, PanResponder, Animated, ActivityIndicator } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Link, useRouter, Stack, useFocusEffect } from 'expo-router';
+import { useRouter, Stack, useFocusEffect } from 'expo-router';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { getDatabase, ref, onValue, get, remove, off } from 'firebase/database';
 import * as SecureStore from "expo-secure-store";
 import useFetchFriends from '../../../hooks/websockets/friendshook';
 import { markMessageNotificationAsRead } from '../../../api/notifications';
+import { notificationEmitter } from '../../../components/Notifications/useNotifications';
 import { AnimatedEntrance } from '../../../components/ui/AnimatedEntrance';
 import { PressableScale } from '../../../components/ui/PressableScale';
 import { haptics } from '../../../components/ui/haptics';
@@ -68,7 +69,9 @@ const ConversationList = () => {
   }, []);
 
   useEffect(() => {
-    markMessageNotificationAsRead();
+    markMessageNotificationAsRead()
+      .then(() => notificationEmitter.emit('notificationsUpdated', { type: 'chat' }))
+      .catch(() => undefined);
   }, []);
 
   const refreshConversations = useCallback(() => {
@@ -214,6 +217,12 @@ const ConversationList = () => {
     const avatarUri = otherParticipant?.profileImageUrl ?? null;
     const displayName = item.otherParticipant || otherParticipant?.username || 'Unknown';
     const isUnread = item.unreadCount > 0;
+    const rowStyle = StyleSheet.flatten([
+      styles.conversationItem,
+      { backgroundColor: c.surface },
+      cardShadow(isDarkMode),
+      isUnread && { borderColor: c.accent, borderWidth: 1.5, backgroundColor: c.accentSoft },
+    ]);
 
     if (!panRefs.current[item.id]) {
       panRefs.current[item.id] = new Animated.ValueXY();
@@ -257,68 +266,63 @@ const ConversationList = () => {
           </PressableScale>
 
           <PressableScale
-            haptic="none"
-            onPress={() => (isOpenRefs.current[item.id] ? closeSwipe(item.id) : undefined)}
+            haptic="select"
+            onPress={() => {
+              if (isOpenRefs.current[item.id]) {
+                closeSwipe(item.id);
+                return;
+              }
+              router.push({ pathname: '/chat/[id]', params: { id: item.id } });
+            }}
+            style={rowStyle}
+            accessibilityLabel={`Conversation with ${displayName}`}
           >
-            <Link href={{ pathname: '/chat/[id]', params: { id: item.id } }} asChild>
-              <PressableScale
-                haptic="select"
+            <Image
+              source={avatarUri ? { uri: avatarUri } : DEFAULT_IMAGE}
+              style={[styles.avatar, { borderColor: c.border }]}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              transition={200}
+            />
+            <View style={styles.textContainer}>
+              <View style={styles.nameAndTimeContainer}>
+                <Text
+                  style={[
+                    styles.name,
+                    { color: isUnread ? c.text : c.text },
+                    isUnread && { fontWeight: '800' },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {displayName}
+                </Text>
+                <Text style={[styles.timestamp, { color: c.textFaint }]}>
+                  {formatTimestamp(item.lastMessage.timestamp)}
+                </Text>
+              </View>
+              <Text
                 style={[
-                  styles.conversationItem,
-                  { backgroundColor: c.surface },
-                  cardShadow(isDarkMode),
-                  isUnread && { borderColor: c.accent, borderWidth: 1.5, backgroundColor: c.accentSoft },
+                  styles.lastMessage,
+                  { color: isUnread ? c.text : c.textMuted },
+                  isUnread && { fontWeight: '700' },
                 ]}
-                accessibilityLabel={`Conversation with ${displayName}`}
+                numberOfLines={1}
               >
-                <Image
-                  source={avatarUri ? { uri: avatarUri } : DEFAULT_IMAGE}
-                  style={[styles.avatar, { borderColor: c.border }]}
-                  contentFit="cover"
-                  cachePolicy="memory-disk"
-                  transition={200}
-                />
-                <View style={styles.textContainer}>
-                  <View style={styles.nameAndTimeContainer}>
-                    <Text
-                      style={[
-                        styles.name,
-                        { color: isUnread ? c.text : c.text },
-                        isUnread && { fontWeight: '800' },
-                      ]}
-                      numberOfLines={1}
-                    >
-                      {displayName}
-                    </Text>
-                    <Text style={[styles.timestamp, { color: c.textFaint }]}>
-                      {formatTimestamp(item.lastMessage.timestamp)}
-                    </Text>
-                  </View>
-                  <Text
-                    style={[
-                      styles.lastMessage,
-                      { color: isUnread ? c.text : c.textMuted },
-                      isUnread && { fontWeight: '700' },
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {item.lastMessage.text || 'No messages yet'}
-                  </Text>
-                </View>
-                {isUnread && (
-                  <View style={[styles.unreadIndicator, { backgroundColor: c.accent }]}>
-                    <Text style={styles.unreadCount}>
-                      {item.unreadCount > 99 ? '99+' : item.unreadCount}
-                    </Text>
-                  </View>
-                )}
-              </PressableScale>
-            </Link>
+                {item.lastMessage.text || 'No messages yet'}
+              </Text>
+            </View>
+            {isUnread && (
+              <View style={[styles.unreadIndicator, { backgroundColor: c.accent }]}>
+                <Text style={styles.unreadCount}>
+                  {item.unreadCount > 99 ? '99+' : item.unreadCount}
+                </Text>
+              </View>
+            )}
           </PressableScale>
         </Animated.View>
       </AnimatedEntrance>
     );
-  }, [friends, isDarkMode, c, deleteConversation, closeSwipe]);
+  }, [friends, isDarkMode, c, deleteConversation, closeSwipe, router]);
 
   return (
     <View style={[styles.container, { backgroundColor: c.bg }]}>

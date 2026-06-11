@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import { StyleSheet, Text, View, Switch, Modal, ScrollView, FlatList, Alert, Dimensions, Pressable, AlertButton, Linking, TextInput, useColorScheme } from 'react-native';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import { StyleSheet, Text, View, Switch, Modal, ScrollView, FlatList, Alert, Dimensions, Pressable, AlertButton, Linking, TextInput, useColorScheme, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -69,7 +69,6 @@ const ProfilePage: React.FC = () => {
   const friends = useFetchFriends(); //WS
   const inventory = useFetchInventory();
   const [statistics, setStatistics] = useState<Statistics | null>(null);
-  const [email, setEmail] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [rankPoints, setRankPoints] = useState<number | null>(null);
@@ -88,6 +87,7 @@ const ProfilePage: React.FC = () => {
   const [notificationToken, setNotificationToken] = useState<string | null>(null);
   const [firebaseToken, setFirebaseToken] = useState<string | null>(null);
   const [getImageForProduct, setGetImageForProduct] = useState<(imageName: string) => any>(() => () => require('../../../assets/logo.png'));
+  const [isUploadingProfileImage, setIsUploadingProfileImage] = useState(false);
 
   useEffect(() => {
     const fetchUsername = async () => {
@@ -125,15 +125,45 @@ const ProfilePage: React.FC = () => {
     router.navigate("/league");
   };
 
+  const uriToBlob = (uri: string) =>
+    new Promise<Blob>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.onload = () => resolve(xhr.response);
+      xhr.onerror = () => reject(new Error('Failed to read selected image.'));
+      xhr.responseType = 'blob';
+      xhr.open('GET', uri, true);
+      xhr.send(null);
+    });
+
   const uploadImageToFirebase = async (uri: string) => {
     const name = await SecureStore.getItemAsync("username");
-    const response = await fetch(uri);
-    const blob = await response.blob();
+    if (!name) throw new Error('Username not found');
+
+    const blob = await uriToBlob(uri);
     const ref = firebase.storage().ref().child(`profileImages/${name}`);
-    await ref.put(blob);
-    const url = await ref.getDownloadURL();
-    setUserImageUrl(url); // reflect the freshly uploaded image immediately
-    return url;
+    try {
+      await ref.put(blob);
+      const url = await ref.getDownloadURL();
+      setUserImageUrl(url); // reflect the freshly uploaded image immediately
+      return url;
+    } finally {
+      (blob as Blob & { close?: () => void }).close?.();
+    }
+  };
+
+  const uploadSelectedProfileImage = async (uri: string) => {
+    setIsUploadingProfileImage(true);
+    haptics.soft();
+    try {
+      await uploadImageToFirebase(uri);
+      haptics.success();
+    } catch (error) {
+      console.error('Failed to upload profile image:', error);
+      haptics.error();
+      Alert.alert('Upload Failed', 'Could not update your profile photo. Please try again.');
+    } finally {
+      setIsUploadingProfileImage(false);
+    }
   };
 
   const pickImage = async () => {
@@ -151,8 +181,7 @@ const ProfilePage: React.FC = () => {
     if (!result.canceled && result.assets && result.assets.length > 0) {
       const firstAsset = result.assets[0];
       if (firstAsset && firstAsset.uri) {
-        await uploadImageToFirebase(firstAsset.uri);
-        haptics.success();
+        await uploadSelectedProfileImage(firstAsset.uri);
       }
     }
   };
@@ -171,8 +200,7 @@ const ProfilePage: React.FC = () => {
     if (!result.canceled && result.assets && result.assets.length > 0) {
       const firstAsset = result.assets[0];
       if (firstAsset && firstAsset.uri) {
-        await uploadImageToFirebase(firstAsset.uri);
-        haptics.success();
+        await uploadSelectedProfileImage(firstAsset.uri);
       }
     }
   };
@@ -244,16 +272,11 @@ const ProfilePage: React.FC = () => {
     router.navigate({ pathname: "/profile/user-profile", params: { username } });
   };
 
-  useEffect(() => {
-    fetchUserStatistics();
-  }, []);
-
-  const fetchUserStatistics = async () => {
+  const fetchUserStatistics = useCallback(async () => {
     try {
       const response = await getselfprofile() as ApiResponse;
       if (response.success && response.userProfile) {
         setStatistics(response.userProfile.statistics);
-        setEmail(response.userProfile.email);
         await SecureStore.setItem("email", response.userProfile.email);
         setRankPoints(response.userProfile.rankpoints);
         setUserImageUrl(response.userProfile.profileImageUrl);
@@ -263,7 +286,12 @@ const ProfilePage: React.FC = () => {
     } catch (error) {
       console.error('Failed to fetch user statistics', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchUserStatistics();
+  }, [fetchUserStatistics]);
 
   const renderBadge = (badge: string) => {
     const badgeKey = Object.keys(badgeImages).find(key => badge.toLowerCase().includes(key.toLowerCase()));
@@ -421,18 +449,22 @@ const ProfilePage: React.FC = () => {
           </View>
 
           <AnimatedEntrance fromScale={0.9} style={styles.heroBody}>
-            <PressableScale haptic="tap" onPress={openImagePicker} style={styles.avatarWrap}>
+            <PressableScale haptic="tap" onPress={openImagePicker} disabled={isUploadingProfileImage} style={styles.avatarWrap}>
               <Avatar
                 uri={userImageUrl}
                 style={styles.avatar}
                 transition={250}
               />
-              <View style={styles.cameraBadge}>
-                <Ionicons name="camera" size={14} color="#fff" />
+              {isUploadingProfileImage && (
+                <View style={styles.uploadOverlay}>
+                  <ActivityIndicator size="small" color="#fff" />
+                </View>
+              )}
+              <View style={[styles.cameraBadge, isUploadingProfileImage && styles.cameraBadgeUploading]}>
+                <Ionicons name={isUploadingProfileImage ? "cloud-upload" : "camera"} size={14} color="#fff" />
               </View>
             </PressableScale>
             <Text style={styles.heroName} numberOfLines={1}>{username}</Text>
-            {!!email && <Text style={styles.heroEmail} numberOfLines={1}>{email}</Text>}
 
             <View style={styles.pillRow}>
               <View style={styles.pill}>
@@ -633,8 +665,21 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#fff',
   },
+  cameraBadgeUploading: {
+    backgroundColor: '#16A34A',
+  },
+  uploadOverlay: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    borderRadius: 54,
+    backgroundColor: 'rgba(20, 23, 40, 0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   heroName: { color: '#fff', fontSize: 24, fontWeight: '800', marginTop: Spacing.md },
-  heroEmail: { color: 'rgba(255,255,255,0.8)', fontSize: 14, marginTop: 2 },
   pillRow: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.md },
   pill: {
     flexDirection: 'row',
@@ -654,11 +699,11 @@ const styles = StyleSheet.create({
   },
   sectionWrap: { marginTop: Spacing.xl, paddingHorizontal: Spacing.lg },
   sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md },
-  sectionTitle: { fontSize: 17, fontWeight: '700', marginBottom: Spacing.md },
+  sectionTitle: { fontSize: 17, fontWeight: '700', marginBottom: Spacing.md, textAlign: 'center' },
   sectionHeading: { fontSize: 19, fontWeight: '800' },
   seeAll: { fontSize: 14, fontWeight: '700' },
   muted: { fontSize: 14, textAlign: 'left' },
-  badgesList: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md },
+  badgesList: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md, justifyContent: 'center', alignItems: 'center' },
   badge: { width: 46, height: 46, borderRadius: 23, overflow: 'hidden' },
   badgeImage: { width: '100%', height: '100%', resizeMode: 'contain' },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: CARD_GAP },

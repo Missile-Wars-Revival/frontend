@@ -650,22 +650,20 @@ const StorePage: React.FC = () => {
                 showsVerticalScrollIndicator={false}
               />
             </View>
-            <PressableScale haptic="tap" onPress={handleShowCart} style={styles.cartBarWrap}>
-              <LinearGradient colors={Gradients.brand} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.cartBar}>
-                <View style={styles.cartBarLeft}>
-                  <Ionicons name="cart" size={20} color="#FFFFFF" />
-                  {cartCount > 0 && (
+            {cartCount > 0 && (
+              <PressableScale haptic="tap" onPress={handleShowCart} style={styles.cartBarWrap}>
+                <LinearGradient colors={Gradients.brand} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.cartBar}>
+                  <View style={styles.cartBarLeft}>
+                    <Ionicons name="cart" size={20} color="#FFFFFF" />
                     <View style={styles.cartBadge}>
                       <Text style={styles.cartBadgeText}>{cartCount}</Text>
                     </View>
-                  )}
-                </View>
-                <Text style={styles.cartBarText}>
-                  {cartCount > 0 ? `View Cart  ·  🪙 ${cartTotal}` : 'View Cart'}
-                </Text>
-                <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.8)" />
-              </LinearGradient>
-            </PressableScale>
+                  </View>
+                  <Text style={styles.cartBarText}>View Cart  ·  🪙 {cartTotal}</Text>
+                  <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.8)" />
+                </LinearGradient>
+              </PressableScale>
+            )}
           </>
         ) : (
           isLoadingPremium ? (
@@ -724,7 +722,7 @@ const StorePage: React.FC = () => {
 const CART_BAR_HEIGHT = 56;
 
 const getStyles = (palette: ThemePalette, isDark: boolean, bottomInset: number) => {
-  const cartBarBottom = floatingAboveTabBar(bottomInset, Spacing.md);
+  const cartBarBottom = floatingAboveTabBar(bottomInset, Spacing.xs);
 
   return StyleSheet.create({
   container: {

@@ -152,7 +152,7 @@ const FriendsPage: React.FC = () => {
 
   const navigateToUserProfile = (username: string) => {
     router.navigate({
-      pathname: "profile/user-profile",
+      pathname: "/friends/user-profile",
       params: { username }
     });
   };
@@ -371,7 +371,7 @@ const FriendsPage: React.FC = () => {
         <PressableScale
           haptic="tap"
           onPress={() => router.navigate("/friends/msg")}
-          style={[styles.fab, { bottom: floatingAboveTabBar(insets.bottom, 0) }]}
+          style={[styles.fab, { bottom: floatingAboveTabBar(insets.bottom, Spacing.xs) }]}
         >
           <LinearGradient colors={Gradients.brand} style={styles.fabFill}>
             <Ionicons name="chatbubble-ellipses" size={26} color="#fff" />

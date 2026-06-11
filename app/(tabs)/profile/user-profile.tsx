@@ -1,25 +1,27 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, Pressable, Alert, useColorScheme, Platform, Dimensions, Modal } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, useColorScheme, View } from 'react-native';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import * as SecureStore from "expo-secure-store";
+import Ionicons from '@react-native-vector-icons/ionicons';
+import * as SecureStore from 'expo-secure-store';
+import { addFriend } from '../../../api/friends';
 import { getuserprofile } from '../../../api/getprofile';
 import useFetchFriends from '../../../hooks/websockets/friendshook';
 import { Avatar } from '../../../components/ui/Avatar';
-import { addFriend } from '../../../api/friends';
+import { AnimatedEntrance } from '../../../components/ui/AnimatedEntrance';
+import { PressableScale } from '../../../components/ui/PressableScale';
+import { getPalette, Gradients, Radius, Spacing, cardShadow } from '../../../components/ui/theme';
 
 const badgeImages = {
   Founder: require('../../../assets/icons/founder.png'),
   Staff: require('../../../assets/icons/staff.png'),
   Early: require('../../../assets/icons/earlysupporter.png'),
-  //leagues
   Bronze: require('../../../assets/leagues/bronze.png'),
   Silver: require('../../../assets/leagues/silver.png'),
   Gold: require('../../../assets/leagues/gold.png'),
   Diamond: require('../../../assets/leagues/diamond.png'),
-  Legend: require('../../../assets/leagues/legend.png')
-  // Add more badge images here
+  Legend: require('../../../assets/leagues/legend.png'),
 };
 
 export interface Statistics {
@@ -30,7 +32,7 @@ export interface Statistics {
   numLandminesPlaced: number;
   numMissilesPlaced: number;
   numLootPickups: number;
-  league: string; 
+  league: string;
 }
 
 interface MutualFriend {
@@ -51,429 +53,290 @@ interface ApiResponse {
   userProfile: UserProfile;
 }
 
+const STAT_META: { key: keyof Statistics; label: string; icon: any; colors: readonly [string, string] }[] = [
+  { key: 'numKills', label: 'Kills', icon: 'flame', colors: Gradients.fire },
+  { key: 'numDeaths', label: 'Deaths', icon: 'skull', colors: ['#94A3B8', '#475569'] },
+  { key: 'numMissilesPlaced', label: 'Missiles', icon: 'rocket', colors: ['#6D5BF8', '#9B5BF0'] },
+  { key: 'numLandminesPlaced', label: 'Landmines', icon: 'warning', colors: Gradients.gold },
+  { key: 'numLootPlaced', label: 'Loot Placed', icon: 'cube', colors: ['#38BDF8', '#0EA5E9'] },
+  { key: 'numLootPickups', label: 'Loot Pickups', icon: 'gift', colors: Gradients.success },
+];
+
 const UserProfilePage: React.FC = () => {
   const { username } = useLocalSearchParams<{ username: string }>();
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const router = useRouter();
   const friends = useFetchFriends();
+  const isDarkMode = useColorScheme() === 'dark';
+  const c = getPalette(isDarkMode);
+
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [selectedBadge, setSelectedBadge] = useState<string | null>(null);
   const [addedAsFriend, setAddedAsFriend] = useState(false);
-
-  const colorScheme = useColorScheme();
-  const isDarkMode = colorScheme === 'dark';
+  const [isLoading, setIsLoading] = useState(true);
 
   const isFriend = useMemo(
-    () =>
-      addedAsFriend ||
-      Boolean(username && friends.some((friend) => friend.username === username)),
-    [addedAsFriend, username, friends],
+    () => addedAsFriend || Boolean(username && friends.some((friend) => friend.username === username)),
+    [addedAsFriend, friends, username],
   );
 
-  useEffect(() => {
-    setAddedAsFriend(false);
-  }, [username]);
+  const goBack = useCallback(() => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.navigate('/friends');
+    }
+  }, [router]);
 
   const fetchUserProfile = useCallback(async () => {
     if (!username) return;
     try {
+      setIsLoading(true);
       const response = await getuserprofile(username) as ApiResponse;
       if (response.success && response.userProfile) {
+        setAddedAsFriend(false);
         setUserProfile(response.userProfile);
       } else {
         console.error('Failed to fetch user profile: Invalid response structure');
       }
     } catch (error) {
       console.error('Failed to fetch user profile', error);
+    } finally {
+      setIsLoading(false);
     }
   }, [username]);
 
   useEffect(() => {
-    if (!username) return;
-    fetchUserProfile();
-  }, [username, fetchUserProfile]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void fetchUserProfile();
+  }, [fetchUserProfile]);
 
   const handleAddFriend = async () => {
-    const token = await SecureStore.getItemAsync("token");
+    const token = await SecureStore.getItemAsync('token');
+    if (!token || !userProfile) return;
+
     try {
-      if (!token) {
-        console.log('Token not found')
-        return; 
-      }
-      if (!userProfile) {
-        console.log('User profile not found');
-        return;
-      }
       const result = await addFriend(token, userProfile.username);
-      // Assuming successful addition if no errors thrown and possibly checking a status or message
-      if (result.message === "Friend added successfully") {
+      if (result.message === 'Friend added successfully') {
         setAddedAsFriend(true);
-        Alert.alert("Success", "Friend added successfully!");
+        Alert.alert('Success', 'Friend added successfully!');
       } else {
-        // Handle any other messages or default case
-        Alert.alert("Error", result.message || "Failed to add friend.");
+        Alert.alert('Error', result.message || 'Failed to add friend.');
       }
     } catch (error) {
-      // Handle any errors thrown from the addFriend function
       console.warn('Error adding friend:', error);
-      Alert.alert("This player is already your friend!");
+      Alert.alert('This player is already your friend!');
     }
   };
 
   const renderBadge = (badge: string) => {
     const badgeKey = Object.keys(badgeImages).find(key => badge.toLowerCase().includes(key.toLowerCase()));
-    if (badgeKey) {
-      return (
-        <Pressable 
-          key={badge} 
-          style={styles.badge}
-          onPress={() => setSelectedBadge(badge)}
-        >
-          <Image
-            source={badgeImages[badgeKey as keyof typeof badgeImages]}
-            style={styles.badgeImage}
-            contentFit="contain"
-          />
-        </Pressable>
-      );
-    }
-    return null;
+    if (!badgeKey) return null;
+
+    return (
+      <PressableScale key={badge} haptic="select" style={styles.badge} onPress={() => setSelectedBadge(badge)}>
+        <Image source={badgeImages[badgeKey as keyof typeof badgeImages]} style={styles.badgeImage} contentFit="contain" />
+      </PressableScale>
+    );
   };
 
   if (!username) {
     return (
-      <View style={[styles.loadingContainer, isDarkMode && styles.loadingContainerDark]}>
-        <Text style={isDarkMode ? styles.textDark : styles.text}>No username provided</Text>
+      <View style={[styles.centered, { backgroundColor: c.bg }]}>
+        <Text style={[styles.muted, { color: c.textMuted }]}>No username provided</Text>
       </View>
     );
   }
 
-  if (!userProfile) {
+  if (isLoading || !userProfile) {
     return (
-      <View style={[styles.loadingContainer, isDarkMode && styles.loadingContainerDark]}>
-        <Text style={isDarkMode ? styles.textDark : styles.text}>Loading...</Text>
+      <View style={[styles.centered, { backgroundColor: c.bg }]}>
+        <ActivityIndicator color={c.accent} />
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, isDarkMode && styles.containerDark]}>
-      <View style={[styles.header, isDarkMode && styles.headerDark]}>
-        <Pressable onPress={() => router.back()}>
-          <Text style={[styles.backButton, isDarkMode && styles.backButtonDark]}>← Back</Text>
-        </Pressable>
-        <Text style={[styles.headerText, isDarkMode && styles.headerTextDark]}>{userProfile.username}'s Profile</Text>
-      </View>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={[styles.profileContainer, isDarkMode && styles.profileContainerDark]}>
-          <Avatar
-            uri={userProfile.profileImageUrl}
-            style={styles.profileImage}
-          />
-          <Text style={[styles.profileName, isDarkMode && styles.profileNameDark]}>{userProfile.username}</Text>
-          {!isFriend && (
-            <Pressable style={styles.addFriendButton} onPress={handleAddFriend}>
-              <Text style={styles.addFriendButtonText}>Add Friend</Text>
-            </Pressable>
-          )}
-          <View style={styles.rankPointsContainer}>
-            <Text style={[styles.rankPoints, isDarkMode && styles.rankPointsDark]}>
-              🏅 {userProfile.rankpoints} Rank Points
-              {userProfile.statistics.league && (
-                <Text style={[styles.leagueText, isDarkMode && styles.leagueTextDark]}> • {userProfile.statistics.league}</Text>
-              )}
-            </Text>
+    <View style={[styles.container, { backgroundColor: c.bg }]}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <LinearGradient
+          colors={isDarkMode ? ['#241B45', '#15172B'] : Gradients.brand}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.hero}
+        >
+          <View style={styles.heroTopRow}>
+            <PressableScale haptic="select" onPress={goBack} style={styles.iconBtn}>
+              <Ionicons name="chevron-back" size={24} color="#fff" />
+            </PressableScale>
+            <Text style={styles.heroHeading}>Friend Profile</Text>
+            <View style={styles.iconBtnPlaceholder} />
           </View>
-          <View style={styles.badgesContainer}>
-            <Text style={[styles.sectionTitle, isDarkMode && styles.sectionTitleDark]}>Badges</Text>
-            <View style={styles.badgesList}>
-              {userProfile.statistics.badges && userProfile.statistics.badges.length > 0 ? (
-                userProfile.statistics.badges.map(renderBadge)
-              ) : (
-                <Text style={[styles.text, isDarkMode && styles.textDark]}>No badges yet</Text>
+
+          <AnimatedEntrance fromScale={0.92} style={styles.heroBody}>
+            <Avatar uri={userProfile.profileImageUrl} style={styles.avatar} transition={250} />
+            <Text style={styles.heroName} numberOfLines={1}>{userProfile.username}</Text>
+            <View style={styles.pillRow}>
+              <View style={styles.pill}>
+                <Ionicons name="medal" size={14} color="#FFD56B" />
+                <Text style={styles.pillText}>{userProfile.rankpoints} RP</Text>
+              </View>
+              {!!userProfile.statistics.league && (
+                <View style={styles.pill}>
+                  <Ionicons name="ribbon" size={14} color="#fff" />
+                  <Text style={styles.pillText}>{userProfile.statistics.league}</Text>
+                </View>
               )}
             </View>
-          </View>
-        </View>
-
-        <View style={[styles.sectionContainer, isDarkMode && styles.sectionContainerDark]}>
-          <Text style={[styles.sectionTitle, isDarkMode && styles.sectionTitleDark]}>Statistics</Text>
-          <View style={styles.statisticsContainer}>
-              <Text style={[styles.statItem, isDarkMode && styles.statItemDark]}>Deaths: {userProfile.statistics.numDeaths}</Text>
-              <Text style={[styles.statItem, isDarkMode && styles.statItemDark]}>Kills: {userProfile.statistics.numKills}</Text>
-              <Text style={[styles.statItem, isDarkMode && styles.statItemDark]}>Missiles Fired: {userProfile.statistics.numMissilesPlaced}</Text>
-              <Text style={[styles.statItem, isDarkMode && styles.statItemDark]}>Landmines Placed: {userProfile.statistics.numLandminesPlaced}</Text>
-              <Text style={[styles.statItem, isDarkMode && styles.statItemDark]}>Loot Placed: {userProfile.statistics.numLootPlaced}</Text>
-              <Text style={[styles.statItem, isDarkMode && styles.statItemDark]}>Loot Pickups: {userProfile.statistics.numLootPickups}</Text>
-          </View>
-        </View>
-
-        <View style={[styles.sectionContainer, isDarkMode && styles.sectionContainerDark]}>
-          <Text style={[styles.sectionTitle, isDarkMode && styles.sectionTitleDark]}>Mutual Friends</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.slider}>
-            {userProfile.mutualFriends && userProfile.mutualFriends.length > 0 ? (
-              userProfile.mutualFriends.map((friend, index) => (
-                <Pressable key={index} style={styles.sliderItem}>
-                  <Avatar
-                    uri={friend.profileImageUrl}
-                    style={styles.friendImage}
-                  />
-                  <Text style={[styles.friendName, isDarkMode && styles.friendNameDark]}>{friend.username}</Text>
-                </Pressable>
-              ))
-            ) : (
-              <Text style={[styles.text, isDarkMode && styles.textDark]}>No mutual friends</Text>
+            {!isFriend && (
+              <PressableScale haptic="tap" style={styles.addFriendBtn} onPress={handleAddFriend}>
+                <LinearGradient colors={Gradients.success} style={styles.addFriendFill}>
+                  <Ionicons name="person-add" size={18} color="#fff" />
+                  <Text style={styles.addFriendText}>Add Friend</Text>
+                </LinearGradient>
+              </PressableScale>
             )}
-          </ScrollView>
-        </View>
+          </AnimatedEntrance>
+        </LinearGradient>
+
+        <AnimatedEntrance index={0} style={[styles.card, { backgroundColor: c.surface }, cardShadow(isDarkMode)]}>
+          <Text style={[styles.sectionTitle, { color: c.text }]}>Badges</Text>
+          <View style={styles.badgesList}>
+            {userProfile.statistics.badges?.length ? (
+              userProfile.statistics.badges.map(renderBadge)
+            ) : (
+              <Text style={[styles.muted, { color: c.textMuted }]}>No badges yet</Text>
+            )}
+          </View>
+        </AnimatedEntrance>
+
+        <AnimatedEntrance index={1} style={styles.sectionWrap}>
+          <Text style={[styles.sectionHeading, { color: c.text }]}>Statistics</Text>
+          <View style={styles.statsGrid}>
+            {STAT_META.map((s) => (
+              <View key={s.key} style={[styles.statCard, { backgroundColor: c.surface }, cardShadow(isDarkMode)]}>
+                <LinearGradient colors={s.colors} style={styles.statIcon}>
+                  <Ionicons name={s.icon} size={18} color="#fff" />
+                </LinearGradient>
+                <Text style={[styles.statValue, { color: c.text }]}>{userProfile.statistics[s.key] as number}</Text>
+                <Text style={[styles.statLabel, { color: c.textMuted }]}>{s.label}</Text>
+              </View>
+            ))}
+          </View>
+        </AnimatedEntrance>
+
+        <AnimatedEntrance index={2} style={styles.sectionWrap}>
+          <Text style={[styles.sectionHeading, { color: c.text }]}>Mutual Friends</Text>
+          {userProfile.mutualFriends?.length ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sliderContent}>
+              {userProfile.mutualFriends.map((friend) => (
+                <View key={friend.username} style={styles.friendItem}>
+                  <Avatar uri={friend.profileImageUrl} style={[styles.friendImage, { borderColor: c.surface }]} />
+                  <Text style={[styles.friendName, { color: c.textMuted }]} numberOfLines={1}>{friend.username}</Text>
+                </View>
+              ))}
+            </ScrollView>
+          ) : (
+            <Text style={[styles.muted, { color: c.textMuted }]}>No mutual friends</Text>
+          )}
+        </AnimatedEntrance>
       </ScrollView>
 
-      <Modal
-        visible={!!selectedBadge}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setSelectedBadge(null)}
-      >
+      <Modal visible={!!selectedBadge} transparent animationType="fade" onRequestClose={() => setSelectedBadge(null)}>
         <Pressable onPress={() => setSelectedBadge(null)}>
-          <View style={styles.modalOverlay}>
-            <View style={[styles.modalContent, isDarkMode && styles.modalContentDark]}>
-              <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>{selectedBadge}</Text>
-            </View>
+          <View style={[styles.modalOverlay, { backgroundColor: c.overlay }]}>
+            <AnimatedEntrance fromScale={0.9} style={[styles.badgeModal, { backgroundColor: c.surface }]}>
+              {(() => {
+                const key = selectedBadge && Object.keys(badgeImages).find(k => selectedBadge.toLowerCase().includes(k.toLowerCase()));
+                return key ? <Image source={badgeImages[key as keyof typeof badgeImages]} style={styles.badgeModalImage} /> : null;
+              })()}
+              <Text style={[styles.badgeModalText, { color: c.text }]}>{selectedBadge}</Text>
+            </AnimatedEntrance>
           </View>
         </Pressable>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f0f2f5',
+  container: { flex: 1 },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  scrollContent: { paddingBottom: Spacing.xxl * 2 },
+  hero: {
+    paddingTop: 60,
+    paddingHorizontal: Spacing.xl,
+    paddingBottom: Spacing.xl,
+    borderBottomLeftRadius: Radius.xl,
+    borderBottomRightRadius: Radius.xl,
   },
-  header: {
-    padding: 20,
-    paddingTop: 20,
-    backgroundColor: '#4a5568',
-    flexDirection: 'row',
+  heroTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  heroHeading: { color: '#fff', fontSize: 20, fontWeight: '800' },
+  iconBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  backButton: {
-    color: '#ffffff',
-    fontSize: 18,
-    marginRight: 15,
+  iconBtnPlaceholder: { width: 44, height: 44 },
+  heroBody: { alignItems: 'center', marginTop: Spacing.lg },
+  avatar: { width: 112, height: 112, borderRadius: 56, borderWidth: 3, borderColor: 'rgba(255,255,255,0.6)' },
+  heroName: { color: '#fff', fontSize: 26, fontWeight: '800', marginTop: Spacing.md },
+  pillRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: Spacing.sm, marginTop: Spacing.md },
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 7,
+    borderRadius: Radius.pill,
+    backgroundColor: 'rgba(255,255,255,0.18)',
   },
-  headerText: {
-    fontSize: 24,
-    color: '#ffffff',
-    fontWeight: 'bold',
+  pillText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  addFriendBtn: { marginTop: Spacing.lg, borderRadius: Radius.pill, overflow: 'hidden' },
+  addFriendFill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.md,
+    borderRadius: Radius.pill,
   },
-  scrollContent: {
+  addFriendText: { color: '#fff', fontSize: 15, fontWeight: '800' },
+  card: {
+    marginHorizontal: Spacing.lg,
+    marginTop: Spacing.lg,
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
+  },
+  sectionWrap: { marginTop: Spacing.xl, paddingHorizontal: Spacing.lg },
+  sectionTitle: { fontSize: 17, fontWeight: '700', marginBottom: Spacing.md, textAlign: 'center' },
+  sectionHeading: { fontSize: 19, fontWeight: '800', marginBottom: Spacing.md },
+  muted: { fontSize: 14, textAlign: 'center' },
+  badgesList: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: Spacing.md },
+  badge: { width: 46, height: 46, borderRadius: 23, overflow: 'hidden' },
+  badgeImage: { width: '100%', height: '100%' },
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md },
+  statCard: {
+    width: '30.8%',
+    minWidth: 96,
     flexGrow: 1,
-  },
-  profileContainer: {
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#ffffff',
-    borderRadius: 10,
-    margin: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  profileImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    marginBottom: 15,
-  },
-  profileName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  profileDetails: {
-    fontSize: 16,
-    color: '#718096',
-    marginBottom: 15,
-  },
-  badgesContainer: {
-    width: '100%',
-    marginBottom: 20,
-  },
-  badgesList: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    flexWrap: 'wrap',
-  },
-  badge: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    margin: 5,
-    overflow: 'hidden',
-  },
-  badgeImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'contain',
-  },
-  sectionContainer: {
-    marginBottom: 20,
-    padding: 10,
-    backgroundColor: '#ffffff',
-    borderRadius: 10,
-    margin: 10,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#2d3748',
-  },
-  slider: {
-    flexDirection: 'row',
-  },
-  sliderItem: {
-    marginRight: 15,
+    borderRadius: Radius.md,
+    paddingVertical: Spacing.md,
     alignItems: 'center',
   },
-  friendImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-  },
-  friendName: {
-    marginTop: 5,
-    fontSize: 14,
-    textAlign: 'center',
-  },
-  statisticsContainer: {
-    padding: 10,
-  },
-  statItem: {
-    fontSize: 16,
-    marginBottom: 5,
-  },
-  rankPointsContainer: {
-    alignSelf: 'center',
-    marginBottom: 10,
-  },
-  rankPoints: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#4a5568',
-    textAlign: 'center',
-  },
-  leagueText: {
-    fontSize: 16,
-    color: '#718096',
-  },
-  addFriendButton: {
-    backgroundColor: '#4CAF50',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginBottom: 10,
-  },
-  addFriendButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  text: {
-    color: '#333',
-  },
-
-  // Dark mode styles
-  containerDark: {
-    backgroundColor: '#1E1E1E',
-  },
-  headerDark: {
-    backgroundColor: '#2C2C2C',
-    paddingTop: 20,
-  },
-  backButtonDark: {
-    color: '#FFF',
-  },
-  headerTextDark: {
-    color: '#FFF',
-  },
-  profileContainerDark: {
-    backgroundColor: '#2C2C2C',
-  },
-  profileNameDark: {
-    color: '#FFF',
-  },
-  sectionContainerDark: {
-    backgroundColor: '#2C2C2C',
-  },
-  sectionTitleDark: {
-    color: '#FFF',
-  },
-  badgeDark: {
-    backgroundColor: '#3D3D3D',
-  },
-  statItemDark: {
-    color: '#FFF',
-  },
-  friendNameDark: {
-    color: '#FFF',
-  },
-  rankPointsDark: {
-    color: '#4CAF50',
-  },
-  leagueTextDark: {
-    color: '#B0B0B0',
-  },
-  textDark: {
-    color: '#B0B0B0',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f0f2f5', // Light mode background
-  },
-  loadingContainerDark: {
-    backgroundColor: '#1E1E1E', // Dark mode background
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  modalContentDark: {
-    backgroundColor: '#2C2C2C',
-  },
-  modalText: {
-    fontSize: 18,
-    color: '#333',
-  },
-  modalTextDark: {
-    color: '#FFF',
-  },
+  statIcon: { width: 38, height: 38, borderRadius: 19, justifyContent: 'center', alignItems: 'center', marginBottom: Spacing.sm },
+  statValue: { fontSize: 20, fontWeight: '800' },
+  statLabel: { fontSize: 11, marginTop: 2, textAlign: 'center' },
+  sliderContent: { gap: Spacing.md, paddingVertical: Spacing.xs, paddingRight: Spacing.lg },
+  friendItem: { width: 76, alignItems: 'center' },
+  friendImage: { width: 64, height: 64, borderRadius: 32, borderWidth: 2 },
+  friendName: { fontSize: 12, marginTop: 6, textAlign: 'center' },
+  modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: Spacing.xl },
+  badgeModal: { borderRadius: Radius.lg, padding: Spacing.xl, alignItems: 'center' },
+  badgeModalImage: { width: 80, height: 80, resizeMode: 'contain', marginBottom: Spacing.md },
+  badgeModalText: { fontSize: 18, fontWeight: '700' },
 });
 
 export default UserProfilePage;
