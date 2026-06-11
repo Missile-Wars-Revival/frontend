@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, Modal, useColorScheme, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, StyleSheet, Modal, useColorScheme, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNotifications } from '../../../components/Notifications/useNotifications';
 import * as SecureStore from "expo-secure-store";
@@ -96,7 +96,7 @@ const GhostBtn = ({ label, onPress, c }: { label: string; onPress: () => void; c
 );
 
 const NotificationsPage: React.FC = () => {
-	const { notifications, isLoading, error, fetchNotifications, markAsRead, deleteNotificationById, clearAllNotifications } = useNotifications();
+	const { notifications, isLoading, error, fetchNotifications, markAsRead, markAllAsRead, deleteNotificationById } = useNotifications();
 	const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
 	const router = useRouter();
 	const [isAlive, setIsAlive] = useState<boolean>(true);
@@ -198,27 +198,15 @@ const NotificationsPage: React.FC = () => {
 		}
 	}, [deleteNotificationById]);
 
-	const handleClearAll = useCallback(async () => {
-		haptics.warning();
-		Alert.alert(
-			"Clear All Notifications",
-			"Are you sure you want to clear all notifications?",
-			[
-				{ text: "Cancel", style: "cancel" },
-				{
-					text: "Clear",
-					onPress: async () => {
-						try {
-							await clearAllNotifications();
-							setHiddenIds(new Set(notifications.map(n => n.id)));
-						} catch (error) {
-							console.error('Failed to clear all notifications:', error);
-						}
-					}
-				}
-			]
-		);
-	}, [notifications, clearAllNotifications]);
+	// Marking as read is non-destructive, so no confirmation dialog is needed.
+	const handleMarkAllRead = useCallback(async () => {
+		haptics.select();
+		try {
+			await markAllAsRead();
+		} catch (error) {
+			console.error('Failed to mark all notifications as read:', error);
+		}
+	}, [markAllAsRead]);
 
 	const handleRetry = useCallback(() => {
 		fetchNotifications(true);
@@ -308,8 +296,8 @@ const NotificationsPage: React.FC = () => {
 					<Ionicons name="chevron-back" size={24} color="#fff" />
 				</PressableScale>
 				<Text style={styles.headerTitle}>Notifications</Text>
-				<PressableScale haptic="warning" onPress={handleClearAll} style={styles.clearBtn}>
-					<Text style={styles.clearText}>Clear all</Text>
+				<PressableScale haptic="select" onPress={handleMarkAllRead} style={styles.clearBtn}>
+					<Text style={styles.clearText}>Mark all read</Text>
 				</PressableScale>
 			</LinearGradient>
 

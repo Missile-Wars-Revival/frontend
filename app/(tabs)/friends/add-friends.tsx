@@ -146,8 +146,12 @@ const QuickAddPage: React.FC = () => {
         return;
       }
       const result = await searchOtherPlayersData(text);
-      // profileImageUrl is resolved server-side and already present on each result.
-      const filteredResult = result.filter(player => player.username !== currentUserUsername);
+      // profileImageUrl is resolved server-side and already present on each
+      // result. Skip blank usernames defensively — ghost accounts rendered as
+      // empty rows before the server-side filter existed.
+      const filteredResult = result.filter(
+        player => player.username && player.username !== currentUserUsername
+      );
       setFilteredData(filteredResult);
     } catch (error) {
       console.error("Failed to search for players:", error);
@@ -220,7 +224,7 @@ const QuickAddPage: React.FC = () => {
               <Ionicons name="chevron-back" size={24} color="#fff" />
             </PressableScale>
             <Text style={styles.headerTitle}>Add Friends</Text>
-            <View style={styles.backBtn} />
+            <View style={styles.backBtnPlaceholder} />
           </View>
 
           <View style={styles.searchWrap}>
@@ -326,6 +330,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: { color: '#fff', fontSize: 22, fontWeight: '800' },
+  // Invisible spacer that keeps the title centred opposite the back button.
+  backBtnPlaceholder: { width: 44, height: 44 },
   searchWrap: { marginTop: Spacing.lg, borderRadius: Radius.pill, overflow: 'hidden' },
   searchBlur: {
     flexDirection: 'row',

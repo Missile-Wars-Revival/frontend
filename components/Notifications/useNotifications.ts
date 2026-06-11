@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { getNotifications, markNotificationAsRead, deleteNotification } from '../../api/notifications';
+import { getNotifications, markNotificationAsRead, markAllNotificationsAsRead, deleteNotification } from '../../api/notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Simple custom event emitter
@@ -164,26 +164,23 @@ export const useNotifications = () => {
 		}
 	};
 
-	const clearAllNotifications = useCallback(async () => {
+	// Non-destructive replacement for the old clear-all: notifications stay in
+	// the list (the server prunes them after 30 days), they just stop counting
+	// as unread.
+	const markAllAsRead = useCallback(async () => {
 		try {
-			setIsLoading(true);
 			setError(null);
-			
-			// Delete notifications one by one
-			for (const notification of notifications) {
-				await deleteNotification(notification.id);
-			}
-			
-			setNotifications([]);
-			notificationEmitter.emit('notificationsCleared');
+			await markAllNotificationsAsRead();
+			setNotifications(prevNotifications =>
+				prevNotifications.map(notification => ({ ...notification, isRead: true }))
+			);
 			notificationEmitter.emit('unreadCountUpdated', { count: 0, chatCount: 0 });
-			notificationEmitter.emit('notificationsUpdated', { type: 'clear' });
+			notificationEmitter.emit('notificationsUpdated', { type: 'read' });
 		} catch (error) {
-			console.error('Failed to clear all notifications:', error);
-			setError('Failed to clear notifications. Please try again.');
+			console.error('Failed to mark all notifications as read:', error);
+			setError('Failed to update notifications. Please try again.');
 		}
-		setIsLoading(false);
-	}, [notifications]);
+	}, []);
 
 	return {
 		notifications,
@@ -193,8 +190,8 @@ export const useNotifications = () => {
 		error,
 		fetchNotifications,
 		markAsRead,
+		markAllAsRead,
 		markMessagesAsRead,
 		deleteNotificationById,
-		clearAllNotifications,
 	};
 };

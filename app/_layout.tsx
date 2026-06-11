@@ -18,9 +18,11 @@ import AdService from '../util/AdService';
 import * as ExpoSplashScreen from 'expo-splash-screen';
 import { LandmineProvider } from '../util/Context/landminecontext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import PermissionsScreen from './PermissionsScreen';
+import { PermissionsScreen } from './PermissionsScreen';
 import { OnboardingProvider } from '../util/Context/onboardingContext';
 import GameEffectsOverlay from '../components/effects/GameEffectsOverlay';
+
+const BACKGROUND_THRESHOLD = 2 * 60 * 1000; // 2 minutes in milliseconds
 
 const WebSocketProvider = ({ children }: WebSocketProviderProps) => {
   const { missiledata, landminedata, lootdata, otherdata, healthdata, friendsdata, inventorydata, playerlocations, leaguesData, sendWebsocket } = useWebSocket();
@@ -50,9 +52,8 @@ export default function RootLayout() {
   const queryClient = new QueryClient();
   const [isSplashVisible, setIsSplashVisible] = useState(true);
   const [appState, setAppState] = useState(AppState.currentState);
-  const [lastActiveTime, setLastActiveTime] = useState(Date.now());
+  const [lastActiveTime, setLastActiveTime] = useState(() => Date.now());
   const router = useRouter();
-  const BACKGROUND_THRESHOLD = 2 * 60 * 1000; // 2 minutes in milliseconds
 
   const configurePurchases = useCallback(async () => {
     try {
@@ -74,8 +75,7 @@ export default function RootLayout() {
       await Purchases.configure({ apiKey }); // Configure Purchases
       console.log('RevenueCat configured successfully');
 
-      const customerInfo = await Purchases.getCustomerInfo(); // Fetch customer info
-      // console.log('Customer Info:', customerInfo); // Uncomment for debugging
+      await Purchases.getCustomerInfo();
 
     } catch (error) {
       console.error('Failed to initialize Purchases:', error); // Log initialization errors
@@ -90,7 +90,7 @@ export default function RootLayout() {
       configurePurchases();
       isConfigured.current = true;
     }
-  }, []);
+  }, [configurePurchases]);
 
 
   // AuthProvider derives the signed-in state from AsyncStorage on its own, so
@@ -210,6 +210,9 @@ function OnboardingGate({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // checkOnboardingStatus awaits AsyncStorage before any setState, so the
+    // updates are async (not a synchronous cascading render) and safe here.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     checkOnboardingStatus();
   }, [checkOnboardingStatus]);
 

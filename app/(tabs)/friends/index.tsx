@@ -424,7 +424,7 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 23,
-    overflow: 'hidden',
+    // No overflow clipping: the unread badge hangs outside the circle.
     backgroundColor: 'rgba(255,255,255,0.18)',
     justifyContent: 'center',
     alignItems: 'center',

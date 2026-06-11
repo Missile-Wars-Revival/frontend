@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@react-native-vector-icons/ionicons';
+import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import * as SecureStore from 'expo-secure-store';
 import { addFriend } from '../../../api/friends';
 import { getuserprofile } from '../../../api/getprofile';
@@ -54,12 +55,13 @@ interface ApiResponse {
   userProfile: UserProfile;
 }
 
-const STAT_META: { key: keyof Statistics; label: string; icon: any; colors: readonly [string, string] }[] = [
+const STAT_META: { key: keyof Statistics; label: string; icon: any; lib?: 'mci'; colors: readonly [string, string] }[] = [
   { key: 'numKills', label: 'Kills', icon: 'flame', colors: Gradients.fire },
   { key: 'numDeaths', label: 'Deaths', icon: 'skull', colors: ['#94A3B8', '#475569'] },
   { key: 'numMissilesPlaced', label: 'Missiles', icon: 'rocket', colors: ['#6D5BF8', '#9B5BF0'] },
   { key: 'numLandminesPlaced', label: 'Landmines', icon: 'warning', colors: Gradients.gold },
-  { key: 'numLootPlaced', label: 'Loot Placed', icon: 'cube', colors: ['#38BDF8', '#0EA5E9'] },
+  // Loot arrives by airdrop, so the parachute reads better than a plain cube.
+  { key: 'numLootPlaced', label: 'Loot Placed', icon: 'parachute', lib: 'mci', colors: ['#38BDF8', '#0EA5E9'] },
   { key: 'numLootPickups', label: 'Loot Pickups', icon: 'gift', colors: Gradients.success },
 ];
 
@@ -223,7 +225,11 @@ const UserProfilePage: React.FC = () => {
             {STAT_META.map((s) => (
               <View key={s.key} style={[styles.statCard, { backgroundColor: c.surface }, cardShadow(isDarkMode)]}>
                 <LinearGradient colors={s.colors} style={styles.statIcon}>
-                  <Ionicons name={s.icon} size={18} color="#fff" />
+                  {s.lib === 'mci' ? (
+                    <MaterialCommunityIcons name={s.icon} size={18} color="#fff" />
+                  ) : (
+                    <Ionicons name={s.icon} size={18} color="#fff" />
+                  )}
                 </LinearGradient>
                 <Text style={[styles.statValue, { color: c.text }]}>{userProfile.statistics[s.key] as number}</Text>
                 <Text style={[styles.statLabel, { color: c.textMuted }]}>{s.label}</Text>

@@ -63,6 +63,24 @@ export const markNotificationAsRead = async (notificationId: string): Promise<vo
 	}
 };
 
+export const markAllNotificationsAsRead = async (): Promise<void> => {
+	try {
+		const token = await SecureStore.getItemAsync("token");
+		if (!token) {
+			throw new Error('Authentication token not found');
+		}
+
+		if (token === DEV_OFFLINE_TOKEN) {
+			return;
+		}
+
+		await axiosInstance.patch("/api/markAllNotificationsAsRead", { token });
+	} catch (error) {
+		console.error("Failed to mark all notifications as read:", error);
+		throw error;
+	}
+};
+
 export const markMessageNotificationAsRead = async (): Promise<void> => {
 	try {
 		const token = await SecureStore.getItemAsync("token");
