@@ -5,10 +5,12 @@ import {
   Pressable,
   StyleSheet,
   View,
+  useColorScheme,
   type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { getPalette, Radius, Spacing } from './theme';
 import { SHEET_HEIGHT_FRACTION, type InventoryBottomSheetProps } from './inventory-bottom-sheet.types';
 
 const { height: WINDOW_HEIGHT } = Dimensions.get('window');
@@ -27,13 +29,15 @@ export function InventoryBottomSheet({
   backgroundColor,
 }: InventoryBottomSheetProps) {
   const insets = useSafeAreaInsets();
+  const isDark = useColorScheme() === 'dark';
+  const c = getPalette(isDark);
 
   const sheetStyle: ViewStyle[] = [
     styles.sheet,
     fitToContents ? styles.sheetFitToContents : styles.sheetFixed,
-    backgroundColor ? { backgroundColor } : null,
-    { paddingBottom: Math.max(insets.bottom, 8) },
-  ].filter(Boolean) as ViewStyle[];
+    { backgroundColor: backgroundColor ?? c.surface },
+    { paddingBottom: Math.max(insets.bottom, Spacing.sm) },
+  ];
 
   return (
     <Modal
@@ -44,9 +48,14 @@ export function InventoryBottomSheet({
       statusBarTranslucent
     >
       <View style={styles.overlay}>
-        <Pressable style={styles.backdrop} onPress={onClose} accessibilityRole="button" accessibilityLabel="Close" />
+        <Pressable
+          style={[styles.backdrop, { backgroundColor: c.overlay }]}
+          onPress={onClose}
+          accessibilityRole="button"
+          accessibilityLabel="Close"
+        />
         <View style={sheetStyle}>
-          <View style={styles.handle} />
+          <View style={[styles.handle, { backgroundColor: c.border }]} />
           <View style={styles.content}>{children}</View>
         </View>
       </View>
@@ -61,14 +70,12 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   sheet: {
     width: '100%',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: Radius.xl,
+    borderTopRightRadius: Radius.xl,
     overflow: 'hidden',
-    backgroundColor: '#FFFFFF',
   },
   sheetFixed: {
     height: SHEET_HEIGHT,
@@ -77,13 +84,12 @@ const styles = StyleSheet.create({
     maxHeight: SHEET_HEIGHT,
   },
   handle: {
-    width: 36,
+    width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: 'rgba(0, 0, 0, 0.18)',
     alignSelf: 'center',
-    marginTop: 10,
-    marginBottom: 6,
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.xs,
   },
   content: {
     flex: 1,

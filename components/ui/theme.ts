@@ -158,7 +158,15 @@ export const chipShadow = (isDark: boolean) => ({
 });
 
 /** Native tab bar height (expo-router NativeTabs). */
-export const NATIVE_TAB_BAR_HEIGHT = Platform.select({ ios: 49, android: 56, default: 56 }) ?? 56;
+export const NATIVE_TAB_BAR_HEIGHT = Platform.select({ ios: 44, android: 50, default: 50 }) ?? 50;
+
+/**
+ * Bottom gap for floating controls inside a tab screen. Tab content already sits
+ * above the native tab bar, so only a small margin is needed.
+ */
+export function tabContentBottomGap(gap = Spacing.xs) {
+  return gap;
+}
 
 /** Bottom offset on full-bleed screens (parent does not apply bottom safe-area padding). */
 export function floatingAboveTabBar(bottomInset: number, gap = Spacing.sm) {

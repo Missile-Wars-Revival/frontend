@@ -1,7 +1,6 @@
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
-import { View, Text, FlatList, Pressable, StyleSheet, useColorScheme, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Image } from 'expo-image';
+import { View, Text, FlatList, StyleSheet, useColorScheme, Alert } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import useFetchFriends from '../hooks/websockets/friendshook';
@@ -9,28 +8,45 @@ import { Friend } from '../types/types';
 import { getDatabase, ref, push, set, update, serverTimestamp, query, orderByChild, equalTo, get } from 'firebase/database';
 import * as SecureStore from 'expo-secure-store';
 import { useAuth } from '../util/Context/authcontext';
+import { Avatar } from '../components/ui/Avatar';
+import { AnimatedEntrance } from '../components/ui/AnimatedEntrance';
+import { PressableScale } from '../components/ui/PressableScale';
+import { haptics } from '../components/ui/haptics';
+import { getPalette, Gradients, Radius, Spacing, Type, cardShadow } from '../components/ui/theme';
 
-const DEFAULT_IMAGE = require('../assets/mapassets/Female_Avatar_PNG.png');
+const FriendItem = React.memo(function FriendItem({
+  item,
+  index,
+  onPress,
+  isDarkMode,
+}: {
+  item: Friend;
+  index: number;
+  onPress: (username: string) => void;
+  isDarkMode: boolean;
+}) {
+  const c = getPalette(isDarkMode);
 
-const FriendItem = React.memo(function FriendItem({ item, onPress, isDarkMode }: { item: Friend; onPress: (username: string) => void; isDarkMode: boolean }) {
   return (
-    <Pressable
-      style={[styles.friendItem, isDarkMode && styles.friendItemDark]}
-      onPress={() => onPress(item.username)}
-      accessibilityLabel={`Start chat with ${item.username}`}
-    >
-      <View style={styles.friendInfo}>
-        <Image
-          source={item.profileImageUrl ? { uri: item.profileImageUrl } : DEFAULT_IMAGE}
-          style={styles.friendImage}
-          contentFit="cover"
-          cachePolicy="memory-disk"
-          transition={200}
-        />
-        <Text style={[styles.friendName, isDarkMode && styles.friendNameDark]}>{item.username}</Text>
-      </View>
-      <Ionicons name="chevron-forward" size={24} color={isDarkMode ? "#8E8E93" : "#C7C7CC"} />
-    </Pressable>
+    <AnimatedEntrance index={index}>
+      <PressableScale
+        haptic="select"
+        onPress={() => onPress(item.username)}
+        style={[styles.friendItem, { backgroundColor: c.surface }, cardShadow(isDarkMode)]}
+        accessibilityLabel={`Start chat with ${item.username}`}
+      >
+        <Avatar uri={item.profileImageUrl} style={[styles.friendImage, { borderColor: c.border }]} contentFit="cover" />
+        <View style={styles.friendText}>
+          <Text style={[styles.friendName, { color: c.text }]} numberOfLines={1}>
+            {item.username}
+          </Text>
+          <Text style={[styles.friendSub, { color: c.textMuted }]}>Tap to start chatting</Text>
+        </View>
+        <View style={[styles.chatIcon, { backgroundColor: c.accentSoft }]}>
+          <Ionicons name="chatbubble-ellipses" size={18} color={c.accent} />
+        </View>
+      </PressableScale>
+    </AnimatedEntrance>
   );
 });
 
@@ -39,8 +55,17 @@ const FriendsList = () => {
   const { signOut } = useAuth();
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
+  const c = getPalette(isDarkMode);
   const friends = useFetchFriends();
   const [username, setUsername] = useState<string | null>(null);
+
+  const goBack = useCallback(() => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.navigate('/friends/msg');
+    }
+  }, [router]);
 
   useEffect(() => {
     const checkAuthentication = async () => {
@@ -54,7 +79,7 @@ const FriendsList = () => {
       }
     };
 
-    checkAuthentication();
+    void checkAuthentication();
   }, [router, signOut]);
 
   const createNewConversation = useCallback(async (friendUsername: string) => {
@@ -63,29 +88,25 @@ const FriendsList = () => {
       return;
     }
 
-    // Narrow for TS: at runtime when this callback executes (from a render where username was set), it's always string
     const currentUser = username;
 
     try {
+      haptics.tap();
       const db = getDatabase();
       const participants = [currentUser, friendUsername].sort();
       const participantsString = participants.join(',');
 
-      // Check if a conversation already exists
       const conversationsRef = ref(db, 'conversations');
       const conversationsQuery = query(conversationsRef, orderByChild('participants'), equalTo(participantsString));
-      
+
       const snapshot = await get(conversationsQuery);
 
       let conversationId: string;
 
       if (snapshot.exists()) {
-        // Conversation already exists, use the existing one
         const existingId = Object.keys(snapshot.val() || {})[0];
         conversationId = existingId || '';
-        console.log('Using existing conversation with ID:', conversationId);
       } else {
-        // Create a new conversation
         const newConversationRef = push(conversationsRef);
         conversationId = newConversationRef.key!;
 
@@ -103,22 +124,18 @@ const FriendsList = () => {
         };
 
         await set(newConversationRef, conversationData);
-        console.log('New conversation created with ID:', conversationId);
       }
 
-      // Check if the conversation is already in the user's list
       const userConversationsRef = ref(db, `users/${currentUser}/conversations`);
       const userConversationsSnapshot = await get(userConversationsRef);
       const userConversations = userConversationsSnapshot.val() || {};
 
       const updates: Record<string, boolean> = {};
 
-      // Only add to user's list if it's not already there
       if (!userConversations[conversationId]) {
         updates[`users/${currentUser}/conversations/${conversationId}`] = true;
       }
 
-      // Do the same for the friend
       const friendConversationsRef = ref(db, `users/${friendUsername}/conversations`);
       const friendConversationsSnapshot = await get(friendConversationsRef);
       const friendConversations = friendConversationsSnapshot.val() || {};
@@ -127,27 +144,24 @@ const FriendsList = () => {
         updates[`users/${friendUsername}/conversations/${conversationId}`] = true;
       }
 
-      // Only perform the update if there are changes to be made
       if (Object.keys(updates).length > 0) {
         await update(ref(db), updates);
       }
 
-      // Navigate to the chat screen
       router.push({ pathname: '/chat/[id]', params: { id: conversationId } });
     } catch (err: unknown) {
-      console.error('Detailed error:', JSON.stringify(err, null, 2));
+      console.error('Failed to create conversation:', err);
       const error = err as Error & { code?: string };
-      console.error('Error code:', error.code);
-      console.error('Error message:', error.message);
       Alert.alert("Error", `Failed to create or find a conversation. Error: ${error.message || String(err)}`);
     }
   }, [username, router]);
 
-  const renderFriendItem = useCallback(({ item }: { item: Friend }) => (
-    <FriendItem 
-      item={item} 
-      onPress={createNewConversation} 
-      isDarkMode={isDarkMode} 
+  const renderFriendItem = useCallback(({ item, index }: { item: Friend; index: number }) => (
+    <FriendItem
+      item={item}
+      index={index}
+      onPress={createNewConversation}
+      isDarkMode={isDarkMode}
     />
   ), [createNewConversation, isDarkMode]);
 
@@ -155,117 +169,133 @@ const FriendsList = () => {
 
   if (!username) {
     return (
-      <SafeAreaView style={[styles.container, isDarkMode && styles.containerDark]}>
-        <Text style={[styles.centerText, isDarkMode && styles.centerTextDark]}>
+      <View style={[styles.container, { backgroundColor: c.bg }]}>
+        <Text style={[styles.centerText, { color: c.textMuted }]}>
           Please sign in to view your friends list.
         </Text>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, isDarkMode && styles.containerDark]}>
-      <View style={[styles.header, isDarkMode && styles.headerDark]}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
-        </Pressable>
-        <Text style={[styles.headerText, isDarkMode && styles.headerTextDark]}>Select a Friend</Text>
-      </View>
+    <View style={[styles.container, { backgroundColor: c.bg }]}>
+      <LinearGradient
+        colors={isDarkMode ? ['#241B45', '#15172B'] : Gradients.brand}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.header}
+      >
+        <PressableScale haptic="select" onPress={goBack} style={styles.backBtn}>
+          <Ionicons name="chevron-back" size={24} color="#fff" />
+        </PressableScale>
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerEyebrow}>New chat</Text>
+          <Text style={styles.headerTitle}>Select a Friend</Text>
+        </View>
+        <View style={styles.backBtn} />
+      </LinearGradient>
+
       <FlatList
         data={memoizedFriends}
         renderItem={renderFriendItem}
         keyExtractor={(item) => item.username}
-        style={styles.list}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <AnimatedEntrance style={styles.emptyWrap}>
+            <View style={[styles.emptyIcon, { backgroundColor: c.surface }, cardShadow(isDarkMode)]}>
+              <Ionicons name="people-outline" size={36} color={c.accent} />
+            </View>
+            <Text style={[styles.emptyTitle, { color: c.text }]}>No friends yet</Text>
+            <Text style={[styles.emptySub, { color: c.textMuted }]}>
+              Add friends first, then come back to start a chat.
+            </Text>
+          </AnimatedEntrance>
+        }
       />
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f0f2f5',
-  },
-  containerDark: {
-    backgroundColor: '#1E1E1E',
-  },
+  container: { flex: 1 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    justifyContent: 'space-between',
     paddingTop: 60,
-    paddingBottom: 20,
-    backgroundColor: '#4a5568',
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.lg,
+    borderBottomLeftRadius: Radius.xl,
+    borderBottomRightRadius: Radius.xl,
   },
-  backButton: {
-    padding: 8,
-    marginRight: 12,
-    marginTop: -40,
+  backBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  headerDark: {
-    backgroundColor: '#2C2C2C',
+  headerCenter: { flex: 1, alignItems: 'center' },
+  headerEyebrow: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
-  headerText: {
-    fontSize: 24,
-    color: '#ffffff',
-    fontWeight: 'bold',
-    marginTop: -40,
-    flex: 1,
-  },
-  headerTextDark: {
-    color: '#FFF',
-  },
-  list: {
-    flex: 1,
+  headerTitle: { color: '#fff', fontSize: 20, fontWeight: '800' },
+  listContent: {
+    padding: Spacing.lg,
+    gap: Spacing.md,
+    paddingBottom: Spacing.xxl * 2,
+    flexGrow: 1,
   },
   friendItem: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
-    padding: 16,
-    marginBottom: 12,
-    marginHorizontal: 16,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  friendItemDark: {
-    backgroundColor: '#2C2C2C',
-    shadowColor: '#000',
-  },
-  friendInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
+    gap: Spacing.md,
   },
   friendImage: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    marginRight: 16,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     borderWidth: 2,
-    borderColor: '#f0f2f5',
   },
-  friendName: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#2d3748',
+  friendText: { flex: 1 },
+  friendName: { ...Type.headline },
+  friendSub: { ...Type.caption, fontWeight: '500', marginTop: 2 },
+  chatIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  friendNameDark: {
-    color: '#FFF',
+  emptyWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: Spacing.xxl * 3,
+    paddingHorizontal: Spacing.xl,
   },
+  emptyIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+  },
+  emptyTitle: { ...Type.title, fontSize: 18 },
+  emptySub: { ...Type.body, textAlign: 'center', marginTop: Spacing.sm },
   centerText: {
     textAlign: 'center',
-    marginTop: 20,
-    fontSize: 16,
-    color: '#666',
-  },
-  centerTextDark: {
-    color: '#B0B0B0',
+    marginTop: Spacing.xl,
+    ...Type.body,
   },
 });
 

@@ -1,13 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Missilelib , InventoryItem } from "../../types/types";
-import { Text, View, Pressable, Dimensions, Modal, ScrollView, StyleSheet, useColorScheme, Platform } from "react-native";
+import { Text, View, Pressable, Modal, useColorScheme, Platform } from "react-native";
 import { Image } from "expo-image";
 import { firemissileplayer } from "../../api/fireentities";
 import useFetchInventory from "../../hooks/websockets/inventoryhook";
-
 import { router } from 'expo-router';
 import { getImages } from "../../api/store";
 import { useOnboarding } from "../../util/Context/onboardingContext";
+import { InventoryEmptyState, InventoryItemList } from '../ui/inventory-library';
 import { tw } from '../../util/twrnc';
 
 const useMissileLib = (): Missilelib[] => {
@@ -35,43 +35,24 @@ const MissileSelector = ({ onSelect, missiles, onClose }: { onSelect: (missile: 
 
   if (missiles.length === 0) {
     return (
-      <View style={tw`flex-1 justify-center items-center`}>
-        <Text style={[tw`text-lg mb-4`, isDarkMode ? tw`text-white` : tw`text-gray-800`]}>
-          No missiles available.
-        </Text>
-        <Pressable
-          onPress={() => {
-            onClose();
-            router.navigate('/store');
-          }}
-          style={({ pressed }) => [tw`bg-blue-500 px-6 py-3 rounded-lg`, pressed && { opacity: 0.7 }]}
-        >
-          <Text style={tw`text-white font-bold`}>Go to Shop</Text>
-        </Pressable>
-      </View>
+      <InventoryEmptyState
+        isDark={isDarkMode}
+        message="No missiles available"
+        onGoToShop={() => {
+          onClose();
+          router.navigate('/store');
+        }}
+      />
     );
   }
 
   return (
-    <ScrollView style={tw`flex-1`}>
-      {missiles.map((missile, index) => (
-        <Pressable
-          key={index}
-          onPress={() => onSelect(missile.type)}
-          style={({ pressed }) => [
-            tw`flex-row items-center p-2 mb-1 rounded-lg shadow`,
-            isDarkMode ? tw`bg-gray-900` : tw`bg-white`,
-            pressed && { opacity: 0.7 },
-          ]}
-        >
-          <Image source={getImageForProduct(missile.type)} style={tw`w-8 h-8 mr-2`} />
-          <View style={tw`flex-1`}>
-            <Text style={[tw`text-sm font-semibold`, isDarkMode ? tw`text-white` : tw`text-gray-800`]}>{missile.type}</Text>
-            <Text style={[tw`text-xs`, isDarkMode ? tw`text-gray-400` : tw`text-gray-500`]}>Quantity: {missile.quantity}</Text>
-          </View>
-        </Pressable>
-      ))}
-    </ScrollView>
+    <InventoryItemList
+      items={missiles}
+      isDark={isDarkMode}
+      getImageSource={getImageForProduct}
+      onSelect={onSelect}
+    />
   );
 };
 
@@ -81,7 +62,7 @@ export const MissileLibrary = ({ playerName, onMissileFired, onClose }: { player
   const [showPopup, setShowPopup] = useState(false);
   const isDarkMode = useColorScheme() === 'dark';
   const [getImageForProduct, setGetImageForProduct] = useState<(imageName: string) => any>(() => () => require('../../assets/logo.png'));
-  const { currentStep, isOnboardingComplete, moveToNextStep } = useOnboarding();
+  const { currentStep, moveToNextStep } = useOnboarding();
 
   useEffect(() => {
     const loadImages = async () => {
@@ -158,14 +139,3 @@ export const MissileLibrary = ({ playerName, onMissileFired, onClose }: { player
   );
 };
 
-export const MissilefireposLibrary = ({ onSelectMissile, onClose }: { onSelectMissile: (missile: string) => void, onClose: () => void }) => {
-  const missileLibrary = useMissileLib();
-  const isDarkMode = useColorScheme() === 'dark';
-
-  return (
-    <View style={tw`flex-1`}>
-      <Text style={[tw`text-xl font-bold mb-2`, isDarkMode ? tw`text-white` : tw`text-gray-800`]}>Select Missile to Fire at Location</Text>
-      <MissileSelector onSelect={onSelectMissile} missiles={missileLibrary} onClose={onClose} />
-    </View>
-  );
-};

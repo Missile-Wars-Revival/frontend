@@ -162,7 +162,7 @@ const getStyles = (palette: ThemePalette, bottomInset: number) => StyleSheet.cre
   footer: {
     marginTop: 'auto',
     paddingTop: Spacing.lg,
-    paddingBottom: bottomInset + Spacing.xl,
+    paddingBottom: Math.max(bottomInset, Spacing.md),
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: palette.border,
   },
