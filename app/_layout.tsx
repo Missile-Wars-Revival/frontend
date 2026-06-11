@@ -259,41 +259,47 @@ function OnboardingGate({ children }: { children: React.ReactNode }) {
 
 function RootLayoutNav() {
   const { countdownIsActive, stopCountdown } = useCountdown();
-  const { isSignedIn } = useAuth();
+  const { isSignedIn, isAuthReady } = useAuth();
   const colorScheme = useColorScheme();
 
   useEffect(() => {
-    if (!isSignedIn) return;
+    if (!isAuthReady || !isSignedIn) return;
     AdService.initialize().catch((error) => {
       console.error('Failed to initialize AdService:', error);
     });
-  }, [isSignedIn]);
+  }, [isAuthReady, isSignedIn]);
 
   // Re-register the Expo push token every signed-in session. Login sends it
   // too, but the token is often unavailable at that moment (async fetch or
   // permission granted later), and the backend wipes tokens it deems invalid —
   // this is the recovery path. Silent: never prompts for permission here.
   useEffect(() => {
-    if (!isSignedIn) return;
+    if (!isAuthReady || !isSignedIn) return;
     registerAndSyncPushToken().then((result) => {
       console.log('Push token sync:', result.status);
     }).catch((error) => {
       console.error('Failed to sync push token:', error);
     });
-  }, [isSignedIn]);
+  }, [isAuthReady, isSignedIn]);
 
   // Periodic background location dispatch so the backend has a fresh position
   // for missile/landmine placement even while the app is backgrounded. The
   // task itself no-ops unless background location permission is granted.
   useEffect(() => {
+    if (!isAuthReady) return;
+
     if (isSignedIn) {
       registerBackgroundLocationTask();
     } else {
       unregisterBackgroundLocationTask();
     }
-  }, [isSignedIn]);
+  }, [isAuthReady, isSignedIn]);
 
   const backgroundColor = colorScheme === 'dark' ? '#1E1E1E' : '#FFFFFF';
+
+  if (!isAuthReady) {
+    return <View style={{ flex: 1, backgroundColor }} />;
+  }
 
   return (
     <SafeAreaProvider>

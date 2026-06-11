@@ -5,6 +5,15 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const DEV_OFFLINE_TOKEN = "dev-offline-token";
 
+async function getCachedBoolean(key: string, fallback: boolean | null = null) {
+    try {
+        const cached = await AsyncStorage.getItem(key);
+        return cached == null ? fallback : Boolean(JSON.parse(cached));
+    } catch {
+        return fallback;
+    }
+}
+
 export const updatelocActive = async (locActive: boolean) => {
     try {
         const token = await SecureStore.getItemAsync("token");
@@ -49,6 +58,9 @@ export async function getlocActive() {
         await AsyncStorage.setItem('locActive', JSON.stringify(locActive));
         return locActive;
     } catch (error) {
+        if (error instanceof Error && error.message.includes("User interaction is not allowed")) {
+            return getCachedBoolean('locActive', true);
+        }
         console.error("Error in getlocActive:", error);
         if (isAxiosError(error)) {
             console.error("Response data:", error.response?.data);

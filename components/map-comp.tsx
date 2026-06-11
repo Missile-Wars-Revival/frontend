@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
-import { View, Text, Switch, Alert, Pressable, useColorScheme } from "react-native";
+import { AppState, View, Text, Switch, Alert, Pressable, useColorScheme } from "react-native";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Circle } from "react-native-maps";
 import { AllLootDrops } from "./Loot/map-loot";
@@ -217,8 +217,11 @@ export const MapComp = (props: MapCompProps) => {
 
     useEffect(() => {
         let isSubscribed = true;
+        let isAppActive = AppState.currentState === 'active';
 
         const updateLocation = async () => {
+            if (!isAppActive) return;
+
             try {
                 const location = await getCurrentLocation();
                 if (isSubscribed) {
@@ -248,11 +251,19 @@ export const MapComp = (props: MapCompProps) => {
         // Initial location update
         updateLocation();
 
+        const appStateSubscription = AppState.addEventListener('change', (nextState) => {
+            isAppActive = nextState === 'active';
+            if (isAppActive) {
+                updateLocation();
+            }
+        });
+
         // Set up interval for periodic updates
         const intervalId = setInterval(updateLocation, 1000);
 
         return () => {
             isSubscribed = false;
+            appStateSubscription.remove();
             clearInterval(intervalId);
         };
     }, []);

@@ -16,12 +16,32 @@ const MINIMUM_INTERVAL_MINUTES = 15;
 // entities against a position the player left long ago.
 const LAST_KNOWN_MAX_AGE_MS = 10 * 60 * 1000;
 
+async function hasBackgroundLocationPermission() {
+  const [foreground, background] = await Promise.all([
+    Location.getForegroundPermissionsAsync(),
+    Location.getBackgroundPermissionsAsync(),
+  ]);
+
+  return foreground.status === 'granted' && background.status === 'granted';
+}
+
+async function getBackgroundToken() {
+  try {
+    return await SecureStore.getItemAsync('token');
+  } catch (error) {
+    // iOS can deny keychain access to background launches while the device is
+    // locked. Treat that as "not dispatchable right now" instead of failing
+    // the background task and causing repeated retries/noisy logs.
+    console.log('Background location skipped: secure token unavailable in background');
+    return null;
+  }
+}
+
 // Must be defined in module scope so the task exists when the app is launched
 // headless by the OS (this file is imported from app/_layout.tsx).
 TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async () => {
   try {
-    const { status } = await Location.getBackgroundPermissionsAsync();
-    if (status !== 'granted') {
+    if (!(await hasBackgroundLocationPermission())) {
       return BackgroundTask.BackgroundTaskResult.Success;
     }
 
@@ -31,18 +51,20 @@ TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async () => {
       return BackgroundTask.BackgroundTaskResult.Success;
     }
 
-    const token = await SecureStore.getItemAsync('token');
+    const token = await getBackgroundToken();
     if (!token) {
       return BackgroundTask.BackgroundTaskResult.Success;
     }
 
-    const position =
-      (await Location.getLastKnownPositionAsync({ maxAge: LAST_KNOWN_MAX_AGE_MS })) ??
-      (await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }));
+    const position = await Location.getLastKnownPositionAsync({
+      maxAge: LAST_KNOWN_MAX_AGE_MS,
+    });
 
-    if (position) {
-      await dispatch(token, position.coords.latitude, position.coords.longitude);
+    if (!position) {
+      return BackgroundTask.BackgroundTaskResult.Success;
     }
+
+    await dispatch(token, position.coords.latitude, position.coords.longitude);
 
     return BackgroundTask.BackgroundTaskResult.Success;
   } catch (error) {
@@ -56,6 +78,12 @@ export async function registerBackgroundLocationTask() {
     const status = await BackgroundTask.getStatusAsync();
     if (status !== BackgroundTask.BackgroundTaskStatus.Available) {
       console.log('Background tasks unavailable on this device');
+      return;
+    }
+
+    if (!(await hasBackgroundLocationPermission())) {
+      await unregisterBackgroundLocationTask();
+      console.log('Background location task not registered: background location permission is not granted');
       return;
     }
 

@@ -11,6 +11,7 @@ export const APP_RELAUNCH_EVENT = 'app-relaunch';
 
 interface AuthContextType {
   isSignedIn: boolean;
+  isAuthReady: boolean;
   setIsSignedIn: (value: boolean) => void;
   signOut: () => Promise<void>;
 }
@@ -24,26 +25,37 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children, initialIsSignedIn }) => {
   const [isSignedIn, setIsSignedIn] = useState(initialIsSignedIn ?? false);
+  const [isAuthReady, setIsAuthReady] = useState(initialIsSignedIn !== undefined);
+
+  const updateSignedIn = useCallback((value: boolean) => {
+    setIsSignedIn(value);
+    setIsAuthReady(true);
+  }, []);
 
   const signOut = useCallback(async () => {
     await clearSession();
-    setIsSignedIn(false);
+    updateSignedIn(false);
     DeviceEventEmitter.emit(APP_RELAUNCH_EVENT);
-  }, []);
+  }, [updateSignedIn]);
 
   useEffect(() => {
     // Only fall back to AsyncStorage if we didn't get a value from the splash screen
     if (initialIsSignedIn !== undefined) return;
 
     const checkSignInStatus = async () => {
-      const status = await AsyncStorage.getItem('signedIn');
-      setIsSignedIn(status === 'true');
+      try {
+        const status = await AsyncStorage.getItem('signedIn');
+        updateSignedIn(status === 'true');
+      } catch (error) {
+        console.error('Failed to read sign-in status:', error);
+        updateSignedIn(false);
+      }
     };
     checkSignInStatus();
-  }, []);
+  }, [initialIsSignedIn, updateSignedIn]);
 
   return (
-    <AuthContext.Provider value={{ isSignedIn, setIsSignedIn, signOut }}>
+    <AuthContext.Provider value={{ isSignedIn, isAuthReady, setIsSignedIn: updateSignedIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );

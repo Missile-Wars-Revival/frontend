@@ -6,11 +6,15 @@ import { useNotifications } from '../../components/Notifications/useNotification
 import { useAuth } from '../../util/Context/authcontext';
 
 export default function TabLayout() {
-  const { isSignedIn } = useAuth();
+  const { isSignedIn, isAuthReady } = useAuth();
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
-  const { unreadCount, unreadChatCount } = useNotifications();
+  const { unreadCount, unreadChatCount } = useNotifications({ enabled: isAuthReady && isSignedIn });
   const totalUnread = unreadCount + unreadChatCount;
+
+  if (!isAuthReady) {
+    return null;
+  }
 
   if (!isSignedIn) {
     return <Redirect href="/login" />;

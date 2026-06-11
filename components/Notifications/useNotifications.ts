@@ -37,11 +37,15 @@ interface Notification {
 	userId: string;
 }
 
-export const useNotifications = () => {
+interface UseNotificationsOptions {
+	enabled?: boolean;
+}
+
+export const useNotifications = ({ enabled = true }: UseNotificationsOptions = {}) => {
 	const [notifications, setNotifications] = useState<Notification[]>([]);
 	const [unreadCount, setUnreadCount] = useState(0);
 	const [unreadChatCount, setUnreadChatCount] = useState(0);
-	const [isLoading, setIsLoading] = useState(true);
+	const [isLoading, setIsLoading] = useState(enabled);
 	const [error, setError] = useState<string | null>(null);
 	const lastFetchTimeRef = useRef(0);
 
@@ -54,6 +58,14 @@ export const useNotifications = () => {
 	}, []);
 
 	const fetchNotifications = useCallback(async (force = false) => {
+		if (!enabled) {
+			setNotifications([]);
+			setUnreadCount(0);
+			setUnreadChatCount(0);
+			setIsLoading(false);
+			setError(null);
+			return;
+		}
 		if (!force && Date.now() - lastFetchTimeRef.current < 30000) {
 			// If not forced and less than 30 seconds since last fetch, don't fetch
 			return;
@@ -82,9 +94,13 @@ export const useNotifications = () => {
 			notificationEmitter.emit('error', error);
 		}
 		setIsLoading(false);
-	}, []);
+	}, [enabled]);
 
 	useEffect(() => {
+		if (!enabled) {
+			return;
+		}
+
 		// eslint-disable-next-line react-hooks/set-state-in-effect
 		fetchNotifications();
 
@@ -114,7 +130,7 @@ export const useNotifications = () => {
 			notificationEmitter.off('notificationsUpdated', handleNotificationsUpdated);
 			notificationEmitter.off('unreadCountUpdated', handleUnreadCountUpdated);
 		};
-	}, [fetchNotifications]);
+	}, [enabled, fetchNotifications]);
 
 	// Derive unread counts from notifications list to avoid stale closures and keep in sync
 	useEffect(() => {
@@ -183,11 +199,11 @@ export const useNotifications = () => {
 	}, []);
 
 	return {
-		notifications,
-		unreadCount,
-		unreadChatCount,
-		isLoading,
-		error,
+		notifications: enabled ? notifications : [],
+		unreadCount: enabled ? unreadCount : 0,
+		unreadChatCount: enabled ? unreadChatCount : 0,
+		isLoading: enabled ? isLoading : false,
+		error: enabled ? error : null,
 		fetchNotifications,
 		markAsRead,
 		markAllAsRead,
