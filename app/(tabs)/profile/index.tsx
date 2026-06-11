@@ -12,8 +12,8 @@ import useFetchInventory from '../../../hooks/websockets/inventoryhook';
 import { getselfprofile } from '../../../api/getprofile';
 import { Statistics } from './user-profile';
 import firebase from '../../../util/firebase/config';
-import { fetchAndCacheImage } from '../../../util/imagecache';
 import useFetchFriends from '../../../hooks/websockets/friendshook';
+import { Avatar } from '../../../components/ui/Avatar';
 import { editUser } from '../../../api/editUser';
 import * as Clipboard from 'expo-clipboard';
 import { getImages } from '../../../api/store';
@@ -22,15 +22,14 @@ import PressableScale from '../../../components/ui/PressableScale';
 import haptics from '../../../components/ui/haptics';
 import { getPalette, Gradients, Radius, Spacing, cardShadow } from '../../../components/ui/theme';
 
-const DEFAULT_IMAGE = require('../../../assets/mapassets/Female_Avatar_PNG.png');
-
 const { width } = Dimensions.get('window');
 
 interface SelfProfile {
   username: string;
   email: string;
   rankpoints: number;
-  mutualFriends: string[];
+  profileImageUrl: string | null;
+  mutualFriends: { username: string; profileImageUrl: string | null }[];
   statistics: Statistics;
 }
 
@@ -73,7 +72,6 @@ const ProfilePage: React.FC = () => {
   const [email, setEmail] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [friendImages, setFriendImages] = useState<{ [key: string]: string }>({});
   const [rankPoints, setRankPoints] = useState<number | null>(null);
   const [selectedBadge, setSelectedBadge] = useState<string | null>(null);
   const [isDebugMenuVisible, setIsDebugMenuVisible] = useState(false);
@@ -127,14 +125,6 @@ const ProfilePage: React.FC = () => {
     router.navigate("/league");
   };
 
-  const loadProfileImage = async () => {
-    const name = await SecureStore.getItemAsync("username");
-    if (name) {
-      const imageUrl = await fetchAndCacheImage(name);
-      setUserImageUrl(imageUrl);
-    }
-  };
-
   const uploadImageToFirebase = async (uri: string) => {
     const name = await SecureStore.getItemAsync("username");
     const response = await fetch(uri);
@@ -142,6 +132,7 @@ const ProfilePage: React.FC = () => {
     const ref = firebase.storage().ref().child(`profileImages/${name}`);
     await ref.put(blob);
     const url = await ref.getDownloadURL();
+    setUserImageUrl(url); // reflect the freshly uploaded image immediately
     return url;
   };
 
@@ -162,7 +153,6 @@ const ProfilePage: React.FC = () => {
       if (firstAsset && firstAsset.uri) {
         await uploadImageToFirebase(firstAsset.uri);
         haptics.success();
-        await loadProfileImage();
       }
     }
   };
@@ -183,20 +173,17 @@ const ProfilePage: React.FC = () => {
       if (firstAsset && firstAsset.uri) {
         await uploadImageToFirebase(firstAsset.uri);
         haptics.success();
-        await loadProfileImage();
       }
     }
   };
 
   const setdefaultasimage = async () => {
     setUserImageUrl(null);
-    await AsyncStorage.removeItem(`profileImage_${username}`);
     try {
       await firebase.storage().ref(`profileImages/${username}`).delete();
     } catch (error) {
       console.error('Error deleting image from Firebase:', error);
     }
-    await loadProfileImage();
   };
 
   const removePhoto = () => {
@@ -258,10 +245,6 @@ const ProfilePage: React.FC = () => {
   };
 
   useEffect(() => {
-    loadProfileImage();
-  }, []);
-
-  useEffect(() => {
     fetchUserStatistics();
   }, []);
 
@@ -273,6 +256,7 @@ const ProfilePage: React.FC = () => {
         setEmail(response.userProfile.email);
         await SecureStore.setItem("email", response.userProfile.email);
         setRankPoints(response.userProfile.rankpoints);
+        setUserImageUrl(response.userProfile.profileImageUrl);
       } else if (response.message !== "Not signed in") {
         console.error('Failed to fetch user statistics: Invalid response structure');
       }
@@ -280,21 +264,6 @@ const ProfilePage: React.FC = () => {
       console.error('Failed to fetch user statistics', error);
     }
   };
-
-  useEffect(() => {
-    const loadFriendImages = async () => {
-      const imagePromises = friends.map(async (friend) => {
-        const imageUrl = await fetchAndCacheImage(friend.username);
-        return { [friend.username]: imageUrl };
-      });
-      const imageResults = await Promise.all(imagePromises);
-      const newFriendImages = Object.assign({}, ...imageResults);
-      setFriendImages(newFriendImages);
-    };
-    if (friends.length > 0) {
-      loadFriendImages();
-    }
-  }, [friends]);
 
   const renderBadge = (badge: string) => {
     const badgeKey = Object.keys(badgeImages).find(key => badge.toLowerCase().includes(key.toLowerCase()));
@@ -453,10 +422,9 @@ const ProfilePage: React.FC = () => {
 
           <AnimatedEntrance fromScale={0.9} style={styles.heroBody}>
             <PressableScale haptic="tap" onPress={openImagePicker} style={styles.avatarWrap}>
-              <Image
-                source={userImageUrl ? { uri: userImageUrl } : DEFAULT_IMAGE}
+              <Avatar
+                uri={userImageUrl}
                 style={styles.avatar}
-                cachePolicy="memory-disk"
                 transition={250}
               />
               <View style={styles.cameraBadge}>
@@ -552,10 +520,9 @@ const ProfilePage: React.FC = () => {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sliderContent}>
               {friends.map((friend, index) => (
                 <PressableScale key={index} haptic="select" style={styles.friendItem} onPress={() => navigateToUserProfile(friend.username)}>
-                  <Image
-                    source={friendImages[friend.username] ? { uri: friendImages[friend.username] } : DEFAULT_IMAGE}
+                  <Avatar
+                    uri={friend.profileImageUrl}
                     style={[styles.friendImage, { borderColor: c.surface }]}
-                    cachePolicy="memory-disk"
                   />
                   <Text style={[styles.friendName, { color: c.textMuted }]} numberOfLines={1}>{friend.username}</Text>
                 </PressableScale>

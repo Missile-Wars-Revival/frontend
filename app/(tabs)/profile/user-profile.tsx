@@ -4,11 +4,9 @@ import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as SecureStore from "expo-secure-store";
 import { getuserprofile } from '../../../api/getprofile';
-import { fetchAndCacheImage } from '../../../util/imagecache';
 import useFetchFriends from '../../../hooks/websockets/friendshook';
+import { Avatar } from '../../../components/ui/Avatar';
 import { addFriend } from '../../../api/friends';
-
-const DEFAULT_IMAGE = require('../../../assets/mapassets/Female_Avatar_PNG.png');
 
 const badgeImages = {
   Founder: require('../../../assets/icons/founder.png'),
@@ -34,10 +32,16 @@ export interface Statistics {
   league: string; 
 }
 
+interface MutualFriend {
+  username: string;
+  profileImageUrl: string | null;
+}
+
 interface UserProfile {
   username: string;
   rankpoints: number;
-  mutualFriends: string[];
+  profileImageUrl: string | null;
+  mutualFriends: MutualFriend[];
   statistics: Statistics;
 }
 
@@ -49,8 +53,6 @@ interface ApiResponse {
 const UserProfilePage: React.FC = () => {
   const { username } = useLocalSearchParams<{ username: string }>();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [userImageUrl, setUserImageUrl] = useState<string | null>(null);
-  const [friendImages, setFriendImages] = useState<{ [key: string]: string }>({});
   const router = useRouter();
   const friends = useFetchFriends();
   const [selectedBadge, setSelectedBadge] = useState<string | null>(null);
@@ -84,31 +86,10 @@ const UserProfilePage: React.FC = () => {
     }
   }, [username]);
 
-  const loadProfileImage = useCallback(async () => {
-    if (!username) return;
-    const imageUrl = await fetchAndCacheImage(username);
-    setUserImageUrl(imageUrl);
-  }, [username]);
-
-  const loadFriendImages = useCallback(async () => {
-    if (!userProfile?.mutualFriends?.length) return;
-    const images: { [key: string]: string } = {};
-    for (const friend of userProfile.mutualFriends) {
-      images[friend] = await fetchAndCacheImage(friend);
-    }
-    setFriendImages(images);
-  }, [userProfile]);
-
   useEffect(() => {
     if (!username) return;
     fetchUserProfile();
-    loadProfileImage();
-  }, [username, fetchUserProfile, loadProfileImage]);
-
-  useEffect(() => {
-    if (!userProfile?.mutualFriends?.length) return;
-    loadFriendImages();
-  }, [userProfile, loadFriendImages]);
+  }, [username, fetchUserProfile]);
 
   const handleAddFriend = async () => {
     const token = await SecureStore.getItemAsync("token");
@@ -183,8 +164,8 @@ const UserProfilePage: React.FC = () => {
       </View>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={[styles.profileContainer, isDarkMode && styles.profileContainerDark]}>
-          <Image
-            source={userImageUrl ? { uri: userImageUrl } : DEFAULT_IMAGE}
+          <Avatar
+            uri={userProfile.profileImageUrl}
             style={styles.profileImage}
           />
           <Text style={[styles.profileName, isDarkMode && styles.profileNameDark]}>{userProfile.username}</Text>
@@ -231,11 +212,11 @@ const UserProfilePage: React.FC = () => {
             {userProfile.mutualFriends && userProfile.mutualFriends.length > 0 ? (
               userProfile.mutualFriends.map((friend, index) => (
                 <Pressable key={index} style={styles.sliderItem}>
-                  <Image 
-                    source={friendImages[friend] ? { uri: friendImages[friend] } : DEFAULT_IMAGE}
-                    style={styles.friendImage} 
+                  <Avatar
+                    uri={friend.profileImageUrl}
+                    style={styles.friendImage}
                   />
-                  <Text style={[styles.friendName, isDarkMode && styles.friendNameDark]}>{friend}</Text>
+                  <Text style={[styles.friendName, isDarkMode && styles.friendNameDark]}>{friend.username}</Text>
                 </Pressable>
               ))
             ) : (

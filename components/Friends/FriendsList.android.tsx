@@ -9,7 +9,7 @@ import {
   RNHostView,
 } from '@expo/ui/jetpack-compose';
 import { fillMaxSize, fillMaxWidth, padding, weight, clickable } from '@expo/ui/jetpack-compose/modifiers';
-import { Image as ExpoImage } from 'expo-image';
+import { Avatar } from '../ui/Avatar';
 import type { FriendsListProps } from './FriendsList';
 
 /**
@@ -39,10 +39,9 @@ export default function FriendsList({
             ]}
           >
             <RNHostView matchContents>
-              <ExpoImage
-                source={{ uri: friend.profileImageUrl }}
+              <Avatar
+                uri={friend.profileImageUrl}
                 style={{ width: 44, height: 44, borderRadius: 22 }}
-                cachePolicy="memory-disk"
               />
             </RNHostView>
             <Text

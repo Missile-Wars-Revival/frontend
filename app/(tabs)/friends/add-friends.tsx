@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Text, View, FlatList, Alert, RefreshControl, TextInput, Keyboard, Pressable, useColorScheme, StyleSheet, ActivityIndicator } from "react-native";
-import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import { NearbyPlayersData, searchOtherPlayersData } from "../../../api/getplayerlocations";
@@ -10,7 +9,7 @@ import { getCurrentLocation, location } from "../../../util/locationreq";
 import * as SecureStore from "expo-secure-store";
 import { useAuth } from "../../../util/Context/authcontext";
 import Ionicons from '@react-native-vector-icons/ionicons';
-import { fetchAndCacheImage } from "../../../util/imagecache";
+import { Avatar } from "../../../components/ui/Avatar";
 import FriendAddedAnimation from "../../../components/Animations/FriendAddedAnimation";
 import { AnimatedEntrance } from "../../../components/ui/AnimatedEntrance";
 import { PressableScale } from "../../../components/ui/PressableScale";
@@ -24,8 +23,6 @@ interface Filterddata {
   profileImageUrl: string | null;
   isFriend?: string;
 }
-
-const DEFAULT_IMAGE = require("../../../assets/mapassets/Female_Avatar_PNG.png");
 
 const EmptyState = ({ icon, label, c, isDarkMode }: { icon: any; label: string; c: ReturnType<typeof getPalette>; isDarkMode: boolean }) => (
   <AnimatedEntrance style={styles.emptyWrap}>
@@ -149,14 +146,9 @@ const QuickAddPage: React.FC = () => {
         return;
       }
       const result = await searchOtherPlayersData(text);
+      // profileImageUrl is resolved server-side and already present on each result.
       const filteredResult = result.filter(player => player.username !== currentUserUsername);
-      const filteredResultWithImages = await Promise.all(
-        filteredResult.map(async (player) => ({
-          ...player,
-          profileImageUrl: await fetchAndCacheImage(player.username),
-        }))
-      );
-      setFilteredData(filteredResultWithImages);
+      setFilteredData(filteredResult);
     } catch (error) {
       console.error("Failed to search for players:", error);
       setFilteredData([]);
@@ -181,11 +173,10 @@ const QuickAddPage: React.FC = () => {
             style={styles.playerInfo}
             onPress={() => navigateToUserProfile(item.username)}
           >
-            <Image
-              source={item.profileImageUrl ? { uri: item.profileImageUrl } : DEFAULT_IMAGE}
+            <Avatar
+              uri={item.profileImageUrl}
               style={styles.playerImage}
               contentFit="cover"
-              cachePolicy="memory-disk"
               transition={200}
             />
             <View style={styles.playerText}>

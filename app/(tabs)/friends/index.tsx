@@ -10,7 +10,6 @@ import * as SecureStore from 'expo-secure-store';
 import { removeFriend } from "../../../api/friends";
 import { MissileLibrary } from "../../../components/Missile/missile";
 import { searchFriendsAdded } from "../../../api/getplayerlocations";
-import { fetchAndCacheImage } from "../../../util/imagecache";
 import { useNotifications, notificationEmitter } from "../../../components/Notifications/useNotifications";
 import useFetchFriends from "../../../hooks/websockets/friendshook";
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -25,7 +24,7 @@ const DEV_OFFLINE_TOKEN = "dev-offline-token";
 
 interface Friend {
   username: string;
-  profileImageUrl: string;
+  profileImageUrl: string | null;
 }
 
 const FriendsPage: React.FC = () => {
@@ -175,14 +174,9 @@ const FriendsPage: React.FC = () => {
         return;
       }
       const result = await searchFriendsAdded(text);
+      // profileImageUrl is resolved server-side and already present on each result.
       const filteredResult = result.filter(friend => friend.username !== currentUserUsername);
-      const filteredResultWithImages = await Promise.all(
-        filteredResult.map(async (friend) => ({
-          ...friend,
-          profileImageUrl: await fetchAndCacheImage(friend.username),
-        }))
-      );
-      setFilteredFriends(filteredResultWithImages);
+      setFilteredFriends(filteredResult);
     } catch (error) {
       console.error("Failed to search for friends:", error);
       setFilteredFriends([]);

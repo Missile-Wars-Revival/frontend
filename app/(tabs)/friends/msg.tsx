@@ -6,7 +6,6 @@ import Ionicons from '@react-native-vector-icons/ionicons';
 import { getDatabase, ref, onValue, get, remove, off } from 'firebase/database';
 import * as SecureStore from "expo-secure-store";
 import useFetchFriends from '../../../hooks/websockets/friendshook';
-import { fetchAndCacheImage } from '../../../util/imagecache';
 import { markMessageNotificationAsRead } from '../../../api/notifications';
 
 const DEFAULT_IMAGE = require('../../../assets/mapassets/Female_Avatar_PNG.png');
@@ -174,17 +173,6 @@ const ConversationList = () => {
     return [...conversations].sort((a, b) => b.lastMessage.timestamp - a.lastMessage.timestamp);
   }, [conversations]);
 
-  // Move these hooks outside of renderConversationItem
-  const [avatarUris, setAvatarUris] = useState<Record<string, string | null>>({});
-
-  useEffect(() => {
-    friends.forEach(friend => {
-      fetchAndCacheImage(friend.username).then(uri => {
-        setAvatarUris(prev => ({ ...prev, [friend.username]: uri }));
-      });
-    });
-  }, [friends]);
-
   const formatTimestamp = (timestamp: number) => {
     const date = new Date(timestamp);
     const now = new Date();
@@ -213,7 +201,7 @@ const ConversationList = () => {
 
   const renderConversationItem = useCallback(({ item }: { item: Conversation }) => {
     const otherParticipant = friends.find(friend => friend.username === item.otherParticipant);
-    const avatarUri = avatarUris[item.otherParticipant];
+    const avatarUri = otherParticipant?.profileImageUrl ?? null;
     const displayName = item.otherParticipant || otherParticipant?.username || 'Unknown';
 
     if (!panRefs.current[item.id]) {
@@ -307,7 +295,7 @@ const ConversationList = () => {
         </Pressable>
       </Animated.View>
     );
-  }, [friends, isDarkMode, avatarUris, deleteConversation, closeSwipe, username]);
+  }, [friends, isDarkMode, deleteConversation, closeSwipe, username]);
 
   return (
     <SafeAreaView style={[styles.container, isDarkMode && styles.containerDark]}>

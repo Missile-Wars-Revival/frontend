@@ -9,7 +9,7 @@ import { getPalette, Gradients, Radius, Spacing, cardShadow } from '../ui/theme'
 
 export interface FriendListItem {
   username: string;
-  profileImageUrl: string;
+  profileImageUrl: string | null;
 }
 
 export interface FriendsListProps {

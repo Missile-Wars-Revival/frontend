@@ -10,7 +10,7 @@ import {
   RNHostView,
 } from '@expo/ui/swift-ui';
 import { padding, foregroundColor } from '@expo/ui/swift-ui/modifiers';
-import { Image as ExpoImage } from 'expo-image';
+import { Avatar } from '../ui/Avatar';
 import type { FriendsListProps } from './FriendsList';
 
 /**
@@ -35,10 +35,9 @@ export default function FriendsList({
             <Button onPress={() => onProfilePress(friend.username)}>
               <HStack spacing={12} modifiers={[padding({ top: 6, bottom: 6 })]}>
                 <RNHostView matchContents>
-                  <ExpoImage
-                    source={{ uri: friend.profileImageUrl }}
+                  <Avatar
+                    uri={friend.profileImageUrl}
                     style={{ width: 44, height: 44, borderRadius: 22 }}
-                    cachePolicy="memory-disk"
                   />
                 </RNHostView>
                 <Text modifiers={[foregroundColor(isDarkMode ? '#FFFFFF' : '#000000')]}>

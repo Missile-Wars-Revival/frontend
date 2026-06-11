@@ -4,12 +4,12 @@ import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { fetchTopLeagues, fetchCurrentLeague, fetchLeaguePlayers, top100Players } from '../../api/league';
-import { fetchAndCacheImage } from '../../util/imagecache';
 import { getLeagueAirspace } from '../../components/player';
 import { getPalette, Spacing, Radius, Type, cardShadow, type ThemePalette } from '../../components/ui/theme';
 import { SegmentedControl } from '../../components/ui/SegmentedControl';
 import { PressableScale } from '../../components/ui/PressableScale';
 import { AnimatedEntrance } from '../../components/ui/AnimatedEntrance';
+import { Avatar } from '../../components/ui/Avatar';
 
 const DEFAULT_IMAGE = require('../../assets/mapassets/Female_Avatar_PNG.png');
 const LEAGUE_IMAGE = require('../../assets/onboarding/leagues.png');
@@ -30,7 +30,7 @@ interface Player {
   username: string;
   points: number;
   isCurrentUser: boolean;
-  profileImageUrl?: string;
+  profileImageUrl?: string | null;
 }
 
 interface League {
@@ -66,26 +66,11 @@ const LeagueRankingPage: React.FC = () => {
           top100Players()
         ]);
 
-        // Fetch and cache profile images for league players
-        const leaguePlayersWithImages = await Promise.all(
-          leaguePlayersResponse.players.map(async (player: { username: string; }) => ({
-            ...player,
-            profileImageUrl: await fetchAndCacheImage(player.username),
-          }))
-        );
-
-        // Fetch and cache profile images for top 100 players
-        const top100WithImages = await Promise.all(
-          top100Data.players.map(async (player: { username: string; }) => ({
-            ...player,
-            profileImageUrl: await fetchAndCacheImage(player.username),
-          }))
-        );
-
+        // profileImageUrl is resolved server-side and already present on each player.
         setTopLeagues(topLeaguesData.leagues);
         setCurrentLeague(currentLeagueData);
-        setLeaguePlayers(leaguePlayersWithImages);
-        setTop100(top100WithImages);
+        setLeaguePlayers(leaguePlayersResponse.players);
+        setTop100(top100Data.players);
       } catch (error) {
         console.error('Error fetching data:', error);
       }
@@ -121,12 +106,11 @@ const LeagueRankingPage: React.FC = () => {
         onPress={() => navigateToProfile(player.username)}
       >
         {renderRankBadge(index)}
-        <Image
-          source={player.profileImageUrl ? { uri: player.profileImageUrl } : DEFAULT_IMAGE}
+        <Avatar
+          uri={player.profileImageUrl}
           style={styles.profilePic}
           contentFit="cover"
           transition={200}
-          cachePolicy="memory-disk"
           placeholder={DEFAULT_IMAGE}
         />
         <Text

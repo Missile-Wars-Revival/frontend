@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { View, Text, Modal, Dimensions, StyleSheet, Pressable, useColorScheme } from "react-native";
 import { Image } from "expo-image";
 import { Circle, Marker } from "react-native-maps";
 import { MissileLibrary } from "./Missile/missile";
 import { Players } from "./map-players";
 import { useUserName } from "../util/fetchusernameglobal";
-import { fetchAndCacheImage } from "../util/imagecache";
 import useFetchFriends from "../hooks/websockets/friendshook";
 
 const resizedplayerimage = require("../assets/mapassets/Female_Avatar_PNG.png");
@@ -168,26 +167,11 @@ const getRandomLocation = (latitude: number, longitude: number, radius: number) 
 export const PlayerComp = (props: PlayerProps) => {
   const [selectedMarkerIndex, setSelectedMarkerIndex] = useState<number | null>(null);
   const [showMissileLibrary, setShowMissileLibrary] = useState(false);
-  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
 
   const userName = useUserName();
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
   const friends = useFetchFriends(); // Use the friends hook
-
-  useEffect(() => {
-    const loadProfileImage = async () => {
-      try {
-        const imageUrl = await fetchAndCacheImage(props.player.username);
-        setProfileImageUrl(imageUrl);
-      } catch (error) {
-        console.error("Failed to load profile image:", error);
-        setProfileImageUrl(null); // Fallback to default image if loading fails
-      }
-    };
-
-    loadProfileImage();
-  }, [props.player.username]);
 
   const fireMissile = (playerName: string) => {
     setShowMissileLibrary(true);
@@ -262,9 +246,9 @@ export const PlayerComp = (props: PlayerProps) => {
         zIndex={2} // Higher zIndex for players
       >
         <View style={{ alignItems: 'center', position: 'relative' }}>
-          <Image 
-            source={profileImageUrl ? { uri: profileImageUrl } : resizedplayerimage} 
-            style={styles.profileImage} 
+          <Image
+            source={props.player.profileImageUrl ? { uri: props.player.profileImageUrl } : resizedplayerimage}
+            style={styles.profileImage}
           />
           {transportImage && ( // Render the transport image layered on top of the player icon if available
             <Image 

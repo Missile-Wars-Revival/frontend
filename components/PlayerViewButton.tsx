@@ -3,7 +3,6 @@ import { View, Text, Pressable, Modal, FlatList, StyleSheet, useColorScheme, Dim
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from '@react-native-vector-icons/ionicons';
-import { fetchAndCacheImage } from "../util/imagecache";
 import * as SecureStore from 'expo-secure-store';
 import { addFriend } from "../api/friends";
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -29,10 +28,11 @@ import { SegmentedControl } from './ui/SegmentedControl';
 import { PressableScale } from './ui/PressableScale';
 import { AnimatedEntrance } from './ui/AnimatedEntrance';
 import { haptics } from './ui/haptics';
+import { Avatar } from './ui/Avatar';
 
 interface Player {
   username: string;
-  profileImageUrl: string;
+  profileImageUrl: string | null;
   isFriend: boolean;
   updatedAt: string;
 }
@@ -100,16 +100,13 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
             }
           });
 
-        const playersWithImages = await Promise.all(
-          Array.from(uniquePlayers.values()).map(async (player) => ({
-            ...player,
-            profileImageUrl: await fetchAndCacheImage(player.username),
-            isFriend: friends.some(friend => friend.username === player.username)
-          }))
-        );
+        const playersWithFriendFlag = Array.from(uniquePlayers.values()).map((player) => ({
+          ...player,
+          isFriend: friends.some(friend => friend.username === player.username)
+        }));
 
         if (!cancelled) {
-          setPlayers(playersWithImages);
+          setPlayers(playersWithFriendFlag);
         }
       } catch (error) {
         console.error("Failed to process player data:", error);
@@ -269,7 +266,7 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
           style={styles.playerRow}
           onPress={() => navigateToUserProfile(item.username)}
         >
-          <Image source={{ uri: item.profileImageUrl }} style={styles.playerImage} />
+          <Avatar uri={item.profileImageUrl} style={styles.playerImage} />
           <View style={styles.playerInfo}>
             <Text style={styles.playerName} numberOfLines={1} ellipsizeMode="tail">
               {item.username}

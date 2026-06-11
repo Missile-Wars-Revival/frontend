@@ -11,6 +11,7 @@ export interface Players {
   health: number;
   transportStatus: string;
   randomlocation: boolean;
+  profileImageUrl?: string | null;
 }
 
 export const AllPlayers = () => {
