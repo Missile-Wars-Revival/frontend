@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text, ScrollView, SafeAreaView, useColorScheme, ImageSourcePropType, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, Text, ScrollView, useColorScheme, ImageSourcePropType, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import Ionicons from '@react-native-vector-icons/ionicons';

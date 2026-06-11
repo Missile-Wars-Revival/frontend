@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { SafeAreaView, StyleSheet, Text, View, ScrollView, Pressable, Alert, useColorScheme, Platform, Dimensions, Modal } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, Pressable, Alert, useColorScheme, Platform, Dimensions, Modal } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as SecureStore from "expo-secure-store";

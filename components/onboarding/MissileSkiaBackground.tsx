@@ -34,14 +34,12 @@ const MISSILE_PATH = Skia.Path.MakeFromSVGString(
 )!;
 
 // Rotating radar sweep wedge (built once in local space around the origin).
-const SWEEP_PATH = (() => {
-  const p = Skia.Path.Make();
-  p.moveTo(0, 0);
-  p.lineTo(RANGE * 0.56, -RANGE * 0.12);
-  p.lineTo(RANGE * 0.56, RANGE * 0.04);
-  p.close();
-  return p;
-})();
+const SWEEP_PATH = Skia.PathBuilder.Make()
+  .moveTo(0, 0)
+  .lineTo(RANGE * 0.56, -RANGE * 0.12)
+  .lineTo(RANGE * 0.56, RANGE * 0.04)
+  .close()
+  .build();
 
 // Static "enemy" blips scattered across the map that emit radar pings.
 const S0 = { x: width * 0.24, y: height * 0.22, period: 2400, phase: 0.0 };
