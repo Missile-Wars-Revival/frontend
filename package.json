@@ -59,6 +59,7 @@
     "expo-task-manager": "~56.0.18",
     "expo-tracking-transparency": "~56.0.5",
     "expo-updates": "~56.0.19",
+    "expo-widgets": "^56.0.18",
     "firebase": "^12.14.0",
     "geolib": "^3.3.4",
     "isomorphic-ws": "^5.0.0",

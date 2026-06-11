@@ -8,7 +8,7 @@ import { convertimestampfuture } from "../../util/get-time-difference";
 import { useLandmine } from "../../util/Context/landminecontext";
 import { getImages } from "../../api/store";
 import { getLeagueAirspace } from "../player";
-import { useUserLeague } from "../../hooks/api/useUserLeague";
+import { useUserLeague } from "../../hooks/api/useUserLeagues";
 import { calculateDistance, getCurrentLocation, location } from "../../util/locationreq";
 
 interface AllLandmineProps {
