@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { View, Text, Modal, Alert, TextInput, StyleSheet, useColorScheme } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import Ionicons from '@react-native-vector-icons/ionicons';
@@ -43,6 +44,7 @@ const FriendsPage: React.FC = () => {
   const [locActive, setLocActive] = useState<boolean>(true);
   const isDarkMode = colorScheme === 'dark';
   const c = getPalette(isDarkMode);
+  const insets = useSafeAreaInsets();
   const [showMissileFiringAnimation, setShowMissileFiringAnimation] = useState(false);
   const [hasFirebaseUID, setHasFirebaseUID] = useState(false);
 
@@ -369,7 +371,8 @@ const FriendsPage: React.FC = () => {
         <PressableScale
           haptic="tap"
           onPress={() => router.navigate("/friends/msg")}
-          style={styles.fab}
+          // Sit above the native tab bar (~50pt) plus the home indicator inset.
+          style={[styles.fab, { bottom: insets.bottom + 66 }]}
         >
           <LinearGradient colors={Gradients.brand} style={styles.fabFill}>
             <Ionicons name="chatbubble-ellipses" size={26} color="#fff" />
@@ -421,6 +424,7 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 23,
+    overflow: 'hidden',
     backgroundColor: 'rgba(255,255,255,0.18)',
     justifyContent: 'center',
     alignItems: 'center',
@@ -467,6 +471,9 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
     paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.md,
+    // borderRadius on the gradient itself: wrapper overflow clipping is
+    // unreliable on Android.
+    borderRadius: Radius.pill,
   },
   emptyCtaText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   modalOverlay: {

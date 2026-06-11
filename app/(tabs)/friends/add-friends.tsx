@@ -11,9 +11,9 @@ import * as SecureStore from "expo-secure-store";
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { fetchAndCacheImage } from "../../../util/imagecache";
 import FriendAddedAnimation from "../../../components/Animations/FriendAddedAnimation";
-import AnimatedEntrance from "../../../components/ui/AnimatedEntrance";
-import PressableScale from "../../../components/ui/PressableScale";
-import haptics from "../../../components/ui/haptics";
+import { AnimatedEntrance } from "../../../components/ui/AnimatedEntrance";
+import { PressableScale } from "../../../components/ui/PressableScale";
+import { haptics } from "../../../components/ui/haptics";
 import { getPalette, Gradients, Radius, Spacing, cardShadow } from "../../../components/ui/theme";
 
 interface Filterddata {
@@ -218,7 +218,11 @@ const QuickAddPage: React.FC = () => {
           style={styles.header}
         >
           <View style={styles.headerRow}>
-            <PressableScale haptic="select" style={styles.backBtn} onPress={() => router.navigate("/friends")}>
+            <PressableScale
+              haptic="select"
+              style={styles.backBtn}
+              onPress={() => (router.canGoBack() ? router.back() : router.navigate("/friends"))}
+            >
               <Ionicons name="chevron-back" size={24} color="#fff" />
             </PressableScale>
             <Text style={styles.headerTitle}>Add Friends</Text>
@@ -366,7 +370,9 @@ const styles = StyleSheet.create({
   playerName: { fontSize: 16, fontWeight: '700' },
   playerSub: { fontSize: 13, marginTop: 2 },
   addBtn: { width: 44, height: 44, borderRadius: 22, overflow: 'hidden' },
-  addBtnFill: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  // borderRadius on the gradient itself: overflow clipping on the wrapper is
+  // unreliable on Android, which left the button looking square.
+  addBtnFill: { flex: 1, justifyContent: 'center', alignItems: 'center', borderRadius: 22 },
   addedBtn: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
   emptyWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: Spacing.xxl * 2, paddingHorizontal: Spacing.xl },
   emptyIcon: {

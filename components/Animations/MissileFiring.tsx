@@ -11,7 +11,7 @@ type MissileFiringAnimationProps = {
 const MissileFiringAnimation: React.FC<MissileFiringAnimationProps> = ({ onAnimationComplete }) => {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
-  const missileColors = isDarkMode ? ['#303030', '#505050'] : ['#A0A0A0', '#C0C0C0'];
+  const missileColors = isDarkMode ? (['#303030', '#505050'] as const) : (['#A0A0A0', '#C0C0C0'] as const);
 
   // Declarative targets (replaces all the Animated.Value + complex interpolates)
   const [missileY, setMissileY] = useState(150);

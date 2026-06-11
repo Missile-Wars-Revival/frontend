@@ -15,8 +15,8 @@ import { getWeaponTypes, mapProductType, PremProduct, Product, getImages } from 
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { useOnboarding } from '../../util/Context/onboardingContext';
 import AdBanner from '../../components/ads/AdBanner';
-import { InventoryBottomSheet } from '../../components/ui/inventory-bottom-sheet';
 import { getPalette, Gradients, Spacing, Radius, cardShadow, type ThemePalette } from '../../components/ui/theme';
+import { SegmentedControl } from '../../components/ui/SegmentedControl';
 import { PressableScale } from '../../components/ui/PressableScale';
 import { AnimatedEntrance } from '../../components/ui/AnimatedEntrance';
 import { haptics } from '../../components/ui/haptics';
@@ -498,7 +498,12 @@ const StorePage: React.FC = () => {
   };
 
   const renderCategoryChips = () => (
-    <View style={styles.chipRow}>
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={styles.chipScroll}
+      contentContainerStyle={styles.chipRow}
+    >
       {CATEGORIES.map((category) => {
         const active = selectedCategory === category;
         return (
@@ -517,7 +522,7 @@ const StorePage: React.FC = () => {
           </PressableScale>
         );
       })}
-    </View>
+    </ScrollView>
   );
 
   const renderProductCard = ({ item, index }: { item: Product; index: number }) => (
@@ -591,24 +596,29 @@ const StorePage: React.FC = () => {
     </AnimatedEntrance>
   );
 
-  // The cart "purchase mode" rendered as a native bottom sheet (shared with the
-  // landmine/loot/missile pickers).
+  // The cart rendered as a plain RN bottom-sheet modal: it never stacks with
+  // other native sheets, so it doesn't need the iOS/Android sheet sequencing.
   const renderCartSheet = () => (
-    <InventoryBottomSheet
+    <Modal
       visible={isCartVisible}
-      onClose={hideCart}
-      backgroundColor={palette.surface}
+      transparent={true}
+      animationType="slide"
+      onRequestClose={hideCart}
     >
-      <View style={styles.cartSheetContent}>
-        <View style={styles.cartSheetHeader}>
-          <Text style={styles.cartSheetTitle}>Your Cart</Text>
-          <Pressable onPress={hideCart} hitSlop={8}>
-            <Ionicons name="close-circle" size={26} color={palette.textFaint} />
-          </Pressable>
+      <View style={styles.cartModalRoot}>
+        <Pressable style={styles.cartBackdrop} onPress={hideCart} />
+        <View style={styles.cartSheet}>
+          <View style={styles.cartHandle} />
+          <View style={styles.cartSheetHeader}>
+            <Text style={styles.cartSheetTitle}>Your Cart</Text>
+            <Pressable onPress={hideCart} hitSlop={8}>
+              <Ionicons name="close-circle" size={26} color={palette.textFaint} />
+            </Pressable>
+          </View>
+          <Cart cart={cart} onRemove={handleRemove} />
         </View>
-        <Cart cart={cart} onRemove={handleRemove} />
       </View>
-    </InventoryBottomSheet>
+    </Modal>
   );
 
   return (
@@ -625,25 +635,16 @@ const StorePage: React.FC = () => {
       </View>
 
       {/* Coins / Premium segmented control */}
-      <View style={styles.segment}>
-        {(['Coins', 'Premium'] as const).map((mode) => {
-          const active = (mode === 'Premium') === isPremiumStore;
-          return (
-            <PressableScale
-              key={mode}
-              haptic="select"
-              style={[styles.segmentButton, active && styles.segmentButtonActive]}
-              onPress={() => setIsPremiumStore(mode === 'Premium')}
-            >
-              <Ionicons
-                name={mode === 'Coins' ? 'wallet' : 'diamond'}
-                size={15}
-                color={active ? '#FFFFFF' : palette.textMuted}
-              />
-              <Text style={[styles.segmentText, active && styles.segmentTextActive]}>{mode}</Text>
-            </PressableScale>
-          );
-        })}
+      <View style={styles.segmentWrap}>
+        <SegmentedControl
+          palette={palette}
+          value={isPremiumStore ? 'premium' : 'coins'}
+          onChange={(mode) => setIsPremiumStore(mode === 'premium')}
+          options={[
+            { value: 'coins', label: 'Coin Shop', icon: 'wallet' },
+            { value: 'premium', label: 'Premium', icon: 'diamond' },
+          ]}
+        />
       </View>
 
       <View style={styles.catalogBody}>
@@ -767,39 +768,18 @@ const getStyles = (palette: ThemePalette, isDark: boolean, bottomInset: number) 
     fontWeight: '800',
     color: '#FFFFFF',
   },
-  segment: {
-    flexDirection: 'row',
+  segmentWrap: {
     marginHorizontal: Spacing.lg,
-    backgroundColor: palette.surfaceAlt,
-    borderRadius: Radius.pill,
-    padding: 4,
     marginBottom: Spacing.md,
   },
-  segmentButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: Spacing.sm + 2,
-    borderRadius: Radius.pill,
-  },
-  segmentButtonActive: {
-    backgroundColor: palette.accent,
-  },
-  segmentText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: palette.textMuted,
-  },
-  segmentTextActive: {
-    color: '#FFFFFF',
+  chipScroll: {
+    flexGrow: 0,
+    marginBottom: Spacing.md,
   },
   chipRow: {
     flexDirection: 'row',
     paddingHorizontal: Spacing.lg,
     gap: Spacing.sm,
-    marginBottom: Spacing.md,
   },
   chip: {
     flexDirection: 'row',
@@ -955,10 +935,29 @@ const getStyles = (palette: ThemePalette, isDark: boolean, bottomInset: number) 
     fontSize: 14,
     color: palette.textMuted,
   },
-  cartSheetContent: {
+  cartModalRoot: {
     flex: 1,
+    justifyContent: 'flex-end',
+  },
+  cartBackdrop: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: palette.overlay,
+  },
+  cartSheet: {
+    height: '70%',
     backgroundColor: palette.surface,
+    borderTopLeftRadius: Radius.xl,
+    borderTopRightRadius: Radius.xl,
     paddingBottom: Math.max(bottomInset, Spacing.md),
+    ...cardShadow(isDark),
+  },
+  cartHandle: {
+    alignSelf: 'center',
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: palette.border,
+    marginTop: Spacing.sm,
   },
   cartSheetHeader: {
     flexDirection: 'row',

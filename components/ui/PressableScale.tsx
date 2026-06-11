@@ -5,12 +5,14 @@
 import React, { useState } from 'react';
 import { Pressable, type PressableProps, type ViewStyle, type StyleProp } from 'react-native';
 import { EaseView } from 'react-native-ease';
-import haptics from './haptics';
+import { haptics } from './haptics';
 
 type HapticKind = keyof typeof haptics | 'none';
 
-export type PressableScaleProps = Omit<PressableProps, 'style'> & {
+export type PressableScaleProps = Omit<PressableProps, 'style' | 'children'> & {
   style?: StyleProp<ViewStyle>;
+  /** Plain nodes only — the render-function form of Pressable children is not supported. */
+  children?: React.ReactNode;
   /** Scale applied while pressed. @default 0.95 */
   pressedScale?: number;
   /** Which haptic to fire on press-in. @default 'select' */

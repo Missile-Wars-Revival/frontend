@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Modal, Text, View, Dimensions, Alert, StyleSheet, Pressable, Platform , useColorScheme } from 'react-native';
+import { Modal, Text, View, Alert, Pressable, Platform , useColorScheme } from 'react-native';
 import MapView, { Marker, Circle, Polygon } from 'react-native-maps';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -27,6 +27,9 @@ import { useOnboarding } from '../../util/Context/onboardingContext';
 import { getLeagueAirspace } from '../player'; // Import the airspace calculation function
 import { triggerGameEffect } from '../effects/game-effects';
 import { haptics } from '../ui/haptics';
+import { LinearGradient } from 'expo-linear-gradient';
+import { getPalette, Gradients } from '../ui/theme';
+import { getPlacementStyles } from '../ui/placement-popup-styles';
 
 const GOOGLE_PLACES_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 
@@ -48,6 +51,8 @@ interface Region {
 export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ visible, onClose, onDismissed, selectedLandmine, onLandminePlaced }) => {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
+  const palette = getPalette(isDarkMode);
+  const styles = getPlacementStyles(palette, isDarkMode);
 
   const [region, setRegion] = useState<Region | null>(null);
   const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(true);
@@ -112,7 +117,7 @@ export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ 
       setRegion(lastKnownLocation);
       setMarker(lastKnownLocation);
       setCurrentLocation(lastKnownLocation);
-      // The starting marker is at the user's current position — always a valid placement
+      // The starting marker is at the user's current position â€” always a valid placement
       setIsValidPlacement(true);
     }
 
@@ -278,8 +283,8 @@ export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ 
       onDismiss={onDismissed}
       onShow={() => { void initializeLocation(); }}
     >
-      <View style={[styles.modalContainer, isDarkMode && styles.modalContainerDark]}>
-        <View style={[styles.modalContent, isDarkMode && styles.modalContentDark]}>
+      <View style={styles.modalContainer}>
+        <View style={styles.modalContent}>
           <GooglePlacesAutocomplete
             placeholder='Search'
             onPress={handlePlaceSelected}
@@ -420,31 +425,36 @@ export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ 
   <AllPlayers />
 </MapView>
           {(!isLocationEnabled || !hasDbConnection) && (
-            <View style={[styles.overlay, isDarkMode && styles.overlayDark]}>
-              <Text style={[styles.overlayText, isDarkMode && styles.overlayTextDark]}>Map is disabled due to location/database issues.</Text>
-              <Text style={[styles.overlaySubText, isDarkMode && styles.overlaySubTextDark]}>Please check your settings or try again later.</Text>
+            <View style={styles.overlay}>
+              <Text style={styles.overlayText}>Map is disabled due to location/database issues.</Text>
+              <Text style={styles.overlaySubText}>Please check your settings or try again later.</Text>
             </View>
           )}
           {(!isAlive) && (
-            <View style={[styles.overlay, isDarkMode && styles.overlayDark]}>
-              <Text style={[styles.overlayText, isDarkMode && styles.overlayTextDark]}>Map is disabled due to your death</Text>
-              <Text style={[styles.overlaySubText, isDarkMode && styles.overlaySubTextDark]}>Please check wait the designated time or watch an advert!</Text>
+            <View style={styles.overlay}>
+              <Text style={styles.overlayText}>Map is disabled due to your death</Text>
+              <Text style={styles.overlaySubText}>Please wait the designated time or watch an advert!</Text>
             </View>
           )}
           <View style={styles.buttonContainer}>
-            <Pressable style={[styles.button, styles.cancelButton]} onPress={onClose}>
-              <Text style={styles.buttonText}>Cancel</Text>
+            <Pressable
+              style={({ pressed }) => [styles.cancelButton, pressed && styles.pressed]}
+              onPress={onClose}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
             </Pressable>
             <Pressable
-              style={[
-                styles.button,
-                styles.placeButton,
-                !isValidPlacement && styles.disabledButton
+              style={({ pressed }) => [
+                styles.actionButtonWrap,
+                !isValidPlacement && styles.disabledButton,
+                pressed && styles.pressed,
               ]}
               onPress={handleLandminePlacement}
               disabled={!isValidPlacement}
             >
-              <Text style={styles.buttonText}>Place</Text>
+              <LinearGradient colors={Gradients.fire} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.actionButton}>
+                <Text style={styles.actionButtonText}>Place Landmine</Text>
+              </LinearGradient>
             </Pressable>
           </View>
         </View>
@@ -453,81 +463,3 @@ export const LandminePlacementPopup: React.FC<LandminePlacementPopupProps> = ({ 
   );
 };
 
-const styles = StyleSheet.create({
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalContainerDark: {
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 10,
-    width: Dimensions.get('window').width - 40,
-    height: Dimensions.get('window').height - 200,
-    overflow: 'hidden',
-  },
-  modalContentDark: {
-    backgroundColor: '#2C2C2C',
-  },
-  map: {
-    flex: 1,
-  },
-  overlay: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  overlayDark: {
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-  },
-  overlayText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    color: '#333',
-  },
-  overlayTextDark: {
-    color: '#FFF',
-  },
-  overlaySubText: {
-    fontSize: 14,
-    textAlign: 'center',
-    color: '#666',
-    marginTop: 10,
-  },
-  overlaySubTextDark: {
-    color: '#B0B0B0',
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    padding: 10,
-  },
-  button: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-    minWidth: 100,
-    alignItems: 'center',
-  },
-  cancelButton: {
-    backgroundColor: '#e53e3e',
-  },
-  placeButton: {
-    backgroundColor: '#4CAF50',
-  },
-  buttonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  disabledButton: {
-    backgroundColor: '#cccccc',
-    opacity: 0.5,
-  },
-});

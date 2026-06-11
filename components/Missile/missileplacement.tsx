@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Modal, Text, View, Button, Dimensions, ActivityIndicator, Alert, Platform, StyleSheet, Pressable , useColorScheme } from 'react-native';
+import { Modal, Text, View, Alert, Platform, Pressable , useColorScheme } from 'react-native';
 import MapView, { Marker, Circle } from 'react-native-maps';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { useUserName } from "../../util/fetchusernameglobal";
-import { mapstyles } from '../../map-themes/stylesheet';
 import { firemissileloc } from '../../api/fireentities';
-import { getStoredMapStyle, loadLastKnownLocation, saveLocation } from '../../util/mapstore';
+import { loadLastKnownLocation, saveLocation } from '../../util/mapstore';
 import { AllLootDrops } from '../Loot/map-loot';
 import { AllOther } from '../Other/map-other';
 import { AllLandMines } from '../Landmine/map-landmines';
@@ -26,6 +25,10 @@ import { androidCyberpunkMapStyle } from '../../map-themes/Android-themes/cyberp
 import { androidRadarMapStyle } from '../../map-themes/Android-themes/radarMapStyle';
 import { triggerGameEffect } from '../effects/game-effects';
 import { haptics } from '../ui/haptics';
+
+import { LinearGradient } from 'expo-linear-gradient';
+import { getPalette, Gradients } from '../ui/theme';
+import { getPlacementStyles } from '../ui/placement-popup-styles';
 
 const GOOGLE_PLACES_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 
@@ -47,6 +50,8 @@ interface Region {
 export const MissilePlacementPopup: React.FC<MissilePlacementPopupProps> = ({ visible, onClose, onDismissed, selectedMissile, onMissileFired }) => {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
+  const palette = getPalette(isDarkMode);
+  const styles = getPlacementStyles(palette, isDarkMode);
 
   const [region, setRegion] = useState<Region | null>(null);
   const [marker, setMarker] = useState<Region | null>(null);
@@ -163,7 +168,7 @@ export const MissilePlacementPopup: React.FC<MissilePlacementPopupProps> = ({ vi
         } else {
           setisAlive(false);
         }
-      } catch (error) {
+      } catch {
         setisAlive(false);
       }
     };
@@ -238,8 +243,8 @@ export const MissilePlacementPopup: React.FC<MissilePlacementPopupProps> = ({ vi
       onDismiss={onDismissed}
       onShow={() => { void initializeLocation(); }}
     >
-      <View style={[styles.modalContainer, isDarkMode && styles.modalContainerDark]}>
-        <View style={[styles.modalContent, isDarkMode && styles.modalContentDark]}>
+      <View style={styles.modalContainer}>
+        <View style={styles.modalContent}>
           <GooglePlacesAutocomplete
             placeholder='Search'
             onPress={handlePlaceSelected}
@@ -348,23 +353,31 @@ export const MissilePlacementPopup: React.FC<MissilePlacementPopupProps> = ({ vi
             <AllPlayers />
           </MapView>
           {(!isLocationEnabled || !hasDbConnection) && (
-            <View style={[styles.overlay, isDarkMode && styles.overlayDark]}>
-              <Text style={[styles.overlayText, isDarkMode && styles.overlayTextDark]}>Map is disabled due to location/database issues.</Text>
-              <Text style={[styles.overlaySubText, isDarkMode && styles.overlaySubTextDark]}>Please check your settings or try again later.</Text>
+            <View style={styles.overlay}>
+              <Text style={styles.overlayText}>Map is disabled due to location/database issues.</Text>
+              <Text style={styles.overlaySubText}>Please check your settings or try again later.</Text>
             </View>
           )}
           {(!isAlive) && (
-            <View style={[styles.overlay, isDarkMode && styles.overlayDark]}>
-              <Text style={[styles.overlayText, isDarkMode && styles.overlayTextDark]}>Map is disabled due to your death</Text>
-              <Text style={[styles.overlaySubText, isDarkMode && styles.overlaySubTextDark]}>Please wait the designated time or watch an advert!</Text>
+            <View style={styles.overlay}>
+              <Text style={styles.overlayText}>Map is disabled due to your death</Text>
+              <Text style={styles.overlaySubText}>Please wait the designated time or watch an advert!</Text>
             </View>
           )}
           <View style={styles.buttonContainer}>
-            <Pressable style={[styles.button, styles.cancelButton]} onPress={onClose}>
-              <Text style={styles.buttonText}>Cancel</Text>
+            <Pressable
+              style={({ pressed }) => [styles.cancelButton, pressed && styles.pressed]}
+              onPress={onClose}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
             </Pressable>
-            <Pressable style={[styles.button, styles.fireButton]} onPress={handleMissilePlacement}>
-              <Text style={styles.buttonText}>Fire</Text>
+            <Pressable
+              style={({ pressed }) => [styles.actionButtonWrap, pressed && styles.pressed]}
+              onPress={handleMissilePlacement}
+            >
+              <LinearGradient colors={Gradients.fire} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.actionButton}>
+                <Text style={styles.actionButtonText}>Fire Missile</Text>
+              </LinearGradient>
             </Pressable>
           </View>
         </View>
@@ -373,77 +386,3 @@ export const MissilePlacementPopup: React.FC<MissilePlacementPopupProps> = ({ vi
   );
 };
 
-const styles = StyleSheet.create({
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalContainerDark: {
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 10,
-    width: Dimensions.get('window').width - 40,
-    height: Dimensions.get('window').height - 200,
-    overflow: 'hidden',
-  },
-  modalContentDark: {
-    backgroundColor: '#2C2C2C',
-  },
-  map: {
-    flex: 1,
-  },
-  overlay: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  overlayDark: {
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-  },
-  overlayText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    color: '#333',
-  },
-  overlayTextDark: {
-    color: '#FFF',
-  },
-  overlaySubText: {
-    fontSize: 14,
-    textAlign: 'center',
-    color: '#666',
-    marginTop: 10,
-  },
-  overlaySubTextDark: {
-    color: '#B0B0B0',
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    padding: 10,
-  },
-  button: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-    minWidth: 100,
-    alignItems: 'center',
-  },
-  cancelButton: {
-    backgroundColor: '#e53e3e',
-  },
-  fireButton: {
-    backgroundColor: '#4CAF50',
-  },
-  buttonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-});

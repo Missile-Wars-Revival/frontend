@@ -25,6 +25,7 @@ import FriendAddedAnimation from "../components/Animations/FriendAddedAnimation"
 import { getImages } from '../api/store';
 import { useOnboarding } from '../util/Context/onboardingContext';
 import { getPalette, Gradients, Spacing, Radius, Type, cardShadow, chipShadow, type ThemePalette } from './ui/theme';
+import { SegmentedControl } from './ui/SegmentedControl';
 import { PressableScale } from './ui/PressableScale';
 import { AnimatedEntrance } from './ui/AnimatedEntrance';
 import { haptics } from './ui/haptics';
@@ -77,22 +78,55 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
   }, []);
 
   useEffect(() => {
-    if (modalVisible && isInitialLoad) {
-      setIsLoading(true);
-      processPlayerData().finally(() => {
-        setIsLoading(false);
-        setIsInitialLoad(false);
-      });
-    } else if (modalVisible) {
-      processPlayerData();
-    }
-  }, [modalVisible, otherPlayersData, friends]);
+    if (!modalVisible) return;
 
-  useEffect(() => {
-    if (!modalVisible) {
-      setIsInitialLoad(true);
-    }
-  }, [modalVisible]);
+    let cancelled = false;
+    const processPlayerData = async () => {
+      try {
+        const currentUserUsername = await SecureStore.getItemAsync("username");
+
+        if (currentUserUsername === null) {
+          console.error("No username found in secure storage.");
+          return;
+        }
+
+        // Create a Map to remove duplicates and filter out inactive players
+        const uniquePlayers = new Map();
+        otherPlayersData
+          .filter(player => !isInactiveFor12Hours(player.updatedAt))
+          .forEach(player => {
+            if (player.username !== currentUserUsername) {
+              uniquePlayers.set(player.username, player);
+            }
+          });
+
+        const playersWithImages = await Promise.all(
+          Array.from(uniquePlayers.values()).map(async (player) => ({
+            ...player,
+            profileImageUrl: await fetchAndCacheImage(player.username),
+            isFriend: friends.some(friend => friend.username === player.username)
+          }))
+        );
+
+        if (!cancelled) {
+          setPlayers(playersWithImages);
+        }
+      } catch (error) {
+        console.error("Failed to process player data:", error);
+      } finally {
+        // The initial-open spinner is driven by `isInitialLoad`; it clears
+        // once the first load resolves.
+        if (!cancelled) {
+          setIsInitialLoad(false);
+        }
+      }
+    };
+
+    processPlayerData();
+    return () => {
+      cancelled = true;
+    };
+  }, [modalVisible, otherPlayersData, friends]);
 
   useEffect(() => {
     const fetchUsername = async () => {
@@ -163,39 +197,6 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
     loadStoredMapStyle();
   }, []);
 
-  const processPlayerData = async () => {
-    try {
-      const currentUserUsername = await SecureStore.getItemAsync("username");
-
-      if (currentUserUsername === null) {
-        console.error("No username found in secure storage.");
-        return;
-      }
-
-      // Create a Map to remove duplicates and filter out inactive players
-      const uniquePlayers = new Map();
-      otherPlayersData
-        .filter(player => !isInactiveFor12Hours(player.updatedAt))
-        .forEach(player => {
-          if (player.username !== currentUserUsername) {
-            uniquePlayers.set(player.username, player);
-          }
-        });
-
-      const playersWithImages = await Promise.all(
-        Array.from(uniquePlayers.values()).map(async (player) => ({
-          ...player,
-          profileImageUrl: await fetchAndCacheImage(player.username),
-          isFriend: friends.some(friend => friend.username === player.username)
-        }))
-      );
-
-      setPlayers(playersWithImages);
-    } catch (error) {
-      console.error("Failed to process player data:", error);
-    }
-  };
-
   const handleAddFriend = async (friendUsername: string) => {
     const token = await SecureStore.getItemAsync("token");
     try {
@@ -221,13 +222,19 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
     }
   };
 
+  const closeModal = () => {
+    setModalVisible(false);
+    // Reset so the next open shows the spinner until fresh data arrives.
+    setIsInitialLoad(true);
+  };
+
   const fireMissile = (username: string) => {
     onFireMissile(username);
-    setModalVisible(false);
+    closeModal();
   };
 
   const navigateToUserProfile = (username: string) => {
-    setModalVisible(false);
+    closeModal();
     router.navigate({
       pathname: "/profile/user-profile",
       params: { username }
@@ -445,39 +452,28 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
         animationType="fade"
         transparent={true}
         visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
+        onRequestClose={closeModal}
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <View style={styles.segment}>
-                {(['players', 'missiles'] as const).map((tab) => {
-                  const active = activeTab === tab;
-                  return (
-                    <PressableScale
-                      key={tab}
-                      haptic="select"
-                      style={[styles.segmentButton, active && styles.segmentButtonActive]}
-                      onPress={() => switchTab(tab)}
-                    >
-                      <Ionicons
-                        name={tab === 'players' ? 'people' : 'rocket'}
-                        size={14}
-                        color={active ? '#FFFFFF' : palette.textMuted}
-                      />
-                      <Text style={[styles.segmentText, active && styles.segmentTextActive]}>
-                        {tab === 'players' ? 'Players' : 'My Missiles'}
-                      </Text>
-                    </PressableScale>
-                  );
-                })}
+              <View style={styles.segmentWrap}>
+                <SegmentedControl
+                  palette={palette}
+                  value={activeTab}
+                  onChange={switchTab}
+                  options={[
+                    { value: 'players', label: 'Players', icon: 'people' },
+                    { value: 'missiles', label: 'My Missiles', icon: 'rocket' },
+                  ]}
+                />
               </View>
-              <Pressable style={styles.closeButton} onPress={() => setModalVisible(false)} hitSlop={8}>
+              <Pressable style={styles.closeButton} onPress={closeModal} hitSlop={8}>
                 <Ionicons name="close" size={20} color={palette.textMuted} />
               </Pressable>
             </View>
             <Animated.View style={[styles.contentContainer, { opacity: fadeAnim }]}>
-              {isLoading ? (
+              {(isLoading || isInitialLoad) ? (
                 <ActivityIndicator size="large" color={palette.accent} />
               ) : activeTab === 'players' ? (
                 players.length === 0 ? (
@@ -564,31 +560,8 @@ const getStyles = (palette: ThemePalette, isDark: boolean) => StyleSheet.create(
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: palette.border,
   },
-  segment: {
+  segmentWrap: {
     flex: 1,
-    flexDirection: 'row',
-    backgroundColor: palette.surfaceAlt,
-    borderRadius: Radius.pill,
-    padding: 3,
-  },
-  segmentButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-    paddingVertical: Spacing.sm,
-    borderRadius: Radius.pill,
-  },
-  segmentButtonActive: {
-    backgroundColor: palette.accent,
-  },
-  segmentText: {
-    ...Type.caption,
-    color: palette.textMuted,
-  },
-  segmentTextActive: {
-    color: '#FFFFFF',
   },
   closeButton: {
     width: 32,
