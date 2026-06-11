@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, FlatList, TextInput, Pressable, StyleSheet, useColorScheme, KeyboardAvoidingView, Platform, SafeAreaView, Modal, Alert, Animated, Linking, Keyboard } from 'react-native';
+import { View, Text, FlatList, TextInput, Pressable, StyleSheet, useColorScheme, KeyboardAvoidingView, Platform, Modal, Alert, Animated, Linking, Keyboard } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Ionicons from '@react-native-vector-icons/ionicons';
