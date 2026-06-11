@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { parseStoredIsAlive } from '../util/isalive';
 
 // Reads the cached game status flags ("dbconnection" and "isAlive") that the
 // map screens use to decide whether to disable the map.
@@ -13,13 +14,8 @@ export function useGameStatus() {
         const isDBConnection = await AsyncStorage.getItem('dbconnection');
         setHasDbConnection(isDBConnection === 'true');
 
-        const isAliveStatus = await AsyncStorage.getItem('isAlive');
-        if (isAliveStatus !== null) {
-          const isAliveData = JSON.parse(isAliveStatus);
-          setIsAlive(isAliveData.isAlive ?? false);
-        } else {
-          setIsAlive(false);
-        }
+        const storedIsAlive = parseStoredIsAlive(await AsyncStorage.getItem('isAlive'));
+        setIsAlive(storedIsAlive ?? false);
       } catch (error) {
         console.error('Error loading game status:', error);
         setHasDbConnection(false);

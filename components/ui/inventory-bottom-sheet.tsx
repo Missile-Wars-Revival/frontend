@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+  Animated,
   Dimensions,
   Modal,
   Pressable,
@@ -8,7 +9,6 @@ import {
   useColorScheme,
   type ViewStyle,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getPalette, Radius, Spacing } from './theme';
 import { SHEET_HEIGHT_FRACTION, type InventoryBottomSheetProps } from './inventory-bottom-sheet.types';
@@ -20,6 +20,9 @@ const SHEET_HEIGHT = Math.round(WINDOW_HEIGHT * SHEET_HEIGHT_FRACTION);
  * Bottom sheet for inventory / store pickers. Uses a single React Native `Modal` on all
  * platforms so presentation lines up with the placement `Modal`s (iOS serializes RN
  * modals one at a time; native SwiftUI / Compose sheets fought that ordering).
+ *
+ * The modal itself fades (backdrop fades in like the fire selector) while the sheet
+ * slides up with its own spring.
  */
 export function InventoryBottomSheet({
   visible,
@@ -29,22 +32,38 @@ export function InventoryBottomSheet({
   fitToContents,
   backgroundColor,
 }: InventoryBottomSheetProps) {
-  const insets = useSafeAreaInsets();
   const isDark = useColorScheme() === 'dark';
   const c = getPalette(isDark);
+  const [slideAnim] = useState(() => new Animated.Value(SHEET_HEIGHT));
+
+  useEffect(() => {
+    if (visible) {
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 65,
+        friction: 11,
+      }).start();
+    } else {
+      Animated.timing(slideAnim, {
+        toValue: SHEET_HEIGHT,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [visible, slideAnim]);
 
   const sheetStyle: ViewStyle[] = [
     styles.sheet,
     fitToContents ? styles.sheetFitToContents : styles.sheetFixed,
     { backgroundColor: backgroundColor ?? c.surface },
-    { paddingBottom: Math.max(insets.bottom, Spacing.sm) },
   ];
 
   return (
     <Modal
       visible={visible}
       transparent
-      animationType="slide"
+      animationType="fade"
       onRequestClose={onClose}
       onDismiss={onDismissed}
       statusBarTranslucent
@@ -56,10 +75,10 @@ export function InventoryBottomSheet({
           accessibilityRole="button"
           accessibilityLabel="Close"
         />
-        <View style={sheetStyle}>
+        <Animated.View style={[...sheetStyle, { transform: [{ translateY: slideAnim }] }]}>
           <View style={[styles.handle, { backgroundColor: c.border }]} />
           <View style={fitToContents ? styles.contentFit : styles.content}>{children}</View>
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   );
@@ -78,6 +97,9 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: Radius.xl,
     borderTopRightRadius: Radius.xl,
     overflow: 'hidden',
+    // No bottom safe-area inset: the tab bar isn't visible under the sheet and
+    // the content scrolls, so the extra gap just wastes space.
+    paddingBottom: Spacing.sm,
   },
   sheetFixed: {
     height: SHEET_HEIGHT,

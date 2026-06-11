@@ -619,7 +619,7 @@ const StorePage: React.FC = () => {
       isDark={isDarkMode}
       bottomInset={insets.bottom}
     >
-      <Cart cart={cart} onRemove={handleRemove} onCheckoutComplete={handleCheckoutComplete} bottomInset={insets.bottom} />
+      <Cart cart={cart} onRemove={handleRemove} onCheckoutComplete={handleCheckoutComplete} />
     </CartBottomSheet>
   );
 

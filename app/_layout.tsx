@@ -2,7 +2,7 @@ import 'react-native-reanimated';
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
-import { View, StyleSheet, AppStateStatus, AppState, Platform , useColorScheme } from 'react-native';
+import { View, StyleSheet, AppStateStatus, AppState, DeviceEventEmitter, Platform , useColorScheme } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import SplashScreen from './splashscreen';
 import useWebSocket from "../hooks/websockets/websockets";
@@ -10,7 +10,7 @@ import { WebSocketContext, WebSocketProviderProps } from "../util/Context/websoc
 import { CountdownContext, CountdownProviderProps , useCountdown } from "../util/Context/countdown";
 import CountdownTimer from '../components/countdown';
 
-import { AuthProvider, useAuth } from "../util/Context/authcontext";
+import { APP_RELAUNCH_EVENT, AuthProvider, useAuth } from "../util/Context/authcontext";
 
 import PermissionsCheck from '../components/PermissionsCheck';
 import Purchases from 'react-native-purchases';
@@ -99,6 +99,18 @@ export default function RootLayout() {
     setIsSplashVisible(false);
   }, []);
 
+  // Sign-out restarts the app shell: showing the splash unmounts the whole
+  // provider tree, so OnboardingGate re-checks `alreadyLaunchedV3` (cleared on
+  // logout) and the user sees splash → onboarding → login, never onboarding
+  // after login.
+  useEffect(() => {
+    const subscription = DeviceEventEmitter.addListener(APP_RELAUNCH_EVENT, () => {
+      setIsAuthenticated(undefined);
+      setIsSplashVisible(true);
+    });
+    return () => subscription.remove();
+  }, []);
+
   const handleAppStateChange = useCallback(async (nextAppState: AppStateStatus) => {
     const now = Date.now();
     if (appState.match(/inactive|background/) && nextAppState === 'active') {
@@ -178,8 +190,13 @@ function OnboardingGate({ children }: { children: React.ReactNode }) {
 
   const checkOnboardingStatus = useCallback(async () => {
     try {
-      const value = await AsyncStorage.getItem('alreadyLaunchedV3');
-      setNeedsOnboarding(value === null);
+      const [alreadyLaunched, signedIn] = await Promise.all([
+        AsyncStorage.getItem('alreadyLaunchedV3'),
+        AsyncStorage.getItem('signedIn'),
+      ]);
+      // Onboarding only ever runs before login; a signed-in user must never
+      // see it (the flag is re-cleared on logout, which relaunches the shell).
+      setNeedsOnboarding(alreadyLaunched === null && signedIn !== 'true');
     } catch (error) {
       console.error('Error checking onboarding status:', error);
     }
@@ -249,6 +266,8 @@ function RootLayoutNav() {
               gestureEnabled: false,
               animationTypeForReplace: 'push',
               gestureDirection: 'horizontal',
+              // Match the app background so transitions never flash white.
+              contentStyle: { backgroundColor },
             }}
           >
             <Stack.Screen
@@ -259,7 +278,7 @@ function RootLayoutNav() {
             />
             <Stack.Screen
               name="login"
-              options={{ headerShown: false, gestureEnabled: false, animation: 'slide_from_bottom' }}
+              options={{ headerShown: false, gestureEnabled: false, animation: 'fade' }}
             />
             <Stack.Screen name="PermissionsScreen" options={{ headerShown: false, animation: 'slide_from_bottom' }} />
             <Stack.Screen name="splashscreen" options={{ headerShown: false }} />
@@ -272,11 +291,12 @@ function RootLayoutNav() {
               gestureEnabled: false,
               animationTypeForReplace: 'push',
               gestureDirection: 'horizontal',
+              contentStyle: { backgroundColor },
             }}
           >
             <Stack.Screen
               name="login"
-              options={{ headerShown: false, gestureEnabled: false, animation: 'none' }}
+              options={{ headerShown: false, gestureEnabled: false, animation: 'fade' }}
             />
           </Stack>
         )}

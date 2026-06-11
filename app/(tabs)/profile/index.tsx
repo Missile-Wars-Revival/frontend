@@ -20,6 +20,7 @@ import { getImages } from '../../../api/store';
 import AnimatedEntrance from '../../../components/ui/AnimatedEntrance';
 import PressableScale from '../../../components/ui/PressableScale';
 import haptics from '../../../components/ui/haptics';
+import { ItemStatsPopup } from '../../../components/ui/item-stats-popup';
 import { getPalette, Gradients, Radius, Spacing, cardShadow, floatingAboveTabBar } from '../../../components/ui/theme';
 
 const { width } = Dimensions.get('window');
@@ -66,6 +67,7 @@ const ProfilePage: React.FC = () => {
   const insets = useSafeAreaInsets();
 
   const [modalVisible, setModalVisible] = useState(false);
+  const [statsItem, setStatsItem] = useState<string | null>(null);
   const [userImageUrl, setUserImageUrl] = useState<string | null>(null);
   const friends = useFetchFriends(); //WS
   const inventory = useFetchInventory();
@@ -514,7 +516,7 @@ const ProfilePage: React.FC = () => {
           {filteredInventory.length > 0 ? (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sliderContent}>
               {filteredInventory.map(item => (
-                <PressableScale key={item.id} haptic="select" onPress={() => setModalVisible(true)} style={[styles.sliderItem, { backgroundColor: c.surface }, cardShadow(isDarkMode)]}>
+                <PressableScale key={item.id} haptic="select" onPress={() => setModalVisible(true)} onLongPress={() => setStatsItem(item.name)} style={[styles.sliderItem, { backgroundColor: c.surface }, cardShadow(isDarkMode)]}>
                   <Image source={getImageForProduct(item.name)} style={styles.itemImage} cachePolicy="memory-disk" />
                   <Text style={[styles.itemName, { color: c.text }]} numberOfLines={1}>{item.name}</Text>
                   <Text style={[styles.itemQty, { color: c.accent }]}>x{item.quantity}</Text>
@@ -576,10 +578,16 @@ const ProfilePage: React.FC = () => {
                 data={filteredInventory}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item, index }) => (
-                  <AnimatedEntrance index={index} style={[styles.inventoryItem, { backgroundColor: c.surface }, cardShadow(isDarkMode)]}>
-                    <Image source={getImageForProduct(item.name)} style={styles.inventoryItemImage} cachePolicy="memory-disk" />
-                    <Text style={[styles.inventoryItemName, { color: c.text }]} numberOfLines={1}>{item.name}</Text>
-                    <Text style={[styles.inventoryItemQty, { color: c.textMuted }]}>Quantity: {item.quantity}</Text>
+                  <AnimatedEntrance index={index} style={styles.inventoryItemWrap}>
+                    <PressableScale
+                      haptic="select"
+                      onLongPress={() => setStatsItem(item.name)}
+                      style={[styles.inventoryItem, { backgroundColor: c.surface }, cardShadow(isDarkMode)]}
+                    >
+                      <Image source={getImageForProduct(item.name)} style={styles.inventoryItemImage} cachePolicy="memory-disk" />
+                      <Text style={[styles.inventoryItemName, { color: c.text }]} numberOfLines={1}>{item.name}</Text>
+                      <Text style={[styles.inventoryItemQty, { color: c.textMuted }]}>Quantity: {item.quantity}</Text>
+                    </PressableScale>
                   </AnimatedEntrance>
                 )}
                 numColumns={2}
@@ -590,21 +598,24 @@ const ProfilePage: React.FC = () => {
               <Text style={[styles.muted, { color: c.textMuted }]}>Your inventory is empty.</Text>
             )}
           </View>
+          {/* Nested so it presents above this full-screen modal on iOS. */}
+          <ItemStatsPopup itemName={statsItem} onClose={() => setStatsItem(null)} />
         </View>
       </Modal>
 
+      {/* Stats popup for long-presses on the inventory slider (modal closed). */}
+      {!modalVisible && <ItemStatsPopup itemName={statsItem} onClose={() => setStatsItem(null)} />}
+
       {/* Badge detail modal */}
       <Modal visible={!!selectedBadge} transparent animationType="fade" onRequestClose={() => setSelectedBadge(null)}>
-        <Pressable onPress={() => setSelectedBadge(null)}>
-          <View style={styles.modalOverlay}>
-            <AnimatedEntrance fromScale={0.9} style={[styles.badgeModal, { backgroundColor: c.surface }]}>
-              {(() => {
-                const key = selectedBadge && Object.keys(badgeImages).find(k => selectedBadge.toLowerCase().includes(k.toLowerCase()));
-                return key ? <Image source={badgeImages[key]} style={styles.badgeModalImage} /> : null;
-              })()}
-              <Text style={[styles.badgeModalText, { color: c.text }]}>{selectedBadge}</Text>
-            </AnimatedEntrance>
-          </View>
+        <Pressable style={styles.modalOverlay} onPress={() => setSelectedBadge(null)}>
+          <AnimatedEntrance fromScale={0.9} style={[styles.badgeModal, { backgroundColor: c.surface }]}>
+            {(() => {
+              const key = selectedBadge && Object.keys(badgeImages).find(k => selectedBadge.toLowerCase().includes(k.toLowerCase()));
+              return key ? <Image source={badgeImages[key]} style={styles.badgeModalImage} /> : null;
+            })()}
+            <Text style={[styles.badgeModalText, { color: c.text }]}>{selectedBadge}</Text>
+          </AnimatedEntrance>
         </Pressable>
       </Modal>
     </View>
@@ -731,6 +742,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   fullModalView: { flex: 1, padding: Spacing.lg },
+  inventoryItemWrap: { flex: 1 },
   inventoryItem: { flex: 1, margin: Spacing.sm, padding: Spacing.lg, borderRadius: Radius.md, alignItems: 'center' },
   inventoryItemImage: { width: 80, height: 80, resizeMode: 'contain', marginBottom: Spacing.md },
   inventoryItemName: { fontSize: 15, fontWeight: '700', textAlign: 'center', marginBottom: 4 },

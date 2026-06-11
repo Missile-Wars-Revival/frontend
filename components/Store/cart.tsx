@@ -22,14 +22,13 @@ interface CartProps {
   cart: CartItem[];
   onRemove: (productId: string) => void;
   onCheckoutComplete: () => void;
-  bottomInset?: number;
 }
 
-const Cart: React.FC<CartProps> = ({ cart, onRemove, onCheckoutComplete, bottomInset = 0 }) => {
+const Cart: React.FC<CartProps> = ({ cart, onRemove, onCheckoutComplete }) => {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
   const palette = getPalette(isDarkMode);
-  const styles = getStyles(palette, bottomInset);
+  const styles = getStyles(palette);
   const { currentStep, moveToNextStep } = useOnboarding();
 
   const totalPrice = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
@@ -139,7 +138,7 @@ const Cart: React.FC<CartProps> = ({ cart, onRemove, onCheckoutComplete, bottomI
   );
 };
 
-const getStyles = (palette: ThemePalette, bottomInset: number) => StyleSheet.create({
+const getStyles = (palette: ThemePalette) => StyleSheet.create({
   cartContainer: {
     flex: 1,
     minHeight: 0,
@@ -149,7 +148,8 @@ const getStyles = (palette: ThemePalette, bottomInset: number) => StyleSheet.cre
   footer: {
     marginTop: 'auto',
     paddingTop: Spacing.lg,
-    paddingBottom: Math.max(bottomInset, Spacing.md),
+    // No safe-area inset here: the tab bar is hidden under the cart sheet.
+    paddingBottom: Spacing.md,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: palette.border,
   },

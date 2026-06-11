@@ -9,10 +9,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import useFetchFriends from '../hooks/websockets/friendshook';
 import useFetchPlayerlocations from '../hooks/websockets/playerlochook';
 import { isInactiveFor12Hours, getTimeDifference, convertimestampfuturemissile } from '../util/get-time-difference';
+import { parseStoredIsAlive } from '../util/isalive';
 import { useRouter } from "expo-router";
 import useFetchMissiles from '../hooks/websockets/missilehook';
 import { Missile } from "middle-earth";
-import MapView, { Marker } from 'react-native-maps';
+import MapView, { Marker, Polyline } from 'react-native-maps';
 import { useStoredMapStyle } from '../hooks/useStoredMapStyle';
 import FriendAddedAnimation from "../components/Animations/FriendAddedAnimation";
 import { getImages } from '../api/store';
@@ -132,13 +133,8 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        const isAliveStatusString = await AsyncStorage.getItem('isAlive');
-        if (isAliveStatusString) {
-          const isAliveStatus = JSON.parse(isAliveStatusString);
-          setIsAlive(isAliveStatus.isAlive);
-        } else {
-          setIsAlive(true); // Default to true if no status is found
-        }
+        const storedIsAlive = parseStoredIsAlive(await AsyncStorage.getItem('isAlive'));
+        setIsAlive(storedIsAlive ?? true); // Default to true if no status is found
       } catch (error) {
         console.error('Error initializing app:', error);
       }
@@ -327,6 +323,18 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
   const renderMissileDetails = () => {
     if (!selectedMissile) return null;
 
+    // Prefer the live websocket copy so the map tracks the missile in flight.
+    const liveMissile =
+      missiles.find((missile) => missile.missileId === selectedMissile.missileId) ?? selectedMissile;
+    const currentPosition = {
+      latitude: liveMissile.currentLocation.latitude,
+      longitude: liveMissile.currentLocation.longitude,
+    };
+    const targetPosition = {
+      latitude: liveMissile.destination.latitude,
+      longitude: liveMissile.destination.longitude,
+    };
+
     return (
       <View style={styles.missileDetails}>
         <Pressable style={styles.backButton} onPress={() => setSelectedMissile(null)} hitSlop={8}>
@@ -335,21 +343,21 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
         </Pressable>
         <View style={styles.missileDetailImageWrap}>
           <Image
-            source={getImageForProduct(selectedMissile.type) || require('../assets/logo.png')}
+            source={getImageForProduct(liveMissile.type) || require('../assets/logo.png')}
             style={styles.missileDetailImage}
             contentFit="contain"
           />
         </View>
-        <Text style={styles.missileDetailTitle}>{selectedMissile.type}</Text>
+        <Text style={styles.missileDetailTitle}>{liveMissile.type}</Text>
         <View style={styles.missileInfoContainer}>
           <View style={styles.missileInfoItem}>
             <Text style={styles.missileInfoLabel}>Status</Text>
-            <Text style={styles.missileInfoValue}>{selectedMissile.status}</Text>
+            <Text style={styles.missileInfoValue}>{liveMissile.status}</Text>
           </View>
           <View style={styles.missileInfoItem}>
             <Text style={styles.missileInfoLabel}>ETA</Text>
             <Text style={styles.missileInfoValue}>
-              {convertimestampfuturemissile(selectedMissile.etatimetoimpact).text}
+              {convertimestampfuturemissile(liveMissile.etatimetoimpact).text}
             </Text>
           </View>
         </View>
@@ -364,19 +372,32 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
             scrollEnabled={true}
             zoomEnabled={true}
             initialRegion={{
-              latitude: selectedMissile.destination.latitude,
-              longitude: selectedMissile.destination.longitude,
+              ...currentPosition,
               latitudeDelta: 0.0922,
               longitudeDelta: 0.0421,
             }}
+            onMapReady={() => {
+              mapRef.current?.fitToCoordinates([currentPosition, targetPosition], {
+                edgePadding: { top: 48, right: 48, bottom: 48, left: 48 },
+                animated: false,
+              });
+            }}
             customMapStyle={currentMapStyle}
           >
-            <Marker
-              coordinate={{
-                latitude: selectedMissile.destination.latitude,
-                longitude: selectedMissile.destination.longitude,
-              }}
+            <Polyline
+              coordinates={[currentPosition, targetPosition]}
+              strokeColor={palette.danger}
+              strokeWidth={2}
+              lineDashPattern={[8, 6]}
             />
+            <Marker coordinate={currentPosition} title="Missile" description={liveMissile.status} anchor={{ x: 0.5, y: 0.5 }}>
+              <Image
+                source={getImageForProduct(liveMissile.type) || require('../assets/logo.png')}
+                style={styles.missileMarkerImage}
+                contentFit="contain"
+              />
+            </Marker>
+            <Marker coordinate={targetPosition} title="Impact zone" />
           </MapView>
         </View>
       </View>
@@ -714,6 +735,10 @@ const getStyles = (palette: ThemePalette, isDark: boolean) => StyleSheet.create(
   map: {
     width: '100%',
     height: '100%',
+  },
+  missileMarkerImage: {
+    width: 34,
+    height: 34,
   },
   animationOverlay: {
     position: 'absolute',

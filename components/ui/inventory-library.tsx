@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { AnimatedEntrance } from './AnimatedEntrance';
 import { PressableScale } from './PressableScale';
+import { ItemStatsPopup } from './item-stats-popup';
 import { getPalette, Gradients, Radius, Spacing, Type, cardShadow } from './theme';
 
 type GradientColors = readonly [string, string, ...string[]];
@@ -65,12 +66,14 @@ export function InventoryItemList({
   scrollable = true,
 }: InventoryItemListProps) {
   const c = getPalette(isDark);
+  const [statsItem, setStatsItem] = useState<string | null>(null);
 
   const renderCard = (item: InventoryLibraryItem, index: number) => (
     <AnimatedEntrance key={`${item.type}-${index}`} index={index} stagger={30} style={styles.cardWrap}>
       <PressableScale
         haptic="select"
         onPress={() => onSelect(item.type)}
+        onLongPress={() => setStatsItem(item.type)}
         style={[styles.card, { backgroundColor: c.surfaceAlt, borderColor: c.border }, cardShadow(isDark)]}
       >
         <View style={[styles.qtyBadge, { backgroundColor: c.accentSoft }]}>
@@ -95,19 +98,30 @@ export function InventoryItemList({
   );
 
   const grid = <View style={styles.grid}>{items.map(renderCard)}</View>;
+  // Nested inside the sheet's Modal on purpose: a nested RN Modal presents on
+  // top of the open sheet on iOS, while a sibling one would be queued.
+  const statsPopup = <ItemStatsPopup itemName={statsItem} onClose={() => setStatsItem(null)} />;
 
   if (!scrollable) {
-    return grid;
+    return (
+      <>
+        {grid}
+        {statsPopup}
+      </>
+    );
   }
 
   return (
-    <ScrollView
-      style={styles.gridScroll}
-      contentContainerStyle={styles.gridContent}
-      showsVerticalScrollIndicator={false}
-    >
-      {grid}
-    </ScrollView>
+    <>
+      <ScrollView
+        style={styles.gridScroll}
+        contentContainerStyle={styles.gridContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {grid}
+      </ScrollView>
+      {statsPopup}
+    </>
   );
 }
 

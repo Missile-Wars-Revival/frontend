@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { View, Platform, Alert, StyleSheet, Pressable, Text, Linking, Dimensions, useColorScheme, Modal, ActivityIndicator } from "react-native";
+import { View, Platform, Alert, StyleSheet, Pressable, Text, Linking, Dimensions, useColorScheme, Modal } from "react-native";
 import { Image } from "expo-image";
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -32,7 +32,10 @@ import { useAuth } from "../../util/Context/authcontext";
 import HealthBar from "../../components/healthbar";
 import { getisAlive, setHealth, updateisAlive } from "../../api/health";
 import { playDeathSound } from "../../util/sounds/deathsound";
+import { parseStoredIsAlive } from "../../util/isalive";
 import useFetchHealth from "../../hooks/websockets/healthhook";
+import { useWebSocketContext } from "../../util/Context/websocket";
+import { ConnectingScreen } from "../../components/ConnectingScreen";
 import { getlocActive } from "../../api/locationOptions";
 import PlayerViewButton from "../../components/PlayerViewButton";
 import { MissileLibrary } from "../../components/Missile/missile";
@@ -52,6 +55,8 @@ export default function Map() {
   const [deathsoundPlayed, setdeathSoundPlayed] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const health = useFetchHealth()//WS hook
+  const { healthdata } = useWebSocketContext(); // null until the first WS health message
+  const [wsWaitTimedOut, setWsWaitTimedOut] = useState(false);
   const [locActive, setLocActive] = useState<boolean>(true);
   const [locPermsActive, setLocPermsActive] = useState<boolean>(false);
   const [showMissileLibrary, setShowMissileLibrary] = useState(false);
@@ -62,6 +67,12 @@ export default function Map() {
   const palette = getPalette(isDarkMode);
   const styles = getStyles(palette, isDarkMode);
   const insets = useSafeAreaInsets();
+
+  // Don't wait on the websocket forever (offline dev sessions, dead backend).
+  useEffect(() => {
+    const timeoutId = setTimeout(() => setWsWaitTimedOut(true), 8000);
+    return () => clearTimeout(timeoutId);
+  }, []);
 
   const showPopup = useCallback(() => {
     setThemePopupVisible(true);
@@ -113,8 +124,8 @@ export default function Map() {
     const fetchCredentials = async () => {
       const credentials = await SecureStore.getItemAsync("username");
       if (!credentials) {
+        // signOut relaunches the app shell back to splash → onboarding → login.
         await signOut();
-        router.navigate("/login");
       } else {
         setIsLoggedIn(true);
       }
@@ -195,19 +206,16 @@ export default function Map() {
 
     const initializeApp = async () => {
       try {
-        const isAliveStatusString = await AsyncStorage.getItem('isAlive');
-        if (isAliveStatusString) {
-          const isAliveStatus = JSON.parse(isAliveStatusString);
+        const storedIsAlive = parseStoredIsAlive(await AsyncStorage.getItem('isAlive'));
 
-          if (!isAliveStatus.isAlive && !deathsoundPlayed) {
-            playDeathSound();
-            setdeathSoundPlayed(true);
-          }
-
-          setIsAlive(isAliveStatus.isAlive);
-        } else {
-          setIsAlive(true); // Default to true if no status is found
+        if (storedIsAlive === false && !deathsoundPlayed) {
+          playDeathSound();
+          setdeathSoundPlayed(true);
         }
+
+        // Only an explicit `false` means dead — unknown defaults to alive so
+        // a fresh login never flashes the death screen.
+        setIsAlive(storedIsAlive ?? true);
       } catch (error) {
         console.error('Error initializing app:', error);
         setIsAlive(true); // Default to true in case of error
@@ -291,13 +299,15 @@ export default function Map() {
     return <View style={styles.container} />;
   }
 
+  // Hold the connecting screen until the alive-state is known and the first
+  // websocket health message lands (capped by the timeout so a dead backend
+  // or dev-offline session can't trap the user here).
+  const isConnecting = isAlive === null || (isAlive === true && healthdata == null && !wsWaitTimedOut);
+
   return (
     <View style={styles.container}>
-      {isAlive === null ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={palette.accent} />
-          <Text style={styles.loadingText}>Preparing the battlefield...</Text>
-        </View>
+      {isConnecting ? (
+        <ConnectingScreen />
       ) : isAlive ? (
         // Render the map and game UI when the user is alive
         <>
@@ -603,16 +613,5 @@ const getStyles = (palette: ThemePalette, isDark: boolean) => StyleSheet.create(
     zIndex: 1000,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: Spacing.md,
-    backgroundColor: palette.bg,
-  },
-  loadingText: {
-    ...Type.body,
-    color: palette.textMuted,
   },
 });

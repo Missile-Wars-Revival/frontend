@@ -365,26 +365,31 @@ const PermissionsScreenInner: React.FC<PermissionsScreenProps> = ({ onPermission
       <MissileSkiaBackground accentColor={slide.accentColor} />
 
       <SafeAreaView style={styles.safeArea}>
-        {/* Progress dots */}
-        <View style={styles.progressContainer}>
-          {SLIDES.map((s, index) => (
-            <ProgressDot
-              key={s.id}
-              active={index === currentSlide}
-              completed={index < currentSlide}
-              accentColor={slide.accentColor}
-            />
-          ))}
+        {/* Top bar: centred progress dots with Skip on the right. Kept in
+            normal layout flow — an absolutely-positioned Skip ended up under
+            the swipeable content view and never received taps. */}
+        <View style={styles.topBar}>
+          <View style={styles.topBarSide} />
+          <View style={styles.progressContainer}>
+            {SLIDES.map((s, index) => (
+              <ProgressDot
+                key={s.id}
+                active={index === currentSlide}
+                completed={index < currentSlide}
+                accentColor={slide.accentColor}
+              />
+            ))}
+          </View>
+          <View style={styles.topBarSide}>
+            {currentSlide < SLIDES.length - 1 && (
+              <PressableScale style={styles.skipButton} onPress={skipToEnd} haptic="soft">
+                <BlurView intensity={20} tint="dark" style={styles.skipButtonBlur}>
+                  <Text style={styles.skipText}>Skip</Text>
+                </BlurView>
+              </PressableScale>
+            )}
+          </View>
         </View>
-
-        {/* Skip button */}
-        {currentSlide < SLIDES.length - 1 && (
-          <PressableScale style={styles.skipButton} onPress={skipToEnd} haptic="soft">
-            <BlurView intensity={20} tint="dark" style={styles.skipButtonBlur}>
-              <Text style={styles.skipText}>Skip</Text>
-            </BlurView>
-          </PressableScale>
-        )}
 
         {/* Main content */}
         <Animated.View
@@ -660,10 +665,22 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: 16,
+    paddingHorizontal: 20,
+  },
+  topBarSide: {
+    width: 72,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
   progressContainer: {
+    flex: 1,
     flexDirection: 'row',
     justifyContent: 'center',
-    paddingTop: 20,
+    alignItems: 'center',
     gap: 10,
   },
   progressDot: {
@@ -681,9 +698,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.7)',
   },
   skipButton: {
-    position: 'absolute',
-    top: 60,
-    right: 24,
     borderRadius: 20,
     overflow: 'hidden',
   },

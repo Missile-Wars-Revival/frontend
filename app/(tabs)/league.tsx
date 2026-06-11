@@ -53,7 +53,10 @@ const LeagueRankingPage: React.FC = () => {
   const styles = getStyles(palette, isDarkMode);
 
   const getLeagueImage = (leagueName: string): ImageSourcePropType => {
-    return LEAGUE_IMAGES[leagueName] || require('../../assets/leagues/default.png');
+    // League names often carry a division suffix ("Bronze 1"), so match the
+    // base tier rather than the exact string.
+    const tier = Object.keys(LEAGUE_IMAGES).find((key) => leagueName.startsWith(key));
+    return (tier && LEAGUE_IMAGES[tier]) || require('../../assets/leagues/default.png');
   };
 
   useEffect(() => {

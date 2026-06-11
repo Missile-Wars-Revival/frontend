@@ -74,8 +74,8 @@ const FriendsList = () => {
         setUsername(storedUsername);
       } else {
         Alert.alert("Not Signed In", "Please sign in to view your friends list.");
+        // signOut relaunches the app shell back to splash → onboarding → login.
         await signOut();
-        router.replace('/login');
       }
     };
 

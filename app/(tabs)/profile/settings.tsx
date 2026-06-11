@@ -268,8 +268,9 @@ const SettingsPage: React.FC = () => {
   };
 
   const handleLogout = async () => {
+    // signOut emits APP_RELAUNCH_EVENT; the root layout restarts the shell
+    // (splash → onboarding → login), so no navigation is needed here.
     await signOut();
-    router.navigate('/login');
   };
 
   const handleDeleteAccount = async () => {
@@ -282,7 +283,7 @@ const SettingsPage: React.FC = () => {
       if (result.success) {
         Alert.alert('Account Deleted', result.message, [{
           text: 'OK',
-          onPress: async () => { await handleLogout(); router.replace('/login'); },
+          onPress: async () => { await handleLogout(); },
         }]);
       } else {
         Alert.alert('Error', result.message);

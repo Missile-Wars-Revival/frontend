@@ -53,8 +53,8 @@ const QuickAddPage: React.FC = () => {
       const username = await SecureStore.getItemAsync("username");
       if (!username) {
         console.log('Credentials not found, please log in');
+        // signOut relaunches the app shell back to splash → onboarding → login.
         await signOut();
-        router.navigate("/login");
       }
     };
     fetchCredentials();

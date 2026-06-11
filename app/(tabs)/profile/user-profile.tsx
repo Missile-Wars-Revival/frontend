@@ -250,16 +250,14 @@ const UserProfilePage: React.FC = () => {
       </ScrollView>
 
       <Modal visible={!!selectedBadge} transparent animationType="fade" onRequestClose={() => setSelectedBadge(null)}>
-        <Pressable onPress={() => setSelectedBadge(null)}>
-          <View style={[styles.modalOverlay, { backgroundColor: c.overlay }]}>
-            <AnimatedEntrance fromScale={0.9} style={[styles.badgeModal, { backgroundColor: c.surface }]}>
-              {(() => {
-                const key = selectedBadge && Object.keys(badgeImages).find(k => selectedBadge.toLowerCase().includes(k.toLowerCase()));
-                return key ? <Image source={badgeImages[key as keyof typeof badgeImages]} style={styles.badgeModalImage} /> : null;
-              })()}
-              <Text style={[styles.badgeModalText, { color: c.text }]}>{selectedBadge}</Text>
-            </AnimatedEntrance>
-          </View>
+        <Pressable style={[styles.modalOverlay, { backgroundColor: c.overlay }]} onPress={() => setSelectedBadge(null)}>
+          <AnimatedEntrance fromScale={0.9} style={[styles.badgeModal, { backgroundColor: c.surface }]}>
+            {(() => {
+              const key = selectedBadge && Object.keys(badgeImages).find(k => selectedBadge.toLowerCase().includes(k.toLowerCase()));
+              return key ? <Image source={badgeImages[key as keyof typeof badgeImages]} style={styles.badgeModalImage} /> : null;
+            })()}
+            <Text style={[styles.badgeModalText, { color: c.text }]}>{selectedBadge}</Text>
+          </AnimatedEntrance>
         </Pressable>
       </Modal>
     </View>

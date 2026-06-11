@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { useAuth } from "./Context/authcontext";
 
@@ -20,8 +19,8 @@ export const useUserName = () => {
                 }
             } else {
                 console.log('Credentials not found, please log in');
+                // signOut relaunches the app shell back to splash → onboarding → login.
                 await signOut();
-                router.navigate("/login");
             }
         };
 
