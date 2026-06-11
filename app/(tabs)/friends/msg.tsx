@@ -1,40 +1,53 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { View, Text, FlatList, Pressable, StyleSheet, SafeAreaView, useColorScheme, PanResponder, Animated } from 'react-native';
+import { View, Text, FlatList, StyleSheet, useColorScheme, PanResponder, Animated, ActivityIndicator } from 'react-native';
 import { Image } from 'expo-image';
-import { Link, useRouter, Stack , useFocusEffect } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Link, useRouter, Stack, useFocusEffect } from 'expo-router';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { getDatabase, ref, onValue, get, remove, off } from 'firebase/database';
 import * as SecureStore from "expo-secure-store";
 import useFetchFriends from '../../../hooks/websockets/friendshook';
 import { markMessageNotificationAsRead } from '../../../api/notifications';
+import { AnimatedEntrance } from '../../../components/ui/AnimatedEntrance';
+import { PressableScale } from '../../../components/ui/PressableScale';
+import { haptics } from '../../../components/ui/haptics';
+import { getPalette, Gradients, Radius, Spacing, Type, cardShadow } from '../../../components/ui/theme';
 
 const DEFAULT_IMAGE = require('../../../assets/mapassets/Female_Avatar_PNG.png');
 
-// Updated Conversation type
 type Conversation = {
-    id: string;
-    participants: string;
-    participantsArray: string[];
-    lastMessage: {
-      text: string;
-      timestamp: number;
-      senderId: string;
-      isRead: boolean;
-    };
-    unreadCount: number;
-    otherParticipant: string;
+  id: string;
+  participants: string;
+  participantsArray: string[];
+  lastMessage: {
+    text: string;
+    timestamp: number;
+    senderId: string;
+    isRead: boolean;
   };
+  unreadCount: number;
+  otherParticipant: string;
+};
 
 const ConversationList = () => {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
+  const c = getPalette(isDarkMode);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [username, setUsername] = useState<string | null>(null);
-  const friends = useFetchFriends(); // WS
+  const friends = useFetchFriends();
 
   const panRefs = useRef<{ [key: string]: Animated.ValueXY }>({});
   const isOpenRefs = useRef<{ [key: string]: boolean }>({});
+
+  const goBack = useCallback(() => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.navigate('/friends');
+    }
+  }, [router]);
 
   const closeSwipe = useCallback((id: string) => {
     if (panRefs.current[id]) {
@@ -51,7 +64,7 @@ const ConversationList = () => {
       const fetchedUsername = await SecureStore.getItemAsync("username");
       setUsername(fetchedUsername);
     };
-    fetchUsername();
+    void fetchUsername();
   }, []);
 
   useEffect(() => {
@@ -75,11 +88,10 @@ const ConversationList = () => {
             if (convData && convData.participantsArray) {
               const otherParticipant = convData.participantsArray.find((p: string) => p !== username) || '';
               const lastMessage = convData.lastMessage || { text: '', timestamp: 0, senderId: '', isRead: true };
-              
-              // Calculate the actual unread count
+
               let unreadCount = 0;
               if (convData.messages) {
-                unreadCount = Object.values(convData.messages).filter((msg: any) => 
+                unreadCount = Object.values(convData.messages).filter((msg: any) =>
                   msg.senderUsername !== username && msg.read === false
                 ).length;
               }
@@ -92,7 +104,7 @@ const ConversationList = () => {
                 unreadCount,
                 otherParticipant
               };
-              const index = conversationsArray.findIndex(c => c.id === convId);
+              const index = conversationsArray.findIndex(conv => conv.id === convId);
               if (index !== -1) {
                 conversationsArray[index] = conversation;
               } else {
@@ -130,16 +142,15 @@ const ConversationList = () => {
             const convData = convSnapshot.val();
             if (convData && convData.participantsArray) {
               const otherParticipant = convData.participantsArray.find((p: string) => p !== username) || '';
-              const lastMessage = convData.lastMessage || { text: '', timestamp: 0, senderId: '', read: true };
-              
-              // Calculate the actual unread count
+              const lastMessage = convData.lastMessage || { text: '', timestamp: 0, senderId: '', isRead: true };
+
               let unreadCount = 0;
               if (convData.messages) {
-                unreadCount = Object.values(convData.messages).filter((msg: any) => 
+                unreadCount = Object.values(convData.messages).filter((msg: any) =>
                   msg.senderUsername !== username && msg.read === false
                 ).length;
               }
-  
+
               const conversation: Conversation = {
                 id: convId,
                 participants: convData.participants,
@@ -148,7 +159,7 @@ const ConversationList = () => {
                 unreadCount,
                 otherParticipant
               };
-              const index = conversationsArray.findIndex(c => c.id === convId);
+              const index = conversationsArray.findIndex(conv => conv.id === convId);
               if (index !== -1) {
                 conversationsArray[index] = conversation;
               } else {
@@ -168,7 +179,6 @@ const ConversationList = () => {
     };
   }, [username]);
 
-  // Memoize the sorted conversations
   const sortedConversations = useMemo(() => {
     return [...conversations].sort((a, b) => b.lastMessage.timestamp - a.lastMessage.timestamp);
   }, [conversations]);
@@ -178,20 +188,20 @@ const ConversationList = () => {
     const now = new Date();
     if (date.toDateString() === now.toDateString()) {
       return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } else {
-      return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
     }
+    return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
   };
 
   const deleteConversation = useCallback(async (conversationId: string) => {
     if (!username) return;
 
+    haptics.warning();
     const db = getDatabase();
     const userConversationRef = ref(db, `users/${username}/conversations/${conversationId}`);
 
     try {
       await remove(userConversationRef);
-      setConversations(prevConversations => 
+      setConversations(prevConversations =>
         prevConversations.filter(conv => conv.id !== conversationId)
       );
     } catch (error) {
@@ -199,10 +209,11 @@ const ConversationList = () => {
     }
   }, [username]);
 
-  const renderConversationItem = useCallback(({ item }: { item: Conversation }) => {
+  const renderConversationItem = useCallback(({ item, index }: { item: Conversation; index: number }) => {
     const otherParticipant = friends.find(friend => friend.username === item.otherParticipant);
     const avatarUri = otherParticipant?.profileImageUrl ?? null;
     const displayName = item.otherParticipant || otherParticipant?.username || 'Unknown';
+    const isUnread = item.unreadCount > 0;
 
     if (!panRefs.current[item.id]) {
       panRefs.current[item.id] = new Animated.ValueXY();
@@ -210,19 +221,18 @@ const ConversationList = () => {
     }
 
     const panResponder = PanResponder.create({
-      onMoveShouldSetPanResponder: (_, gestureState) => {
-        return gestureState.dx < 0;
-      },
+      onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dx < 0,
       onPanResponderMove: (_, gestureState) => {
-        const newX = Math.max(-100, gestureState.dx);
+        const newX = Math.max(-88, gestureState.dx);
         panRefs.current[item.id]?.setValue({ x: newX, y: 0 });
       },
       onPanResponderRelease: (_, gestureState) => {
         if (gestureState.dx < -50) {
           Animated.spring(panRefs.current[item.id] ?? new Animated.ValueXY(), {
-            toValue: { x: -100, y: 0 },
+            toValue: { x: -88, y: 0 },
             useNativeDriver: false,
           }).start();
+          isOpenRefs.current[item.id] = true;
         } else if (panRefs.current[item.id]) {
           closeSwipe(item.id);
         }
@@ -230,154 +240,222 @@ const ConversationList = () => {
     });
 
     return (
-      <Animated.View
-        style={[
-          styles.conversationItemContainer,
-          { transform: [{ translateX: panRefs.current[item.id]?.x ?? 0 }] },
-        ]}
-        {...panResponder.panHandlers}
-      >
-        <Pressable
-          style={[styles.deleteButton, { right: -70 }]}
-          onPress={() => deleteConversation(item.id)}
+      <AnimatedEntrance index={index}>
+        <Animated.View
+          style={[
+            styles.conversationItemContainer,
+            { transform: [{ translateX: panRefs.current[item.id]?.x ?? 0 }] },
+          ]}
+          {...panResponder.panHandlers}
         >
-          <Ionicons name="trash-bin" size={24} color="#FFFFFF" />
-        </Pressable>
-        <Pressable onPress={() => isOpenRefs.current[item.id] ? closeSwipe(item.id) : undefined}>
-          <View>
+          <PressableScale
+            haptic="warning"
+            onPress={() => deleteConversation(item.id)}
+            style={[styles.deleteButton, { backgroundColor: c.danger }]}
+          >
+            <Ionicons name="trash-bin" size={22} color="#fff" />
+          </PressableScale>
+
+          <PressableScale
+            haptic="none"
+            onPress={() => (isOpenRefs.current[item.id] ? closeSwipe(item.id) : undefined)}
+          >
             <Link href={{ pathname: '/chat/[id]', params: { id: item.id } }} asChild>
-              <Pressable 
+              <PressableScale
+                haptic="select"
                 style={[
-                  styles.conversationItem, 
-                  isDarkMode && styles.conversationItemDark,
-                  item.unreadCount > 0 && (isDarkMode ? styles.unreadConversationItemDark : styles.unreadConversationItem)
+                  styles.conversationItem,
+                  { backgroundColor: c.surface },
+                  cardShadow(isDarkMode),
+                  isUnread && { borderColor: c.accent, borderWidth: 1.5, backgroundColor: c.accentSoft },
                 ]}
                 accessibilityLabel={`Conversation with ${displayName}`}
               >
-                <View style={styles.avatarContainer}>
-                  <Image
-                    source={avatarUri ? { uri: avatarUri } : DEFAULT_IMAGE}
-                    style={styles.avatar}
-                    contentFit="cover"
-                    cachePolicy="memory-disk"
-                    transition={200}
-                  />
-                  <View style={styles.textContainer}>
-                    <View style={styles.nameAndTimeContainer}>
-                      <Text style={[
+                <Image
+                  source={avatarUri ? { uri: avatarUri } : DEFAULT_IMAGE}
+                  style={[styles.avatar, { borderColor: c.border }]}
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                  transition={200}
+                />
+                <View style={styles.textContainer}>
+                  <View style={styles.nameAndTimeContainer}>
+                    <Text
+                      style={[
                         styles.name,
-                        isDarkMode && styles.textDark,
-                        item.unreadCount > 0 && (isDarkMode ? styles.unreadTextDark : styles.unreadText)
-                      ]} numberOfLines={1}>
-                        {displayName}
-                      </Text>
-                      <Text style={[styles.timestamp, isDarkMode && styles.timestampDark]}>
-                        {formatTimestamp(item.lastMessage.timestamp)}
-                      </Text>
-                    </View>
-                    <Text style={[
-                      styles.lastMessage, 
-                      isDarkMode && (item.lastMessage.senderId === username || item.lastMessage.isRead ? styles.lastMessageReadDark : styles.lastMessageUnreadDark),
-                      item.unreadCount > 0 && (isDarkMode ? styles.unreadTextDark : styles.unreadText)
-                    ]} numberOfLines={1}>
-                      {item.lastMessage.text}
+                        { color: isUnread ? c.text : c.text },
+                        isUnread && { fontWeight: '800' },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {displayName}
+                    </Text>
+                    <Text style={[styles.timestamp, { color: c.textFaint }]}>
+                      {formatTimestamp(item.lastMessage.timestamp)}
                     </Text>
                   </View>
+                  <Text
+                    style={[
+                      styles.lastMessage,
+                      { color: isUnread ? c.text : c.textMuted },
+                      isUnread && { fontWeight: '700' },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {item.lastMessage.text || 'No messages yet'}
+                  </Text>
                 </View>
-                {item.unreadCount > 0 && (
-                  <View style={styles.unreadIndicator}>
-                    <Text style={styles.unreadCount}>{item.unreadCount}</Text>
+                {isUnread && (
+                  <View style={[styles.unreadIndicator, { backgroundColor: c.accent }]}>
+                    <Text style={styles.unreadCount}>
+                      {item.unreadCount > 99 ? '99+' : item.unreadCount}
+                    </Text>
                   </View>
                 )}
-              </Pressable>
+              </PressableScale>
             </Link>
-          </View>
-        </Pressable>
-      </Animated.View>
+          </PressableScale>
+        </Animated.View>
+      </AnimatedEntrance>
     );
-  }, [friends, isDarkMode, deleteConversation, closeSwipe, username]);
+  }, [friends, isDarkMode, c, deleteConversation, closeSwipe]);
 
   return (
-    <SafeAreaView style={[styles.container, isDarkMode && styles.containerDark]}>
+    <View style={[styles.container, { backgroundColor: c.bg }]}>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={[styles.header, isDarkMode && styles.headerDark]}>
-        <Text style={[styles.headerText, isDarkMode && styles.headerTextDark]}>Messages</Text>
-        <Pressable 
-          style={styles.newMessageButton}
+
+      <LinearGradient
+        colors={isDarkMode ? ['#241B45', '#15172B'] : Gradients.brand}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.header}
+      >
+        <PressableScale haptic="select" onPress={goBack} style={styles.backBtn}>
+          <Ionicons name="chevron-back" size={24} color="#fff" />
+        </PressableScale>
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerEyebrow}>Inbox</Text>
+          <Text style={styles.headerTitle}>Messages</Text>
+        </View>
+        <PressableScale
+          haptic="tap"
           onPress={() => router.push('/friendslist')}
+          style={styles.composeBtn}
           accessibilityLabel="Create new message"
         >
-          <Ionicons name="create-outline" size={24} color={isDarkMode ? "#FFFFFF" : "#FFFFFF"} />
-        </Pressable>
-      </View>
+          <Ionicons name="create-outline" size={22} color="#fff" />
+        </PressableScale>
+      </LinearGradient>
+
       <FlatList
         data={sortedConversations}
         renderItem={renderConversationItem}
         keyExtractor={(item) => item.id}
-        style={styles.list}
-        refreshing={false}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
         onRefresh={refreshConversations}
+        refreshing={false}
+        ListEmptyComponent={
+          <AnimatedEntrance style={styles.emptyWrap}>
+            <View style={[styles.emptyIcon, { backgroundColor: c.surface }, cardShadow(isDarkMode)]}>
+              <Ionicons name="chatbubbles-outline" size={36} color={c.accent} />
+            </View>
+            <Text style={[styles.emptyTitle, { color: c.text }]}>No messages yet</Text>
+            <Text style={[styles.emptySub, { color: c.textMuted }]}>
+              Start a conversation from your friends list.
+            </Text>
+            <PressableScale
+              haptic="tap"
+              onPress={() => router.push('/friendslist')}
+              style={styles.emptyCta}
+            >
+              <LinearGradient colors={Gradients.brand} style={styles.emptyCtaFill}>
+                <Ionicons name="create-outline" size={18} color="#fff" />
+                <Text style={styles.emptyCtaText}>New message</Text>
+              </LinearGradient>
+            </PressableScale>
+          </AnimatedEntrance>
+        }
+        ListFooterComponent={
+          username === null ? (
+            <View style={styles.loadingWrap}>
+              <ActivityIndicator size="small" color={c.accent} />
+            </View>
+          ) : null
+        }
       />
-    </SafeAreaView>
+    </View>
   );
 };
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f0f2f5',
-  },
-  containerDark: {
-    backgroundColor: '#1E1E1E',
-  },
+  container: { flex: 1 },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
-    marginTop: -20,
-    marginBottom: 20,
-    backgroundColor: '#4a5568',
+    justifyContent: 'space-between',
+    paddingTop: 60,
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.lg,
+    borderBottomLeftRadius: Radius.xl,
+    borderBottomRightRadius: Radius.xl,
   },
-  headerDark: {
-    backgroundColor: '#2C2C2C',
+  backBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  headerText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+  headerCenter: { flex: 1, alignItems: 'center' },
+  headerEyebrow: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
-  headerTextDark: {
-    color: '#FFFFFF',
+  headerTitle: { color: '#fff', fontSize: 20, fontWeight: '800' },
+  composeBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  newMessageButton: {
-    padding: 10,
+  listContent: {
+    padding: Spacing.lg,
+    gap: Spacing.md,
+    paddingBottom: Spacing.xxl * 2,
+    flexGrow: 1,
   },
-  list: {
-    flex: 1,
+  conversationItemContainer: {
+    position: 'relative',
+  },
+  deleteButton: {
+    position: 'absolute',
+    top: 0,
+    right: -88,
+    bottom: 0,
+    width: 80,
+    borderRadius: Radius.lg,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   conversationItem: {
-    flexDirection: 'column',
-    padding: 16,
-    borderBottomWidth: 0,
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 12,
-    marginVertical: 6,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  conversationItemDark: {
-    backgroundColor: '#2C2C2C',
-    shadowColor: '#000',
-  },
-  avatarContainer: {
     flexDirection: 'row',
-    marginLeft: 10,
     alignItems: 'center',
-    flex: 1,
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
+    gap: Spacing.md,
+  },
+  avatar: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    borderWidth: 2,
   },
   textContainer: {
     flex: 1,
@@ -386,97 +464,78 @@ const styles = StyleSheet.create({
   nameAndTimeContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: -20,
     alignItems: 'center',
+    gap: Spacing.sm,
     marginBottom: 4,
   },
   name: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000000',
-  },
-  avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    marginRight: 14,
-    marginBottom: 20,
-    borderWidth: 2,
-    borderColor: '#f0f2f5',
-  },
-  lastMessage: {
-    fontSize: 14,
-    color: '#8E8E93',
-  },
-  lastMessageUnread: {
-    fontWeight: 'bold',
-    color: '#000000',
-  },
-  lastMessageReadDark: {
-    color: '#8E8E93',
-  },
-  lastMessageUnreadDark: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
+    ...Type.headline,
+    flex: 1,
   },
   timestamp: {
-    fontSize: 12,
-    marginRight: 10,
-    color: '#8E8E93',
+    ...Type.micro,
+    fontWeight: '600',
   },
-  timestampDark: {
-    color: '#8E8E93',
-  },
-  textDark: {
-    color: '#FFFFFF',
-  },
-  conversationItemContainer: {
-    position: 'relative',
-  },
-  deleteButton: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    width: 70,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'red',
-  },
-  unreadConversationItem: {
-    backgroundColor: '#E3F2FD',
-    borderWidth: 1,
-    borderColor: '#2196F3',
-  },
-  unreadConversationItemDark: {
-    backgroundColor: '#1E3A5F',
-    borderWidth: 1,
-    borderColor: '#4CAF50',
-  },
-  unreadText: {
-    fontWeight: 'bold',
-    color: '#000000',
-  },
-  unreadTextDark: {
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+  lastMessage: {
+    ...Type.body,
   },
   unreadIndicator: {
-    backgroundColor: '#2196F3',
-    borderRadius: 12,
+    borderRadius: Radius.pill,
     minWidth: 24,
     height: 24,
     paddingHorizontal: 8,
-    paddingVertical: 2,
-    position: 'absolute',
-    top: 12,
-    right: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
   unreadCount: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: 'bold',
+    color: '#fff',
+    ...Type.micro,
+  },
+  emptyWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: Spacing.xxl * 3,
+    paddingHorizontal: Spacing.xl,
+  },
+  emptyIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+  },
+  emptyTitle: {
+    ...Type.title,
+    fontSize: 18,
+  },
+  emptySub: {
+    ...Type.body,
+    textAlign: 'center',
+    marginTop: Spacing.sm,
+  },
+  emptyCta: {
+    marginTop: Spacing.xl,
+    borderRadius: Radius.pill,
+    overflow: 'hidden',
+  },
+  emptyCtaFill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.md,
+    borderRadius: Radius.pill,
+  },
+  emptyCtaText: {
+    color: '#fff',
+    ...Type.button,
+    fontSize: 16,
+  },
+  loadingWrap: {
+    paddingVertical: Spacing.lg,
+    alignItems: 'center',
   },
 });
 

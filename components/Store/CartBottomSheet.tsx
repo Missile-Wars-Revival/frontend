@@ -216,7 +216,6 @@ const getStyles = (
     },
     sheetInner: {
       flex: 1,
-      paddingBottom: Math.max(bottomInset, Spacing.md),
     },
     sheetBleed: {
       position: 'absolute',

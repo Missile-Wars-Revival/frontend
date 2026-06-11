@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, FlatList, Text, Pressable, SafeAreaView, StyleSheet, useColorScheme, Animated, Modal, ActivityIndicator, Alert, ScrollView } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, FlatList, Text, Pressable, StyleSheet, useColorScheme, Animated, Modal, ActivityIndicator, Alert, ScrollView } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Cart from '../../components/Store/cart';
@@ -15,7 +15,7 @@ import { additem } from '../../api/add-item';
 import { getWeaponTypes, mapProductType, PremProduct, Product, getImages } from '../../api/store';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { useOnboarding } from '../../util/Context/onboardingContext';
-import { getPalette, Gradients, Spacing, Radius, cardShadow, floatingAboveTabBarFromSafeContent, type ThemePalette } from '../../components/ui/theme';
+import { getPalette, Gradients, Spacing, Radius, cardShadow, floatingAboveTabBar, type ThemePalette } from '../../components/ui/theme';
 import { SegmentedControl } from '../../components/ui/SegmentedControl';
 import { PressableScale } from '../../components/ui/PressableScale';
 import { AnimatedEntrance } from '../../components/ui/AnimatedEntrance';
@@ -604,12 +604,12 @@ const StorePage: React.FC = () => {
       isDark={isDarkMode}
       bottomInset={insets.bottom}
     >
-      <Cart cart={cart} onRemove={handleRemove} />
+      <Cart cart={cart} onRemove={handleRemove} bottomInset={insets.bottom} />
     </CartBottomSheet>
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       {/* Header: title + coin balance */}
       <View style={styles.header}>
         <View>
@@ -724,7 +724,7 @@ const StorePage: React.FC = () => {
 const CART_BAR_HEIGHT = 56;
 
 const getStyles = (palette: ThemePalette, isDark: boolean, bottomInset: number) => {
-  const cartBarBottom = floatingAboveTabBarFromSafeContent();
+  const cartBarBottom = floatingAboveTabBar(bottomInset, Spacing.xs);
 
   return StyleSheet.create({
   container: {

@@ -22,13 +22,14 @@ interface CartItem {
 interface CartProps {
   cart: CartItem[];
   onRemove: (productId: string) => void;
+  bottomInset?: number;
 }
 
-const Cart: React.FC<CartProps> = ({ cart, onRemove }) => {
+const Cart: React.FC<CartProps> = ({ cart, onRemove, bottomInset = 0 }) => {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
   const palette = getPalette(isDarkMode);
-  const styles = getStyles(palette);
+  const styles = getStyles(palette, bottomInset);
   const { currentStep, setCurrentStep, moveToNextStep } = useOnboarding();
 
   const totalPrice = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
@@ -129,16 +130,18 @@ const Cart: React.FC<CartProps> = ({ cart, onRemove }) => {
           showsVerticalScrollIndicator={false}
         />
       )}
-      <View style={styles.totalRow}>
-        <Text style={styles.totalLabel}>Total</Text>
-        <Text style={styles.totalPrice}>🪙 {totalPrice}</Text>
+      <View style={styles.footer}>
+        <View style={styles.totalRow}>
+          <Text style={styles.totalLabel}>Total</Text>
+          <Text style={styles.totalPrice}>🪙 {totalPrice}</Text>
+        </View>
+        <PressableScale haptic="tap" onPress={checkout}>
+          <LinearGradient colors={Gradients.success} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.checkoutButton}>
+            <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
+            <Text style={styles.checkoutButtonText}>Checkout All Items</Text>
+          </LinearGradient>
+        </PressableScale>
       </View>
-      <PressableScale haptic="tap" onPress={checkout}>
-        <LinearGradient colors={Gradients.success} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.checkoutButton}>
-          <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
-          <Text style={styles.checkoutButtonText}>Checkout All Items</Text>
-        </LinearGradient>
-      </PressableScale>
       {showAnimation && (
         <CartPurchaseAnimation
           cartItems={cart}
@@ -149,12 +152,19 @@ const Cart: React.FC<CartProps> = ({ cart, onRemove }) => {
   );
 };
 
-const getStyles = (palette: ThemePalette) => StyleSheet.create({
+const getStyles = (palette: ThemePalette, bottomInset: number) => StyleSheet.create({
   cartContainer: {
     flex: 1,
     minHeight: 0,
     backgroundColor: palette.surface,
     paddingHorizontal: Spacing.lg,
+  },
+  footer: {
+    marginTop: 'auto',
+    paddingTop: Spacing.lg,
+    paddingBottom: bottomInset + Spacing.xl,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: palette.border,
   },
   cartList: {
     flex: 1,
@@ -246,7 +256,6 @@ const getStyles = (palette: ThemePalette) => StyleSheet.create({
     gap: Spacing.sm,
     paddingVertical: Spacing.md + 2,
     borderRadius: Radius.lg,
-    marginBottom: Spacing.sm,
   },
   checkoutButtonText: {
     fontSize: 16,
