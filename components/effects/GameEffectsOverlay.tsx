@@ -9,14 +9,16 @@ import {
   Rect,
   Skia,
 } from '@shopify/react-native-skia';
-import {
+import Animated, {
   Easing,
   runOnJS,
+  useAnimatedStyle,
   useDerivedValue,
   useSharedValue,
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
+import { Image } from 'expo-image';
 import { GameEffectEvent, GameEffectType, onGameEffect } from './game-effects';
 
 // Full-screen, tap-through Skia layer that plays one-shot celebration
@@ -31,6 +33,7 @@ const DURATION_MS: Record<GameEffectType, number> = {
   shieldUp: 1800,
   coinBurst: 1500,
   purchaseSuccess: 2000,
+  checkoutSuccess: 2600,
 };
 
 // Same missile silhouette as the splash/onboarding screens.
@@ -62,6 +65,23 @@ function windowT(p: number, start: number, end: number): number {
 function easeOutCubic(t: number): number {
   'worklet';
   return 1 - Math.pow(1 - t, 3);
+}
+
+function easeInCubic(t: number): number {
+  'worklet';
+  return t * t * t;
+}
+
+function easeInOutCubic(t: number): number {
+  'worklet';
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+function easeOutBack(t: number): number {
+  'worklet';
+  const c1 = 1.70158;
+  const c3 = c1 + 1;
+  return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
 }
 
 type Progress = SharedValue<number>;
@@ -541,6 +561,198 @@ const CoinBurstScene = ({
 };
 
 // ---------------------------------------------------------------------------
+// Checkout celebration
+// ---------------------------------------------------------------------------
+// The purchased item images pop into an orbit ring (staggered), spin together,
+// converge into the centre, and detonate into a coin fountain with a gold
+// checkmark stamp. Skia draws the glow/burst/check; the product images are RN
+// views (expo-image handles the dynamic require() sources) driven by the same
+// progress value so both layers stay in lockstep.
+
+const CHECKOUT_IMPACT = 0.7; // moment the items collide at the centre
+
+const CHECK_PATH = Skia.Path.MakeFromSVGString('M -16 2 L -5 14 L 18 -12')!;
+
+const CheckoutBurstScene = ({
+  progress,
+  width,
+  height,
+  seed,
+}: {
+  progress: Progress;
+  width: number;
+  height: number;
+  seed: number;
+}) => {
+  const center = { x: width / 2, y: height * 0.45 };
+
+  const coins = useMemo(
+    () =>
+      makeSparks(mulberry32(seed * 7919 + 7), 34, {
+        x0: center.x,
+        y0: center.y,
+        colors: ['#FFD54F', '#FFC107', '#FFB300', '#FFE082'],
+        minDist: 70,
+        maxDist: width * 0.5,
+        minSize: 4,
+        maxSize: 9,
+        gravity: 280,
+        start: CHECKOUT_IMPACT,
+        end: 1,
+        angle: -Math.PI / 2,
+        spread: Math.PI * 1.1,
+      }),
+    [seed, width, center.x, center.y]
+  );
+
+  const sparkles = useMemo(
+    () =>
+      makeSparks(mulberry32(seed * 7919 + 8), 14, {
+        x0: center.x,
+        y0: center.y,
+        colors: ['#FFFFFF', '#FFF8E1'],
+        minDist: 40,
+        maxDist: width * 0.32,
+        minSize: 1.5,
+        maxSize: 3,
+        gravity: 40,
+        start: CHECKOUT_IMPACT + 0.03,
+        end: 1,
+      }),
+    [seed, width, center.x, center.y]
+  );
+
+  // Gold core charges up while the items orbit, swallowing them at impact.
+  const glowR = useDerivedValue(() => {
+    const charge = windowT(progress.value, 0.15, CHECKOUT_IMPACT);
+    return 10 + 26 * easeInCubic(charge) + Math.sin(progress.value * Math.PI * 10) * 3 * charge;
+  });
+  const glowOpacity = useDerivedValue(() => {
+    const fadeIn = windowT(progress.value, 0.15, 0.4);
+    const fadeOut = 1 - windowT(progress.value, CHECKOUT_IMPACT, CHECKOUT_IMPACT + 0.08);
+    return 0.85 * fadeIn * fadeOut;
+  });
+
+  // Gold checkmark badge stamps in after the burst.
+  const checkTransform = useDerivedValue(() => {
+    const t = easeOutBack(windowT(progress.value, CHECKOUT_IMPACT + 0.06, CHECKOUT_IMPACT + 0.2));
+    return [{ translateX: center.x }, { translateY: center.y }, { scale: Math.max(0.001, 2 * t) }];
+  });
+  const checkOpacity = useDerivedValue(() => {
+    const fadeIn = windowT(progress.value, CHECKOUT_IMPACT + 0.06, CHECKOUT_IMPACT + 0.14);
+    const fadeOut = 1 - windowT(progress.value, 0.92, 1);
+    return fadeIn * fadeOut;
+  });
+
+  const rings: RingSpec[] = [
+    { x: center.x, y: center.y, maxR: width * 0.3, width: 3, color: '#FFD54F', start: CHECKOUT_IMPACT, end: CHECKOUT_IMPACT + 0.18 },
+    { x: center.x, y: center.y, maxR: width * 0.46, width: 2.4, color: '#FFC107', start: CHECKOUT_IMPACT + 0.04, end: CHECKOUT_IMPACT + 0.24 },
+    { x: center.x, y: center.y, maxR: width * 0.6, width: 1.8, color: '#FFF8E1', start: CHECKOUT_IMPACT + 0.08, end: 1 },
+  ];
+
+  return (
+    <Group>
+      <Flash
+        progress={progress}
+        width={width}
+        height={height}
+        color="#FFD54F"
+        peak={0.16}
+        start={CHECKOUT_IMPACT}
+        end={CHECKOUT_IMPACT + 0.2}
+      />
+      <Circle cx={center.x} cy={center.y} r={glowR} color="#FFC107" opacity={glowOpacity}>
+        <BlurMask blur={14} style="solid" />
+      </Circle>
+      {rings.map((spec, i) => (
+        <ShockRing key={`ring-${i}`} progress={progress} spec={spec} />
+      ))}
+      {coins.map((spec, i) => (
+        <Spark key={`coin-${i}`} progress={progress} spec={spec} />
+      ))}
+      {sparkles.map((spec, i) => (
+        <Spark key={`sparkle-${i}`} progress={progress} spec={spec} />
+      ))}
+      <Group transform={checkTransform} opacity={checkOpacity}>
+        <Circle cx={0} cy={0} r={26} color="#FFC107" style="stroke" strokeWidth={3.5} />
+        <Path path={CHECK_PATH} color="#FFD54F" style="stroke" strokeWidth={5} strokeCap="round" strokeJoin="round" />
+      </Group>
+    </Group>
+  );
+};
+
+const CheckoutItem = ({
+  progress,
+  index,
+  count,
+  image,
+  orbitR,
+  size,
+}: {
+  progress: Progress;
+  index: number;
+  count: number;
+  image: any;
+  orbitR: number;
+  size: number;
+}) => {
+  const style = useAnimatedStyle(() => {
+    const p = progress.value;
+    // Staggered spring pop into the orbit slot.
+    const stagger = count > 1 ? (index / (count - 1)) * 0.14 : 0;
+    const pop = easeOutBack(windowT(p, 0.02 + stagger, 0.24 + stagger));
+    // Everyone rotates together while the core charges.
+    const spin = Math.PI * 1.15 * easeInOutCubic(windowT(p, 0.2, CHECKOUT_IMPACT - 0.06));
+    // Converge: items dive into the centre just before impact.
+    const converge = easeInCubic(windowT(p, CHECKOUT_IMPACT - 0.12, CHECKOUT_IMPACT));
+    const angle = -Math.PI / 2 + (index / count) * Math.PI * 2 + spin;
+    const r = orbitR * (1 - converge);
+    const scale = Math.max(0.001, pop * (1 - 0.8 * converge));
+    const opacity = Math.min(1, pop) * (1 - windowT(p, CHECKOUT_IMPACT - 0.04, CHECKOUT_IMPACT));
+    return {
+      opacity,
+      transform: [
+        { translateX: Math.cos(angle) * r },
+        { translateY: Math.sin(angle) * r },
+        { scale },
+      ],
+    };
+  });
+
+  return (
+    <Animated.View style={[{ position: 'absolute', width: size, height: size }, style]}>
+      <Image source={image} style={{ width: '100%', height: '100%' }} contentFit="contain" />
+    </Animated.View>
+  );
+};
+
+const CheckoutItemRing = ({
+  progress,
+  width,
+  height,
+  images,
+}: {
+  progress: Progress;
+  width: number;
+  height: number;
+  images: any[];
+}) => {
+  const count = images.length;
+  if (count === 0) return null;
+  const size = count <= 4 ? 64 : 52;
+  const orbitR = Math.min(width * 0.3, 130);
+  return (
+    <View pointerEvents="none" style={[styles.itemRing, { left: width / 2, top: height * 0.45 }]}>
+      {images.map((image, i) => (
+        <View key={i} style={{ position: 'absolute', marginLeft: -size / 2, marginTop: -size / 2 }}>
+          <CheckoutItem progress={progress} index={i} count={count} image={image} orbitR={orbitR} size={size} />
+        </View>
+      ))}
+    </View>
+  );
+};
+
+// ---------------------------------------------------------------------------
 // Overlay host
 // ---------------------------------------------------------------------------
 
@@ -588,7 +800,13 @@ const GameEffectsOverlay: React.FC = () => {
         {event.type === 'purchaseSuccess' && (
           <CoinBurstScene progress={progress} width={width} height={height} seed={event.id} big={true} />
         )}
+        {event.type === 'checkoutSuccess' && (
+          <CheckoutBurstScene progress={progress} width={width} height={height} seed={event.id} />
+        )}
       </Canvas>
+      {event.type === 'checkoutSuccess' && (
+        <CheckoutItemRing progress={progress} width={width} height={height} images={event.images ?? []} />
+      )}
     </View>
   );
 };
@@ -602,6 +820,13 @@ const styles = StyleSheet.create({
     bottom: 0,
     zIndex: 9999,
     elevation: 9999,
+  },
+  itemRing: {
+    position: 'absolute',
+    width: 0,
+    height: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 

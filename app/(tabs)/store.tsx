@@ -410,14 +410,19 @@ const StorePage: React.FC = () => {
   }, [currentStep, moveToNextStep, showCart]);
 
   const handleCheckoutComplete = useCallback(() => {
+    // Snapshot the purchased item images before clearing the cart — the
+    // checkout celebration orbits one copy per unit, capped so it stays legible.
+    const images = cart
+      .flatMap((item) => Array(Math.min(item.quantity, 3)).fill(item.product.image))
+      .slice(0, 8);
     setCart([]);
     updateCartTotal([]);
     setCartVisible(false);
     // Play the celebration after the cart modal has dismissed — the Skia
     // overlay lives below RN Modals, so firing it while the sheet is up
     // would hide it (and its triumph haptics would feel disconnected).
-    setTimeout(() => triggerGameEffect('purchaseSuccess'), 350);
-  }, [updateCartTotal]);
+    setTimeout(() => triggerGameEffect('checkoutSuccess', { images }), 350);
+  }, [cart, updateCartTotal]);
 
   const formatDuration = (minutes: number | undefined) => {
     if (minutes === undefined) return 'N/A';

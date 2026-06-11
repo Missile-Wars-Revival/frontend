@@ -5,6 +5,7 @@ import MapView, { Circle } from "react-native-maps";
 import { AllLootDrops } from "./Loot/map-loot";
 import { AllLandMines } from "./Landmine/map-landmines";
 import { AllMissiles } from "./Missile/map-missile";
+import { MissileDetailsHost } from "./Missile/missile-details";
 import { AllPlayers } from "./map-players";
 import { loadLastKnownLocation, saveLocation } from '../util/mapstore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -316,6 +317,8 @@ export const MapComp = (props: MapCompProps) => {
                     <AllMissiles missileData={missileData} />
                 </MapView>
             </View>
+            {/* Hosted outside the MapView — modals mounted under MapView never present. */}
+            <MissileDetailsHost />
             <Pressable
                 style={[mainmapstyles.relocateButton, { bottom: insets.bottom + 40 }]}
                 onPress={relocate}>

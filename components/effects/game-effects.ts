@@ -13,9 +13,15 @@ export type GameEffectType =
   | 'lootDrop'
   | 'shieldUp'
   | 'coinBurst'
-  | 'purchaseSuccess';
+  | 'purchaseSuccess'
+  | 'checkoutSuccess';
 
-export interface GameEffectEvent {
+export interface GameEffectPayload {
+  /** Product images (expo-image sources) for effects that showcase the purchased items. */
+  images?: any[];
+}
+
+export interface GameEffectEvent extends GameEffectPayload {
   id: number;
   type: GameEffectType;
 }
@@ -114,11 +120,24 @@ const HAPTIC_FOR_EFFECT: Record<GameEffectType, () => void> = {
     beat(150, () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy));
     beat(380, () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success));
   },
+  // Mirrors the checkout scene: light ticks as each item pops into orbit,
+  // a heavy hit when they converge (~70% of the 2600ms scene), then triumph.
+  checkoutSuccess: () => {
+    if (rich((p) => p.coinDrop())) {
+      setTimeout(() => rich((p) => p.triumph()), 1750);
+      return;
+    }
+    beat(0, () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light));
+    beat(140, () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light));
+    beat(280, () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium));
+    beat(1750, () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy));
+    beat(1950, () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success));
+  },
 };
 
-export function triggerGameEffect(type: GameEffectType) {
+export function triggerGameEffect(type: GameEffectType, payload?: GameEffectPayload) {
   HAPTIC_FOR_EFFECT[type]();
-  const event: GameEffectEvent = { id: nextId++, type };
+  const event: GameEffectEvent = { id: nextId++, type, ...payload };
   listeners.forEach((listener) => listener(event));
 }
 

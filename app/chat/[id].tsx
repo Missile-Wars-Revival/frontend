@@ -16,6 +16,7 @@ import { receiveItem, removeItem } from '../../api/add-item';
 import { notificationEmitter } from '../../components/Notifications/useNotifications';
 import ItemCollectAnimation from '../../components/Animations/itemCollect';
 import { getImages } from '../../api/store';
+import { getPalette, Type, cardShadow, type ThemePalette } from '../../components/ui/theme';
 
 type Message = {
   id: string;
@@ -91,14 +92,31 @@ const LinkPreview = ({ data }: { data: LinkPreviewData }) => {
   };
 
   return (
-    <Pressable onPress={handlePress} style={[styles.linkPreview, { backgroundColor: `${getColor()}20` }]}>
+    <Pressable onPress={handlePress} style={[linkStyles.preview, { backgroundColor: `${getColor()}20` }]}>
       <Ionicons name={getIconName()} size={50} color={getColor()} />
-      <Text style={[styles.linkPreviewText, { color: getColor() }]} numberOfLines={1} ellipsizeMode="tail">
+      <Text style={[linkStyles.text, { color: getColor() }]} numberOfLines={1} ellipsizeMode="tail">
         {data.url}
       </Text>
     </Pressable>
   );
 };
+
+// Link previews take their colour from the link type, not the theme.
+const linkStyles = StyleSheet.create({
+  preview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    borderRadius: 5,
+    marginTop: 5,
+    marginBottom: 5,
+  },
+  text: {
+    marginLeft: 10,
+    flex: 1,
+    fontSize: 14,
+  },
+});
 
 export default function ChatScreen() {
   const { id } = useLocalSearchParams();
@@ -109,6 +127,8 @@ export default function ChatScreen() {
   const [username, setUsername] = useState<string | null>(null);
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
+  const palette = getPalette(isDarkMode);
+  const styles = React.useMemo(() => getStyles(palette, isDarkMode), [palette, isDarkMode]);
   const flatListRef = useRef<FlatList>(null);
   const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
   const [otherParticipant, setOtherParticipant] = useState('');
@@ -287,13 +307,12 @@ export default function ChatScreen() {
     return (
       <Animated.View style={[
         styles.attachMenuContainer,
-        isDarkMode && styles.attachMenuContainerDark,
         { transform: [{ translateY }] }
       ]}>
         <View style={styles.attachMenuHeader}>
-          <Text style={[styles.attachMenuTitle, isDarkMode && styles.attachMenuTitleDark]}>Attach</Text>
+          <Text style={styles.attachMenuTitle}>Attach</Text>
           <Pressable onPress={hideAttachMenu}>
-            <Ionicons name="close" size={24} color={isDarkMode ? "#FFFFFF" : "#000000"} />
+            <Ionicons name="close" size={24} color={palette.text} />
           </Pressable>
         </View>
         <View style={styles.attachMenuOptions}>
@@ -304,16 +323,16 @@ export default function ChatScreen() {
             <View style={styles.attachOptionIcon}>
               <Ionicons name="cube" size={30} color="#fff" />
             </View>
-            <Text style={[styles.attachOptionText, isDarkMode && styles.attachOptionTextDark]}>Inventory Item</Text>
+            <Text style={styles.attachOptionText}>Inventory Item</Text>
           </Pressable>
           <Pressable style={styles.attachOption} onPress={() => {
             hideAttachMenu();
             pickImage();
           }}>
-            <View style={[styles.attachOptionIcon, { backgroundColor: '#4CAF50' }]}>
+            <View style={[styles.attachOptionIcon, { backgroundColor: palette.success }]}>
               <Ionicons name="image" size={30} color="#fff" />
             </View>
-            <Text style={[styles.attachOptionText, isDarkMode && styles.attachOptionTextDark]}>Image</Text>
+            <Text style={styles.attachOptionText}>Image</Text>
           </Pressable>
         </View>
       </Animated.View>
@@ -529,12 +548,11 @@ export default function ChatScreen() {
       <View style={[
         styles.messageItem,
         isOwnMessage ? styles.sentMessage : styles.receivedMessage,
-        isDarkMode && (isOwnMessage ? styles.sentMessageDark : styles.receivedMessageDark),
         linkPreviews.length > 0 && styles.messageWithEmbed,
       ]}>
-        <Text style={[styles.senderUsername, isDarkMode && styles.senderUsernameDark]}>{item.senderUsername}</Text>
+        <Text style={styles.senderUsername}>{item.senderUsername}</Text>
         {strippedText && (
-          <Text style={[styles.messageText, isDarkMode && styles.messageTextDark]}>{strippedText}</Text>
+          <Text style={styles.messageText}>{strippedText}</Text>
         )}
         {linkPreviews.map((preview, index) => (
           <LinkPreview key={index} data={preview} />
@@ -582,8 +600,8 @@ export default function ChatScreen() {
         )}
         {isOwnMessage && (
           <View style={styles.messageStatus}>
-            {item.delivered && <Ionicons name="checkmark" size={16} color={isDarkMode ? "#B0B0B0" : "#4a5568"} />}
-            {item.read && <Ionicons name="checkmark-done" size={16} color={isDarkMode ? "#B0B0B0" : "#4a5568"} />}
+            {item.delivered && <Ionicons name="checkmark" size={16} color={palette.textMuted} />}
+            {item.read && <Ionicons name="checkmark-done" size={16} color={palette.textMuted} />}
           </View>
         )}
       </View>
@@ -591,11 +609,11 @@ export default function ChatScreen() {
   }, [username, isDarkMode, getImageForProduct, handleCollectItem]);
 
   const renderHeader = () => (
-    <View style={[styles.header, isDarkMode && styles.headerDark]}>
+    <View style={styles.header}>
       <Pressable onPress={() => router.back()} style={styles.backButton}>
-        <Ionicons name="arrow-back" size={24} color={isDarkMode ? "#FFFFFF" : "#000000"} />
+        <Ionicons name="arrow-back" size={24} color={palette.text} />
       </Pressable>
-      <Text style={[styles.headerTitle, isDarkMode && styles.headerTitleDark]}>
+      <Text style={styles.headerTitle}>
         {otherParticipant || 'Chat'}
       </Text>
     </View>
@@ -620,7 +638,7 @@ export default function ChatScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, isDarkMode && styles.containerDark]}>
+    <SafeAreaView style={styles.container}>
       {renderHeader()}
       {unreadCount > 0 && (
         <Text style={styles.unreadCount}>{unreadCount} unread messages</Text>
@@ -644,7 +662,7 @@ export default function ChatScreen() {
           onLayout={scrollToBottom}
         />
         {selectedInventoryItem && (
-          <View style={[styles.selectedInventoryItemContainer, isDarkMode && styles.selectedInventoryItemContainerDark]}>
+          <View style={styles.selectedInventoryItemContainer}>
             <Image
               source={getImageForProduct(selectedInventoryItem.name)}
               style={styles.selectedInventoryItemImage}
@@ -652,27 +670,27 @@ export default function ChatScreen() {
               cachePolicy="memory-disk"
             />
             <View style={styles.selectedInventoryItemInfo}>
-              <Text style={[styles.selectedInventoryItemName, isDarkMode && styles.selectedInventoryItemNameDark]} numberOfLines={1}>
+              <Text style={styles.selectedInventoryItemName} numberOfLines={1}>
                 {selectedInventoryItem.name}
               </Text>
-              <Text style={[styles.selectedInventoryItemQuantity, isDarkMode && styles.selectedInventoryItemQuantityDark]}>
+              <Text style={styles.selectedInventoryItemQuantity}>
                 {selectedInventoryItem.quantity} left in inventory
               </Text>
               <View style={styles.quantityControls}>
                 <Pressable
-                  style={[styles.quantityButton, isDarkMode && styles.quantityButtonDark]}
+                  style={styles.quantityButton}
                   onPress={() => setItemQuantity(Math.max(1, itemQuantity - 1))}
                 >
-                  <Ionicons name="remove" size={18} color={isDarkMode ? "#FFF" : "#000"} />
+                  <Ionicons name="remove" size={18} color={palette.text} />
                 </Pressable>
-                <Text style={[styles.quantityText, isDarkMode && styles.quantityTextDark]}>
+                <Text style={styles.quantityText}>
                   Send: {itemQuantity}
                 </Text>
                 <Pressable
-                  style={[styles.quantityButton, isDarkMode && styles.quantityButtonDark]}
+                  style={styles.quantityButton}
                   onPress={() => setItemQuantity(Math.min(selectedInventoryItem.quantity, itemQuantity + 1))}
                 >
-                  <Ionicons name="add" size={18} color={isDarkMode ? "#FFF" : "#000"} />
+                  <Ionicons name="add" size={18} color={palette.text} />
                 </Pressable>
               </View>
             </View>
@@ -683,18 +701,18 @@ export default function ChatScreen() {
                 setItemQuantity(1);
               }}
             >
-              <Ionicons name="close-circle" size={24} color="#FF3B30" />
+              <Ionicons name="close-circle" size={24} color={palette.danger} />
             </Pressable>
           </View>
         )}
         {showInventoryMenu && (
-          <View style={[styles.inventoryMenuContainer, isDarkMode && styles.inventoryMenuContainerDark]}>
+          <View style={styles.inventoryMenuContainer}>
             <FlatList
               data={inventory.filter(item => item.quantity > 0)}
               renderItem={({ item }) => (
                 <Pressable
                   onPress={() => handleSelectInventoryItem(item)}
-                  style={[styles.inventoryItem, isDarkMode && styles.inventoryItemDark]}
+                  style={styles.inventoryItem}
                   disabled={item.quantity === 0}
                 >
                   <Image
@@ -703,8 +721,8 @@ export default function ChatScreen() {
                     contentFit="contain"
                     cachePolicy="memory-disk"
                   />
-                  <Text style={[styles.inventoryItemName, isDarkMode && styles.inventoryItemNameDark]}>{item.name}</Text>
-                  <Text style={[styles.inventoryItemQuantity, isDarkMode && styles.inventoryItemQuantityDark]}>
+                  <Text style={styles.inventoryItemName}>{item.name}</Text>
+                  <Text style={styles.inventoryItemQuantity}>
                     {item.quantity} left
                   </Text>
                 </Pressable>
@@ -716,7 +734,7 @@ export default function ChatScreen() {
             />
           </View>
         )}
-        <View style={[styles.inputContainer, isDarkMode && styles.inputContainerDark]}>
+        <View style={styles.inputContainer}>
           {selectedImage && (
             <Image
               source={{ uri: selectedImage }}
@@ -726,25 +744,24 @@ export default function ChatScreen() {
             />
           )}
           <Pressable onPress={handleAttachPress} style={styles.attachButton}>
-            <Ionicons name="attach" size={24} color={isDarkMode ? "#B0B0B0" : "#4a5568"} />
+            <Ionicons name="attach" size={24} color={palette.textMuted} />
           </Pressable>
           <TextInput
             style={[
               styles.input,
-              isDarkMode && styles.inputDark,
               { height: Math.max(40, inputHeight) }
             ]}
             value={message}
             onChangeText={setMessage}
             placeholder="Type a message..."
-            placeholderTextColor={isDarkMode ? "#B0B0B0" : "#4a5568"}
+            placeholderTextColor={palette.textMuted}
             multiline
             onContentSizeChange={(event) =>
               setInputHeight(event.nativeEvent.contentSize.height)
             }
           />
           <Pressable onPress={handleSendMessage} style={styles.sendButton} disabled={isUploading}>
-            <Ionicons name="send" size={24} color={isUploading ? "#B0B0B0" : (isDarkMode ? "#B0B0B0" : "#4a5568")} />
+            <Ionicons name="send" size={24} color={isUploading ? palette.textFaint : palette.accent} />
           </Pressable>
         </View>
       </KeyboardAvoidingView>
@@ -781,13 +798,10 @@ export default function ChatScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (palette: ThemePalette, isDarkMode: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f0f2f5',
-  },
-  containerDark: {
-    backgroundColor: '#1E1E1E',
+    backgroundColor: palette.bg,
   },
   keyboardAvoidingView: {
     flex: 1,
@@ -802,25 +816,17 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     padding: 10,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: palette.surface,
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-  },
-  inputContainerDark: {
-    backgroundColor: '#2C2C2C',
-    borderTopColor: '#3D3D3D',
+    borderTopColor: palette.border,
   },
   input: {
     flex: 1,
     marginHorizontal: 10,
     padding: 10,
-    backgroundColor: '#f0f2f5',
+    backgroundColor: palette.surfaceAlt,
     borderRadius: 20,
-    color: '#000000',
-  },
-  inputDark: {
-    backgroundColor: '#3D3D3D',
-    color: '#FFFFFF',
+    color: palette.text,
   },
   attachButton: {
     padding: 10,
@@ -839,25 +845,16 @@ const styles = StyleSheet.create({
   },
   sentMessage: {
     alignSelf: 'flex-end',
-    backgroundColor: '#DCF8C6',
-  },
-  sentMessageDark: {
-    backgroundColor: '#005C4B', // Darker green for sent messages in dark mode
+    backgroundColor: palette.accentSoft,
   },
   receivedMessage: {
     alignSelf: 'flex-start',
-    backgroundColor: '#FFFFFF',
-  },
-  receivedMessageDark: {
-    backgroundColor: '#262D31',
+    backgroundColor: palette.surface,
   },
   messageText: {
     fontSize: 16,
-    color: '#000000',
+    color: palette.text,
     flexWrap: 'wrap',
-  },
-  messageTextDark: {
-    color: '#FFFFFF',
   },
   messageImage: {
     width: 200,
@@ -868,34 +865,23 @@ const styles = StyleSheet.create({
   senderUsername: {
     fontSize: 14,
     marginBottom: 5,
-    color: '#4a5568',
-  },
-  senderUsernameDark: {
-    color: '#B0B0B0',
+    color: palette.textMuted,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-    backgroundColor: '#FFFFFF',
-  },
-  headerDark: {
-    backgroundColor: '#2C2C2C',
-    borderBottomColor: '#3D3D3D',
+    borderBottomColor: palette.border,
+    backgroundColor: palette.surface,
   },
   backButton: {
     padding: 5,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    ...Type.title,
     marginLeft: 10,
-    color: '#000000',
-  },
-  headerTitleDark: {
-    color: '#FFFFFF',
+    color: palette.text,
   },
   imagePreviewContainer: {
     position: 'absolute',
@@ -945,12 +931,12 @@ const styles = StyleSheet.create({
   },
   progressBarContainer: {
     height: 5,
-    backgroundColor: '#e0e0e0',
+    backgroundColor: palette.surfaceAlt,
     width: '100%',
   },
   progressBar: {
     height: '100%',
-    backgroundColor: '#4CAF50',
+    backgroundColor: palette.success,
   },
   selectedImage: {
     width: 50,
@@ -961,19 +947,15 @@ const styles = StyleSheet.create({
   unreadCount: {
     textAlign: 'center',
     padding: 5,
-    backgroundColor: '#e0e0e0',
-    color: '#333',
+    backgroundColor: palette.surfaceAlt,
+    color: palette.textMuted,
   },
   inventoryMenuContainer: {
-    backgroundColor: '#f0f2f5',
+    backgroundColor: palette.bg,
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
+    borderTopColor: palette.border,
     paddingVertical: 15,
     paddingHorizontal: 10,
-  },
-  inventoryMenuContainerDark: {
-    backgroundColor: '#2C2C2C',
-    borderTopColor: '#3D3D3D',
   },
   inventoryListContent: {
     paddingHorizontal: 5,
@@ -982,20 +964,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginHorizontal: 15,
     padding: 10,
-    backgroundColor: '#ffffff',
+    backgroundColor: palette.surface,
     borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    ...cardShadow(isDarkMode),
     minWidth: 80,
-  },
-  inventoryItemDark: {
-    backgroundColor: '#3D3D3D',
   },
   inventoryItemImage: {
     width: 50,
@@ -1008,22 +980,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 4,
     fontWeight: '600',
-  },
-  inventoryItemNameDark: {
-    color: '#FFFFFF',
+    color: palette.text,
   },
   inventoryItemQuantity: {
     fontSize: 11,
-    color: '#666',
+    color: palette.textMuted,
     fontWeight: '500',
-  },
-  inventoryItemQuantityDark: {
-    color: '#B0B0B0',
   },
   inventoryMessageItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(240, 240, 240, 0.5)',
+    backgroundColor: palette.surfaceAlt,
     padding: 5,
     borderRadius: 5,
     marginTop: 5,
@@ -1042,18 +1009,18 @@ const styles = StyleSheet.create({
   },
   inventoryMessageItemText: {
     fontSize: 14,
-    color: '#333',
+    color: palette.text,
     flex: 1,
     marginRight: 5,
   },
   inventoryMessageItemQuantity: {
     fontSize: 14,
-    color: '#333',
+    color: palette.text,
     fontWeight: 'bold',
   },
   collectText: {
     fontSize: 12,
-    color: '#007AFF',
+    color: palette.accent,
     marginLeft: 5,
   },
   selectedInventoryItem: {
@@ -1064,17 +1031,13 @@ const styles = StyleSheet.create({
   selectedInventoryItemContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f0f2f5',
+    backgroundColor: palette.surfaceAlt,
     padding: 8,
     borderRadius: 12,
     marginRight: 8,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  selectedInventoryItemContainerDark: {
-    backgroundColor: '#3D3D3D',
-    borderColor: '#4D4D4D',
+    borderColor: palette.border,
   },
   selectedInventoryItemImage: {
     width: 40,
@@ -1087,46 +1050,33 @@ const styles = StyleSheet.create({
   selectedInventoryItemName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#000',
+    color: palette.text,
     marginBottom: 4,
-  },
-  selectedInventoryItemNameDark: {
-    color: '#FFF',
   },
   selectedInventoryItemQuantity: {
     fontSize: 12,
-    color: '#666',
+    color: palette.textMuted,
     marginBottom: 8,
-  },
-  selectedInventoryItemQuantityDark: {
-    color: '#B0B0B0',
   },
   quantityControls: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   quantityButton: {
-    backgroundColor: '#FFF',
+    backgroundColor: palette.surface,
     width: 24,
     height: 24,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  quantityButtonDark: {
-    backgroundColor: '#2C2C2C',
-    borderColor: '#4D4D4D',
+    borderColor: palette.border,
   },
   quantityText: {
     fontSize: 14,
     fontWeight: 'bold',
     marginHorizontal: 12,
-    color: '#000',
-  },
-  quantityTextDark: {
-    color: '#FFF',
+    color: palette.text,
   },
   removeSelectedItem: {
     marginLeft: 8,
@@ -1135,7 +1085,7 @@ const styles = StyleSheet.create({
     width: 40,
     marginLeft: 5,
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: palette.border,
     borderRadius: 5,
     textAlign: 'center',
   },
@@ -1144,21 +1094,11 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#fff',
+    backgroundColor: palette.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: -2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  attachMenuContainerDark: {
-    backgroundColor: '#2C2C2C', // Adjust this color as needed
+    ...cardShadow(isDarkMode),
   },
   attachMenuHeader: {
     flexDirection: 'row',
@@ -1167,11 +1107,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   attachMenuTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  attachMenuTitleDark: {
-    color: '#FFFFFF',
+    ...Type.title,
+    color: palette.text,
   },
   attachMenuOptions: {
     flexDirection: 'row',
@@ -1184,29 +1121,13 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#2196F3',
+    backgroundColor: palette.accent,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 10,
   },
   attachOptionText: {
     fontSize: 14,
-  },
-  attachOptionTextDark: {
-    fontSize: 14,
-    color: '#FFFFFF', // or any other color suitable for dark mode
-  },
-  linkPreview: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-    borderRadius: 5,
-    marginTop: 5,
-    marginBottom: 5,
-  },
-  linkPreviewText: {
-    marginLeft: 10,
-    flex: 1,
-    fontSize: 14,
+    color: palette.text,
   },
 });
