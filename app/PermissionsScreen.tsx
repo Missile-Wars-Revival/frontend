@@ -32,6 +32,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { getlocation } from '../util/locationreq';
+import { registerAndSyncPushToken } from '../components/Notifications/registerPushToken';
 import MissileSkiaBackground from '../components/onboarding/MissileSkiaBackground';
 import { OnboardingHero } from '../components/onboarding/OnboardingHero';
 import { PressableScale } from '../components/ui/PressableScale';
@@ -349,7 +350,20 @@ const PermissionsScreenInner: React.FC<PermissionsScreenProps> = ({ onPermission
     try {
       const { status } = await Notifications.requestPermissionsAsync();
       setNotificationPermission(status === 'granted');
-      if (status === 'granted') haptics.success(); else haptics.warning();
+      if (status === 'granted') {
+        haptics.success();
+        // The signed-in sync in _layout already ran (and bailed with
+        // permission-denied) before this screen — push the token to the
+        // backend now that permission exists, or it won't sync until the
+        // next app restart.
+        registerAndSyncPushToken().then((result) => {
+          console.log('Push token sync after permission grant:', result.status);
+        }).catch((error) => {
+          console.error('Failed to sync push token after permission grant:', error);
+        });
+      } else {
+        haptics.warning();
+      }
     } catch (error) {
       console.error('Error requesting notifications:', error);
     }

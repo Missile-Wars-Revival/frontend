@@ -8,6 +8,38 @@ import { parseStoredIsAlive } from './isalive';
 
 export const BACKGROUND_LOCATION_TASK = 'background-location-dispatch';
 
+// User preference (settings toggle). Unset means enabled — background
+// dispatch is on by default for players who granted "Always" location.
+const BACKGROUND_LOCATION_PREF_KEY = 'backgroundLocationEnabled';
+
+export async function isBackgroundLocationEnabled(): Promise<boolean> {
+  return (await AsyncStorage.getItem(BACKGROUND_LOCATION_PREF_KEY)) !== 'false';
+}
+
+// Persists the preference and registers/unregisters the task to match.
+// Returns whether the task is actually running afterwards (registration can
+// still be refused, e.g. missing background permission).
+export async function setBackgroundLocationEnabled(enabled: boolean): Promise<boolean> {
+  await AsyncStorage.setItem(BACKGROUND_LOCATION_PREF_KEY, enabled ? 'true' : 'false');
+  if (enabled) {
+    await registerBackgroundLocationTask();
+  } else {
+    await unregisterBackgroundLocationTask();
+  }
+  return isBackgroundLocationActive();
+}
+
+// Whether the task is genuinely scheduled (preference on AND registered),
+// so UI toggles reflect reality rather than just the stored preference.
+export async function isBackgroundLocationActive(): Promise<boolean> {
+  if (!(await isBackgroundLocationEnabled())) return false;
+  try {
+    return await TaskManager.isTaskRegisteredAsync(BACKGROUND_LOCATION_TASK);
+  } catch {
+    return false;
+  }
+}
+
 // How often (in minutes) the OS may run the task. 15 is the platform minimum;
 // actual timing is decided by BGTaskScheduler (iOS) / WorkManager (Android).
 const MINIMUM_INTERVAL_MINUTES = 15;
@@ -75,6 +107,12 @@ TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async () => {
 
 export async function registerBackgroundLocationTask() {
   try {
+    if (!(await isBackgroundLocationEnabled())) {
+      await unregisterBackgroundLocationTask();
+      console.log('Background location task not registered: disabled in settings');
+      return;
+    }
+
     const status = await BackgroundTask.getStatusAsync();
     if (status !== BackgroundTask.BackgroundTaskStatus.Available) {
       console.log('Background tasks unavailable on this device');

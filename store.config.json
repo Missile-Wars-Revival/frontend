@@ -1,7 +1,7 @@
 {
   "configVersion": 0,
   "apple": {
-    "version": "2.0.0.",
+    "version": "2.0.0",
     "copyright": "OakForge Studios Ltd.",
     "release": {
       "automaticRelease": false
@@ -12,9 +12,14 @@
         "keywords": [
           "game",
           "location",
-          "movement"
+          "missile",
+          "strategy",
+          "multiplayer",
+          "pvp",
+          "real world",
+          "friends"
         ],
-        "releaseNotes": "Whats New:\nNew Onboarding Process\nRevamped Store Page\nImproved Firing Logic\nFixed:\nUpdated SDK \nUpdated backend api\nUpdated NavBar",
+        "releaseNotes": "What's New:\n- Richer notifications: messages and friend requests now show the sender's profile picture, and alerts can include images\n- New onboarding process\n- Revamped store page\n- Improved firing logic\n- Test-notification button in settings\nFixed:\n- Push notification registration on first launch\n- Updated SDK and backend API\n- Updated NavBar",
         "marketingUrl": "https://www.oakforgestudios.co.uk/missilewars",
         "promoText": "Missile Wars",
         "supportUrl": "https://www.oakforgestudios.co.uk/missilewars/support",

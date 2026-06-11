@@ -11,7 +11,12 @@ export async function saveCredentials(
     // Store encrypted username and password
     await SecureStore.setItemAsync("username", username);
     await SecureStore.setItemAsync("token", token);
-    await SecureStore.setItemAsync("notificationToken", notificationToken);
+    // The push token is often still empty at login (permission granted later /
+    // async fetch unresolved). Only cache a real value — the cache mirrors
+    // what the backend holds, and login skips empty tokens server-side too.
+    if (notificationToken) {
+      await SecureStore.setItemAsync("notificationToken", notificationToken);
+    }
   } catch (error) {
     console.error("Error storing credentials securely:", error);
     throw error;

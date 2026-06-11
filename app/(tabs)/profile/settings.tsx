@@ -6,8 +6,6 @@ import {
 } from 'react-native';
 import { Stack, router } from 'expo-router';
 import {
-  FieldGroup,
-  Switch,
   Button,
   Text as UIText,
   BottomSheet,
@@ -42,6 +40,8 @@ import {
   sendTestNotification,
 } from '../../../api/notifications';
 import { registerAndSyncPushToken } from '../../../components/Notifications/registerPushToken';
+import * as Location from 'expo-location';
+import { isBackgroundLocationActive, setBackgroundLocationEnabled } from '../../../util/background-location-task';
 
 const IMAGE_PREFERENCES = [
   { label: '🚀  Default', value: 'default' },
@@ -120,26 +120,39 @@ const SettingsPage: React.FC = () => {
   const confirmPasswordInput = useNativeState('');
   const deleteUsernameInput = useNativeState('');
 
-  const notificationLabels: Record<string, string> = {
-    incomingEntities: 'Incoming Entities',
-    entityDamage: 'Entity Damage',
-    entitiesInAirspace: 'Entities in Airspace',
-    eliminationReward: 'Elimination Reward',
-    lootDrops: 'Loot Drops',
-    friendRequests: 'Friend Requests',
-    leagues: 'League Updates',
+  const [pushStatus, setPushStatus] = useState<PushStatus>('checking');
+  const [pushBusy, setPushBusy] = useState(false);
+  const [backgroundLocActive, setBackgroundLocActive] = useState(false);
+
+  // Both fetchers await before any setState so calling them from an effect
+  // stays async (no cascading render) — same pattern as the fetchers below.
+  const fetchBackgroundLocStatus = async () => {
+    try {
+      const active = await isBackgroundLocationActive();
+      setBackgroundLocActive(active);
+    } catch (e) {
+      console.error('Failed to fetch background location status:', e);
+    }
   };
 
-  useEffect(() => {
-    loadUserData();
-    loadSettings();
-    fetchLocActiveStatus();
-    fetchNotificationPreferences();
-    fetchRandomLocActiveStatus();
-  }, []);
-
-  useEffect(() => { usernameInput.value = username; }, [username]);
-  useEffect(() => { emailInput.value = email; }, [email]);
+  const checkPushStatus = async () => {
+    const perm = await Notifications.getPermissionsAsync().catch(() => null);
+    if (!Device.isDevice) {
+      setPushStatus('unsupported');
+      return;
+    }
+    if (!perm || perm.status !== 'granted') {
+      setPushStatus('disabled');
+      return;
+    }
+    try {
+      const registered = await getNotificationTokenStatus();
+      setPushStatus(registered ? 'active' : 'unregistered');
+    } catch (e) {
+      console.error('Failed to check push status:', e);
+      setPushStatus('unregistered');
+    }
+  };
 
   const loadUserData = async () => {
     const storedUsername = await SecureStore.getItemAsync('username');
@@ -182,6 +195,39 @@ const SettingsPage: React.FC = () => {
       console.error('Failed to fetch notification preferences:', e);
     }
   };
+
+  // These fetchers await network/native APIs before any setState (except
+  // fetchLocActiveStatus's leading setIsLoading(true), which only re-affirms
+  // the initial value), so they don't cause a synchronous cascading render.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadUserData();
+    loadSettings();
+    fetchLocActiveStatus();
+    fetchNotificationPreferences();
+    fetchRandomLocActiveStatus();
+    fetchBackgroundLocStatus();
+  }, []);
+
+  // Re-check push registration every time the notification sheet opens, so
+  // the status card always reflects the server's current state.
+  // checkPushStatus awaits native permission APIs before any setState, so the
+  // updates are async (not a synchronous cascading render) and safe here.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (showNotificationSettings) checkPushStatus();
+  }, [showNotificationSettings]);
+
+  // useNativeState returns a native SharedObject whose `.value` is meant to be
+  // written from JS; the compiler's immutability rule can't model that.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/immutability
+    usernameInput.value = username;
+  }, [username, usernameInput]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/immutability
+    emailInput.value = email;
+  }, [email, emailInput]);
 
   const validateEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
   const validateUsername = (v: string) => v.length >= 3 && /^[a-zA-Z0-9]+$/.test(v);
@@ -370,6 +416,75 @@ const SettingsPage: React.FC = () => {
     }
   };
 
+  const handleEnablePush = async () => {
+    setPushBusy(true);
+    try {
+      const perm = await Notifications.getPermissionsAsync();
+      if (perm.status !== 'granted' && !perm.canAskAgain) {
+        // OS won't show the prompt again — the user has to flip it in Settings.
+        Linking.openSettings();
+        return;
+      }
+      const result = await registerAndSyncPushToken({ requestPermission: true });
+      if (result.status === 'permission-denied') {
+        Alert.alert('Notifications Disabled', 'Enable notifications for Missile Wars in system settings.', [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Open Settings', onPress: () => Linking.openSettings() },
+        ]);
+      } else if (result.status !== 'registered') {
+        Alert.alert('Error', 'Could not register this device for push notifications. Please try again.');
+      }
+    } finally {
+      setPushBusy(false);
+    }
+    await checkPushStatus();
+  };
+
+  const handleTestNotification = async () => {
+    setPushBusy(true);
+    try {
+      await sendTestNotification();
+      Alert.alert('Test Sent', 'A push notification is on its way — check your notification tray in a few seconds.');
+    } catch {
+      Alert.alert('Error', 'Failed to send a test notification. Try re-registering this device.');
+    } finally {
+      setPushBusy(false);
+    }
+  };
+
+  const toggleBackgroundLocation = async () => {
+    const next = !backgroundLocActive;
+    if (!next) {
+      setBackgroundLocActive(false);
+      await setBackgroundLocationEnabled(false);
+      return;
+    }
+
+    let bg = await Location.getBackgroundPermissionsAsync();
+    if (bg.status !== 'granted' && bg.canAskAgain) {
+      bg = await Location.requestBackgroundPermissionsAsync();
+    }
+    if (bg.status !== 'granted') {
+      Alert.alert(
+        'Permission Needed',
+        Platform.OS === 'ios'
+          ? 'Set location access to "Always" in system settings to enable background updates.'
+          : 'Allow location access "All the time" in system settings to enable background updates.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Open Settings', onPress: () => Linking.openSettings() },
+        ],
+      );
+      return;
+    }
+
+    const active = await setBackgroundLocationEnabled(true);
+    setBackgroundLocActive(active);
+    if (!active) {
+      Alert.alert('Error', 'Background updates could not be scheduled on this device.');
+    }
+  };
+
   const handleImagePreferenceChange = async (val: string) => {
     try {
       await AsyncStorage.setItem('imagepref', val);
@@ -397,7 +512,10 @@ const SettingsPage: React.FC = () => {
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
         { options, cancelButtonIndex: options.length - 1, title: 'Image Theme' },
-        (i) => { if (i < IMAGE_PREFERENCES.length) handleImagePreferenceChange(IMAGE_PREFERENCES[i].value); },
+        (i) => {
+          const pref = IMAGE_PREFERENCES[i];
+          if (pref) handleImagePreferenceChange(pref.value);
+        },
       );
     } else {
       Alert.alert('Image Theme', 'Select a theme', [
@@ -488,6 +606,18 @@ const SettingsPage: React.FC = () => {
             <RNSwitch
               value={randomLocActive}
               onValueChange={toggleRandomLocActive}
+              trackColor={{ false: '#E5E5EA', true: accent }}
+            />
+          </View>
+          <View style={s.sep} />
+          <View style={s.row}>
+            <View style={s.rowBody}>
+              <Text style={s.rowTitle}>Background Updates</Text>
+              <Text style={s.rowSub}>Update your position every ~15 min while the app is closed</Text>
+            </View>
+            <RNSwitch
+              value={backgroundLocActive}
+              onValueChange={toggleBackgroundLocation}
               trackColor={{ false: '#E5E5EA', true: accent }}
             />
           </View>
@@ -722,7 +852,11 @@ const SettingsPage: React.FC = () => {
       {/* ── Notification Settings Sheet ───────────────────── */}
       <BottomSheet
         isPresented={showNotificationSettings}
-        onDismiss={() => setShowNotificationSettings(false)}
+        onDismiss={() => {
+          setShowNotificationSettings(false);
+          // Reset so reopening shows the spinner, not last session's status.
+          setPushStatus('checking');
+        }}
         snapPoints={['full']}
       >
         <ScrollView
@@ -734,46 +868,93 @@ const SettingsPage: React.FC = () => {
           <Text style={{ fontSize: 28, fontWeight: '700', color: isDark ? '#fff' : '#000', marginBottom: 8 }}>
             Notifications
           </Text>
-          <Text style={{ fontSize: 15, color: '#8E8E93', marginBottom: 24 }}>
+          <Text style={{ fontSize: 15, color: '#8E8E93', marginBottom: 20 }}>
             Choose which events send you a push notification.
           </Text>
 
+          {/* Push registration status card */}
           {(() => {
-            const items = (Object.entries(notificationSettings) as [keyof typeof notificationSettings, boolean][])
-              .filter(([key]) => key !== 'id' && key !== 'userId');
-
-            if (items.length === 0) {
-              return (
-                <Text style={{ fontSize: 15, color: '#8E8E93', textAlign: 'center', marginTop: 32 }}>
-                  No notification settings available.
-                </Text>
-              );
-            }
-
+            const meta: Record<PushStatus, { color: string; icon: NotificationIcon; title: string; sub: string }> = {
+              checking: { color: '#8E8E93', icon: Bell, title: 'Checking…', sub: 'Verifying push registration with the server.' },
+              active: { color: '#34C759', icon: BellRing, title: 'Push notifications active', sub: 'This device is registered to receive alerts.' },
+              unregistered: { color: '#FF9500', icon: Bell, title: 'Device not registered', sub: 'Notifications are allowed, but this device is not registered with the server yet.' },
+              disabled: { color: '#FF3B30', icon: BellOff, title: 'Notifications disabled', sub: 'Allow notifications to get missile alerts and game updates.' },
+              unsupported: { color: '#8E8E93', icon: BellOff, title: 'Not available', sub: 'Push notifications require a physical device.' },
+            };
+            const m = meta[pushStatus];
+            const StatusIcon = m.icon;
             return (
-              <View style={{ borderRadius: 12, overflow: 'hidden', backgroundColor: isDark ? '#1C1C1E' : '#fff' }}>
-                {items.map(([key, value], index) => (
-                  <View key={key}>
-                    {index > 0 && (
-                      <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: isDark ? '#38383A' : '#C6C6C8', marginLeft: 16 }} />
-                    )}
-                    <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14 }}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 16, color: isDark ? '#fff' : '#000' }}>
-                          {notificationLabels[key] ?? key}
-                        </Text>
-                      </View>
-                      <RNSwitch
-                        value={value}
-                        onValueChange={() => toggleNotificationSetting(key)}
-                        trackColor={{ false: '#E5E5EA', true: accent }}
-                      />
-                    </View>
+              <View style={[s.sheetCard, { padding: 16, marginBottom: 24 }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <View style={[s.iconCircle, { backgroundColor: m.color + '22' }]}>
+                    {pushStatus === 'checking'
+                      ? <ActivityIndicator size="small" color={m.color} />
+                      : <StatusIcon size={18} color={m.color} />}
                   </View>
-                ))}
+                  <View style={s.rowBody}>
+                    <Text style={[s.rowTitle, { fontWeight: '600' }]}>{m.title}</Text>
+                    <Text style={s.rowSub}>{m.sub}</Text>
+                  </View>
+                </View>
+                {(pushStatus === 'disabled' || pushStatus === 'unregistered') && (
+                  <Pressable
+                    disabled={pushBusy}
+                    onPress={handleEnablePush}
+                    style={({ pressed }) => [s.statusButton, { backgroundColor: m.color, opacity: pushBusy || pressed ? 0.7 : 1 }]}
+                  >
+                    {pushBusy
+                      ? <ActivityIndicator size="small" color="#fff" />
+                      : <Text style={s.statusButtonText}>{pushStatus === 'disabled' ? 'Enable Notifications' : 'Register This Device'}</Text>}
+                  </Pressable>
+                )}
+                {pushStatus === 'active' && (
+                  <Pressable
+                    disabled={pushBusy}
+                    onPress={handleTestNotification}
+                    style={({ pressed }) => [
+                      s.statusButton,
+                      { borderWidth: 1, borderColor: accent, opacity: pushBusy || pressed ? 0.7 : 1 },
+                    ]}
+                  >
+                    {pushBusy
+                      ? <ActivityIndicator size="small" color={accent} />
+                      : (
+                        <>
+                          <Send size={14} color={accent} />
+                          <Text style={[s.statusButtonText, { color: accent }]}>Send Test Notification</Text>
+                        </>
+                      )}
+                  </Pressable>
+                )}
               </View>
             );
           })()}
+
+          <Text style={[s.sectionHeader, { marginTop: 0 }]}>ALERT TYPES</Text>
+          <View style={[s.sheetCard, { overflow: 'hidden' }]}>
+            {NOTIFICATION_OPTIONS.map((opt, index) => {
+              const OptIcon = opt.icon;
+              return (
+                <View key={opt.key}>
+                  {index > 0 && <View style={s.sep} />}
+                  <View style={s.row}>
+                    <View style={[s.iconCircle, { backgroundColor: accent + '22' }]}>
+                      <OptIcon size={18} color={accent} />
+                    </View>
+                    <View style={s.rowBody}>
+                      <Text style={s.rowTitle}>{opt.label}</Text>
+                      <Text style={s.rowSub}>{opt.description}</Text>
+                    </View>
+                    <RNSwitch
+                      value={notificationSettings[opt.key]}
+                      onValueChange={() => toggleNotificationSetting(opt.key)}
+                      trackColor={{ false: '#E5E5EA', true: accent }}
+                    />
+                  </View>
+                </View>
+              );
+            })}
+          </View>
         </ScrollView>
       </BottomSheet>
 
@@ -792,33 +973,35 @@ const SettingsPage: React.FC = () => {
           <Text style={{ fontSize: 28, fontWeight: '700', color: isDark ? '#fff' : '#000', marginBottom: 6 }}>
             Credits
           </Text>
-          <Text style={{ fontSize: 15, color: '#8E8E93', marginBottom: 28 }}>
+          <Text style={{ fontSize: 15, color: '#8E8E93', marginBottom: 24 }}>
             Developed by One Studio One Game, LLC
           </Text>
 
-          {[
-            { title: 'Lead Developers', names: ['Tristan', 'Clxud'] },
-            { title: 'Frontend Developers', names: ['Tristan', 'NightSpark', 'TheVin', 'Luc'] },
-            { title: 'Backend Developers', names: ['Tristan', 'Clxud', 'SwissArmywrench', 'manaf941'] },
-            { title: 'Concept & UI', names: ['Gubb0', 'ryaaab', 'arapeggio'] },
-            { title: 'Staff', names: ['Sophie', 'ToxicSans', 'Nero'] },
-          ].map(section => (
-            <View key={section.title} style={{ marginBottom: 20 }}>
-              <Text style={{ fontSize: 12, fontWeight: '600', color: '#8E8E93', letterSpacing: 0.5, marginBottom: 8 }}>
-                {section.title.toUpperCase()}
-              </Text>
-              {section.names.map(name => (
-                <Text key={name} style={{ fontSize: 16, color: isDark ? '#fff' : '#000', marginBottom: 4 }}>
-                  {name}
-                </Text>
-              ))}
-            </View>
-          ))}
+          {CREDITS_SECTIONS.map(section => {
+            const SectionIcon = section.icon;
+            return (
+              <View key={section.title} style={[s.sheetCard, { padding: 16, marginBottom: 12 }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                  <View style={[s.iconCircle, { backgroundColor: section.color + '22' }]}>
+                    <SectionIcon size={18} color={section.color} />
+                  </View>
+                  <Text style={[s.rowTitle, { fontWeight: '600' }]}>{section.title}</Text>
+                </View>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                  {section.names.map(name => (
+                    <View key={name} style={s.chip}>
+                      <Text style={s.chipText}>{name}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            );
+          })}
 
           <Pressable
             onPress={() => Linking.openURL('https://donate.stripe.com/fZe6r884h6e59Ww288')}
             style={({ pressed }) => ({
-              marginTop: 16,
+              marginTop: 12,
               height: 50,
               borderRadius: 14,
               backgroundColor: accent,
@@ -831,13 +1014,24 @@ const SettingsPage: React.FC = () => {
               ❤️  Donate to Support the Game
             </Text>
           </Pressable>
+
+          <Text style={{ fontSize: 13, color: '#8E8E93', textAlign: 'center', marginTop: 24 }}>
+            {Constants.expoConfig?.version ? `Missile Wars Revival v${Constants.expoConfig.version}` : 'Missile Wars Revival'}
+          </Text>
+          <Text style={{ fontSize: 13, color: '#8E8E93', textAlign: 'center', marginTop: 4 }}>
+            Made with ❤️ by the community
+          </Text>
         </ScrollView>
       </BottomSheet>
 
       {/* ── Delete Account Sheet ──────────────────────────── */}
       <BottomSheet
         isPresented={showDeleteModal}
-        onDismiss={() => { setShowDeleteModal(false); deleteUsernameInput.value = ''; }}
+        onDismiss={() => {
+          setShowDeleteModal(false);
+          // eslint-disable-next-line react-hooks/immutability
+          deleteUsernameInput.value = '';
+        }}
       >
         <Column style={{ padding: 24 }}>
           <UIText textStyle={{ fontSize: 22, fontWeight: '700', color: '#FF3B30' }} style={{ paddingBottom: 8 }}>
@@ -917,6 +1111,38 @@ const styles = (isDark: boolean) => StyleSheet.create({
     height: StyleSheet.hairlineWidth,
     backgroundColor: isDark ? '#38383A' : '#C6C6C8',
     marginLeft: 60,
+  },
+  // Cards inside bottom sheets get a hairline border so they read as cards
+  // even when the sheet background matches the card colour (light mode).
+  sheetCard: {
+    backgroundColor: isDark ? '#1C1C1E' : '#fff',
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: isDark ? '#38383A' : '#E5E5EA',
+  },
+  statusButton: {
+    marginTop: 14,
+    height: 40,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 6,
+  },
+  statusButtonText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  chip: {
+    backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7',
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  chipText: {
+    fontSize: 14,
+    color: isDark ? '#fff' : '#000',
   },
 });
 
