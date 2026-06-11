@@ -13,14 +13,14 @@ import Reanimated, {
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { Radius, Spacing, cardShadow, type ThemePalette } from '../ui/theme';
 
 const SHEET_HEIGHT_FRACTION = 0.7;
-const MAX_DRAG_UP = 56;
+const MAX_DRAG_UP = 48;
+const SHEET_BLEED = MAX_DRAG_UP + 32;
 const DISMISS_DISTANCE_FRACTION = 0.2;
 const DISMISS_VELOCITY = 0.85;
 
@@ -83,8 +83,8 @@ export function CartBottomSheet({
   }, [backdropOpacity, finishClose, translateY]);
 
   const snapOpen = useCallback(() => {
-    backdropOpacity.value = withTiming(1, { duration: 180 });
-    translateY.value = withSpring(0, { damping: 24, stiffness: 260 });
+    backdropOpacity.value = withTiming(1, { duration: 160, easing: Easing.out(Easing.quad) });
+    translateY.value = withTiming(0, { duration: 220, easing: Easing.out(Easing.cubic) });
   }, [backdropOpacity, translateY]);
   /* eslint-enable react-hooks/immutability */
 
@@ -126,10 +126,10 @@ export function CartBottomSheet({
         const offset = hiddenOffsetRef.current;
         const raw = dragStartY.value + gesture.dy;
         const resisted =
-          raw < -MAX_DRAG_UP
-            ? -MAX_DRAG_UP + (raw + MAX_DRAG_UP) * 0.18
+          raw < 0
+            ? raw * 0.35
             : raw;
-        const clamped = Math.min(offset, Math.max(-MAX_DRAG_UP - 16, resisted));
+        const clamped = Math.min(offset, Math.max(-MAX_DRAG_UP, resisted));
         translateY.value = clamped;
 
         const progress = 1 - Math.min(1, Math.max(0, clamped / offset));
@@ -172,16 +172,19 @@ export function CartBottomSheet({
         </Reanimated.View>
 
         <Reanimated.View style={[styles.sheet, sheetStyle]}>
-          <View style={styles.dragZone} {...panResponder.panHandlers}>
-            <View style={styles.handle} />
-            <View style={styles.header}>
-              <Text style={styles.title}>Your Cart</Text>
-              <Pressable onPress={animateClose} hitSlop={8} accessibilityLabel="Close cart">
-                <Ionicons name="close-circle" size={26} color={palette.textFaint} />
-              </Pressable>
+          <View style={styles.sheetInner}>
+            <View style={styles.dragZone} {...panResponder.panHandlers}>
+              <View style={styles.handle} />
+              <View style={styles.header}>
+                <Text style={styles.title}>Your Cart</Text>
+                <Pressable onPress={animateClose} hitSlop={8} accessibilityLabel="Close cart">
+                  <Ionicons name="close-circle" size={26} color={palette.textFaint} />
+                </Pressable>
+              </View>
             </View>
+            {children}
           </View>
-          {children}
+          <View style={styles.sheetBleed} />
         </Reanimated.View>
       </View>
     </Modal>
@@ -198,6 +201,7 @@ const getStyles = (
     root: {
       flex: 1,
       justifyContent: 'flex-end',
+      overflow: 'hidden',
     },
     backdrop: {
       ...StyleSheet.absoluteFill,
@@ -208,8 +212,19 @@ const getStyles = (
       backgroundColor: palette.surface,
       borderTopLeftRadius: Radius.xl,
       borderTopRightRadius: Radius.xl,
-      paddingBottom: Math.max(bottomInset, Spacing.md),
       ...cardShadow(isDark),
+    },
+    sheetInner: {
+      flex: 1,
+      paddingBottom: Math.max(bottomInset, Spacing.md),
+    },
+    sheetBleed: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: -SHEET_BLEED,
+      height: SHEET_BLEED,
+      backgroundColor: palette.surface,
     },
     dragZone: {
       paddingTop: Spacing.sm,

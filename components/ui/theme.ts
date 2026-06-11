@@ -5,6 +5,8 @@
  * definitions so screens stay visually consistent.
  */
 
+import { Platform } from 'react-native';
+
 export type ThemePalette = {
   /** Screen background. */
   bg: string;
@@ -154,3 +156,16 @@ export const chipShadow = (isDark: boolean) => ({
   shadowRadius: 6,
   elevation: 3,
 });
+
+/** Native tab bar height (expo-router NativeTabs). */
+export const NATIVE_TAB_BAR_HEIGHT = Platform.select({ ios: 49, android: 56, default: 56 }) ?? 56;
+
+/** Bottom offset on full-bleed screens (parent does not apply bottom safe-area padding). */
+export function floatingAboveTabBar(bottomInset: number, gap = Spacing.sm) {
+  return bottomInset + NATIVE_TAB_BAR_HEIGHT + gap;
+}
+
+/** Bottom offset inside SafeAreaView / content that already clears the home indicator. */
+export function floatingAboveTabBarFromSafeContent(gap = Spacing.sm) {
+  return NATIVE_TAB_BAR_HEIGHT + gap;
+}

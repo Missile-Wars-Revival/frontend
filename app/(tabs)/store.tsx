@@ -15,7 +15,7 @@ import { additem } from '../../api/add-item';
 import { getWeaponTypes, mapProductType, PremProduct, Product, getImages } from '../../api/store';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { useOnboarding } from '../../util/Context/onboardingContext';
-import { getPalette, Gradients, Spacing, Radius, cardShadow, type ThemePalette } from '../../components/ui/theme';
+import { getPalette, Gradients, Spacing, Radius, cardShadow, floatingAboveTabBarFromSafeContent, type ThemePalette } from '../../components/ui/theme';
 import { SegmentedControl } from '../../components/ui/SegmentedControl';
 import { PressableScale } from '../../components/ui/PressableScale';
 import { AnimatedEntrance } from '../../components/ui/AnimatedEntrance';
@@ -724,7 +724,7 @@ const StorePage: React.FC = () => {
 const CART_BAR_HEIGHT = 56;
 
 const getStyles = (palette: ThemePalette, isDark: boolean, bottomInset: number) => {
-  const cartBarBottom = Math.max(bottomInset, Spacing.sm);
+  const cartBarBottom = floatingAboveTabBarFromSafeContent();
 
   return StyleSheet.create({
   container: {

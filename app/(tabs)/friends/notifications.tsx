@@ -9,9 +9,9 @@ import { useRouter } from 'expo-router';
 import { MissileLibrary } from '../../../components/Missile/missile';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getlocActive } from '../../../api/locationOptions';
-import AnimatedEntrance from '../../../components/ui/AnimatedEntrance';
-import PressableScale from '../../../components/ui/PressableScale';
-import haptics from '../../../components/ui/haptics';
+import { AnimatedEntrance } from '../../../components/ui/AnimatedEntrance';
+import { PressableScale } from '../../../components/ui/PressableScale';
+import { haptics } from '../../../components/ui/haptics';
 import { getPalette, Gradients, Radius, Spacing, cardShadow } from '../../../components/ui/theme';
 
 export interface Notification {
@@ -108,14 +108,13 @@ const NotificationsPage: React.FC = () => {
 	const isDarkMode = colorScheme === 'dark';
 	const c = getPalette(isDarkMode);
 
-	const fetchLocActiveStatus = async () => {
-		try {
-			const status = await getlocActive();
-			setLocActive(status);
-		} catch (error) {
-			console.error("Failed to fetch locActive status:", error);
+	const goBack = useCallback(() => {
+		if (router.canGoBack()) {
+			router.back();
+		} else {
+			router.navigate('/friends');
 		}
-	};
+	}, [router]);
 
 	useEffect(() => {
 		const initializeApp = async () => {
@@ -130,9 +129,15 @@ const NotificationsPage: React.FC = () => {
 			} catch (error) {
 				console.error('Error initializing app:', error);
 			}
+
+			try {
+				const status = await getlocActive();
+				setLocActive(status);
+			} catch (error) {
+				console.error('Failed to fetch locActive status:', error);
+			}
 		};
-		initializeApp();
-		fetchLocActiveStatus();
+		void initializeApp();
 	}, []);
 
 	const handleAccept = useCallback(async (item: Notification) => {
@@ -289,7 +294,7 @@ const NotificationsPage: React.FC = () => {
 				</PressableScale>
 			</AnimatedEntrance>
 		);
-	}, [hiddenIds, markAsRead, handleAccept, handleDecline, handleFireBack, dismissNotification, isAlive, locActive, isDarkMode, c]);
+	}, [hiddenIds, markAsRead, handleAccept, handleDecline, handleFireBack, dismissNotification, isAlive, locActive, isDarkMode, c, router]);
 
 	return (
 		<View style={[styles.container, { backgroundColor: c.bg }]}>
@@ -299,7 +304,7 @@ const NotificationsPage: React.FC = () => {
 				end={{ x: 1, y: 1 }}
 				style={styles.header}
 			>
-				<PressableScale haptic="select" onPress={() => router.navigate('/friends')} style={styles.backBtn}>
+				<PressableScale haptic="select" onPress={goBack} style={styles.backBtn}>
 					<Ionicons name="chevron-back" size={24} color="#fff" />
 				</PressableScale>
 				<Text style={styles.headerTitle}>Notifications</Text>

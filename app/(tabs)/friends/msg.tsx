@@ -3,11 +3,10 @@ import { View, Text, FlatList, Pressable, StyleSheet, SafeAreaView, useColorSche
 import { Image } from 'expo-image';
 import { Link, useRouter, Stack , useFocusEffect } from 'expo-router';
 import Ionicons from '@react-native-vector-icons/ionicons';
-import { getDatabase, ref, onValue, get, remove, push, set, off } from 'firebase/database';
+import { getDatabase, ref, onValue, get, remove, off } from 'firebase/database';
 import * as SecureStore from "expo-secure-store";
 import useFetchFriends from '../../../hooks/websockets/friendshook';
 import { fetchAndCacheImage } from '../../../util/imagecache';
-import { useNotifications } from '../../../components/Notifications/useNotifications';
 import { markMessageNotificationAsRead } from '../../../api/notifications';
 
 const DEFAULT_IMAGE = require('../../../assets/mapassets/Female_Avatar_PNG.png');
@@ -29,7 +28,6 @@ type Conversation = {
 
 const ConversationList = () => {
   const router = useRouter();
-  const { notifications, isLoading, markAsRead, markMessagesAsRead } = useNotifications();
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -60,15 +58,6 @@ const ConversationList = () => {
   useEffect(() => {
     markMessageNotificationAsRead();
   }, []);
-
-  // Add this new effect to refresh conversations when the screen is focused
-  useFocusEffect(
-    useCallback(() => {
-      if (username) {
-        refreshConversations();
-      }
-    }, [username])
-  );
 
   const refreshConversations = useCallback(() => {
     if (!username) return;
@@ -117,6 +106,14 @@ const ConversationList = () => {
       }
     });
   }, [username]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (username) {
+        refreshConversations();
+      }
+    }, [username, refreshConversations])
+  );
 
   useEffect(() => {
     if (!username) return;

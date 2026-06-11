@@ -19,7 +19,9 @@ import MissileFiringAnimation from "../../../components/Animations/MissileFiring
 import { AnimatedEntrance } from "../../../components/ui/AnimatedEntrance";
 import { PressableScale } from "../../../components/ui/PressableScale";
 import { haptics } from "../../../components/ui/haptics";
-import { getPalette, Gradients, Radius, Spacing, cardShadow } from "../../../components/ui/theme";
+import { getPalette, Gradients, Radius, Spacing, cardShadow, floatingAboveTabBar } from "../../../components/ui/theme";
+
+const DEV_OFFLINE_TOKEN = "dev-offline-token";
 
 interface Friend {
   username: string;
@@ -46,7 +48,7 @@ const FriendsPage: React.FC = () => {
   const c = getPalette(isDarkMode);
   const insets = useSafeAreaInsets();
   const [showMissileFiringAnimation, setShowMissileFiringAnimation] = useState(false);
-  const [hasFirebaseUID, setHasFirebaseUID] = useState(false);
+  const [canShowChatFab, setCanShowChatFab] = useState(false);
 
   const handleUnreadCountUpdate = useCallback(({ count, chatCount }: { count: number, chatCount: number }) => {
     setLocalUnreadCount(count);
@@ -90,6 +92,18 @@ const FriendsPage: React.FC = () => {
     fetchLocActiveStatus();
     const intervalId = setInterval(fetchLocActiveStatus, 30000);
     return () => clearInterval(intervalId);
+  }, []);
+
+  useEffect(() => {
+    const checkChatAccess = async () => {
+      const [firebaseUID, token] = await Promise.all([
+        SecureStore.getItemAsync("firebaseUID"),
+        SecureStore.getItemAsync("token"),
+      ]);
+      const isDevAccount = __DEV__ && token === DEV_OFFLINE_TOKEN;
+      setCanShowChatFab(!!firebaseUID || isDevAccount);
+    };
+    void checkChatAccess();
   }, []);
 
   const handleRemPress = (friendUsername: string) => {
@@ -174,14 +188,6 @@ const FriendsPage: React.FC = () => {
       setFilteredFriends([]);
     }
   };
-
-  useEffect(() => {
-    const checkFirebaseUID = async () => {
-      const firebaseUID = await SecureStore.getItemAsync("firebaseUID");
-      setHasFirebaseUID(!!firebaseUID);
-    };
-    checkFirebaseUID();
-  }, []);
 
   const listFriends = isSearchActive ? filteredFriends : friends;
   const showEmpty = isSearchActive
@@ -367,12 +373,11 @@ const FriendsPage: React.FC = () => {
         </View>
       </Modal>
 
-      {hasFirebaseUID && (
+      {canShowChatFab && (
         <PressableScale
           haptic="tap"
           onPress={() => router.navigate("/friends/msg")}
-          // Sit above the native tab bar (~50pt) plus the home indicator inset.
-          style={[styles.fab, { bottom: insets.bottom + 66 }]}
+          style={[styles.fab, { bottom: floatingAboveTabBar(insets.bottom) }]}
         >
           <LinearGradient colors={Gradients.brand} style={styles.fabFill}>
             <Ionicons name="chatbubble-ellipses" size={26} color="#fff" />
@@ -522,11 +527,11 @@ const styles = StyleSheet.create({
   missileEmpty: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: Spacing.xl },
   fab: {
     position: 'absolute',
-    bottom: 28,
-    right: 24,
+    left: Spacing.lg,
     width: 60,
     height: 60,
     borderRadius: 30,
+    zIndex: 10,
     shadowColor: '#5B5BF0',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.4,
