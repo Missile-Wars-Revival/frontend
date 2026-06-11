@@ -49,7 +49,6 @@ const CountdownProvider: React.FC<CountdownProviderProps> = ({ children }) => {
 export default function RootLayout() {
   const queryClient = new QueryClient();
   const [isSplashVisible, setIsSplashVisible] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | undefined>(undefined);
   const [appState, setAppState] = useState(AppState.currentState);
   const [lastActiveTime, setLastActiveTime] = useState(Date.now());
   const router = useRouter();
@@ -94,18 +93,18 @@ export default function RootLayout() {
   }, []);
 
 
-  const handleSplashFinish = useCallback((authenticated: boolean) => {
-    setIsAuthenticated(authenticated);
+  // AuthProvider derives the signed-in state from AsyncStorage on its own, so
+  // the splash result is only the cue to reveal the app shell.
+  const handleSplashFinish = useCallback((_authenticated: boolean) => {
     setIsSplashVisible(false);
   }, []);
 
-  // Sign-out restarts the app shell: showing the splash unmounts the whole
-  // provider tree, so OnboardingGate re-checks `alreadyLaunchedV3` (cleared on
-  // logout) and the user sees splash → onboarding → login, never onboarding
-  // after login.
+  // Sign-out restarts the app shell: showing the splash unmounts everything
+  // below the websocket provider, so OnboardingGate re-checks
+  // `alreadyLaunchedV3` (cleared on logout) and the user sees
+  // splash → onboarding → login, never onboarding after login.
   useEffect(() => {
     const subscription = DeviceEventEmitter.addListener(APP_RELAUNCH_EVENT, () => {
-      setIsAuthenticated(undefined);
       setIsSplashVisible(true);
     });
     return () => subscription.remove();
@@ -155,26 +154,33 @@ export default function RootLayout() {
     };
   }, [handleAppStateChange]);
 
-  if (isSplashVisible) {
-    return <SplashScreen onFinish={handleSplashFinish} />;
-  }
-
   return (
     <QueryClientProvider client={queryClient}>
       <CountdownProvider>
-        <OnboardingGate>
-          <AuthProvider initialIsSignedIn={isAuthenticated}>
-            <WebSocketProvider>
-              <LandmineProvider>
-                <OnboardingProvider>
-                  <PermissionsCheck>
-                    <RootLayoutNav />
-                  </PermissionsCheck>
-                </OnboardingProvider>
-              </LandmineProvider>
-            </WebSocketProvider>
-          </AuthProvider>
-        </OnboardingGate>
+        {/* Auth + websocket sit above the splash gate so a returning user's
+            connection is established while the splash plays — by the time the
+            map mounts the first game-state payload has usually landed. The
+            ConnectingScreen then only matters for fresh logins, which happen
+            after the splash. The websocket hook only connects once
+            AuthProvider resolves `isSignedIn`, so logged-out users cost
+            nothing here. */}
+        <AuthProvider>
+          <WebSocketProvider>
+            {isSplashVisible ? (
+              <SplashScreen onFinish={handleSplashFinish} />
+            ) : (
+              <OnboardingGate>
+                <LandmineProvider>
+                  <OnboardingProvider>
+                    <PermissionsCheck>
+                      <RootLayoutNav />
+                    </PermissionsCheck>
+                  </OnboardingProvider>
+                </LandmineProvider>
+              </OnboardingGate>
+            )}
+          </WebSocketProvider>
+        </AuthProvider>
       </CountdownProvider>
     </QueryClientProvider>
   );
