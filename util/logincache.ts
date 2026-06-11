@@ -18,6 +18,11 @@ export async function saveCredentials(
   }
 }
 
+export async function signOut(): Promise<void> {
+  await clearCredentials();
+  await AsyncStorage.setItem('signedIn', 'false');
+}
+
 export async function clearCredentials(): Promise<void> {
   try {
     await logout();
@@ -36,9 +41,8 @@ export async function clearCredentials(): Promise<void> {
     await AsyncStorage.setItem(`isAlive`, `true`); //Stored locally for same reason as above
     await AsyncStorage.removeItem('signedIn');
     await AsyncStorage.removeItem('locActive');
-    await AsyncStorage.removeItem('notificaitonToken');
     await AsyncStorage.removeItem('onboardingComplete');
-    await AsyncStorage.removeItem('alreadyLaunchedV2');
+    await AsyncStorage.removeItem('alreadyLaunchedV3');
     console.log("All credentials and settings successfully cleared.");
   } catch (error) {
     console.error("Failed to clear credentials and settings:", error);

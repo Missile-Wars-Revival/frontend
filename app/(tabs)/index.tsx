@@ -1,10 +1,13 @@
-import React, { useEffect, useState } from "react";
-import { View, Platform, Alert, StyleSheet, TouchableOpacity, Text, Linking, Dimensions, useColorScheme, Modal, ImageBackground } from "react-native";
+import React, { useEffect, useState, useCallback } from "react";
+import { View, Platform, Alert, StyleSheet, Pressable, Text, Linking, Dimensions, useColorScheme, Modal, ActivityIndicator } from "react-native";
+import { Image } from "expo-image";
+import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
 import axiosInstance from "../../api/axios-instance";
-import axios from "axios";
-import { Ionicons } from '@expo/vector-icons';
+import { isAxiosError } from "axios";
+import Ionicons from '@react-native-vector-icons/ionicons';
 import * as Location from 'expo-location';
 
 // Android Themes
@@ -15,11 +18,7 @@ import { androidCyberpunkMapStyle } from "../../map-themes/Android-themes/cyberp
 import { androidColorblindMapStyle } from "../../map-themes/Android-themes/colourblindstyle";
 
 // IOS Themes
-import { IOSDefaultMapStyle } from "../../map-themes/IOS-themes/themestemp";
-import { IOSRadarMapStyle } from "../../map-themes/IOS-themes/themestemp";
-import { IOSCherryBlossomMapStyle } from "../../map-themes/IOS-themes/themestemp";
-import { IOSCyberpunkMapStyle } from "../../map-themes/IOS-themes/themestemp";
-import { IOSColorblindMapStyle } from "../../map-themes/IOS-themes/themestemp";
+import { IOSCherryBlossomMapStyle, IOSColorblindMapStyle, IOSCyberpunkMapStyle, IOSDefaultMapStyle, IOSRadarMapStyle } from "../../map-themes/IOS-themes/themestemp";
 
 // Components
 import { MapStylePopup } from "../../components/map-style-popup";
@@ -29,6 +28,7 @@ import { FireSelector } from "../../components/fire-selector";
 import { MapComp } from "../../components/map-comp";
 import { MapStyle } from "../../types/types";
 import { router } from "expo-router";
+import { useAuth } from "../../util/Context/authcontext";
 import HealthBar from "../../components/healthbar";
 import { getisAlive, setHealth, updateisAlive } from "../../api/health";
 import { playDeathSound } from "../../util/sounds/deathsound";
@@ -37,16 +37,20 @@ import { getlocActive } from "../../api/locationOptions";
 import PlayerViewButton from "../../components/PlayerViewButton";
 import { MissileLibrary } from "../../components/Missile/missile";
 import MissileFiringAnimation from "../../components/Animations/MissileFiring";
-import { useOnboarding } from '../../util/Context/onboardingContext';
+import { getPalette, Gradients, Spacing, Radius, Type, cardShadow, type ThemePalette } from '../../components/ui/theme';
+import { PressableScale } from '../../components/ui/PressableScale';
+import { AnimatedEntrance } from '../../components/ui/AnimatedEntrance';
 
 const { width, height } = Dimensions.get('window');
+const DEV_OFFLINE_TOKEN = "dev-offline-token";
 
 export default function Map() {
+  const { signOut } = useAuth();
   const [selectedMapStyle, setSelectedMapStyle] = useState<MapStyle[]>(Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle);
   const [themePopupVisible, setThemePopupVisible] = useState(false);
-  const [userNAME, setUsername] = useState("");
   const [isAlive, setIsAlive] = useState<boolean | null>(null);
   const [deathsoundPlayed, setdeathSoundPlayed] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const health = useFetchHealth()//WS hook
   const [locActive, setLocActive] = useState<boolean>(true);
   const [locPermsActive, setLocPermsActive] = useState<boolean>(false);
@@ -55,6 +59,43 @@ export default function Map() {
   const [showMissileFiringAnimation, setShowMissileFiringAnimation] = useState(false);
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
+  const palette = getPalette(isDarkMode);
+  const styles = getStyles(palette, isDarkMode);
+  const insets = useSafeAreaInsets();
+
+  const showPopup = useCallback(() => {
+    setThemePopupVisible(true);
+  }, []);
+
+  const closePopup = useCallback(() => {
+    setThemePopupVisible(false);
+  }, []);
+
+  const selectMapStyle = useCallback((style: string) => {
+    closePopup();
+    let selectedStyle;
+    switch (style) {
+      case "default":
+        selectedStyle = Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle;
+        break;
+      case "radar":
+        selectedStyle = Platform.OS === 'android' ? androidRadarMapStyle : IOSRadarMapStyle;
+        break;
+      case "cherry":
+        selectedStyle = Platform.OS === 'android' ? androidCherryBlossomMapStyle : IOSCherryBlossomMapStyle;
+        break;
+      case "cyber":
+        selectedStyle = Platform.OS === 'android' ? androidCyberpunkMapStyle : IOSCyberpunkMapStyle;
+        break;
+      case "colourblind":
+        selectedStyle = Platform.OS === 'android' ? androidColorblindMapStyle : IOSColorblindMapStyle;
+        break;
+      default:
+        selectedStyle = Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle;
+    }
+    setSelectedMapStyle(selectedStyle);
+    storeMapStyle(style);
+  }, [closePopup]);
 
   useEffect(() => {
     const loadStoredMapStyle = async () => {
@@ -65,22 +106,22 @@ export default function Map() {
     };
 
     loadStoredMapStyle();
-  }, []);
+  }, [selectMapStyle]);
 
   // Fetch username from secure storage
   useEffect(() => {
     const fetchCredentials = async () => {
       const credentials = await SecureStore.getItemAsync("username");
-      if (credentials) {
-        setUsername(credentials);
-      } else {
-        await AsyncStorage.setItem('signedIn', 'false');
+      if (!credentials) {
+        await signOut();
         router.navigate("/login");
+      } else {
+        setIsLoggedIn(true);
       }
     };
 
     fetchCredentials();
-  }, []);
+  }, [signOut]);
 
 
   useEffect(() => {
@@ -99,6 +140,11 @@ export default function Map() {
         return;
       }
 
+      if (token === DEV_OFFLINE_TOKEN) {
+        await AsyncStorage.setItem('lastRewardedDate', today);
+        return;
+      }
+
       try {
         const response = await axiosInstance.post('/api/addMoney', {
           token, amount: 1000
@@ -110,7 +156,7 @@ export default function Map() {
           await AsyncStorage.setItem('lastRewardedDate', today); // Update the last rewarded date
         }
       } catch (error) {
-        if (axios.isAxiosError(error)) {
+        if (isAxiosError(error)) {
           console.error('Axios error:', error.response?.data.message || error.message);
         } else {
           console.error('Error adding currency:', error);
@@ -131,7 +177,7 @@ export default function Map() {
         }
         getisAlive(token)
       } catch (error) {
-        if (axios.isAxiosError(error)) {
+        if (isAxiosError(error)) {
           console.error('Axios error:', error.message);
         } else {
           console.error('Error fetching health:', error);
@@ -145,6 +191,8 @@ export default function Map() {
   }, []);
 
   useEffect(() => {
+    if (!isLoggedIn) return;
+
     const initializeApp = async () => {
       try {
         const isAliveStatusString = await AsyncStorage.getItem('isAlive');
@@ -171,19 +219,28 @@ export default function Map() {
     const intervalId = setInterval(initializeApp, 1000);
 
     return () => clearInterval(intervalId);
-  }, [deathsoundPlayed]);
-
-  const fetchLocActiveStatus = async () => {
-    try {
-      const status = await getlocActive();
-      setLocActive(status);
-    } catch (error) {
-      console.error("Failed to fetch locActive status:", error);
-    } finally {
-    }
-  };
+  }, [deathsoundPlayed, isLoggedIn]);
 
   useEffect(() => {
+    const fetchLocActiveStatus = async () => {
+      const status = await getlocActive().catch((error) => {
+        console.error("Failed to fetch locActive status:", error);
+        return undefined;
+      });
+      if (status !== undefined) {
+        setLocActive(status);
+      }
+    };
+
+    const checkPermissions = async () => {
+      const { status } = await Location.getForegroundPermissionsAsync();
+      if (status === 'granted') {
+        setLocPermsActive(true);
+      } else {
+        setLocPermsActive(false);
+      }
+    };
+
     fetchLocActiveStatus();
     checkPermissions();
     const locActiveIntervalId = setInterval(fetchLocActiveStatus, 3000);
@@ -194,49 +251,6 @@ export default function Map() {
       clearInterval(permsIntervalId);
     };
   }, []);
-
-  const checkPermissions = async () => {
-    const { status } = await Location.getForegroundPermissionsAsync();
-    if (status === 'granted') {
-      setLocPermsActive(true);
-    } else {
-      setLocPermsActive(false);
-    }
-  };
-
-  const showPopup = () => {
-    setThemePopupVisible(true);
-  };
-
-  const closePopup = () => {
-    setThemePopupVisible(false);
-  };
-
-  const selectMapStyle = (style: string) => {
-    closePopup();
-    let selectedStyle;
-    switch (style) {
-      case "default":
-        selectedStyle = Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle;
-        break;
-      case "radar":
-        selectedStyle = Platform.OS === 'android' ? androidRadarMapStyle : IOSRadarMapStyle;
-        break;
-      case "cherry":
-        selectedStyle = Platform.OS === 'android' ? androidCherryBlossomMapStyle : IOSCherryBlossomMapStyle;
-        break;
-      case "cyber":
-        selectedStyle = Platform.OS === 'android' ? androidCyberpunkMapStyle : IOSCyberpunkMapStyle;
-        break;
-      case "colourblind":
-        selectedStyle = Platform.OS === 'android' ? androidColorblindMapStyle : IOSColorblindMapStyle;
-        break;
-      default:
-        selectedStyle = Platform.OS === 'android' ? androidDefaultMapStyle : IOSDefaultMapStyle;
-    }
-    setSelectedMapStyle(selectedStyle);
-    storeMapStyle(style);
-  };
 
   const handleRespawn = async () => {
     const token = await SecureStore.getItemAsync("token");
@@ -273,11 +287,16 @@ export default function Map() {
     setSelectedPlayer("");
   };
 
+  if (!isLoggedIn) {
+    return <View style={styles.container} />;
+  }
+
   return (
-    <View style={[styles.container, isDarkMode && styles.containerDark]}>
+    <View style={styles.container}>
       {isAlive === null ? (
-        <View style={[styles.loadingContainer, isDarkMode && styles.loadingContainerDark]}>
-          <Text style={[styles.loadingText, isDarkMode && styles.loadingTextDark]}>Loading for the first time...</Text>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={palette.accent} />
+          <Text style={styles.loadingText}>Preparing the battlefield...</Text>
         </View>
       ) : isAlive ? (
         // Render the map and game UI when the user is alive
@@ -296,7 +315,7 @@ export default function Map() {
             onSelect={selectMapStyle}
           />
           {locActive && (
-            <View style={styles.fireSelectorContainer}>
+            <View style={[styles.fireSelectorContainer, { bottom: insets.bottom + 40 }]}>
               <FireSelector
                 selectedMapStyle={selectedMapStyle}
                 getStoredMapStyle={getStoredMapStyle}
@@ -312,61 +331,56 @@ export default function Map() {
         </>
       ) : (
         // Render the death screen when the user is not alive
-        <View style={[styles.containerdeath, isDarkMode && styles.containerdeathDark]}>
-          <TouchableOpacity
-            onPress={() => respawn()}
-            style={styles.bannerdeathContainer}
-            activeOpacity={0.7}
-          >
-            <ImageBackground 
-              source={require('../../assets/deathscreen.png')} 
-              style={styles.bannerdeath}
-              resizeMode="contain"
+        <View style={styles.deathScreen}>
+          <AnimatedEntrance offsetY={24} fromScale={0.96} style={styles.deathCard}>
+            <Image
+              source={require('../../assets/deathscreen.png')}
+              style={styles.deathImage}
+              contentFit="contain"
+            />
+            <Text style={styles.deathTitle}>You Died</Text>
+            <Text style={styles.deathSubtitle}>
+              Your position was eliminated. Respawn to rejoin the battle.
+            </Text>
+            <PressableScale haptic="tap" onPress={() => respawn()} style={styles.respawnButtonWrap}>
+              <LinearGradient colors={Gradients.fire} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.respawnButton}>
+                <Ionicons name="refresh" size={20} color="#FFFFFF" />
+                <Text style={styles.respawnButtonText}>Respawn</Text>
+              </LinearGradient>
+            </PressableScale>
+            <PressableScale
+              haptic="select"
+              onPress={() => Linking.openURL('https://discord.gg/Gk8jqUnVd3')}
+              style={styles.supportButton}
             >
-              <View style={styles.deathTextContainer}>
-                <Text style={styles.deathText}>You Died!!</Text>
-              </View>
-            </ImageBackground>
-            <View style={styles.respawnTextContainer}>
-              <Text style={[styles.respawnText, isDarkMode && styles.respawnTextDark]}>
-                Tap here to respawn
-              </Text>
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => Linking.openURL('https://discord.gg/Gk8jqUnVd3')}
-            style={[styles.retryButton, isDarkMode && styles.retryButtonDark]}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.retryButtonText, isDarkMode && styles.retryButtonTextDark]}>Contact Support</Text>
-          </TouchableOpacity>
+              <Ionicons name="help-buoy-outline" size={16} color={palette.textMuted} />
+              <Text style={styles.supportButtonText}>Contact Support</Text>
+            </PressableScale>
+          </AnimatedEntrance>
         </View>
       )}
       {(isAlive && !locActive || !locPermsActive) && (
-        <View style={[
-          styles.permissionContainer, 
-          isDarkMode && styles.permissionContainerDark,
-          styles.fullScreenOverlay // Add this new style
-        ]}>
-          <Ionicons name="location-outline" size={80} color={isDarkMode ? "#FFF" : "#007AFF"} />
-          <Text style={[styles.permissionTitle, isDarkMode && styles.permissionTitleDark]}>
-            Location Access Required
-          </Text>
-          <Text style={[styles.permissionText, isDarkMode && styles.permissionTextDark]}>
-            To enjoy the full game experience, we need access to your location. This allows us to show your position on the map and enable exciting gameplay features.
-          </Text>
-          <Text style={[styles.permissionSubText, isDarkMode && styles.permissionSubTextDark]}>
-            Please enable location services for this app in your device settings.
-          </Text>
-          {(!locActive &&
-          <TouchableOpacity
-            style={[styles.permissionButton, isDarkMode && styles.permissionButtonDark]}
-            onPress={() => router.navigate('/settings')}
-          >
-            <Text style={styles.permissionButtonText}>Grant Permission</Text>
-          </TouchableOpacity>
-          )}
+        <View style={[styles.permissionContainer, styles.fullScreenOverlay]}>
+          <AnimatedEntrance offsetY={24} fromScale={0.96} style={styles.permissionCard}>
+            <View style={styles.permissionIconWrap}>
+              <Ionicons name="location" size={40} color={palette.accent} />
+            </View>
+            <Text style={styles.permissionTitle}>Location Access Required</Text>
+            <Text style={styles.permissionText}>
+              To enjoy the full game experience, we need access to your location. This allows us to show your position on the map and enable exciting gameplay features.
+            </Text>
+            <Text style={styles.permissionSubText}>
+              Please enable location services for this app in your device settings.
+            </Text>
+            {(!locActive &&
+            <PressableScale haptic="tap" onPress={() => router.navigate('/settings')} style={styles.permissionButtonWrap}>
+              <LinearGradient colors={Gradients.brand} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.permissionButton}>
+                <Ionicons name="settings-outline" size={18} color="#FFFFFF" />
+                <Text style={styles.permissionButtonText}>Grant Permission</Text>
+              </LinearGradient>
+            </PressableScale>
+            )}
+          </AnimatedEntrance>
         </View>
       )}
       <Modal
@@ -375,15 +389,15 @@ export default function Map() {
         visible={showMissileLibrary}
         onRequestClose={() => setShowMissileLibrary(false)}
       >
-        <View style={[styles.missileLibraryContainer, isDarkMode && styles.missileLibraryContainerDark]}>
-          <View style={[styles.missileLibraryHeader, isDarkMode && styles.missileLibraryHeaderDark]}>
-            <Text style={[styles.missileLibraryTitle, isDarkMode && styles.missileLibraryTitleDark]}>Missile Library</Text>
-            <TouchableOpacity
+        <View style={styles.missileLibraryContainer}>
+          <View style={styles.missileLibraryHeader}>
+            <Text style={styles.missileLibraryTitle}>Missile Library</Text>
+            <Pressable
               style={styles.doneButton}
               onPress={() => setShowMissileLibrary(false)}
             >
               <Text style={styles.doneButtonText}>Done</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
           <MissileLibrary
             playerName={selectedPlayer}
@@ -402,13 +416,10 @@ export default function Map() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (palette: ThemePalette, isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'white',
-  },
-  containerDark: {
-    backgroundColor: '#1E1E1E',
+    backgroundColor: palette.bg,
   },
   healthBarContainer: {
     position: 'absolute',
@@ -416,37 +427,10 @@ const styles = StyleSheet.create({
     left: width * 0.05,
     width: width * 0.9,
   },
-  themeButton: {
-    position: 'absolute',
-    top: height * 0.15,
-    right: width * 0.05,
-  },
   fireSelectorContainer: {
     position: 'absolute',
-    bottom: height * 0.0001,
-    left: width * 0.000001,
-  },
-  containerdeath: {
-    flex: 1,
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: 'white',
-    paddingVertical: 10,
-  },
-  containerdeathDark: {
-    backgroundColor: '#1E1E1E',
-  },
-  bannerdeathContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',  // Add this
-  },
-  bannerdeath: {
-    width: width * 0.9,
-    height: height * 0.5,
-    justifyContent: 'center',
-    alignItems: 'center',
+    bottom: 0,
+    left: 0,
   },
   fullScreenOverlay: {
     position: 'absolute',
@@ -454,116 +438,129 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    zIndex: 1000, 
+    zIndex: 1000,
   },
-  respawnTextContainer: {
-    position: 'absolute',
-    bottom: 20,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingVertical: 10,
-  },
-  respawnText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    textAlign: 'center',
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: -1, height: 1 },
-    textShadowRadius: 10
-  },
-  respawnTextDark: {
-    color: '#FFF',
-  },
-  topAdContainer: {
-    width: '100%',
-    alignItems: 'center',
-    marginTop: 100,
-  },
-  bottomAdContainer: {
-    width: '100%',
-    alignItems: 'center',
-    marginBottom: 40
-  },
-  retryButton: {
-    backgroundColor: 'red',
-    padding: 10,
-    borderRadius: 5,
-    width: width * 0.5,
-    marginTop: 10,
-    marginBottom: 10, // Add some space below the button
-  },
-  retryButtonDark: {
-    backgroundColor: '#FF4136',
-  },
-  retryButtonText: {
-    color: 'white',
-    fontSize: 16,
-    textAlign: 'center',
-  },
-  retryButtonTextDark: {
-    color: '#FFF',
-  },
-  permissionContainer: {
+  deathScreen: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F7F7F7',
-    padding: 20,
+    backgroundColor: palette.bg,
+    padding: Spacing.xl,
+    paddingBottom: Platform.OS === 'ios' ? 110 : 95,
   },
-  permissionContainerDark: {
-    backgroundColor: '#1E1E1E',
+  deathCard: {
+    width: '100%',
+    maxWidth: 380,
+    alignItems: 'center',
+    backgroundColor: palette.surface,
+    borderRadius: Radius.xl,
+    borderWidth: 1,
+    borderColor: palette.border,
+    padding: Spacing.xl,
+    ...cardShadow(isDark),
+  },
+  deathImage: {
+    width: width * 0.6,
+    height: width * 0.45,
+    marginBottom: Spacing.md,
+  },
+  deathTitle: {
+    ...Type.display,
+    color: palette.danger,
+  },
+  deathSubtitle: {
+    ...Type.body,
+    color: palette.textMuted,
+    textAlign: 'center',
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.xl,
+  },
+  respawnButtonWrap: {
+    width: '100%',
+  },
+  respawnButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    paddingVertical: Spacing.md + 2,
+    borderRadius: Radius.lg,
+  },
+  respawnButtonText: {
+    ...Type.button,
+    color: '#FFFFFF',
+  },
+  supportButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+  },
+  supportButtonText: {
+    ...Type.caption,
+    color: palette.textMuted,
+  },
+  permissionContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: palette.bg,
+    padding: Spacing.xl,
+  },
+  permissionCard: {
+    width: '100%',
+    maxWidth: 380,
+    alignItems: 'center',
+    backgroundColor: palette.surface,
+    borderRadius: Radius.xl,
+    borderWidth: 1,
+    borderColor: palette.border,
+    padding: Spacing.xl,
+    ...cardShadow(isDark),
+  },
+  permissionIconWrap: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: palette.accentSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.lg,
   },
   permissionTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginTop: 20,
-    marginBottom: 10,
-  },
-  permissionTitleDark: {
-    color: '#FFF',
+    ...Type.title,
+    color: palette.text,
+    textAlign: 'center',
+    marginBottom: Spacing.sm,
   },
   permissionText: {
-    fontSize: 16,
-    color: '#666',
+    ...Type.body,
+    color: palette.textMuted,
     textAlign: 'center',
-    marginBottom: 30,
-    lineHeight: 24,
-  },
-  permissionTextDark: {
-    color: '#CCC',
+    marginBottom: Spacing.md,
   },
   permissionSubText: {
-    fontSize: 14,
-    color: '#666',
+    ...Type.caption,
+    fontWeight: '400',
+    color: palette.textFaint,
     textAlign: 'center',
-    marginTop: 10,
-    marginBottom: 20,
+    marginBottom: Spacing.lg,
   },
-  permissionSubTextDark: {
-    color: '#AAA',
+  permissionButtonWrap: {
+    width: '100%',
   },
   permissionButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 30,
-    paddingVertical: 15,
-    borderRadius: 25,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  permissionButtonDark: {
-    backgroundColor: '#0A84FF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    paddingVertical: Spacing.md + 2,
+    borderRadius: Radius.lg,
   },
   permissionButtonText: {
-    color: '#FFF',
-    fontSize: 18,
-    fontWeight: '600',
+    ...Type.button,
+    color: '#FFFFFF',
   },
   switchContainer: {
     position: 'absolute',
@@ -574,103 +571,48 @@ const styles = StyleSheet.create({
   },
   missileLibraryContainer: {
     flex: 1,
-    backgroundColor: '#ffffff',
-    paddingTop: 60,
-  },
-  missileLibraryContainerDark: {
-    backgroundColor: '#1E1E1E',
+    backgroundColor: palette.bg,
     paddingTop: 60,
   },
   missileLibraryHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 15,
-    backgroundColor: '#f7fafc',
-  },
-  missileLibraryHeaderDark: {
-    backgroundColor: '#2C2C2C',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    backgroundColor: palette.surface,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: palette.border,
   },
   missileLibraryTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#2d3748',
-  },
-  missileLibraryTitleDark: {
-    color: '#FFF',
+    ...Type.title,
+    color: palette.text,
   },
   doneButton: {
-    backgroundColor: '#4299e1',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 5,
+    backgroundColor: palette.accent,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    borderRadius: Radius.pill,
   },
   doneButtonText: {
-    color: '#ffffff',
-    fontWeight: 'bold',
+    ...Type.caption,
+    color: '#FFFFFF',
   },
   animationOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 1000,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  footerAdContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 50, // Adjust based on your banner ad size
-    backgroundColor: 'transparent',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  dismissAdButton: {
-    position: 'absolute',
-    right: 5,
-    top: 5,
-    zIndex: 1,
-  },
-  rewardedAdButton: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    backgroundColor: '#4CAF50',
-    padding: 10,
-    borderRadius: 5,
-  },
-  rewardedAdButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-  },
-  loadingContainerDark: {
-    backgroundColor: '#1E1E1E',
+    gap: Spacing.md,
+    backgroundColor: palette.bg,
   },
   loadingText: {
-    fontSize: 18,
-    color: '#333333',
-  },
-  loadingTextDark: {
-    color: '#FFFFFF',
-  },
-  deathTextContainer: {
-    position: 'absolute',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  deathText: {
-    fontSize: 40,
-    fontWeight: 'bold',
-    color: 'red',
-    textAlign: 'center',
-    textShadowColor: 'black',
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 3,
+    ...Type.body,
+    color: palette.textMuted,
   },
 });

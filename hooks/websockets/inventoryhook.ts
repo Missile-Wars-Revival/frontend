@@ -2,6 +2,8 @@ import { InventoryItem } from "../../types/types";
 import { useWebSocketContext } from "../../util/Context/websocket";
 import { useEffect, useState } from "react";
 
+/* eslint-disable react-hooks/set-state-in-effect */
+
 const useFetchInventory = (): InventoryItem[] => {
     const { inventorydata } = useWebSocketContext();
     const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);

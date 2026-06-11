@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { Button, View, Image, Text, Modal, Dimensions, StyleSheet, TouchableOpacity, useColorScheme } from "react-native";
+import React, { useState, useMemo } from "react";
+import { View, Text, Modal, Dimensions, StyleSheet, Pressable, useColorScheme } from "react-native";
+import { Image } from "expo-image";
 import { Circle, Marker } from "react-native-maps";
 import { MissileLibrary } from "./Missile/missile";
 import { Players } from "./map-players";
 import { useUserName } from "../util/fetchusernameglobal";
-import { fetchAndCacheImage } from "../util/imagecache";
 import useFetchFriends from "../hooks/websockets/friendshook";
 
 const resizedplayerimage = require("../assets/mapassets/Female_Avatar_PNG.png");
@@ -167,26 +167,11 @@ const getRandomLocation = (latitude: number, longitude: number, radius: number) 
 export const PlayerComp = (props: PlayerProps) => {
   const [selectedMarkerIndex, setSelectedMarkerIndex] = useState<number | null>(null);
   const [showMissileLibrary, setShowMissileLibrary] = useState(false);
-  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
 
   const userName = useUserName();
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
   const friends = useFetchFriends(); // Use the friends hook
-
-  useEffect(() => {
-    const loadProfileImage = async () => {
-      try {
-        const imageUrl = await fetchAndCacheImage(props.player.username);
-        setProfileImageUrl(imageUrl);
-      } catch (error) {
-        console.error("Failed to load profile image:", error);
-        setProfileImageUrl(null); // Fallback to default image if loading fails
-      }
-    };
-
-    loadProfileImage();
-  }, [props.player.username]);
 
   const fireMissile = (playerName: string) => {
     setShowMissileLibrary(true);
@@ -231,7 +216,7 @@ export const PlayerComp = (props: PlayerProps) => {
       return getOffsetLocation(latitude, longitude, offsetRadius);
     }
     return { latitude, longitude };
-  }, [useRandomLocation, latitude, longitude]);
+  }, [useRandomLocation, latitude, longitude, offsetRadius]);
 
   // Compute marker location
   const markerLocation = useMemo(() => {
@@ -239,7 +224,7 @@ export const PlayerComp = (props: PlayerProps) => {
       return getRandomLocation(circleCenter.latitude, circleCenter.longitude, circleRadius);
     }
     return { latitude, longitude };
-  }, [useRandomLocation, circleCenter, circleRadius]);
+  }, [useRandomLocation, circleCenter, circleRadius, latitude, longitude]);
 
   // Define dynamic colors based on useRandomLocation
   const circleFillColor = useRandomLocation ? "rgba(0, 255, 0, 0.1)" : "rgba(0, 255, 0, 0.2)";
@@ -261,9 +246,9 @@ export const PlayerComp = (props: PlayerProps) => {
         zIndex={2} // Higher zIndex for players
       >
         <View style={{ alignItems: 'center', position: 'relative' }}>
-          <Image 
-            source={profileImageUrl ? { uri: profileImageUrl } : resizedplayerimage} 
-            style={styles.profileImage} 
+          <Image
+            source={props.player.profileImageUrl ? { uri: props.player.profileImageUrl } : resizedplayerimage}
+            style={styles.profileImage}
           />
           {transportImage && ( // Render the transport image layered on top of the player icon if available
             <Image 
@@ -282,12 +267,12 @@ export const PlayerComp = (props: PlayerProps) => {
           <Text style={styles.username}>{props.player.username}</Text>
 
           {selectedMarkerIndex !== null && selectedMarkerIndex === props.index && props.player.username !== userName && (
-            <TouchableOpacity
-              style={styles.fireMissileButton}
+            <Pressable
+              style={({ pressed }) => [styles.fireMissileButton, pressed && { opacity: 0.7 }]}
               onPress={() => fireMissile(props.player.username)}
             >
               <Text style={styles.fireMissileText}>Fire Missile</Text>
-            </TouchableOpacity>
+            </Pressable>
           )}
 
           <Modal
@@ -300,12 +285,16 @@ export const PlayerComp = (props: PlayerProps) => {
               <View style={[styles.modalContent, isDarkMode && styles.modalContentDark]}>
                 <View style={[styles.modalHeader, isDarkMode && styles.modalHeaderDark]}>
                   <Text style={[styles.modalTitle, isDarkMode && styles.modalTitleDark]}>Missile Library</Text>
-                  <TouchableOpacity
-                    style={[styles.doneButton, isDarkMode && styles.doneButtonDark]}
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.doneButton,
+                      isDarkMode && styles.doneButtonDark,
+                      pressed && { opacity: 0.7 },
+                    ]}
                     onPress={() => setShowMissileLibrary(false)}
                   >
                     <Text style={[styles.doneButtonText, isDarkMode && styles.doneButtonTextDark]}>Done</Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 </View>
                 <MissileLibrary 
                   playerName={props.player.username} 

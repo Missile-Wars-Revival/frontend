@@ -3,30 +3,42 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
+  Pressable,
   Alert,
   Platform,
   Dimensions,
   StatusBar,
-  Animated,
   PanResponder,
   Linking,
-  Image,
   ScrollView,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
-import * as Haptics from 'expo-haptics';
 import * as TrackingTransparency from 'expo-tracking-transparency';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@react-native-vector-icons/ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BlurView } from 'expo-blur';
+import Animated, {
+  Easing,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import { getlocation } from '../util/locationreq';
 import MissileSkiaBackground from '../components/onboarding/MissileSkiaBackground';
+import { OnboardingHero } from '../components/onboarding/OnboardingHero';
+import { PressableScale } from '../components/ui/PressableScale';
+import { haptics } from '../components/ui/haptics';
 
 const { width, height } = Dimensions.get('window');
+
+const HERO_SIZE = Math.min(width * 0.74, height * 0.34, 300);
 
 interface PermissionsScreenProps {
   onPermissionGranted: () => void;
@@ -38,22 +50,21 @@ interface OnboardingSlide {
   subtitle: string;
   description: string;
   image: any;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: React.ComponentProps<typeof Ionicons>['name'];
   gradientColors: readonly [string, string, string];
   accentColor: string;
   glowColor: string;
 }
 
 // Onboarding images - add your own images to assets/onboarding/
-// For now, we'll use the existing Map.png as a fallback
 const ONBOARDING_IMAGES = {
-  welcome: require('../assets/onboarding/welcome.png'), // Replace with welcome image
-  gameplay: require('../assets/onboarding/gameplay.png'), // Replace with gameplay image
-  missiles: require('../assets/onboarding/missiles.png'), // Replace with missiles image
-  landmines: require('../assets/onboarding/landmines.png'), // Replace with landmines image
-  multiplayer: require('../assets/onboarding/multiplayer.png'), // Replace with multiplayer image
-  leagues: require('../assets/onboarding/leagues.png'), // Replace with leagues image
-  permissions: require('../assets/onboarding/permissions.png'), // Replace with permissions image
+  welcome: require('../assets/onboarding/welcome.png'),
+  gameplay: require('../assets/onboarding/gameplay.png'),
+  missiles: require('../assets/onboarding/missiles.png'),
+  landmines: require('../assets/onboarding/landmines.png'),
+  multiplayer: require('../assets/onboarding/multiplayer.png'),
+  leagues: require('../assets/onboarding/leagues.png'),
+  permissions: require('../assets/onboarding/permissions.png'),
 };
 
 const SLIDES: OnboardingSlide[] = [
@@ -136,134 +147,47 @@ const SLIDES: OnboardingSlide[] = [
   },
 ];
 
-export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissionGranted }) => {
+export const PermissionsScreen: React.FC<PermissionsScreenProps> = (props) => {
+  // Web is unsupported for onboarding; render nothing. Keeping this guard in a
+  // hook-free wrapper ensures the inner component's hooks always run in order.
   if (Platform.OS === 'web') return null;
+  return <PermissionsScreenInner {...props} />;
+};
 
+const PermissionsScreenInner: React.FC<PermissionsScreenProps> = ({ onPermissionGranted }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [locationPermission, setLocationPermission] = useState(false);
   const [notificationPermission, setNotificationPermission] = useState(false);
   const [trackingPermissionResolved, setTrackingPermissionResolved] = useState(false);
-  const [trackingPermissionGranted, setTrackingPermissionGranted] = useState(false);
   const [privacyAgreed, setPrivacyAgreed] = useState(false);
 
   const currentSlideRef = useRef(currentSlide);
-  currentSlideRef.current = currentSlide;
-
-  // Animations
-  const fadeAnim = useRef(new Animated.Value(1)).current;
-  const slideAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-  const floatAnim = useRef(new Animated.Value(0)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const [glowValue, setGlowValue] = useState(0.4);
-  const particleAnims = useRef(
-    Array.from({ length: 6 }, () => ({
-      x: new Animated.Value(0),
-      y: new Animated.Value(0),
-      opacity: new Animated.Value(0.3),
-      scale: new Animated.Value(0.5),
-    }))
-  ).current;
-
-  // Floating animation for images
   useEffect(() => {
-    const float = Animated.loop(
-      Animated.sequence([
-        Animated.timing(floatAnim, {
-          toValue: -20,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(floatAnim, {
-          toValue: 0,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-      ])
+    currentSlideRef.current = currentSlide;
+  }, [currentSlide]);
+
+  // --- Reanimated values -------------------------------------------------
+  // Slide transition: opacity-only crossfade keeps text crisp (no scale jitter).
+  const fade = useSharedValue(1);
+  // Subtle hero float — kept small so copy does not feel like it is shaking.
+  const float = useSharedValue(0);
+
+  useEffect(() => {
+    float.value = withRepeat(
+      withSequence(
+        withTiming(-5, { duration: 2800, easing: Easing.inOut(Easing.quad) }),
+        withTiming(0, { duration: 2800, easing: Easing.inOut(Easing.quad) })
+      ),
+      -1
     );
-    float.start();
-    return () => float.stop();
-  }, []);
+  }, [float]);
 
-  // Glow pulse animation
-  useEffect(() => {
-    let direction = 1;
-    let value = 0.4;
-    const interval = setInterval(() => {
-      value += direction * 0.006;
-      if (value >= 0.7) {
-        value = 0.7;
-        direction = -1;
-      } else if (value <= 0.4) {
-        value = 0.4;
-        direction = 1;
-      }
-      setGlowValue(value);
-    }, 50);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Button pulse animation
-  useEffect(() => {
-    const pulse = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1.03,
-          duration: 1200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 1200,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    pulse.start();
-    return () => pulse.stop();
-  }, []);
-
-  // Particle animations
-  useEffect(() => {
-    particleAnims.forEach((particle, index) => {
-      const delay = index * 500;
-      const duration = 3000 + Math.random() * 2000;
-
-      const animate = () => {
-        particle.x.setValue(Math.random() * width);
-        particle.y.setValue(height + 50);
-        particle.opacity.setValue(0);
-        particle.scale.setValue(0.3 + Math.random() * 0.5);
-
-        Animated.parallel([
-          Animated.timing(particle.y, {
-            toValue: -100,
-            duration,
-            useNativeDriver: true,
-          }),
-          Animated.sequence([
-            Animated.timing(particle.opacity, {
-              toValue: 0.6,
-              duration: duration * 0.3,
-              useNativeDriver: true,
-            }),
-            Animated.timing(particle.opacity, {
-              toValue: 0,
-              duration: duration * 0.7,
-              useNativeDriver: true,
-            }),
-          ]),
-        ]).start(() => animate());
-      };
-
-      setTimeout(animate, delay);
-    });
-  }, []);
-
-  // Check permissions
-  useEffect(() => {
-    checkPermissions();
-  }, []);
+  const contentStyle = useAnimatedStyle(() => ({
+    opacity: fade.value,
+  }));
+  const floatStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: float.value }],
+  }));
 
   const checkPermissions = async () => {
     try {
@@ -278,12 +202,19 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissi
         trackingStatus.status === 'granted' ||
         trackingStatus.status === 'denied';
       setTrackingPermissionResolved(trackingResolved);
-      setTrackingPermissionGranted(trackingStatus.status === 'granted');
 
     } catch (error) {
       console.error('Error checking permissions:', error);
     }
   };
+
+  // Check permissions
+  useEffect(() => {
+    // checkPermissions awaits native permission APIs before any setState, so the
+    // updates are async (not a synchronous cascading render) and safe here.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    checkPermissions();
+  }, []);
 
   const requestTrackingPermission = async () => {
     try {
@@ -292,76 +223,54 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissi
         response.status === 'granted' ||
         response.status === 'denied';
       setTrackingPermissionResolved(resolved);
-      setTrackingPermissionGranted(response.status === 'granted');
 
-      Haptics.notificationAsync(
-        response.status === 'granted'
-          ? Haptics.NotificationFeedbackType.Success
-          : Haptics.NotificationFeedbackType.Warning
-      );
+      if (response.status === 'granted') haptics.success(); else haptics.warning();
     } catch (error) {
       console.error('Error requesting tracking permission:', error);
     }
   };
 
-  const animateSlideChange = (direction: 'next' | 'prev') => {
+  /* eslint-disable react-hooks/immutability --
+     Reanimated shared values are intentionally mutated here; both functions run
+     only from press/swipe handlers (never during render), which the React
+     Compiler cannot infer. */
+
+  // Spring the next slide's content in (runs on the JS thread via runOnJS once
+  // the exit animation has finished on the UI thread).
+  const commitSlide = (nextSlide: number) => {
+    setCurrentSlide(nextSlide);
+    fade.value = withTiming(1, { duration: 220, easing: Easing.out(Easing.quad) });
+  };
+
+  const animateSlideChange = (direction: 'next' | 'prev', target?: number) => {
     const current = currentSlideRef.current;
-    const nextSlide = direction === 'next'
-      ? Math.min(current + 1, SLIDES.length - 1)
-      : Math.max(current - 1, 0);
+    const nextSlide = target !== undefined
+      ? target
+      : direction === 'next'
+        ? Math.min(current + 1, SLIDES.length - 1)
+        : Math.max(current - 1, 0);
 
     if (nextSlide === current) return;
 
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    haptics.select();
 
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 150,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: direction === 'next' ? -60 : 60,
-        duration: 150,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleAnim, {
-        toValue: 0.9,
-        duration: 150,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      setCurrentSlide(nextSlide);
-      slideAnim.setValue(direction === 'next' ? 60 : -60);
-
-      Animated.parallel([
-        Animated.spring(fadeAnim, {
-          toValue: 1,
-          tension: 50,
-          friction: 8,
-          useNativeDriver: true,
-        }),
-        Animated.spring(slideAnim, {
-          toValue: 0,
-          tension: 50,
-          friction: 8,
-          useNativeDriver: true,
-        }),
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          tension: 50,
-          friction: 8,
-          useNativeDriver: true,
-        }),
-      ]).start();
+    fade.value = withTiming(0, { duration: 160, easing: Easing.in(Easing.quad) }, (finished) => {
+      if (finished) {
+        runOnJS(commitSlide)(nextSlide);
+      }
     });
   };
 
+  /* eslint-enable react-hooks/immutability */
+
   const goNext = () => animateSlideChange('next');
   const goPrev = () => animateSlideChange('prev');
+  const skipToEnd = () => animateSlideChange('next', SLIDES.length - 1);
 
-  // Swipe gesture handler
-  const panResponder = useRef(
+  // Swipe gesture handler. The handlers read currentSlideRef only when a gesture
+  // fires (never during render), so the ref access here is safe.
+  // eslint-disable-next-line react-hooks/refs
+  const [panResponder] = useState(() =>
     PanResponder.create({
       onStartShouldSetPanResponder: () => false,
       onMoveShouldSetPanResponder: (_, gestureState) => {
@@ -376,7 +285,7 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissi
         }
       },
     })
-  ).current;
+  );
 
   const requestLocationPermission = async () => {
     try {
@@ -384,9 +293,9 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissi
       setLocationPermission(status === 'granted');
       if (status === 'granted') {
         getlocation();
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        haptics.success();
       } else {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        haptics.warning();
       }
     } catch (error) {
       console.error('Error requesting location:', error);
@@ -397,11 +306,7 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissi
     try {
       const { status } = await Notifications.requestPermissionsAsync();
       setNotificationPermission(status === 'granted');
-      Haptics.notificationAsync(
-        status === 'granted'
-          ? Haptics.NotificationFeedbackType.Success
-          : Haptics.NotificationFeedbackType.Warning
-      );
+      if (status === 'granted') haptics.success(); else haptics.warning();
     } catch (error) {
       console.error('Error requesting notifications:', error);
     }
@@ -409,19 +314,21 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissi
 
   const handleComplete = async () => {
     if (!locationPermission) {
+      haptics.error();
       Alert.alert('Required', 'Location permission is required to play Missile Wars.');
       return;
     }
 
     if (!privacyAgreed) {
+      haptics.error();
       Alert.alert('Required', 'Please agree to the Privacy Policy and Terms of Service to continue.');
       return;
     }
 
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    haptics.success();
 
     try {
-      await AsyncStorage.setItem('alreadyLaunchedV2', 'true');
+      await AsyncStorage.setItem('alreadyLaunchedV3', 'true');
       onPermissionGranted();
     } catch (error) {
       console.error('Error saving onboarding status:', error);
@@ -446,7 +353,6 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissi
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
-      <MissileSkiaBackground />
 
       <LinearGradient
         colors={slide.gradientColors}
@@ -455,67 +361,35 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissi
         style={StyleSheet.absoluteFill}
       />
 
-      {/* Floating particles */}
-      {particleAnims.map((particle, index) => (
-        <Animated.View
-          key={index}
-          style={[
-            styles.particle,
-            {
-              transform: [
-                { translateX: particle.x },
-                { translateY: particle.y },
-                { scale: particle.scale },
-              ],
-              opacity: particle.opacity,
-            },
-          ]}
-        />
-      ))}
+      {/* Animated tactical-radar map, themed to the active slide's accent */}
+      <MissileSkiaBackground accentColor={slide.accentColor} />
 
       <SafeAreaView style={styles.safeArea}>
         {/* Progress dots */}
         <View style={styles.progressContainer}>
-          {SLIDES.map((_, index) => (
-            <Animated.View
-              key={index}
-              style={[
-                styles.progressDot,
-                index === currentSlide && styles.progressDotActive,
-                index < currentSlide && styles.progressDotCompleted,
-                index === currentSlide && {
-                  transform: [{ scale: pulseAnim }],
-                },
-              ]}
+          {SLIDES.map((s, index) => (
+            <ProgressDot
+              key={s.id}
+              active={index === currentSlide}
+              completed={index < currentSlide}
+              accentColor={slide.accentColor}
             />
           ))}
         </View>
 
         {/* Skip button */}
         {currentSlide < SLIDES.length - 1 && (
-          <TouchableOpacity
-            style={styles.skipButton}
-            onPress={() => setCurrentSlide(SLIDES.length - 1)}
-          >
+          <PressableScale style={styles.skipButton} onPress={skipToEnd} haptic="soft">
             <BlurView intensity={20} tint="dark" style={styles.skipButtonBlur}>
               <Text style={styles.skipText}>Skip</Text>
             </BlurView>
-          </TouchableOpacity>
+          </PressableScale>
         )}
 
         {/* Main content */}
         <Animated.View
           {...panResponder.panHandlers}
-          style={[
-            styles.contentContainer,
-            {
-              opacity: fadeAnim,
-              transform: [
-                { translateX: slideAnim },
-                { scale: scaleAnim },
-              ],
-            },
-          ]}
+          style={[styles.contentContainer, contentStyle]}
         >
           {isLastSlide ? (
             // Last slide with permissions
@@ -527,22 +401,12 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissi
             >
               {/* Helper layout: image left, text right */}
               <View style={styles.helperContainer}>
-                <Animated.View
-                  style={[
-                    styles.helperImageContainer,
-                    { transform: [{ translateY: floatAnim }] },
-                  ]}
-                >
-                  <View style={[
-                    styles.helperImageGlow,
-                    { shadowOpacity: glowValue, shadowColor: slide.glowColor },
-                  ]}>
-                    <Image
-                      source={slide.image}
-                      style={styles.helperImage}
-                      resizeMode="contain"
-                    />
-                  </View>
+                <Animated.View style={[styles.helperImageContainer, floatStyle]}>
+                  <Image
+                    source={slide.image}
+                    style={styles.helperImage}
+                    contentFit="contain"
+                  />
                 </Animated.View>
                 <View style={styles.helperTextContainer}>
                   <Text style={styles.helperTitle}>{slide.title}</Text>
@@ -584,13 +448,12 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissi
                   accentColor={slide.accentColor}
                 />
 
-                <TouchableOpacity
+                <Pressable
                   style={styles.privacyRow}
                   onPress={() => {
                     setPrivacyAgreed(!privacyAgreed);
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    haptics.select();
                   }}
-                  activeOpacity={0.7}
                 >
                   <View
                     style={[
@@ -612,7 +475,7 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissi
                       Terms of Service
                     </Text>
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
 
                 <Text style={styles.permissionDisclosureText}>
                   Tracking permission is optional and does not block gameplay. Location is required for map-based gameplay.
@@ -625,31 +488,17 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissi
           ) : (
             // Regular slides
             <>
-              {/* Image with glow effect */}
-              <Animated.View
-                style={[
-                  styles.imageContainer,
-                  { transform: [{ translateY: floatAnim }] },
-                ]}
-              >
-                <View style={[
-                  styles.imageGlow,
-                  {
-                    shadowOpacity: glowValue,
-                    shadowColor: slide.glowColor,
-                    shadowRadius: 35,
-                    shadowOffset: { width: 0, height: 0 },
-                  },
-                ]}>
-                  <Image
-                    source={slide.image}
-                    style={styles.onboardingImage}
-                    resizeMode="contain"
-                  />
-                </View>
+              {/* Animated Skia hero (replaces the static glow image) */}
+              <Animated.View style={[styles.heroContainer, floatStyle]}>
+                <OnboardingHero
+                  key={slide.id}
+                  size={HERO_SIZE}
+                  accentColor={slide.accentColor}
+                  image={slide.image}
+                  variant={slide.id}
+                />
               </Animated.View>
 
-              {/* Text content */}
               <View style={styles.textContainer}>
                 <Text style={styles.title}>{slide.title}</Text>
                 <View style={styles.subtitleContainer}>
@@ -668,68 +517,62 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissi
         {/* Navigation */}
         <View style={styles.navigationContainer}>
           {currentSlide > 0 ? (
-            <TouchableOpacity
-              style={styles.navButton}
-              onPress={goPrev}
-              activeOpacity={0.7}
-            >
+            <PressableScale style={styles.navButton} onPress={goPrev} haptic="soft">
               <BlurView intensity={30} tint="dark" style={styles.navButtonBlur}>
                 <Ionicons name="arrow-back" size={24} color="#fff" />
               </BlurView>
-            </TouchableOpacity>
+            </PressableScale>
           ) : (
             <View style={styles.navButtonPlaceholder} />
           )}
 
-          <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-            <TouchableOpacity
-              style={[
-                styles.mainButton,
-                isLastSlide && (!privacyAgreed || !locationPermission ? styles.disabledButton : styles.completeButton),
-              ]}
-              onPress={isLastSlide ? handleComplete : goNext}
-              activeOpacity={0.8}
-              disabled={isLastSlide && (!privacyAgreed || !locationPermission)}
+          <PressableScale
+            style={[
+              styles.mainButton,
+              isLastSlide && (!privacyAgreed || !locationPermission ? styles.disabledButton : styles.completeButton),
+            ]}
+            onPress={isLastSlide ? handleComplete : goNext}
+            haptic={isLastSlide ? 'tap' : 'none'}
+            disabled={isLastSlide && (!privacyAgreed || !locationPermission)}
+          >
+            <LinearGradient
+              colors={
+                isLastSlide
+                  ? privacyAgreed && locationPermission
+                    ? ['#4CAF50', '#45a049']
+                    : ['#666', '#555']
+                  : [slide.accentColor, slide.gradientColors[1]]
+              }
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.mainButtonGradient}
             >
-              <LinearGradient
-                colors={
-                  isLastSlide
-                    ? privacyAgreed && locationPermission
-                      ? ['#4CAF50', '#45a049']
-                      : ['#666', '#555']
-                    : [slide.accentColor, slide.gradientColors[1]]
-                }
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.mainButtonGradient}
+              <Text
+                style={[
+                  styles.mainButtonText,
+                  isLastSlide && privacyAgreed && locationPermission && styles.completeButtonText,
+                ]}
               >
-                <Text
-                  style={[
-                    styles.mainButtonText,
-                    isLastSlide && privacyAgreed && locationPermission && styles.completeButtonText,
-                  ]}
-                >
-                  {isLastSlide ? "Let's Go!" : 'Continue'}
-                </Text>
-                {!isLastSlide && (
-                  <Ionicons
-                    name="arrow-forward"
-                    size={20}
-                    color="#fff"
-                    style={{ marginLeft: 8 }}
-                  />
-                )}
-                {isLastSlide && privacyAgreed && locationPermission && (
-                  <Ionicons
-                    name="rocket"
-                    size={20}
-                    color="#fff"
-                    style={{ marginLeft: 8 }}
-                  />
-                )}
-              </LinearGradient>
-            </TouchableOpacity>
-          </Animated.View>
+                {isLastSlide ? "Let's Go!" : 'Continue'}
+              </Text>
+              {!isLastSlide && (
+                <Ionicons
+                  name="arrow-forward"
+                  size={20}
+                  color="#fff"
+                  style={{ marginLeft: 8 }}
+                />
+              )}
+              {isLastSlide && privacyAgreed && locationPermission && (
+                <Ionicons
+                  name="rocket"
+                  size={20}
+                  color="#fff"
+                  style={{ marginLeft: 8 }}
+                />
+              )}
+            </LinearGradient>
+          </PressableScale>
 
           <View style={styles.navButtonPlaceholder} />
         </View>
@@ -738,37 +581,77 @@ export const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onPermissi
   );
 };
 
+/** Pill progress indicator: the active dot stretches and tints with a spring. */
+const ProgressDot: React.FC<{
+  active: boolean;
+  completed: boolean;
+  accentColor: string;
+}> = ({ active, completed, accentColor }) => {
+  const w = useSharedValue(active ? 30 : 9);
+
+  useEffect(() => {
+    w.value = withTiming(active ? 30 : 9, { duration: 220, easing: Easing.out(Easing.quad) });
+  }, [active, w]);
+
+  const style = useAnimatedStyle(() => ({ width: w.value }));
+
+  return (
+    <Animated.View
+      style={[
+        styles.progressDot,
+        completed && styles.progressDotCompleted,
+        active && [styles.progressDotActive, { shadowColor: accentColor }],
+        style,
+      ]}
+    />
+  );
+};
+
 const PermissionRow: React.FC<{
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: React.ComponentProps<typeof Ionicons>['name'];
   title: string;
   description: string;
   isGranted: boolean;
   onPress: () => void;
   accentColor: string;
   required?: boolean;
-}> = ({ icon, title, description, isGranted, onPress, accentColor, required }) => (
-  <TouchableOpacity
-    style={styles.permissionRow}
-    onPress={onPress}
-    activeOpacity={0.7}
-  >
-    <View style={[styles.permissionIcon, { backgroundColor: accentColor + '40' }]}>
-      <Ionicons name={icon} size={24} color="#fff" />
-    </View>
-    <View style={styles.permissionTextContainer}>
-      <Text style={styles.permissionTitle}>{title}</Text>
-      <Text style={styles.permissionDescription}>{description}</Text>
-    </View>
-    <View
-      style={[
-        styles.permissionStatus,
-        isGranted && styles.permissionStatusGranted,
-      ]}
-    >
-      <Ionicons name={isGranted ? 'checkmark' : 'add'} size={18} color="#fff" />
-    </View>
-  </TouchableOpacity>
-);
+}> = ({ icon, title, description, isGranted, onPress, accentColor, required }) => {
+  // Badge pops with an overshoot spring when the permission is granted.
+  const badgeScale = useSharedValue(1);
+  const wasGranted = useRef(isGranted);
+
+  useEffect(() => {
+    if (isGranted && !wasGranted.current) {
+      badgeScale.value = withTiming(1, { duration: 180, easing: Easing.out(Easing.quad) });
+    }
+    wasGranted.current = isGranted;
+  }, [isGranted, badgeScale]);
+
+  const badgeStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: badgeScale.value }],
+  }));
+
+  return (
+    <PressableScale style={styles.permissionRow} onPress={onPress} haptic="soft" pressedScale={0.97}>
+      <View style={[styles.permissionIcon, { backgroundColor: accentColor + '40' }]}>
+        <Ionicons name={icon} size={24} color="#fff" />
+      </View>
+      <View style={styles.permissionTextContainer}>
+        <Text style={styles.permissionTitle}>{title}</Text>
+        <Text style={styles.permissionDescription}>{description}</Text>
+      </View>
+      <Animated.View
+        style={[
+          styles.permissionStatus,
+          isGranted && styles.permissionStatusGranted,
+          badgeStyle,
+        ]}
+      >
+        <Ionicons name={isGranted ? 'checkmark' : 'add'} size={18} color="#fff" />
+      </Animated.View>
+    </PressableScale>
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -777,13 +660,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
-  particle: {
-    position: 'absolute',
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(255,255,255,0.8)',
-  },
   progressContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -791,14 +667,15 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   progressDot: {
-    width: 10,
-    height: 10,
+    height: 9,
     borderRadius: 5,
     backgroundColor: 'rgba(255,255,255,0.3)',
   },
   progressDotActive: {
-    width: 32,
     backgroundColor: '#fff',
+    shadowOpacity: 0.9,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 0 },
   },
   progressDotCompleted: {
     backgroundColor: 'rgba(255,255,255,0.7)',
@@ -833,19 +710,10 @@ const styles = StyleSheet.create({
   scrollContentHelper: {
     paddingBottom: 20,
   },
-  imageContainer: {
-    height: height * 0.26,
+  heroContainer: {
+    height: HERO_SIZE + 16,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  imageGlow: {
-    // Glow applied via inline styles
-  },
-  onboardingImage: {
-    width: width * 0.65,
-    height: width * 0.5,
-    maxWidth: 280,
-    maxHeight: 220,
   },
   helperContainer: {
     flexDirection: 'row',
@@ -859,10 +727,6 @@ const styles = StyleSheet.create({
   },
   helperImageContainer: {
     marginRight: 16,
-  },
-  helperImageGlow: {
-    shadowRadius: 25,
-    shadowOffset: { width: 0, height: 0 },
   },
   helperImage: {
     width: 100,
@@ -913,6 +777,7 @@ const styles = StyleSheet.create({
   subtitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     marginTop: 16,
     marginBottom: 8,
     gap: 12,

@@ -2,7 +2,6 @@ import { ReactNode, createContext, useContext } from "react";
 import { WebSocketMessage } from "middle-earth";
 
 export interface WebSocketContextProps {
-    data: any;
     missiledata: any;
     landminedata: any;
     lootdata:any;

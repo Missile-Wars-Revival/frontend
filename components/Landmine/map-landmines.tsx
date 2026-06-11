@@ -2,12 +2,13 @@ import { Circle, Marker } from "react-native-maps";
 import React, { useEffect, useState } from "react";
 import { useUserName } from "../../util/fetchusernameglobal";
 import { GeoLocation, Landmine } from "middle-earth";
-import { View, Image } from "react-native";
+import { View } from "react-native";
+import { Image } from "expo-image";
 import { convertimestampfuture } from "../../util/get-time-difference";
 import { useLandmine } from "../../util/Context/landminecontext";
 import { getImages } from "../../api/store";
 import { getLeagueAirspace } from "../player";
-import { useUserLeague } from "../../hooks/api/useUserLEague";
+import { useUserLeague } from "../../hooks/api/useUserLeague";
 import { calculateDistance, getCurrentLocation, location } from "../../util/locationreq";
 
 interface AllLandmineProps {
@@ -47,23 +48,25 @@ export const AllLandMines = (props: AllLandmineProps) => {
 
     return (
         <>
-        {props.landminedata
-            .filter(landmine => {
+        {props.landminedata.flatMap((landmine, index) => {
                 const distance = calculateDistance(userLocation, landmine.location);
-                return (showAllLandmines && distance <= leagueairspace) || landmine.placedby === userNAME;
-            })
-            .map(({ type, location, placedby, placedtime, etaexpiretime }, index) => (
-                <React.Fragment key={index}>
-                    <MapLandmine 
-                        location={location} 
-                        type={type} 
-                        placedby={placedby} 
-                        placedtime={placedtime} 
-                        etaexpiretime={etaexpiretime} 
-                        getImageForProduct={getImageForProduct}
-                    />
-                </React.Fragment>
-            ))}
+                if (!((showAllLandmines && distance <= leagueairspace) || landmine.placedby === userNAME)) {
+                    return [];
+                }
+                const { type, location, placedby, placedtime, etaexpiretime } = landmine;
+                return (
+                    <React.Fragment key={index}>
+                        <MapLandmine
+                            location={location}
+                            type={type}
+                            placedby={placedby}
+                            placedtime={placedtime}
+                            etaexpiretime={etaexpiretime}
+                            getImageForProduct={getImageForProduct}
+                        />
+                    </React.Fragment>
+                );
+            })}
         </>
     );
 }

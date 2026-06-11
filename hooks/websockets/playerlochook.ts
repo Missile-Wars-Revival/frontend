@@ -2,13 +2,14 @@ import { Players } from "../../components/map-players";
 import { useWebSocketContext } from "../../util/Context/websocket";
 import { useEffect, useState } from "react";
 
+/* eslint-disable react-hooks/set-state-in-effect */
+
 const useFetchPlayerlocations = (): Players[] => {
     const { playerlocations } = useWebSocketContext();
     const [ploc, setploc] = useState<Players[]>([]);
 
     useEffect(() => {
         if (playerlocations) {
-            //console.log('Received data:', playerlocations);
             if (Array.isArray(playerlocations)) {
                 const validPlayerLocations = playerlocations.filter(item => item.hasOwnProperty("latitude") && item.hasOwnProperty("longitude"));
                 if (validPlayerLocations.length > 0) {
@@ -27,8 +28,6 @@ const useFetchPlayerlocations = (): Players[] => {
             } else {
                 console.warn('Data is not an array:', playerlocations);
             }
-        } else {
-            //console.log('Data is undefined or null');
         }
     }, [playerlocations]);
 

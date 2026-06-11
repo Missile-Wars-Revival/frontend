@@ -1,31 +1,46 @@
 import * as React from "react";
-import { TextInput, View, TextInputProps } from "react-native";
+import { TextInput, View, TextInputProps, StyleSheet } from "react-native";
 import { ReactNode } from "react";
 
 interface InputProps extends TextInputProps {
   icon?: ReactNode;
-  className?: string;
 }
 
-const Input = React.forwardRef<React.ElementRef<typeof TextInput>, InputProps>(
-  ({ className, icon, ...props }, ref) => {
+const Input = React.forwardRef<TextInput, InputProps>(
+  ({ style, icon, ...props }, ref) => {
     return (
-      <View className={`flex-row items-center ${className}`}>
-        {icon && (
-          <View className="absolute inset-y-0 left-2 flex items-center justify-center">
-            {icon}
-          </View>
-        )}
-        <TextInput
-          ref={ref}
-          className={`border-[2.5px] border-black rounded-md p-2 w-full pl-8 ${className}`}
-          {...props}
-        />
+      <View style={styles.container}>
+        {icon && <View style={styles.iconWrapper}>{icon}</View>}
+        <TextInput ref={ref} style={[styles.input, style]} {...props} />
       </View>
     );
   }
 );
 
 Input.displayName = "Input";
+
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  iconWrapper: {
+    position: "absolute",
+    left: 8,
+    top: 0,
+    bottom: 0,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 1,
+  },
+  input: {
+    borderWidth: 2.5,
+    borderColor: "#000",
+    borderRadius: 6,
+    padding: 8,
+    width: "100%",
+    paddingLeft: 32,
+  },
+});
 
 export { Input };

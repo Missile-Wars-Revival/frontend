@@ -1,9 +1,26 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Modal, View, Text, TouchableOpacity, StyleSheet, useColorScheme, Dimensions, Animated } from "react-native";
-import { Ionicons } from '@expo/vector-icons';
+import { Modal, View, Text, Pressable, StyleSheet, useColorScheme, Dimensions, Animated, Platform } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import Ionicons from '@react-native-vector-icons/ionicons';
 import { useOnboarding } from '../util/Context/onboardingContext';
+import { PressableScale } from './ui/PressableScale';
+import { getPalette, Gradients, Radius, Spacing, Type, cardShadow, chipShadow } from './ui/theme';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
+
+type GradientColors = readonly [string, string, ...string[]];
+
+const ACTIONS: {
+  id: string;
+  label: string;
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  colors: GradientColors;
+}[] = [
+  { id: 'firelandmine', label: 'Place Landmine', icon: 'radio-button-on', colors: Gradients.gold },
+  { id: 'firemissile', label: 'Fire Missile', icon: 'rocket', colors: Gradients.fire },
+  { id: 'lootdrop', label: 'Request Loot Drop', icon: 'gift', colors: ['#F7B733', '#FC4A1A'] },
+  { id: 'other', label: 'Place Special Items', icon: 'sparkles-outline', colors: Gradients.brand },
+];
 
 interface FireTypeProps {
   landmineFireHandler: () => void;
@@ -16,7 +33,8 @@ export const FireType = (props: FireTypeProps) => {
   const [FirepopupVisible, setFirePopupVisible] = useState(false);
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
-  const { currentStep, moveToNextStep, isOnboardingComplete } = useOnboarding();
+  const c = getPalette(isDarkMode);
+  const { currentStep, moveToNextStep } = useOnboarding();
 
   const FireshowPopup = () => {
     setFirePopupVisible(true);
@@ -29,14 +47,16 @@ export const FireType = (props: FireTypeProps) => {
     setFirePopupVisible(false);
   };
 
-  const selectFiretype = (style: string) => {
-    // Trigger the handler first to open the next modal
+  const pendingActionRef = useRef<string | null>(null);
+
+  const runPendingAction = () => {
+    const style = pendingActionRef.current;
+    pendingActionRef.current = null;
+    if (!style) return;
+
     switch (style) {
       case "firelandmine":
         props.landmineFireHandler();
-        if (currentStep === 'fire_landmine') {
-          moveToNextStep();
-        }
         break;
       case "firemissile":
         props.missileFireHandler();
@@ -50,48 +70,68 @@ export const FireType = (props: FireTypeProps) => {
       default:
         break;
     }
+  };
 
-    // Don't close the fire selector - let it stay in the background
-    // This prevents modal conflicts
+  const selectFiretype = (style: string) => {
+    if (style === "firelandmine" && currentStep === 'fire_landmine') {
+      moveToNextStep();
+    }
+
+    pendingActionRef.current = style;
+    FireclosePopup();
+
+    if (Platform.OS !== 'ios') {
+      runPendingAction();
+    }
   };
 
   return (
     <View>
-      <TouchableOpacity
-        style={[styles.fireButton, isDarkMode && styles.fireButtonDark]}
+      <PressableScale
+        style={[styles.fireButton, chipShadow(isDarkMode)]}
         onPress={FireshowPopup}
+        haptic="tap"
+        pressedScale={0.9}
       >
-        <Ionicons name="flame" size={24} color={isDarkMode ? "#FFF" : "#000"} />
-      </TouchableOpacity>
+        <LinearGradient colors={Gradients.fire} style={styles.fireButtonFill}>
+          <Ionicons name="flame" size={26} color="#fff" />
+        </LinearGradient>
+      </PressableScale>
 
       <FireTypeStyle
         visible={FirepopupVisible}
         transparent={true}
         onClose={FireclosePopup}
+        onDismissed={runPendingAction}
         onSelect={selectFiretype}
         isDarkMode={isDarkMode}
+        c={c}
       />
     </View>
   )
 };
 
+
 interface MapStylePopupProps {
   visible: boolean;
   transparent: boolean;
   onClose: () => void;
+  onDismissed?: () => void;
   onSelect: (style: string) => void;
   isDarkMode: boolean;
+  c: ReturnType<typeof getPalette>;
 }
 
 export const FireTypeStyle = ({
   visible,
   transparent,
   onClose,
+  onDismissed,
   onSelect,
   isDarkMode,
+  c,
 }: MapStylePopupProps) => {
-  const { currentStep, moveToNextStep, isOnboardingComplete } = useOnboarding();
-  const slideAnim = useRef(new Animated.Value(300)).current;
+  const [slideAnim] = useState(() => new Animated.Value(300));
 
   useEffect(() => {
     if (visible) {
@@ -108,10 +148,9 @@ export const FireTypeStyle = ({
         useNativeDriver: true,
       }).start();
     }
-  }, [visible]);
+  }, [visible, slideAnim]);
 
   const handleActionPress = (action: string) => {
-    // Prevent event bubbling and immediately select
     onSelect(action);
   };
 
@@ -121,65 +160,49 @@ export const FireTypeStyle = ({
       transparent={transparent}
       visible={visible}
       onRequestClose={onClose}
+      onDismiss={onDismissed}
     >
-      <TouchableOpacity
-        style={[styles.modalOverlay, isDarkMode && styles.modalOverlayDark]}
-        activeOpacity={1}
+      <Pressable
+        style={[styles.modalOverlay, { backgroundColor: c.overlay }]}
         onPress={onClose}
       >
         <Animated.View
           style={[
             styles.modalContentWrapper,
-            {
-              transform: [{ translateY: slideAnim }]
-            }
+            { transform: [{ translateY: slideAnim }] },
           ]}
         >
-          <TouchableOpacity
-            activeOpacity={1}
+          <Pressable
             onPress={(e) => e.stopPropagation()}
-            style={[styles.modalContent, isDarkMode && styles.modalContentDark]}
+            style={[
+              styles.modalContent,
+              { backgroundColor: c.surface },
+              cardShadow(isDarkMode),
+            ]}
           >
-            <Text style={[styles.modalTitle, isDarkMode && styles.modalTitleDark]}>Select Action</Text>
-            <TouchableOpacity
-              onPress={() => handleActionPress("firelandmine")}
-              style={[styles.actionButton, isDarkMode && styles.actionButtonDark]}
-            >
-              <View style={styles.iconContainer}>
-                <Ionicons name="radio-button-on" size={24} color={isDarkMode ? "#FFF" : "#000"} />
-              </View>
-              <Text style={[styles.actionText, isDarkMode && styles.actionTextDark]}>Place Landmine</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => handleActionPress("firemissile")}
-              style={[styles.actionButton, isDarkMode && styles.actionButtonDark]}
-            >
-              <View style={styles.iconContainer}>
-                <Ionicons name="rocket" size={24} color={isDarkMode ? "#FFF" : "#000"} />
-              </View>
-              <Text style={[styles.actionText, isDarkMode && styles.actionTextDark]}>Fire Missile</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => handleActionPress("lootdrop")}
-              style={[styles.actionButton, isDarkMode && styles.actionButtonDark]}
-            >
-              <View style={styles.iconContainer}>
-                <Ionicons name="gift" size={24} color={isDarkMode ? "#FFF" : "#000"} />
-              </View>
-              <Text style={[styles.actionText, isDarkMode && styles.actionTextDark]}>Request Loot Drop</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => handleActionPress("other")}
-              style={[styles.actionButton, isDarkMode && styles.actionButtonDark]}
-            >
-              <View style={styles.iconContainer}>
-                <Ionicons name="sparkles-outline" size={24} color={isDarkMode ? "#FFF" : "#000"} />
-              </View>
-              <Text style={[styles.actionText, isDarkMode && styles.actionTextDark]}>Place Special Items</Text>
-            </TouchableOpacity>
-          </TouchableOpacity>
+            <Text style={[styles.modalTitle, { color: c.text }]}>Select Action</Text>
+            <Text style={[styles.modalSubtitle, { color: c.textMuted }]}>
+              Choose what to deploy on the map
+            </Text>
+
+            {ACTIONS.map((action) => (
+              <PressableScale
+                key={action.id}
+                onPress={() => handleActionPress(action.id)}
+                style={[styles.actionButton, { backgroundColor: c.surfaceAlt }]}
+                haptic="select"
+                pressedScale={0.97}
+              >
+                <LinearGradient colors={action.colors} style={styles.iconChip}>
+                  <Ionicons name={action.icon} size={22} color="#fff" />
+                </LinearGradient>
+                <Text style={[styles.actionText, { color: c.text }]}>{action.label}</Text>
+                <Ionicons name="chevron-forward" size={18} color={c.textFaint} />
+              </PressableScale>
+            ))}
+          </Pressable>
         </Animated.View>
-      </TouchableOpacity>
+      </Pressable>
     </Modal>
   );
 };
@@ -187,96 +210,68 @@ export const FireTypeStyle = ({
 const styles = StyleSheet.create({
   fireButton: {
     position: 'absolute',
-    bottom: 30,
-    left: width * 0.04,
-    backgroundColor: '#FFF',
-    borderRadius: 30,
+    bottom: 0,
+    left: width * 0.05,
     width: 60,
     height: 60,
+    borderRadius: 30,
+    overflow: 'hidden',
+    shadowColor: '#F5365C',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  fireButtonFill: {
+    flex: 1,
+    borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  fireButtonDark: {
-    backgroundColor: '#2C2C2C',
   },
   modalOverlay: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-  },
-  modalOverlayDark: {
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingBottom: Spacing.xxl,
   },
   modalContentWrapper: {
     width: '100%',
     alignItems: 'center',
-    marginBottom: 0,
   },
   modalContent: {
-    backgroundColor: "white",
-    borderRadius: 20,
-    padding: 35,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-    width: '90%',
+    borderRadius: Radius.xl,
+    padding: Spacing.xl,
+    width: '92%',
     maxWidth: 400,
   },
-  modalContentDark: {
-    backgroundColor: "#1E1E1E",
-  },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 15,
-    color: "#000",
+    ...Type.title,
+    textAlign: 'center',
+    marginBottom: Spacing.xs,
   },
-  modalTitleDark: {
-    color: "#FFF",
+  modalSubtitle: {
+    ...Type.caption,
+    fontWeight: '500',
+    textAlign: 'center',
+    marginBottom: Spacing.lg,
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
+    marginBottom: Spacing.sm,
+    gap: Spacing.md,
+  },
+  iconChip: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
-    backgroundColor: "#F0F0F0",
-    borderRadius: 10,
-    padding: 15,
-    paddingLeft: 54,
-    marginVertical: 10,
-    width: '100%',
-    position: 'relative',
-  },
-  actionButtonDark: {
-    backgroundColor: "#2C2C2C",
-  },
-  iconContainer: {
-    position: 'absolute',
-    left: 15,
-    width: 24,
+    alignItems: 'center',
   },
   actionText: {
-    fontSize: 16,
-    color: "#000",
-    textAlign: 'center',
+    ...Type.headline,
     flex: 1,
-    marginRight: 24,
-  },
-  actionTextDark: {
-    color: "#FFF",
   },
 });

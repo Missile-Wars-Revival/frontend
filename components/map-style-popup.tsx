@@ -1,4 +1,4 @@
-import { Modal, View, Text, TouchableOpacity } from "react-native";
+import { Modal, View, Text, Pressable } from "react-native";
 import React from "react";
 
 interface MapStylePopupProps {
@@ -21,15 +21,14 @@ export const MapStylePopup = ({
       visible={visible}
       onRequestClose={onClose}
     >
-      <TouchableOpacity
+      <Pressable
         style={{
           flex: 1,
           justifyContent: "center",
           alignItems: "center",
           backgroundColor: "rgba(0, 0, 0, 0.5)", // Semi-transparent black background
         }}
-        activeOpacity={1}
-        onPressOut={onClose}
+        onPress={onClose}
       >
         <View
           style={{
@@ -47,7 +46,7 @@ export const MapStylePopup = ({
             elevation: 5,
           }}
         >
-          <TouchableOpacity
+          <Pressable
             onPress={() => onSelect("default")}
             style={{
               borderRadius: 10,
@@ -59,8 +58,8 @@ export const MapStylePopup = ({
             }}
           >
             <Text style={{ fontSize: 16 }}>Default</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
+          </Pressable>
+          <Pressable
             onPress={() => onSelect("radar")}
             style={{
               borderRadius: 10,
@@ -72,8 +71,8 @@ export const MapStylePopup = ({
             }}
           >
             <Text style={{ fontSize: 16 }}>Radar</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
+          </Pressable>
+          <Pressable
             onPress={() => onSelect("cherry")}
             style={{
               borderRadius: 10,
@@ -85,8 +84,8 @@ export const MapStylePopup = ({
             }}
           >
             <Text style={{ fontSize: 16 }}>Cherry Blossom</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
+          </Pressable>
+          <Pressable
             onPress={() => onSelect("cyber")}
             style={{
               borderRadius: 10,
@@ -98,8 +97,8 @@ export const MapStylePopup = ({
             }}
           >
             <Text style={{ fontSize: 16 }}>CyberPunk</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
+          </Pressable>
+          <Pressable
             onPress={() => onSelect("colourblind")}
             style={{
               borderRadius: 10,
@@ -111,10 +110,10 @@ export const MapStylePopup = ({
             }}
           >
             <Text style={{ fontSize: 16 }}>Colour Blind</Text>
-          </TouchableOpacity>
+          </Pressable>
 
         </View>
-      </TouchableOpacity>
+      </Pressable>
     </Modal>
   );
 };

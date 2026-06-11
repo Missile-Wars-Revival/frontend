@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Text, TouchableOpacity, View, StyleSheet, Modal, useColorScheme, Dimensions } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Text, Pressable, View, StyleSheet, Modal, useColorScheme, Dimensions } from 'react-native';
+import Ionicons from '@react-native-vector-icons/ionicons';
 
 const { width, height } = Dimensions.get('window');
 
@@ -30,12 +30,12 @@ export const ThemeSelectButton = (props: ThemeSelectProps) => {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity
+      <Pressable
         style={[styles.fabButton, isDarkMode && styles.fabButtonDark]}
         onPress={showModal}
       >
         <Ionicons name="color-palette" size={30} color={isDarkMode ? "#FFF" : "#000"} />
-      </TouchableOpacity>
+      </Pressable>
 
       <Modal
         animationType="slide"
@@ -47,12 +47,12 @@ export const ThemeSelectButton = (props: ThemeSelectProps) => {
           <View style={[styles.modalContent, isDarkMode && styles.modalContentDark]}>
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, isDarkMode && styles.modalTitleDark]}>Select Theme</Text>
-              <TouchableOpacity onPress={closeModal}>
+              <Pressable onPress={closeModal}>
                 <Ionicons name="close" size={24} color={isDarkMode ? "#FFF" : "#000"} />
-              </TouchableOpacity>
+              </Pressable>
             </View>
             {["default", "radar", "cherry", "cyberpunk", "colorblind"].map((theme) => (
-              <TouchableOpacity
+              <Pressable
                 key={theme}
                 onPress={() => selectTheme(theme)}
                 style={[styles.themeOption, isDarkMode && styles.themeOptionDark]}
@@ -70,7 +70,7 @@ export const ThemeSelectButton = (props: ThemeSelectProps) => {
                 <Text style={[styles.themeText, isDarkMode && styles.themeTextDark]}>
                   {theme.charAt(0).toUpperCase() + theme.slice(1)}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             ))}
           </View>
         </View>

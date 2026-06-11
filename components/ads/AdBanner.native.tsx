@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import Purchases from 'react-native-purchases';
 import * as TrackingTransparency from 'expo-tracking-transparency';
-import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
+import { BannerAd, BannerAdSize } from 'react-native-google-mobile-ads';
+import { AD_UNIT_IDS } from '@/constants/AdConfig';
 
 const parseEntitlementKeys = () => {
   const configured = process.env.EXPO_PUBLIC_REVENUECAT_AD_FREE_ENTITLEMENTS;
@@ -13,33 +14,22 @@ const parseEntitlementKeys = () => {
     .filter(Boolean);
 };
 
-const getBannerUnitId = () => {
-  if (__DEV__) {
-    return TestIds.BANNER;
-  }
-
-  const iosUnit = process.env.EXPO_PUBLIC_ADMOB_BANNER_IOS;
-  const androidUnit = process.env.EXPO_PUBLIC_ADMOB_BANNER_ANDROID;
-
-  if (Platform.OS === 'ios') {
-    return iosUnit || TestIds.BANNER;
-  }
-
-  return androidUnit || TestIds.BANNER;
-};
-
 const AdBanner: React.FC = () => {
   const [showAds, setShowAds] = useState(false);
   const [nonPersonalizedAdsOnly, setNonPersonalizedAdsOnly] = useState(false);
   const [loading, setLoading] = useState(true);
-  const entitlementKeys = useMemo(parseEntitlementKeys, []);
+  const entitlementKeys = useMemo(() => parseEntitlementKeys(), []);
 
   useEffect(() => {
     let isMounted = true;
 
     const loadAdPolicy = async () => {
-      try {
-        const customerInfo = await Purchases.getCustomerInfo();
+      const customerInfo = await Purchases.getCustomerInfo().catch((error) => {
+        console.warn('Ad policy check failed, defaulting to ads enabled:', error);
+        return null;
+      });
+
+      if (customerInfo) {
         const activeEntitlements = Object.keys(customerInfo.entitlements.active ?? {}).map((key) => key.toLowerCase());
         const hasAdFree = activeEntitlements.some((key) => entitlementKeys.includes(key));
 
@@ -53,16 +43,13 @@ const AdBanner: React.FC = () => {
           setShowAds(!hasAdFree);
           setNonPersonalizedAdsOnly(shouldUseNonPersonalizedAds);
         }
-      } catch (error) {
-        console.warn('Ad policy check failed, defaulting to ads enabled:', error);
-        if (isMounted) {
-          setShowAds(true);
-          setNonPersonalizedAdsOnly(Platform.OS === 'ios');
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+      } else if (isMounted) {
+        setShowAds(true);
+        setNonPersonalizedAdsOnly(Platform.OS === 'ios');
+      }
+
+      if (isMounted) {
+        setLoading(false);
       }
     };
 
@@ -80,8 +67,8 @@ const AdBanner: React.FC = () => {
   return (
     <View style={styles.container}>
       <BannerAd
-        unitId={getBannerUnitId()}
-        size={BannerAdSize.BANNER}
+        unitId={AD_UNIT_IDS.BANNER}
+        size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
         requestOptions={{ requestNonPersonalizedAdsOnly: nonPersonalizedAdsOnly }}
       />
     </View>

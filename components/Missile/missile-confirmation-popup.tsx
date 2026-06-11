@@ -1,68 +1,29 @@
-import { Modal, View, Text, TouchableOpacity } from "react-native";
-import React from "react";
-import { MissilefireposLibrary } from "./missile";
-import { useColorScheme } from 'react-native';
-import { create } from 'twrnc';
-
-const tw = create(require('../../tailwind.config.js'));
-
-interface MissileFireProps {
-  MissilefireposModalVisible: boolean;
-  exitHandler: () => void;
-}
+import React from 'react';
+import { MissilePlacementPopup } from './missileplacement';
+import { PlacementLibraryView } from '../ui/placement-library';
+import { Gradients } from '../ui/theme';
 
 interface MissileLibView {
   MissileModalVisible: boolean;
   MissileModalHandler: () => void;
-  selectedPlayerUsername: string;
 }
 
-export const MissileLibraryView = (props: MissileLibView) => {
-  const isDarkMode = useColorScheme() === 'dark';
-
-  return (
-    <Modal
-      animationType="slide"
-      transparent={true}
-      visible={props.MissileModalVisible}
-      onRequestClose={props.MissileModalHandler}
-    >
-      <View style={tw`flex-1 justify-center items-center bg-black bg-opacity-50`}>
-        <View style={tw`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg p-4 w-11/12 h-[90%]`}>
-          <MissilefireposLibrary onClose={props.MissileModalHandler} />
-          <TouchableOpacity
-            style={tw`bg-red-500 px-6 py-2 rounded-lg mt-4 self-end`}
-            onPress={props.MissileModalHandler}
-          >
-            <Text style={tw`text-white font-bold`}>Done</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
-  )
-}
-
-export const MissileFireConfirmationPopup = (props: MissileFireProps) => {
-  const isDarkMode = useColorScheme() === 'dark';
-
-  return (
-    <Modal
-      animationType="slide"
-      transparent={true}
-      visible={props.MissilefireposModalVisible}
-      onRequestClose={props.exitHandler}
-    >
-      <View style={tw`flex-1 justify-center items-center bg-black bg-opacity-50`}>
-      <View style={tw`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg p-4 w-11/12 h-[90%]`}>
-          <MissilefireposLibrary onClose={props.exitHandler} />
-          <TouchableOpacity
-            style={tw`bg-red-500 px-6 py-2 rounded-lg mt-4 self-end`}
-            onPress={props.exitHandler}
-          >
-            <Text style={tw`text-white font-bold`}>Done</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
-  );
-};
+export const MissileLibraryView = (props: MissileLibView) => (
+  <PlacementLibraryView
+    visible={props.MissileModalVisible}
+    onClose={props.MissileModalHandler}
+    title="Missile Library"
+    subtitle="Select a missile to place on the map"
+    accentColors={Gradients.fire}
+    inventoryCategory="Missiles"
+    renderPlacementPopup={({ visible, selectedType, onClose, onDismissed, onPlaced }) => (
+      <MissilePlacementPopup
+        visible={visible}
+        onClose={onClose}
+        onDismissed={onDismissed}
+        selectedMissile={selectedType}
+        onMissileFired={onPlaced}
+      />
+    )}
+  />
+);

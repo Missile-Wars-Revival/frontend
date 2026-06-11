@@ -1,20 +1,22 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, useColorScheme, KeyboardAvoidingView, Platform, SafeAreaView, Modal, Alert, Animated, Linking, Keyboard } from 'react-native';
+import { View, Text, FlatList, TextInput, Pressable, StyleSheet, useColorScheme, KeyboardAvoidingView, Platform, Modal, Alert, Animated, Linking, Keyboard } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@react-native-vector-icons/ionicons';
 import { getDatabase, ref, onValue, push, set, get, update, serverTimestamp, increment } from 'firebase/database';
 import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import * as ImagePicker from 'expo-image-picker';
 import * as MediaLibrary from 'expo-media-library';
 import * as SecureStore from "expo-secure-store";
 import { generateUID } from '../../util/uidGenerator';
-import * as FileSystem from 'expo-file-system';
+import { File, Paths } from 'expo-file-system';
 import useFetchInventory from '../../hooks/websockets/inventoryhook';
 import { receiveItem, removeItem } from '../../api/add-item';
 import { notificationEmitter } from '../../components/Notifications/useNotifications';
 import ItemCollectAnimation from '../../components/Animations/itemCollect';
 import { getImages } from '../../api/store';
+import { getPalette, Type, cardShadow, type ThemePalette } from '../../components/ui/theme';
 
 type Message = {
   id: string;
@@ -90,14 +92,31 @@ const LinkPreview = ({ data }: { data: LinkPreviewData }) => {
   };
 
   return (
-    <TouchableOpacity onPress={handlePress} style={[styles.linkPreview, { backgroundColor: `${getColor()}20` }]}>
+    <Pressable onPress={handlePress} style={[linkStyles.preview, { backgroundColor: `${getColor()}20` }]}>
       <Ionicons name={getIconName()} size={50} color={getColor()} />
-      <Text style={[styles.linkPreviewText, { color: getColor() }]} numberOfLines={1} ellipsizeMode="tail">
+      <Text style={[linkStyles.text, { color: getColor() }]} numberOfLines={1} ellipsizeMode="tail">
         {data.url}
       </Text>
-    </TouchableOpacity>
+    </Pressable>
   );
 };
+
+// Link previews take their colour from the link type, not the theme.
+const linkStyles = StyleSheet.create({
+  preview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    borderRadius: 5,
+    marginTop: 5,
+    marginBottom: 5,
+  },
+  text: {
+    marginLeft: 10,
+    flex: 1,
+    fontSize: 14,
+  },
+});
 
 export default function ChatScreen() {
   const { id } = useLocalSearchParams();
@@ -108,6 +127,8 @@ export default function ChatScreen() {
   const [username, setUsername] = useState<string | null>(null);
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
+  const palette = getPalette(isDarkMode);
+  const styles = React.useMemo(() => getStyles(palette, isDarkMode), [palette, isDarkMode]);
   const flatListRef = useRef<FlatList>(null);
   const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
   const [otherParticipant, setOtherParticipant] = useState('');
@@ -118,7 +139,7 @@ export default function ChatScreen() {
   const [itemQuantity, setItemQuantity] = useState(1);
   const [showInventoryMenu, setShowInventoryMenu] = useState(false);
   const [isAttachMenuVisible, setIsAttachMenuVisible] = useState(false);
-  const slideAnimation = useRef(new Animated.Value(0)).current;
+  const [slideAnimation] = useState(() => new Animated.Value(0));
   const [isUploading, setIsUploading] = useState(false);
   const [collectingItem, setCollectingItem] = useState<InventoryMessageItem | null>(null);
   const [inputHeight, setInputHeight] = useState(40);
@@ -169,6 +190,34 @@ export default function ChatScreen() {
     };
     loadImages();
   }, []);
+
+  const scrollToBottom = useCallback(() => {
+    if (flatListRef.current) {
+      flatListRef.current.scrollToEnd({ animated: true });
+    }
+  }, []);
+
+  const markMessagesAsRead = useCallback(async (messageList: Message[], otherParticipant: string) => {
+    if (!username || !otherParticipant) return;
+    const db = getDatabase();
+    const unreadMessages = messageList.filter(msg =>
+      msg.senderUsername === otherParticipant && !msg.read
+    );
+
+    if (unreadMessages.length === 0) return;
+
+    const updates: { [key: string]: any } = {};
+    unreadMessages.forEach(msg => {
+      updates[`conversations/${id}/messages/${msg.id}/read`] = true;
+      updates[`conversations/${id}/messages/${msg.id}/readTimestamp`] = serverTimestamp();
+    });
+
+    // Add this line to mark the mostRecentMessage as read
+    updates[`conversations/${id}/lastMessage/isRead`] = true;
+
+    await update(ref(db), updates);
+    setUnreadCount(0); // Reset unread count after marking messages as read
+  }, [username, id]);
 
   useEffect(() => {
     if (!id || !username) return;
@@ -229,14 +278,7 @@ export default function ChatScreen() {
     });
 
     return () => unsubscribe();
-  }, [id, username]);
-
-  // Add this new function to scroll to bottom
-  const scrollToBottom = () => {
-    if (flatListRef.current) {
-      flatListRef.current.scrollToEnd({ animated: true });
-    }
-  };
+  }, [id, username, markMessagesAsRead, scrollToBottom]);
 
   const handleAttachPress = () => {
     Keyboard.dismiss(); // Add this line to hide the keyboard
@@ -265,34 +307,33 @@ export default function ChatScreen() {
     return (
       <Animated.View style={[
         styles.attachMenuContainer,
-        isDarkMode && styles.attachMenuContainerDark,
         { transform: [{ translateY }] }
       ]}>
         <View style={styles.attachMenuHeader}>
-          <Text style={[styles.attachMenuTitle, isDarkMode && styles.attachMenuTitleDark]}>Attach</Text>
-          <TouchableOpacity onPress={hideAttachMenu}>
-            <Ionicons name="close" size={24} color={isDarkMode ? "#FFFFFF" : "#000000"} />
-          </TouchableOpacity>
+          <Text style={styles.attachMenuTitle}>Attach</Text>
+          <Pressable onPress={hideAttachMenu}>
+            <Ionicons name="close" size={24} color={palette.text} />
+          </Pressable>
         </View>
         <View style={styles.attachMenuOptions}>
-          <TouchableOpacity style={styles.attachOption} onPress={() => {
+          <Pressable style={styles.attachOption} onPress={() => {
             hideAttachMenu();
             setShowInventoryMenu(true);
           }}>
             <View style={styles.attachOptionIcon}>
               <Ionicons name="cube" size={30} color="#fff" />
             </View>
-            <Text style={[styles.attachOptionText, isDarkMode && styles.attachOptionTextDark]}>Inventory Item</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.attachOption} onPress={() => {
+            <Text style={styles.attachOptionText}>Inventory Item</Text>
+          </Pressable>
+          <Pressable style={styles.attachOption} onPress={() => {
             hideAttachMenu();
             pickImage();
           }}>
-            <View style={[styles.attachOptionIcon, { backgroundColor: '#4CAF50' }]}>
+            <View style={[styles.attachOptionIcon, { backgroundColor: palette.success }]}>
               <Ionicons name="image" size={30} color="#fff" />
             </View>
-            <Text style={[styles.attachOptionText, isDarkMode && styles.attachOptionTextDark]}>Image</Text>
-          </TouchableOpacity>
+            <Text style={styles.attachOptionText}>Image</Text>
+          </Pressable>
         </View>
       </Animated.View>
     );
@@ -435,22 +476,30 @@ export default function ChatScreen() {
           return;
         }
 
-        // First, download the image to local file system
-        const fileUri = FileSystem.documentDirectory + "temp_image.jpg";
-        await FileSystem.downloadAsync(fullScreenImage, fileUri);
+        // First, download the image to the local file system (SDK 54+ File API)
+        const destination = new File(Paths.document, `temp_image_${Date.now()}.jpg`);
+        const downloaded = await File.downloadFileAsync(fullScreenImage, destination);
 
-        // Then, save the local file to media library
-        const asset = await MediaLibrary.createAssetAsync(fileUri);
+        // Then, save the local file to the media library (SDK 54+ class-based API)
+        const asset = await MediaLibrary.Asset.create(downloaded.uri);
 
         if (asset) {
-          await MediaLibrary.createAlbumAsync('ChatApp', asset, false);
+          // Add to the "ChatApp" album, creating it if it doesn't exist yet.
+          const existingAlbum = await MediaLibrary.Album.get('ChatApp');
+          if (existingAlbum) {
+            await existingAlbum.add(asset);
+          } else {
+            await MediaLibrary.Album.create('ChatApp', [asset], false);
+          }
           Alert.alert('Success', 'Image saved to gallery!');
         } else {
-          throw new Error('Asset creation failed');
+          Alert.alert('Error', 'Failed to save the image.');
+          downloaded.delete();
+          return;
         }
 
         // Clean up the temporary file
-        await FileSystem.deleteAsync(fileUri);
+        downloaded.delete();
 
       } catch (error) {
         console.error('Error saving image:', error);
@@ -459,29 +508,7 @@ export default function ChatScreen() {
     }
   };
 
-  const markMessagesAsRead = async (messageList: Message[], otherParticipant: string) => {
-    if (!username || !otherParticipant) return;
-    const db = getDatabase();
-    const unreadMessages = messageList.filter(msg =>
-      msg.senderUsername === otherParticipant && !msg.read
-    );
-
-    if (unreadMessages.length === 0) return;
-
-    const updates: { [key: string]: any } = {};
-    unreadMessages.forEach(msg => {
-      updates[`conversations/${id}/messages/${msg.id}/read`] = true;
-      updates[`conversations/${id}/messages/${msg.id}/readTimestamp`] = serverTimestamp();
-    });
-
-    // Add this line to mark the mostRecentMessage as read
-    updates[`conversations/${id}/lastMessage/isRead`] = true;
-
-    await update(ref(db), updates);
-    setUnreadCount(0); // Reset unread count after marking messages as read
-  };
-
-  const handleCollectItem = async (item: InventoryMessageItem) => {
+  const handleCollectItem = useCallback(async (item: InventoryMessageItem) => {
     if (!username || item.senderUsername === username) return;
 
     setCollectingItem(item);
@@ -506,7 +533,7 @@ export default function ChatScreen() {
       }));
       setMessages(messageList.sort((a, b) => a.timestamp - b.timestamp));
     }
-  };
+  }, [username, id]);
 
   const handleAnimationComplete = () => {
     setCollectingItem(null);
@@ -521,18 +548,17 @@ export default function ChatScreen() {
       <View style={[
         styles.messageItem,
         isOwnMessage ? styles.sentMessage : styles.receivedMessage,
-        isDarkMode && (isOwnMessage ? styles.sentMessageDark : styles.receivedMessageDark),
         linkPreviews.length > 0 && styles.messageWithEmbed,
       ]}>
-        <Text style={[styles.senderUsername, isDarkMode && styles.senderUsernameDark]}>{item.senderUsername}</Text>
+        <Text style={styles.senderUsername}>{item.senderUsername}</Text>
         {strippedText && (
-          <Text style={[styles.messageText, isDarkMode && styles.messageTextDark]}>{strippedText}</Text>
+          <Text style={styles.messageText}>{strippedText}</Text>
         )}
         {linkPreviews.map((preview, index) => (
           <LinkPreview key={index} data={preview} />
         ))}
         {item.imageUrl && (
-          <TouchableOpacity onPress={() => handleImagePress(item.imageUrl!)}>
+          <Pressable onPress={() => handleImagePress(item.imageUrl!)}>
             <Image
               source={{ uri: item.imageUrl }}
               style={styles.messageImage}
@@ -540,10 +566,10 @@ export default function ChatScreen() {
               cachePolicy="memory-disk"
               transition={200}
             />
-          </TouchableOpacity>
+          </Pressable>
         )}
         {item.inventoryItem && (
-          <TouchableOpacity
+          <Pressable
             style={styles.inventoryMessageItem}
             onPress={() => !isOwnMessage && item.inventoryItem && handleCollectItem({
               id: item.inventoryItem.id,
@@ -570,24 +596,24 @@ export default function ChatScreen() {
             {!isOwnMessage && (
               <Text style={styles.collectText}>Tap to collect</Text>
             )}
-          </TouchableOpacity>
+          </Pressable>
         )}
         {isOwnMessage && (
           <View style={styles.messageStatus}>
-            {item.delivered && <Ionicons name="checkmark" size={16} color={isDarkMode ? "#B0B0B0" : "#4a5568"} />}
-            {item.read && <Ionicons name="checkmark-done" size={16} color={isDarkMode ? "#B0B0B0" : "#4a5568"} />}
+            {item.delivered && <Ionicons name="checkmark" size={16} color={palette.textMuted} />}
+            {item.read && <Ionicons name="checkmark-done" size={16} color={palette.textMuted} />}
           </View>
         )}
       </View>
     );
-  }, [username, isDarkMode, getImageForProduct]);
+  }, [username, isDarkMode, getImageForProduct, handleCollectItem]);
 
   const renderHeader = () => (
-    <View style={[styles.header, isDarkMode && styles.headerDark]}>
-      <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-        <Ionicons name="arrow-back" size={24} color={isDarkMode ? "#FFFFFF" : "#000000"} />
-      </TouchableOpacity>
-      <Text style={[styles.headerTitle, isDarkMode && styles.headerTitleDark]}>
+    <View style={styles.header}>
+      <Pressable onPress={() => router.back()} style={styles.backButton}>
+        <Ionicons name="arrow-back" size={24} color={palette.text} />
+      </Pressable>
+      <Text style={styles.headerTitle}>
         {otherParticipant || 'Chat'}
       </Text>
     </View>
@@ -612,7 +638,7 @@ export default function ChatScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, isDarkMode && styles.containerDark]}>
+    <SafeAreaView style={styles.container}>
       {renderHeader()}
       {unreadCount > 0 && (
         <Text style={styles.unreadCount}>{unreadCount} unread messages</Text>
@@ -636,7 +662,7 @@ export default function ChatScreen() {
           onLayout={scrollToBottom}
         />
         {selectedInventoryItem && (
-          <View style={[styles.selectedInventoryItemContainer, isDarkMode && styles.selectedInventoryItemContainerDark]}>
+          <View style={styles.selectedInventoryItemContainer}>
             <Image
               source={getImageForProduct(selectedInventoryItem.name)}
               style={styles.selectedInventoryItemImage}
@@ -644,49 +670,49 @@ export default function ChatScreen() {
               cachePolicy="memory-disk"
             />
             <View style={styles.selectedInventoryItemInfo}>
-              <Text style={[styles.selectedInventoryItemName, isDarkMode && styles.selectedInventoryItemNameDark]} numberOfLines={1}>
+              <Text style={styles.selectedInventoryItemName} numberOfLines={1}>
                 {selectedInventoryItem.name}
               </Text>
-              <Text style={[styles.selectedInventoryItemQuantity, isDarkMode && styles.selectedInventoryItemQuantityDark]}>
+              <Text style={styles.selectedInventoryItemQuantity}>
                 {selectedInventoryItem.quantity} left in inventory
               </Text>
               <View style={styles.quantityControls}>
-                <TouchableOpacity
-                  style={[styles.quantityButton, isDarkMode && styles.quantityButtonDark]}
+                <Pressable
+                  style={styles.quantityButton}
                   onPress={() => setItemQuantity(Math.max(1, itemQuantity - 1))}
                 >
-                  <Ionicons name="remove" size={18} color={isDarkMode ? "#FFF" : "#000"} />
-                </TouchableOpacity>
-                <Text style={[styles.quantityText, isDarkMode && styles.quantityTextDark]}>
+                  <Ionicons name="remove" size={18} color={palette.text} />
+                </Pressable>
+                <Text style={styles.quantityText}>
                   Send: {itemQuantity}
                 </Text>
-                <TouchableOpacity
-                  style={[styles.quantityButton, isDarkMode && styles.quantityButtonDark]}
+                <Pressable
+                  style={styles.quantityButton}
                   onPress={() => setItemQuantity(Math.min(selectedInventoryItem.quantity, itemQuantity + 1))}
                 >
-                  <Ionicons name="add" size={18} color={isDarkMode ? "#FFF" : "#000"} />
-                </TouchableOpacity>
+                  <Ionicons name="add" size={18} color={palette.text} />
+                </Pressable>
               </View>
             </View>
-            <TouchableOpacity
+            <Pressable
               style={styles.removeSelectedItem}
               onPress={() => {
                 setSelectedInventoryItem(null);
                 setItemQuantity(1);
               }}
             >
-              <Ionicons name="close-circle" size={24} color="#FF3B30" />
-            </TouchableOpacity>
+              <Ionicons name="close-circle" size={24} color={palette.danger} />
+            </Pressable>
           </View>
         )}
         {showInventoryMenu && (
-          <View style={[styles.inventoryMenuContainer, isDarkMode && styles.inventoryMenuContainerDark]}>
+          <View style={styles.inventoryMenuContainer}>
             <FlatList
               data={inventory.filter(item => item.quantity > 0)}
               renderItem={({ item }) => (
-                <TouchableOpacity
+                <Pressable
                   onPress={() => handleSelectInventoryItem(item)}
-                  style={[styles.inventoryItem, isDarkMode && styles.inventoryItemDark]}
+                  style={styles.inventoryItem}
                   disabled={item.quantity === 0}
                 >
                   <Image
@@ -695,11 +721,11 @@ export default function ChatScreen() {
                     contentFit="contain"
                     cachePolicy="memory-disk"
                   />
-                  <Text style={[styles.inventoryItemName, isDarkMode && styles.inventoryItemNameDark]}>{item.name}</Text>
-                  <Text style={[styles.inventoryItemQuantity, isDarkMode && styles.inventoryItemQuantityDark]}>
+                  <Text style={styles.inventoryItemName}>{item.name}</Text>
+                  <Text style={styles.inventoryItemQuantity}>
                     {item.quantity} left
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               )}
               keyExtractor={(item) => item.id}
               horizontal
@@ -708,7 +734,7 @@ export default function ChatScreen() {
             />
           </View>
         )}
-        <View style={[styles.inputContainer, isDarkMode && styles.inputContainerDark]}>
+        <View style={styles.inputContainer}>
           {selectedImage && (
             <Image
               source={{ uri: selectedImage }}
@@ -717,27 +743,26 @@ export default function ChatScreen() {
               cachePolicy="memory-disk"
             />
           )}
-          <TouchableOpacity onPress={handleAttachPress} style={styles.attachButton}>
-            <Ionicons name="attach" size={24} color={isDarkMode ? "#B0B0B0" : "#4a5568"} />
-          </TouchableOpacity>
+          <Pressable onPress={handleAttachPress} style={styles.attachButton}>
+            <Ionicons name="attach" size={24} color={palette.textMuted} />
+          </Pressable>
           <TextInput
             style={[
               styles.input,
-              isDarkMode && styles.inputDark,
               { height: Math.max(40, inputHeight) }
             ]}
             value={message}
             onChangeText={setMessage}
             placeholder="Type a message..."
-            placeholderTextColor={isDarkMode ? "#B0B0B0" : "#4a5568"}
+            placeholderTextColor={palette.textMuted}
             multiline
             onContentSizeChange={(event) =>
               setInputHeight(event.nativeEvent.contentSize.height)
             }
           />
-          <TouchableOpacity onPress={handleSendMessage} style={styles.sendButton} disabled={isUploading}>
-            <Ionicons name="send" size={24} color={isUploading ? "#B0B0B0" : (isDarkMode ? "#B0B0B0" : "#4a5568")} />
-          </TouchableOpacity>
+          <Pressable onPress={handleSendMessage} style={styles.sendButton} disabled={isUploading}>
+            <Ionicons name="send" size={24} color={isUploading ? palette.textFaint : palette.accent} />
+          </Pressable>
         </View>
       </KeyboardAvoidingView>
 
@@ -749,12 +774,12 @@ export default function ChatScreen() {
             contentFit="contain"
             cachePolicy="memory-disk"
           />
-          <TouchableOpacity style={styles.closeButton} onPress={() => setFullScreenImage(null)}>
+          <Pressable style={styles.closeButton} onPress={() => setFullScreenImage(null)}>
             <Ionicons name="close" size={30} color="#FFFFFF" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.saveButton} onPress={handleSaveImage}>
+          </Pressable>
+          <Pressable style={styles.saveButton} onPress={handleSaveImage}>
             <Ionicons name="download" size={30} color="#FFFFFF" />
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </Modal>
       {imageUploadProgress > 0 && (
@@ -773,13 +798,10 @@ export default function ChatScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (palette: ThemePalette, isDarkMode: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f0f2f5',
-  },
-  containerDark: {
-    backgroundColor: '#1E1E1E',
+    backgroundColor: palette.bg,
   },
   keyboardAvoidingView: {
     flex: 1,
@@ -794,25 +816,17 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     padding: 10,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: palette.surface,
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-  },
-  inputContainerDark: {
-    backgroundColor: '#2C2C2C',
-    borderTopColor: '#3D3D3D',
+    borderTopColor: palette.border,
   },
   input: {
     flex: 1,
     marginHorizontal: 10,
     padding: 10,
-    backgroundColor: '#f0f2f5',
+    backgroundColor: palette.surfaceAlt,
     borderRadius: 20,
-    color: '#000000',
-  },
-  inputDark: {
-    backgroundColor: '#3D3D3D',
-    color: '#FFFFFF',
+    color: palette.text,
   },
   attachButton: {
     padding: 10,
@@ -831,25 +845,16 @@ const styles = StyleSheet.create({
   },
   sentMessage: {
     alignSelf: 'flex-end',
-    backgroundColor: '#DCF8C6',
-  },
-  sentMessageDark: {
-    backgroundColor: '#005C4B', // Darker green for sent messages in dark mode
+    backgroundColor: palette.accentSoft,
   },
   receivedMessage: {
     alignSelf: 'flex-start',
-    backgroundColor: '#FFFFFF',
-  },
-  receivedMessageDark: {
-    backgroundColor: '#262D31',
+    backgroundColor: palette.surface,
   },
   messageText: {
     fontSize: 16,
-    color: '#000000',
+    color: palette.text,
     flexWrap: 'wrap',
-  },
-  messageTextDark: {
-    color: '#FFFFFF',
   },
   messageImage: {
     width: 200,
@@ -860,34 +865,23 @@ const styles = StyleSheet.create({
   senderUsername: {
     fontSize: 14,
     marginBottom: 5,
-    color: '#4a5568',
-  },
-  senderUsernameDark: {
-    color: '#B0B0B0',
+    color: palette.textMuted,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-    backgroundColor: '#FFFFFF',
-  },
-  headerDark: {
-    backgroundColor: '#2C2C2C',
-    borderBottomColor: '#3D3D3D',
+    borderBottomColor: palette.border,
+    backgroundColor: palette.surface,
   },
   backButton: {
     padding: 5,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    ...Type.title,
     marginLeft: 10,
-    color: '#000000',
-  },
-  headerTitleDark: {
-    color: '#FFFFFF',
+    color: palette.text,
   },
   imagePreviewContainer: {
     position: 'absolute',
@@ -937,12 +931,12 @@ const styles = StyleSheet.create({
   },
   progressBarContainer: {
     height: 5,
-    backgroundColor: '#e0e0e0',
+    backgroundColor: palette.surfaceAlt,
     width: '100%',
   },
   progressBar: {
     height: '100%',
-    backgroundColor: '#4CAF50',
+    backgroundColor: palette.success,
   },
   selectedImage: {
     width: 50,
@@ -953,19 +947,15 @@ const styles = StyleSheet.create({
   unreadCount: {
     textAlign: 'center',
     padding: 5,
-    backgroundColor: '#e0e0e0',
-    color: '#333',
+    backgroundColor: palette.surfaceAlt,
+    color: palette.textMuted,
   },
   inventoryMenuContainer: {
-    backgroundColor: '#f0f2f5',
+    backgroundColor: palette.bg,
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
+    borderTopColor: palette.border,
     paddingVertical: 15,
     paddingHorizontal: 10,
-  },
-  inventoryMenuContainerDark: {
-    backgroundColor: '#2C2C2C',
-    borderTopColor: '#3D3D3D',
   },
   inventoryListContent: {
     paddingHorizontal: 5,
@@ -974,20 +964,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginHorizontal: 15,
     padding: 10,
-    backgroundColor: '#ffffff',
+    backgroundColor: palette.surface,
     borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    ...cardShadow(isDarkMode),
     minWidth: 80,
-  },
-  inventoryItemDark: {
-    backgroundColor: '#3D3D3D',
   },
   inventoryItemImage: {
     width: 50,
@@ -1000,22 +980,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 4,
     fontWeight: '600',
-  },
-  inventoryItemNameDark: {
-    color: '#FFFFFF',
+    color: palette.text,
   },
   inventoryItemQuantity: {
     fontSize: 11,
-    color: '#666',
+    color: palette.textMuted,
     fontWeight: '500',
-  },
-  inventoryItemQuantityDark: {
-    color: '#B0B0B0',
   },
   inventoryMessageItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(240, 240, 240, 0.5)',
+    backgroundColor: palette.surfaceAlt,
     padding: 5,
     borderRadius: 5,
     marginTop: 5,
@@ -1034,18 +1009,18 @@ const styles = StyleSheet.create({
   },
   inventoryMessageItemText: {
     fontSize: 14,
-    color: '#333',
+    color: palette.text,
     flex: 1,
     marginRight: 5,
   },
   inventoryMessageItemQuantity: {
     fontSize: 14,
-    color: '#333',
+    color: palette.text,
     fontWeight: 'bold',
   },
   collectText: {
     fontSize: 12,
-    color: '#007AFF',
+    color: palette.accent,
     marginLeft: 5,
   },
   selectedInventoryItem: {
@@ -1056,17 +1031,13 @@ const styles = StyleSheet.create({
   selectedInventoryItemContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f0f2f5',
+    backgroundColor: palette.surfaceAlt,
     padding: 8,
     borderRadius: 12,
     marginRight: 8,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  selectedInventoryItemContainerDark: {
-    backgroundColor: '#3D3D3D',
-    borderColor: '#4D4D4D',
+    borderColor: palette.border,
   },
   selectedInventoryItemImage: {
     width: 40,
@@ -1079,46 +1050,33 @@ const styles = StyleSheet.create({
   selectedInventoryItemName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#000',
+    color: palette.text,
     marginBottom: 4,
-  },
-  selectedInventoryItemNameDark: {
-    color: '#FFF',
   },
   selectedInventoryItemQuantity: {
     fontSize: 12,
-    color: '#666',
+    color: palette.textMuted,
     marginBottom: 8,
-  },
-  selectedInventoryItemQuantityDark: {
-    color: '#B0B0B0',
   },
   quantityControls: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   quantityButton: {
-    backgroundColor: '#FFF',
+    backgroundColor: palette.surface,
     width: 24,
     height: 24,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  quantityButtonDark: {
-    backgroundColor: '#2C2C2C',
-    borderColor: '#4D4D4D',
+    borderColor: palette.border,
   },
   quantityText: {
     fontSize: 14,
     fontWeight: 'bold',
     marginHorizontal: 12,
-    color: '#000',
-  },
-  quantityTextDark: {
-    color: '#FFF',
+    color: palette.text,
   },
   removeSelectedItem: {
     marginLeft: 8,
@@ -1127,7 +1085,7 @@ const styles = StyleSheet.create({
     width: 40,
     marginLeft: 5,
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: palette.border,
     borderRadius: 5,
     textAlign: 'center',
   },
@@ -1136,21 +1094,11 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#fff',
+    backgroundColor: palette.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: -2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  attachMenuContainerDark: {
-    backgroundColor: '#2C2C2C', // Adjust this color as needed
+    ...cardShadow(isDarkMode),
   },
   attachMenuHeader: {
     flexDirection: 'row',
@@ -1159,11 +1107,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   attachMenuTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  attachMenuTitleDark: {
-    color: '#FFFFFF',
+    ...Type.title,
+    color: palette.text,
   },
   attachMenuOptions: {
     flexDirection: 'row',
@@ -1176,29 +1121,13 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#2196F3',
+    backgroundColor: palette.accent,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 10,
   },
   attachOptionText: {
     fontSize: 14,
-  },
-  attachOptionTextDark: {
-    fontSize: 14,
-    color: '#FFFFFF', // or any other color suitable for dark mode
-  },
-  linkPreview: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-    borderRadius: 5,
-    marginTop: 5,
-    marginBottom: 5,
-  },
-  linkPreviewText: {
-    marginLeft: 10,
-    flex: 1,
-    fontSize: 14,
+    color: palette.text,
   },
 });

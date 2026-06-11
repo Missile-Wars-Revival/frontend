@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { useColorScheme } from 'react-native';
+import { View, Text, StyleSheet , useColorScheme } from 'react-native';
+
 
 interface CardProps {
   title: string;

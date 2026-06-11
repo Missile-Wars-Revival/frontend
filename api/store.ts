@@ -3,6 +3,8 @@ import { isAxiosError } from "axios";
 import * as SecureStore from "expo-secure-store";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+const DEV_OFFLINE_TOKEN = "dev-offline-token";
+
 interface WeaponTypesResponse {
   landmineTypes: any[];
   missileTypes: any[];
@@ -160,7 +162,8 @@ export const getImages = async () => {
 export async function getWeaponTypes(): Promise<WeaponTypesResponse> {
   try {
     const token = await SecureStore.getItemAsync("token");
-    if (!token) throw new Error("No authentication token found.");
+    if (!token) return { landmineTypes: [], missileTypes: [], otherTypes: [] };
+    if (token === DEV_OFFLINE_TOKEN) return { landmineTypes: [], missileTypes: [], otherTypes: [] };
     const response = await axiosInstance.get('/api/getWeaponTypes', {
       params: { token },
     });

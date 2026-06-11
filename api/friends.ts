@@ -1,5 +1,5 @@
 import axiosInstance from "./axios-instance";
-import axios, { isAxiosError } from "axios";
+import { isAxiosError } from "axios";
 import * as SecureStore from "expo-secure-store";
 
 interface FriendResponse {
@@ -16,7 +16,7 @@ export async function addFriend(token: string, friend: string): Promise<FriendRe
     // Assuming the backend always sends a JSON response with a message.
     return response.data as FriendResponse;
   } catch (error) {
-    if (axios.isAxiosError(error)) {
+    if (isAxiosError(error)) {
       // Handling Axios errors specifically
       if (error.response) {
         // Backend responded with a status code outside the 2xx range

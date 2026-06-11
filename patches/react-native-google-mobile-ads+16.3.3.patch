@@ -1,0 +1,199 @@
+diff --git a/node_modules/react-native-google-mobile-ads/android/src/main/java/io/invertase/googlemobileads/ReactNativeGoogleMobileAdsNativeModule.kt b/node_modules/react-native-google-mobile-ads/android/src/main/java/io/invertase/googlemobileads/ReactNativeGoogleMobileAdsNativeModule.kt
+index 6e70fdd..deba0b9 100644
+--- a/node_modules/react-native-google-mobile-ads/android/src/main/java/io/invertase/googlemobileads/ReactNativeGoogleMobileAdsNativeModule.kt
++++ b/node_modules/react-native-google-mobile-ads/android/src/main/java/io/invertase/googlemobileads/ReactNativeGoogleMobileAdsNativeModule.kt
+@@ -67,6 +67,16 @@ class ReactNativeGoogleMobileAdsNativeModule(
+       } ?: run {
+         data.putNull("icon")
+       }
++      val imagesArray = Arguments.createArray()
++      nativeAd.images.forEach { image ->
++        image.uri?.let { uri ->
++          val imageMap = Arguments.createMap()
++          imageMap.putString("url", uri.toString())
++          imageMap.putDouble("scale", image.scale)
++          imagesArray.pushMap(imageMap)
++        }
++      }
++      data.putArray("images", imagesArray)
+       val mediaContent = Arguments.createMap()
+       nativeAd.mediaContent?.let {
+         mediaContent.putDouble("aspectRatio", it.aspectRatio.toDouble())
+diff --git a/node_modules/react-native-google-mobile-ads/ios/RNGoogleMobileAds/RNGoogleMobileAdsMediaView.mm b/node_modules/react-native-google-mobile-ads/ios/RNGoogleMobileAds/RNGoogleMobileAdsMediaView.mm
+index 7194fff..7a3a063 100644
+--- a/node_modules/react-native-google-mobile-ads/ios/RNGoogleMobileAds/RNGoogleMobileAdsMediaView.mm
++++ b/node_modules/react-native-google-mobile-ads/ios/RNGoogleMobileAds/RNGoogleMobileAdsMediaView.mm
+@@ -52,11 +52,11 @@ using namespace facebook::react;
+ 
+ - (instancetype)initWithFrame:(CGRect)frame {
+   if (self = [super initWithFrame:frame]) {
+-    static const auto defaultProps = std::make_shared<const RNGoogleMobileAdsBannerViewProps>();
++    static const auto defaultProps = std::make_shared<const RNGoogleMobileAdsMediaViewProps>();
+     _props = defaultProps;
+ 
+     _bridge = [RCTBridge currentBridge];
+-    _nativeModule = [_bridge moduleForClass:RNGoogleMobileAdsNativeModule.class];
++    _nativeModule = [self nativeModule];
+     _mediaView = [[GADMediaView alloc] init];
+     _contentMode = UIViewContentModeScaleAspectFill;
+     self.contentView = _mediaView;
+@@ -100,7 +100,7 @@ using namespace facebook::react;
+ - (instancetype)initWithBridge:(RCTBridge *)bridge {
+   if (self = [super init]) {
+     _bridge = bridge;
+-    _nativeModule = [_bridge moduleForClass:RNGoogleMobileAdsNativeModule.class];
++    _nativeModule = [self nativeModule];
+     _mediaView = self;
+   }
+   return self;
+@@ -110,9 +110,25 @@ using namespace facebook::react;
+ 
+ #pragma mark - Common logics
+ 
++- (RNGoogleMobileAdsNativeModule *)nativeModule {
++  if (_nativeModule != nil) {
++    return _nativeModule;
++  }
++
++  if (_bridge != nil) {
++    _nativeModule = [_bridge moduleForClass:RNGoogleMobileAdsNativeModule.class];
++  }
++
++  if (_nativeModule == nil) {
++    _nativeModule = [RNGoogleMobileAdsNativeModule sharedInstance];
++  }
++
++  return _nativeModule;
++}
++
+ - (void)setResponseId:(NSString *)responseId {
+   _responseId = responseId;
+-  GADNativeAd *nativeAd = [_nativeModule nativeAdForResponseId:responseId];
++  GADNativeAd *nativeAd = [[self nativeModule] nativeAdForResponseId:responseId];
+   _mediaView.mediaContent = nativeAd.mediaContent;
+   _mediaView.contentMode = _contentMode;
+ }
+diff --git a/node_modules/react-native-google-mobile-ads/ios/RNGoogleMobileAds/RNGoogleMobileAdsNativeModule.h b/node_modules/react-native-google-mobile-ads/ios/RNGoogleMobileAds/RNGoogleMobileAdsNativeModule.h
+index b3c2de2..421b464 100644
+--- a/node_modules/react-native-google-mobile-ads/ios/RNGoogleMobileAds/RNGoogleMobileAdsNativeModule.h
++++ b/node_modules/react-native-google-mobile-ads/ios/RNGoogleMobileAds/RNGoogleMobileAdsNativeModule.h
+@@ -32,4 +32,6 @@
+ 
+ - (GADNativeAd *)nativeAdForResponseId:(NSString *)responseId;
+ 
+++ (RNGoogleMobileAdsNativeModule *)sharedInstance;
++
+ @end
+diff --git a/node_modules/react-native-google-mobile-ads/ios/RNGoogleMobileAds/RNGoogleMobileAdsNativeModule.mm b/node_modules/react-native-google-mobile-ads/ios/RNGoogleMobileAds/RNGoogleMobileAdsNativeModule.mm
+index e42c811..a011bb1 100644
+--- a/node_modules/react-native-google-mobile-ads/ios/RNGoogleMobileAds/RNGoogleMobileAdsNativeModule.mm
++++ b/node_modules/react-native-google-mobile-ads/ios/RNGoogleMobileAds/RNGoogleMobileAdsNativeModule.mm
+@@ -42,6 +42,8 @@ typedef void (^RNGMANativeAdLoadCompletionHandler)(GADNativeAd *_Nullable native
+   NSMutableDictionary<NSString *, RNGMANativeAdHolder *> *_adHolders;
+ }
+ 
++static __weak RNGoogleMobileAdsNativeModule *_sharedInstance = nil;
++
+ RCT_EXPORT_MODULE();
+ 
+ - (dispatch_queue_t)methodQueue {
+@@ -66,10 +68,15 @@ RCT_EXPORT_MODULE();
+ - (instancetype)init {
+   if (self = [super init]) {
+     _adHolders = [NSMutableDictionary dictionary];
++    _sharedInstance = self;
+   }
+   return self;
+ }
+ 
+++ (RNGoogleMobileAdsNativeModule *)sharedInstance {
++  return _sharedInstance;
++}
++
+ RCT_EXPORT_METHOD(
+     load
+     : (NSString *)adUnitId requestOptions
+@@ -95,6 +102,16 @@ RCT_EXPORT_METHOD(
+ 
+         [_adHolders setValue:adHolder forKey:responseId];
+ 
++        NSMutableArray *imagesArray = [NSMutableArray array];
++        for (GADNativeAdImage *image in nativeAd.images) {
++          if (image.imageURL != nil) {
++            [imagesArray addObject:(@{
++              @"url" : image.imageURL.absoluteString,
++              @"scale" : @(image.scale)
++            })];
++          }
++        }
++
+         resolve(@{
+           @"responseId" : responseId,
+           @"advertiser" : nativeAd.advertiser ?: [NSNull null],
+@@ -107,6 +124,7 @@ RCT_EXPORT_METHOD(
+           @"icon" : (nativeAd.icon && nativeAd.icon.imageURL != nil)
+               ? @{@"scale" : @(nativeAd.icon.scale), @"url" : nativeAd.icon.imageURL.absoluteString}
+               : [NSNull null],
++          @"images" : imagesArray,
+           @"mediaContent" : @{
+             @"aspectRatio" : @(nativeAd.mediaContent.aspectRatio),
+             @"hasVideoContent" : @(nativeAd.mediaContent.hasVideoContent),
+@@ -134,6 +152,9 @@ RCT_EXPORT_METHOD(destroy
+     [adHolder dispose];
+   }
+   [_adHolders removeAllObjects];
++  if (_sharedInstance == self) {
++    _sharedInstance = nil;
++  }
+ }
+ 
+ @end
+diff --git a/node_modules/react-native-google-mobile-ads/ios/RNGoogleMobileAds/RNGoogleMobileAdsNativeView.mm b/node_modules/react-native-google-mobile-ads/ios/RNGoogleMobileAds/RNGoogleMobileAdsNativeView.mm
+index 1178da1..6abf49e 100644
+--- a/node_modules/react-native-google-mobile-ads/ios/RNGoogleMobileAds/RNGoogleMobileAdsNativeView.mm
++++ b/node_modules/react-native-google-mobile-ads/ios/RNGoogleMobileAds/RNGoogleMobileAdsNativeView.mm
+@@ -58,7 +58,7 @@ using namespace facebook::react;
+     _props = defaultProps;
+ 
+     _bridge = [RCTBridge currentBridge];
+-    _nativeModule = [_bridge moduleForClass:RNGoogleMobileAdsNativeModule.class];
++    _nativeModule = [self nativeModule];
+     _nativeAdView = [[GADNativeAdView alloc] init];
+     self.contentView = _nativeAdView;
+   }
+@@ -127,7 +127,7 @@ using namespace facebook::react;
+ - (instancetype)initWithBridge:(RCTBridge *)bridge {
+   if (self = [super init]) {
+     _bridge = bridge;
+-    _nativeModule = [_bridge moduleForClass:RNGoogleMobileAdsNativeModule.class];
++    _nativeModule = [self nativeModule];
+     _nativeAdView = self;
+   }
+   return self;
+@@ -137,9 +137,25 @@ using namespace facebook::react;
+ 
+ #pragma mark - Common logics
+ 
++- (RNGoogleMobileAdsNativeModule *)nativeModule {
++  if (_nativeModule != nil) {
++    return _nativeModule;
++  }
++
++  if (_bridge != nil) {
++    _nativeModule = [_bridge moduleForClass:RNGoogleMobileAdsNativeModule.class];
++  }
++
++  if (_nativeModule == nil) {
++    _nativeModule = [RNGoogleMobileAdsNativeModule sharedInstance];
++  }
++
++  return _nativeModule;
++}
++
+ - (void)setResponseId:(NSString *)responseId {
+   _responseId = responseId;
+-  _nativeAd = [_nativeModule nativeAdForResponseId:responseId];
++  _nativeAd = [[self nativeModule] nativeAdForResponseId:responseId];
+   [self reloadAd];
+ }
+ 

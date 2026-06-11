@@ -106,7 +106,7 @@ const createStyles = (isDarkMode: boolean) => StyleSheet.create({
       height: 42,  
       width: 42,   
       right: width * 0.05, // 5% from the right
-      bottom: height * 0.05, // 5% from the bottom
+      bottom: height * 0.1, // increased to clear bottom nav bar
       padding: 10,
       backgroundColor: 'rgba(0, 0, 0, 0.6)', 
       borderRadius: 21, 

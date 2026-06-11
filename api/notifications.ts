@@ -2,6 +2,8 @@ import { AxiosResponse } from "axios";
 import axiosInstance from "./axios-instance";
 import * as SecureStore from "expo-secure-store";
 
+const DEV_OFFLINE_TOKEN = "dev-offline-token";
+
 interface NotificationResponse {
 	notifications: Notification[];
 }
@@ -20,8 +22,12 @@ export const getNotifications = async (): Promise<Notification[]> => {
 	try {
 		const token = await SecureStore.getItemAsync("token");
 		if (!token) {
-			console.log('Token not found');
-			throw new Error('Authentication token not found');
+			// Not signed in: skip the request quietly.
+			return [];
+		}
+
+		if (token === DEV_OFFLINE_TOKEN) {
+			return [];
 		}
 
 		const response = await axiosInstance.get<NotificationResponse>("/api/notifications", {
@@ -32,7 +38,7 @@ export const getNotifications = async (): Promise<Notification[]> => {
 		return response.data.notifications;
 	} catch (error) {
 		console.error("Failed to fetch notifications:", error);
-		throw error;
+		return [];
 	}
 };
 
@@ -41,6 +47,10 @@ export const markNotificationAsRead = async (notificationId: string): Promise<vo
 		const token = await SecureStore.getItemAsync("token");
 		if (!token) {
 			throw new Error('Authentication token not found');
+		}
+
+		if (token === DEV_OFFLINE_TOKEN) {
+			return;
 		}
 
 		await axiosInstance.patch("/api/markNotificationAsRead", {
@@ -60,6 +70,10 @@ export const markMessageNotificationAsRead = async (): Promise<void> => {
 			throw new Error('Authentication token not found');
 		}
 
+		if (token === DEV_OFFLINE_TOKEN) {
+			return;
+		}
+
 		await axiosInstance.delete("/api/deleteMessageNotifications", {
 			data: { token }
 		});
@@ -74,6 +88,10 @@ export const deleteNotification = async (notificationId: string) => {
 		const token = await SecureStore.getItemAsync("token");
 		if (!token) {
 			throw new Error('Authentication token not found');
+		}
+
+		if (token === DEV_OFFLINE_TOKEN) {
+			return;
 		}
 
 		await axiosInstance.delete("/api/deleteNotification", {
@@ -115,6 +133,20 @@ export const getNotificationPreferences = async (): Promise<NotificationPreferen
 			throw new Error('Authentication token not found');
 		}
 
+		if (token === DEV_OFFLINE_TOKEN) {
+			return {
+				id: 0,
+				userId: 0,
+				incomingEntities: true,
+				entityDamage: true,
+				entitiesInAirspace: true,
+				eliminationReward: true,
+				lootDrops: true,
+				friendRequests: true,
+				leagues: true,
+			};
+		}
+
 		const response: AxiosResponse<NotificationPreferencesResponse> = await axiosInstance.get("/api/notificationPreferences", {
 			params: { token },
 		});
@@ -134,6 +166,11 @@ export const updateNotificationPreferences = async (
 		if (!token) {
 			console.log('Token not found');
 			throw new Error('Authentication token not found');
+		}
+
+		if (token === DEV_OFFLINE_TOKEN) {
+			const currentPreferences = await getNotificationPreferences();
+			return { ...currentPreferences, ...preferences };
 		}
 
 		// First, get the current preferences

@@ -1,17 +1,32 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { signOut as clearSession } from '../logincache';
 
 interface AuthContextType {
   isSignedIn: boolean;
   setIsSignedIn: (value: boolean) => void;
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isSignedIn, setIsSignedIn] = useState(false);
+interface AuthProviderProps {
+  children: React.ReactNode;
+  initialIsSignedIn?: boolean;
+}
+
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children, initialIsSignedIn }) => {
+  const [isSignedIn, setIsSignedIn] = useState(initialIsSignedIn ?? false);
+
+  const signOut = useCallback(async () => {
+    await clearSession();
+    setIsSignedIn(false);
+  }, []);
 
   useEffect(() => {
+    // Only fall back to AsyncStorage if we didn't get a value from the splash screen
+    if (initialIsSignedIn !== undefined) return;
+
     const checkSignInStatus = async () => {
       const status = await AsyncStorage.getItem('signedIn');
       setIsSignedIn(status === 'true');
@@ -20,7 +35,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   return (
-    <AuthContext.Provider value={{ isSignedIn, setIsSignedIn }}>
+    <AuthContext.Provider value={{ isSignedIn, setIsSignedIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );

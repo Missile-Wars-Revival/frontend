@@ -1,33 +1,36 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { View, Text, TouchableOpacity, FlatList, Modal, Alert, RefreshControl, TextInput, StyleSheet, useColorScheme } from "react-native";
-import { Image } from "expo-image";
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, Modal, Alert, TextInput, StyleSheet, useColorScheme } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
+import { BlurView } from "expo-blur";
+import Ionicons from '@react-native-vector-icons/ionicons';
+import FriendsList from "../../../components/Friends/FriendsList";
 import { useRouter } from "expo-router";
-import { useUserName } from "../../../util/fetchusernameglobal";
 import * as SecureStore from 'expo-secure-store';
 import { removeFriend } from "../../../api/friends";
 import { MissileLibrary } from "../../../components/Missile/missile";
 import { searchFriendsAdded } from "../../../api/getplayerlocations";
-import { fetchAndCacheImage } from "../../../util/imagecache";
 import { useNotifications, notificationEmitter } from "../../../components/Notifications/useNotifications";
 import useFetchFriends from "../../../hooks/websockets/friendshook";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getlocActive } from "../../../api/locationOptions";
 import MissileFiringAnimation from "../../../components/Animations/MissileFiring";
-import { useOnboarding } from '../../../util/Context/onboardingContext';
+import { AnimatedEntrance } from "../../../components/ui/AnimatedEntrance";
+import { PressableScale } from "../../../components/ui/PressableScale";
+import { haptics } from "../../../components/ui/haptics";
+import { getPalette, Gradients, Radius, Spacing, cardShadow, floatingAboveTabBar } from "../../../components/ui/theme";
+
+const DEV_OFFLINE_TOKEN = "dev-offline-token";
 
 interface Friend {
   username: string;
-  profileImageUrl: string;
+  profileImageUrl: string | null;
 }
 
 const FriendsPage: React.FC = () => {
   const friends = useFetchFriends() //WS
-  const [loading, setLoading] = useState(false);
-  const error = null;
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedFriend, setSelectedFriend] = useState("");
-  const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
   const [showMissileLibrary, setShowMissileLibrary] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState("");
@@ -41,9 +44,10 @@ const FriendsPage: React.FC = () => {
   const colorScheme = useColorScheme();
   const [locActive, setLocActive] = useState<boolean>(true);
   const isDarkMode = colorScheme === 'dark';
+  const c = getPalette(isDarkMode);
+  const insets = useSafeAreaInsets();
   const [showMissileFiringAnimation, setShowMissileFiringAnimation] = useState(false);
-  const [hasFirebaseUID, setHasFirebaseUID] = useState(false);
-
+  const [canShowChatFab, setCanShowChatFab] = useState(false);
 
   const handleUnreadCountUpdate = useCallback(({ count, chatCount }: { count: number, chatCount: number }) => {
     setLocalUnreadCount(count);
@@ -52,65 +56,69 @@ const FriendsPage: React.FC = () => {
 
   useEffect(() => {
     notificationEmitter.on('unreadCountUpdated', handleUnreadCountUpdate);
-
     return () => {
       notificationEmitter.off('unreadCountUpdated', handleUnreadCountUpdate);
     };
   }, [handleUnreadCountUpdate]);
 
   useEffect(() => {
-		const initializeApp = async () => {
-		  try {
-			const isAliveStatusString = await AsyncStorage.getItem('isAlive');
-			if (isAliveStatusString) {
-			  const isAliveStatus = JSON.parse(isAliveStatusString);
-	
-			  setIsAlive(isAliveStatus.isAlive);
-			} else {
-				setIsAlive(true); // Default to true if no status is found
-			}
-		  } catch (error) {
-			console.error('Error initializing app:', error);
-		  }
-		};
+    const initializeApp = async () => {
+      try {
+        const isAliveStatusString = await AsyncStorage.getItem('isAlive');
+        if (isAliveStatusString) {
+          const parsed = JSON.parse(isAliveStatusString);
+          const alive = typeof parsed === 'boolean' ? parsed : parsed?.isAlive ?? true;
+          setIsAlive(alive);
+        } else {
+          setIsAlive(true); // Default to true if no status is found
+        }
+      } catch (error) {
+        console.error('Error initializing app:', error);
+      }
+    };
+    initializeApp();
+  }, []);
 
-		initializeApp();
-
-	  }, []);
-
-    useEffect(() => {
-      // Fetch immediately on component mount
-      fetchLocActiveStatus();
-      // Set up interval to fetch every 30 seconds (adjust as needed)
-      const intervalId = setInterval(fetchLocActiveStatus, 30000);
-  
-      // Clean up interval on component unmount
-      return () => {
-        clearInterval(intervalId);
-      };
-    }, []);
-    
+  useEffect(() => {
     const fetchLocActiveStatus = async () => {
       try {
         const status = await getlocActive();
-        setLocActive(status);
+        setLocActive(status != null ? Boolean(status) : true);
       } catch (error) {
         console.error("Failed to fetch locActive status:", error);
-      } finally {
       }
     };
+    fetchLocActiveStatus();
+    const intervalId = setInterval(fetchLocActiveStatus, 30000);
+    return () => clearInterval(intervalId);
+  }, []);
+
+  useEffect(() => {
+    const checkChatAccess = async () => {
+      const [firebaseUID, token] = await Promise.all([
+        SecureStore.getItemAsync("firebaseUID"),
+        SecureStore.getItemAsync("token"),
+      ]);
+      const isDevAccount = __DEV__ && token === DEV_OFFLINE_TOKEN;
+      setCanShowChatFab(!!firebaseUID || isDevAccount);
+    };
+    void checkChatAccess();
+  }, []);
 
   const handleRemPress = (friendUsername: string) => {
+    haptics.warning();
     setSelectedFriend(friendUsername);
     setModalVisible(true);
   };
 
   const fireMissile = (username: string) => {
+    haptics.tap();
     setSelectedPlayer(username);
     setShowMissileLibrary(true);
   };
 
   const handleMissileFired = () => {
+    haptics.fire();
     setShowMissileLibrary(false);
     setShowMissileFiringAnimation(true);
   };
@@ -125,30 +133,26 @@ const FriendsPage: React.FC = () => {
     try {
       if (!token) {
         console.log('Token not found');
-        return; 
+        return;
       }
       const response = await removeFriend(token, friendUsername);
       if (response.message === "Friend removed successfully") {
+        haptics.success();
         Alert.alert("Success", "Friend successfully removed.");
         setModalVisible(false);
       } else {
-        const result = await response.json();
-        Alert.alert("Error", result.message || "Failed to remove friend.");
+        Alert.alert("Error", response?.message || "Failed to remove friend.");
       }
     } catch (error) {
       console.error('Error removing friend:', error);
+      haptics.error();
       Alert.alert("Error", "An unexpected error occurred while removing the friend.");
     }
   };
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    setRefreshing(false);
-  };
-
   const navigateToUserProfile = (username: string) => {
     router.navigate({
-      pathname: "profile/user-profile",
+      pathname: "/friends/user-profile",
       params: { username }
     });
   };
@@ -160,233 +164,229 @@ const FriendsPage: React.FC = () => {
       setIsSearchActive(false);
       return;
     }
-    
+
     setIsSearchActive(true);
     try {
       const currentUserUsername = await SecureStore.getItemAsync("username");
-      
       if (currentUserUsername === null) {
         console.error("No username found in secure storage.");
         setFilteredFriends([]);
         return;
       }
-
       const result = await searchFriendsAdded(text);
-      
+      // profileImageUrl is resolved server-side and already present on each result.
       const filteredResult = result.filter(friend => friend.username !== currentUserUsername);
-      
-      const filteredResultWithImages = await Promise.all(
-        filteredResult.map(async (friend) => ({
-          ...friend,
-          profileImageUrl: await fetchAndCacheImage(friend.username),
-        }))
-      );
-      
-      setFilteredFriends(filteredResultWithImages);
+      setFilteredFriends(filteredResult);
     } catch (error) {
       console.error("Failed to search for friends:", error);
       setFilteredFriends([]);
     }
   };
 
-  const renderFriendItem = ({ item }: { item: Friend }) => (
-    <View style={[styles.friendItem, isDarkMode && styles.friendItemDark]}>
-      <TouchableOpacity 
-        style={styles.friendInfo}
-        onPress={() => navigateToUserProfile(item.username)}
-      >
-        <Image
-          source={{ uri: item.profileImageUrl }}
-          style={styles.friendImage}
-          cachePolicy="memory-disk"
-        />
-        <Text style={[styles.friendName, isDarkMode && styles.friendNameDark]}>{item.username}</Text>
-      </TouchableOpacity>
-      <View style={styles.actionButtons}>
-        {isAlive && locActive && (
-          <TouchableOpacity
-            style={[styles.actionButton, styles.fireButton]}
-            onPress={() => fireMissile(item.username)}
-          >
-            <Text style={styles.actionButtonText}>🚀</Text>
-          </TouchableOpacity>
-        )}
-        <TouchableOpacity
-          style={[styles.actionButton, styles.removeButton]}
-          onPress={() => handleRemPress(item.username)}
-        >
-          <Text style={styles.actionButtonText}>X</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-
-  const renderSearchResultItem = ({ item }: { item: Friend }) => (
-    <View style={[styles.friendItem, isDarkMode && styles.friendItemDark]}>
-      <TouchableOpacity 
-        style={styles.friendInfo}
-        onPress={() => navigateToUserProfile(item.username)}
-      >
-        <Image
-          source={{ uri: item.profileImageUrl }}
-          style={styles.friendImage}
-          cachePolicy="memory-disk"
-        />
-        <Text style={[styles.friendName, isDarkMode && styles.friendNameDark]}>{item.username}</Text>
-      </TouchableOpacity>
-      <View style={styles.actionButtons}>
-        <TouchableOpacity
-          style={[styles.actionButton, styles.removeButton]}
-          onPress={() => handleRemPress(item.username)}
-        >
-          <Text style={styles.actionButtonText}>X</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-
-  useEffect(() => {
-    const checkFirebaseUID = async () => {
-      const firebaseUID = await SecureStore.getItemAsync("firebaseUID");
-      setHasFirebaseUID(!!firebaseUID);
-    };
-
-    checkFirebaseUID();
-  }, []);
+  const listFriends = isSearchActive ? filteredFriends : friends;
+  const showEmpty = isSearchActive
+    ? filteredFriends.length === 0
+    : friends.length === 0;
+  const unreadBadgeLabel = localUnreadCount > 99 ? '99+' : localUnreadCount.toString();
 
   return (
-    <View style={[styles.container, isDarkMode && styles.containerDark]}>
-      <View style={[styles.header, isDarkMode && styles.headerDark]}>
-        <TouchableOpacity
-          style={[styles.addButton, isDarkMode && styles.addButtonDark]}
-          onPress={() => router.navigate("/friends/add-friends")}
-        >
-          <Text style={styles.addButtonText}>+</Text>
-        </TouchableOpacity>
-        <Text style={[styles.headerText, isDarkMode && styles.headerTextDark]}>Friends</Text>
-        <TouchableOpacity
-          style={[styles.notificationButton, isDarkMode && styles.notificationButtonDark]}
-          onPress={() => router.navigate("/friends/notifications")}
-        >
-          <Text style={styles.notificationButtonText}>🔔</Text>
-          {localUnreadCount > 0 && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{localUnreadCount}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-      </View>
-      <TextInput
-        style={[styles.searchInput, isDarkMode && styles.searchInputDark]}
-        placeholder="Search friends..."
-        placeholderTextColor={isDarkMode ? "#B0B0B0" : "#666"}
-        value={searchTerm}
-        onChangeText={handleSearch}
-      />
-
-      {loading ? (
-        <Text style={[styles.centerText, isDarkMode && styles.centerTextDark]}>Loading...</Text>
-      ) : error ? (
-        <Text style={[styles.centerText, isDarkMode && styles.centerTextDark, styles.errorText]}>{error}</Text>
-      ) : isSearchActive ? (
-        <FlatList
-          data={filteredFriends}
-          keyExtractor={(item) => item.username}
-          renderItem={renderSearchResultItem}
-          ListEmptyComponent={
-            <Text style={[styles.centerText, isDarkMode && styles.centerTextDark]}>
-              {searchTerm.trim() ? "No friends found" : "Type to search friends"}
+    <View style={[styles.container, { backgroundColor: c.bg }]}>
+      <LinearGradient
+        colors={isDarkMode ? ['#241B45', '#15172B'] : Gradients.brand}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.header}
+      >
+        <View style={styles.headerRow}>
+          <View>
+            <Text style={styles.headerEyebrow}>Your squad</Text>
+            <Text style={styles.headerTitle}>Friends</Text>
+            <Text style={styles.headerCount}>
+              {friends.length} {friends.length === 1 ? 'ally' : 'allies'}
             </Text>
-          }
-        />
-      ) : friends.length === 0 ? (
-        <Text style={[styles.centerText, isDarkMode && styles.centerTextDark]}>No friends found</Text>
-      ) : (
-        <FlatList
-          data={friends}
-          keyExtractor={(item) => item.username}
-          renderItem={renderFriendItem}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={["#9Bd35A", "#689F38"]}
-              tintColor={isDarkMode ? "#FFF" : "#000"}
+          </View>
+          <View style={styles.headerActions}>
+            <PressableScale
+              haptic="tap"
+              onPress={() => router.navigate("/friends/notifications")}
+              style={styles.headerIconBtn}
+            >
+              <Ionicons name="notifications" size={22} color="#fff" />
+              {localUnreadCount > 0 && (
+                <View style={[styles.badge, unreadBadgeLabel.length > 2 && styles.badgeWide]}>
+                  <Text style={styles.badgeText} numberOfLines={1} adjustsFontSizeToFit>
+                    {unreadBadgeLabel}
+                  </Text>
+                </View>
+              )}
+            </PressableScale>
+            <PressableScale
+              haptic="tap"
+              onPress={() => router.navigate("/friends/add-friends")}
+              style={styles.headerIconBtn}
+            >
+              <Ionicons name="person-add" size={20} color="#fff" />
+            </PressableScale>
+          </View>
+        </View>
+
+        {/* Search bar */}
+        <View style={styles.searchWrap}>
+          <BlurView
+            intensity={isDarkMode ? 30 : 50}
+            tint={isDarkMode ? 'dark' : 'light'}
+            style={styles.searchBlur}
+          >
+            <Ionicons name="search" size={18} color="rgba(255,255,255,0.85)" />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search friends..."
+              placeholderTextColor="rgba(255,255,255,0.7)"
+              value={searchTerm}
+              onChangeText={handleSearch}
+              autoCorrect={false}
+              autoCapitalize="none"
             />
-          }
+            {searchTerm.length > 0 && (
+              <PressableScale haptic="soft" onPress={() => handleSearch("")} style={styles.clearBtn}>
+                <Ionicons name="close-circle" size={18} color="rgba(255,255,255,0.85)" />
+              </PressableScale>
+            )}
+          </BlurView>
+        </View>
+      </LinearGradient>
+
+      {showEmpty ? (
+        <AnimatedEntrance style={styles.emptyWrap}>
+          <View style={[styles.emptyIcon, { backgroundColor: c.surface }, cardShadow(isDarkMode)]}>
+            <Ionicons
+              name={isSearchActive ? "search" : "people"}
+              size={40}
+              color={c.accent}
+            />
+          </View>
+          <Text style={[styles.emptyTitle, { color: c.text }]}>
+            {isSearchActive
+              ? (searchTerm.trim() ? "No friends found" : "Type to search friends")
+              : "No friends yet"}
+          </Text>
+          {!isSearchActive && (
+            <>
+              <Text style={[styles.emptySub, { color: c.textMuted }]}>
+                Add players nearby to build your squad.
+              </Text>
+              <PressableScale
+                haptic="tap"
+                onPress={() => router.navigate("/friends/add-friends")}
+                style={styles.emptyCta}
+              >
+                <LinearGradient colors={Gradients.brand} style={styles.emptyCtaFill}>
+                  <Ionicons name="person-add" size={18} color="#fff" />
+                  <Text style={styles.emptyCtaText}>Add friends</Text>
+                </LinearGradient>
+              </PressableScale>
+            </>
+          )}
+        </AnimatedEntrance>
+      ) : (
+        <FriendsList
+          friends={listFriends}
+          isDarkMode={isDarkMode}
+          showFire={!isSearchActive && isAlive && locActive}
+          onProfilePress={navigateToUserProfile}
+          onFirePress={fireMissile}
+          onRemovePress={handleRemPress}
         />
       )}
+
+      {/* Remove friend confirmation */}
       <Modal
-        transparent={true}
+        transparent
         visible={modalVisible}
+        animationType="fade"
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={styles.modalContainer}>
-          <View style={[styles.modalContent, isDarkMode && styles.modalContentDark]}>
-            <Text style={[styles.modalTitle, isDarkMode && styles.modalTitleDark]}>Remove Friend</Text>
-            <Text style={[styles.modalText, isDarkMode && styles.modalTextDark]}>
+        <View style={styles.modalOverlay}>
+          <AnimatedEntrance fromScale={0.92} style={[styles.modalCard, { backgroundColor: c.surface }]}>
+            <View style={[styles.modalIcon, { backgroundColor: 'rgba(225,29,72,0.12)' }]}>
+              <Ionicons name="person-remove" size={26} color="#E11D48" />
+            </View>
+            <Text style={[styles.modalTitle, { color: c.text }]}>Remove Friend</Text>
+            <Text style={[styles.modalText, { color: c.textMuted }]}>
               Are you sure you want to remove {selectedFriend} from your friends list?
             </Text>
             <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton, isDarkMode && styles.cancelButtonDark]}
+              <PressableScale
+                haptic="select"
                 onPress={() => setModalVisible(false)}
+                style={[styles.modalBtn, { backgroundColor: c.surfaceAlt }]}
               >
-                <Text style={styles.modalButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.removeButtonModal]}
+                <Text style={[styles.modalBtnText, { color: c.text }]}>Cancel</Text>
+              </PressableScale>
+              <PressableScale
+                haptic="heavy"
                 onPress={() => handleRemoveFriend(selectedFriend)}
+                style={styles.modalBtn}
               >
-                <Text style={styles.modalButtonText}>Remove</Text>
-              </TouchableOpacity>
+                <LinearGradient colors={Gradients.danger} style={styles.modalBtnFill}>
+                  <Text style={[styles.modalBtnText, { color: '#fff' }]}>Remove</Text>
+                </LinearGradient>
+              </PressableScale>
             </View>
-          </View>
+          </AnimatedEntrance>
         </View>
       </Modal>
+
+      {/* Missile library */}
       <Modal
         animationType="slide"
-        transparent={true}
+        transparent
         visible={showMissileLibrary}
         onRequestClose={() => setShowMissileLibrary(false)}
       >
-        <View style={[styles.missileLibraryContainer, isDarkMode && styles.missileLibraryContainerDark]}>
-          <View style={[styles.missileLibraryHeader, isDarkMode && styles.missileLibraryHeaderDark]}>
-            <Text style={[styles.missileLibraryTitle, isDarkMode && styles.missileLibraryTitleDark]}>Missile Library</Text>
-            <TouchableOpacity
-              style={styles.doneButton}
-              onPress={() => setShowMissileLibrary(false)}
-            >
-              <Text style={styles.doneButtonText}>Done</Text>
-            </TouchableOpacity>
-          </View>
+        <View style={[styles.missileContainer, { backgroundColor: c.bg }]}>
+          <LinearGradient colors={Gradients.fire} style={styles.missileHeader}>
+            <Text style={styles.missileTitle}>Missile Library</Text>
+            <PressableScale haptic="select" onPress={() => setShowMissileLibrary(false)} style={styles.doneBtn}>
+              <Text style={styles.doneBtnText}>Done</Text>
+            </PressableScale>
+          </LinearGradient>
           {isAlive && locActive ? (
-            <MissileLibrary 
-              playerName={selectedPlayer} 
+            <MissileLibrary
+              playerName={selectedPlayer}
               onMissileFired={handleMissileFired}
               onClose={() => setShowMissileLibrary(false)}
             />
           ) : (
-            <View style={styles.centerText}>
-              <Text style={[styles.centerText, isDarkMode && styles.centerTextDark]}>You cannot fire missiles when eliminated.</Text>
+            <View style={styles.missileEmpty}>
+              <Ionicons name="skull" size={40} color={c.textMuted} />
+              <Text style={[styles.emptySub, { color: c.textMuted, marginTop: Spacing.md }]}>
+                You cannot fire missiles when eliminated.
+              </Text>
             </View>
           )}
         </View>
       </Modal>
-      
-      {hasFirebaseUID && (
-        <TouchableOpacity
-          style={[styles.messageButton, isDarkMode && styles.messageButtonDark]}
+
+      {canShowChatFab && (
+        <PressableScale
+          haptic="tap"
           onPress={() => router.navigate("/friends/msg")}
+          style={[styles.fab, { bottom: floatingAboveTabBar(insets.bottom, Spacing.xs) }]}
         >
-          <Ionicons name="chatbubble-ellipses" size={24} color={isDarkMode ? "#FFF" : "#000"} />
+          <LinearGradient colors={Gradients.brand} style={styles.fabFill}>
+            <Ionicons name="chatbubble-ellipses" size={26} color="#fff" />
+          </LinearGradient>
           {localUnreadChatCount > 0 && (
             <View style={styles.chatBadge}>
-              <Text style={styles.chatBadgeText}>{localUnreadChatCount}</Text>
+              <Text style={styles.badgeText}>
+                {localUnreadChatCount > 99 ? '99+' : localUnreadChatCount}
+              </Text>
             </View>
           )}
-        </TouchableOpacity>
+        </PressableScale>
       )}
+
       {showMissileFiringAnimation && (
         <View style={styles.animationOverlay}>
           <MissileFiringAnimation onAnimationComplete={handleMissileAnimationComplete} />
@@ -394,308 +394,171 @@ const FriendsPage: React.FC = () => {
       )}
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f0f2f5',
-  },
-  containerDark: {
-    backgroundColor: '#1E1E1E',
-  },
+  container: { flex: 1 },
   header: {
+    paddingTop: 64,
+    paddingHorizontal: Spacing.xl,
+    paddingBottom: Spacing.lg,
+    borderBottomLeftRadius: Radius.xl,
+    borderBottomRightRadius: Radius.xl,
+  },
+  headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    paddingTop: 60,
-    backgroundColor: '#4a5568',
+    alignItems: 'flex-start',
   },
-  headerDark: {
-    backgroundColor: '#2C2C2C',
+  headerEyebrow: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
-  headerText: {
-    fontSize: 24,
-    color: '#ffffff',
-    fontWeight: 'bold',
-  },
-  headerTextDark: {
-    color: '#FFF',
-  },
-  addButton: {
-    width: 40,
-    height: 40,
-    backgroundColor: '#4CAF50',
-    borderRadius: 20,
+  headerTitle: { color: '#fff', fontSize: 32, fontWeight: '800', marginTop: 2 },
+  headerCount: { color: 'rgba(255,255,255,0.85)', fontSize: 14, marginTop: 2 },
+  headerActions: { flexDirection: 'row', gap: Spacing.sm, marginTop: 4 },
+  headerIconBtn: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255,255,255,0.18)',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  addButtonDark: {
-    backgroundColor: '#3D3D3D',
-  },
-  addButtonText: {
-    color: '#ffffff',
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  notificationButton: {
-    width: 40,
-    height: 40,
-    backgroundColor: '#718096',
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  notificationButtonDark: {
-    backgroundColor: '#3D3D3D',
-  },
-  notificationButtonText: {
-    color: '#ffffff',
-    fontSize: 20,
   },
   badge: {
     position: 'absolute',
-    top: -5,
-    right: -5,
-    backgroundColor: '#e53e3e',
-    borderRadius: 10,
-    width: 20,
-    height: 20,
+    top: -4,
+    right: -4,
+    minWidth: 22,
+    height: 22,
+    paddingHorizontal: 5,
+    borderRadius: 11,
+    backgroundColor: '#F5365C',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
   },
-  badgeText: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: 'bold',
+  badgeWide: {
+    minWidth: 30,
+    paddingHorizontal: 6,
   },
-  searchInput: {
-    backgroundColor: '#ffffff',
-    padding: 10,
-    borderRadius: 8,
-    marginHorizontal: 20,
-    marginVertical: 10,
-  },
-  searchInputDark: {
-    backgroundColor: '#2C2C2C',
-    color: '#FFF',
-  },
-  centerText: {
-    textAlign: 'center',
-    marginTop: 20,
-    fontSize: 16,
-    color: '#666',
-  },
-  centerTextDark: {
-    color: '#B0B0B0',
-  },
-  errorText: {
-    color: '#e53e3e',
-  },
-  friendItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-    padding: 15,
-    marginBottom: 10,
-    borderRadius: 8,
-    marginHorizontal: 20,
-  },
-  friendItemDark: {
-    backgroundColor: '#2C2C2C',
-  },
-  friendInfo: {
+  badgeText: { color: '#fff', fontSize: 10, fontWeight: '900', textAlign: 'center' },
+  searchWrap: { marginTop: Spacing.lg, borderRadius: Radius.pill, overflow: 'hidden' },
+  searchBlur: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
-  },
-  friendImage: {
-    width: 50,
+    paddingHorizontal: Spacing.lg,
     height: 50,
-    borderRadius: 25,
-    marginRight: 15,
+    gap: Spacing.sm,
+    backgroundColor: 'rgba(255,255,255,0.12)',
   },
-  friendName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#2d3748',
-  },
-  friendNameDark: {
-    color: '#FFF',
-  },
-  actionButtons: {
-    flexDirection: 'row',
-  },
-  actionButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  searchInput: { flex: 1, color: '#fff', fontSize: 16 },
+  clearBtn: { padding: 2 },
+  emptyWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: Spacing.xl },
+  emptyIcon: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 10,
+    marginBottom: Spacing.lg,
   },
-  fireButton: {
-    backgroundColor: '#e53e3e',
+  emptyTitle: { fontSize: 20, fontWeight: '700' },
+  emptySub: { fontSize: 15, textAlign: 'center', marginTop: Spacing.sm },
+  emptyCta: { marginTop: Spacing.xl, borderRadius: Radius.pill, overflow: 'hidden' },
+  emptyCtaFill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.md,
+    // borderRadius on the gradient itself: wrapper overflow clipping is
+    // unreliable on Android.
+    borderRadius: Radius.pill,
   },
-  removeButton: {
-    backgroundColor: '#718096',
-  },
-  actionButtonText: {
-    color: '#ffffff',
-    fontSize: 18,
-  },
-  modalContainer: {
+  emptyCtaText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  modalOverlay: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    paddingHorizontal: Spacing.xl,
   },
-  modalContent: {
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
-    padding: 20,
-    width: '80%',
-  },
-  modalContentDark: {
-    backgroundColor: '#2C2C2C',
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 15,
-    textAlign: 'center',
-    color: '#2d3748',
-  },
-  modalTitleDark: {
-    color: '#FFF',
-  },
-  modalText: {
-    fontSize: 16,
-    marginBottom: 20,
-    textAlign: 'center',
-    color: '#4a5568',
-  },
-  modalTextDark: {
-    color: '#B0B0B0',
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  modalButton: {
-    flex: 1,
-    padding: 10,
-    borderRadius: 5,
+  modalCard: {
+    width: '100%',
+    borderRadius: Radius.xl,
+    padding: Spacing.xl,
     alignItems: 'center',
   },
-  cancelButton: {
-    backgroundColor: '#cbd5e0',
-    marginRight: 10,
-  },
-  cancelButtonDark: {
-    backgroundColor: '#3D3D3D',
-  },
-  removeButtonModal: {
-    backgroundColor: '#e53e3e',
-    marginLeft: 10,
-  },
-  modalButtonText: {
-    color: '#ffffff',
-    fontWeight: 'bold',
-  },
-  missileLibraryContainer: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-    paddingTop: 60,
-  },
-  missileLibraryContainerDark: {
-    backgroundColor: '#1E1E1E',
-    paddingTop: 60,
-  },
-  missileLibraryHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 15,
-    backgroundColor: '#f7fafc',
-  },
-  missileLibraryHeaderDark: {
-    backgroundColor: '#2C2C2C',
-  },
-  missileLibraryTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#2d3748',
-  },
-  missileLibraryTitleDark: {
-    color: '#FFF',
-  },
-  doneButton: {
-    backgroundColor: '#4299e1',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 5,
-  },
-  doneButtonText: {
-    color: '#ffffff',
-    fontWeight: 'bold',
-  },
-  messageButton: {
-    position: 'absolute',
-    bottom: 20,
-    left: 20,
+  modalIcon: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#4CAF50',
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    marginBottom: Spacing.lg,
   },
-  messageButtonDark: {
-    backgroundColor: '#3D3D3D',
+  modalTitle: { fontSize: 20, fontWeight: '800', marginBottom: Spacing.sm },
+  modalText: { fontSize: 15, textAlign: 'center', lineHeight: 21, marginBottom: Spacing.xl },
+  modalButtons: { flexDirection: 'row', gap: Spacing.md, width: '100%' },
+  modalBtn: { flex: 1, borderRadius: Radius.pill, overflow: 'hidden' },
+  modalBtnFill: { paddingVertical: Spacing.md, alignItems: 'center' },
+  modalBtnText: { fontSize: 16, fontWeight: '700', paddingVertical: Spacing.md, textAlign: 'center' },
+  missileContainer: { flex: 1, paddingTop: 50 },
+  missileHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
   },
+  missileTitle: { fontSize: 20, fontWeight: '800', color: '#fff' },
+  doneBtn: {
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    borderRadius: Radius.pill,
+  },
+  doneBtnText: { color: '#fff', fontWeight: '700' },
+  missileEmpty: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: Spacing.xl },
+  fab: {
+    position: 'absolute',
+    left: Spacing.lg,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    zIndex: 10,
+    shadowColor: '#5B5BF0',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  fabFill: { flex: 1, borderRadius: 30, justifyContent: 'center', alignItems: 'center' },
   chatBadge: {
     position: 'absolute',
-    top: -5,
-    right: -5,
-    backgroundColor: 'red',
-    borderRadius: 10,
-    width: 20,
-    height: 20,
+    top: -4,
+    right: -4,
+    minWidth: 22,
+    height: 22,
+    paddingHorizontal: 5,
+    borderRadius: 11,
+    backgroundColor: '#F5365C',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  chatBadgeText: {
-    color: 'white',
-    fontSize: 12,
+    borderWidth: 2,
+    borderColor: '#fff',
   },
   animationOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 1000,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  footerAdContainer: {
-    width: '100%',
-    height: 50, // Adjust based on your banner ad size
-    backgroundColor: 'transparent',
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'absolute',
-    bottom: 0,
-  },
-  dismissAdButton: {
-    position: 'absolute',
-    right: 5,
-    top: 5,
-    zIndex: 1,
   },
 });
 

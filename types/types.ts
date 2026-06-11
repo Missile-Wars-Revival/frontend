@@ -14,12 +14,12 @@ export interface LandmineLib {
 
 export interface Friend {
   username: string;
-  profileImageUrl: string;
+  profileImageUrl: string | null;
 }
 
 export type MapStyle = {
   elementType?: string; //element is optional
-  stylers: Array<{ color?: string; visibility?: string }>;
+  stylers: { color?: string; visibility?: string }[];
 };
 
 export interface InventoryItem {

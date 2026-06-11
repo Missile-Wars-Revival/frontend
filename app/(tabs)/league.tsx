@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text, ScrollView, TouchableOpacity, SafeAreaView, useColorScheme, ImageSourcePropType, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, Text, ScrollView, useColorScheme, ImageSourcePropType, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@react-native-vector-icons/ionicons';
 import { fetchTopLeagues, fetchCurrentLeague, fetchLeaguePlayers, top100Players } from '../../api/league';
-import { fetchAndCacheImage } from '../../util/imagecache'; 
 import { getLeagueAirspace } from '../../components/player';
+import { getPalette, Spacing, Radius, Type, cardShadow, type ThemePalette } from '../../components/ui/theme';
+import { SegmentedControl } from '../../components/ui/SegmentedControl';
+import { PressableScale } from '../../components/ui/PressableScale';
+import { AnimatedEntrance } from '../../components/ui/AnimatedEntrance';
+import { Avatar } from '../../components/ui/Avatar';
 
 const DEFAULT_IMAGE = require('../../assets/mapassets/Female_Avatar_PNG.png');
 const LEAGUE_IMAGE = require('../../assets/onboarding/leagues.png');
@@ -18,12 +23,15 @@ const LEAGUE_IMAGES: { [key: string]: ImageSourcePropType } = {
   'Legend': require('../../assets/leagues/legend.png'),
 };
 
+// Medal colours for the top three rank badges.
+const MEDAL_COLORS = ['#F7B733', '#A8B2C3', '#CD7F32'];
+
 interface Player {
   id: string;
   username: string;
   points: number;
   isCurrentUser: boolean;
-  profileImageUrl?: string;
+  profileImageUrl?: string | null;
 }
 
 interface League {
@@ -39,12 +47,10 @@ const LeagueRankingPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<'players' | 'leagues'>('leagues');
   const [isLoading, setIsLoading] = useState(true);
   const [top100, setTop100] = useState<Player[]>([]);
-  
-  const scheme = useColorScheme() || 'light';
-  const styles = StyleSheet.create({
-    ...lightStyles,
-    ...(scheme === 'dark' ? darkStyles : {}),
-  });
+
+  const isDarkMode = useColorScheme() === 'dark';
+  const palette = getPalette(isDarkMode);
+  const styles = getStyles(palette, isDarkMode);
 
   const getLeagueImage = (leagueName: string): ImageSourcePropType => {
     return LEAGUE_IMAGES[leagueName] || require('../../assets/leagues/default.png');
@@ -61,31 +67,15 @@ const LeagueRankingPage: React.FC = () => {
           top100Players()
         ]);
 
-        // Fetch and cache profile images for league players
-        const leaguePlayersWithImages = await Promise.all(
-          leaguePlayersResponse.players.map(async (player: { username: string; }) => ({
-            ...player,
-            profileImageUrl: await fetchAndCacheImage(player.username),
-          }))
-        );
-
-        // Fetch and cache profile images for top 100 players
-        const top100WithImages = await Promise.all(
-          top100Data.players.map(async (player: { username: string; }) => ({
-            ...player,
-            profileImageUrl: await fetchAndCacheImage(player.username),
-          }))
-        );
-
+        // profileImageUrl is resolved server-side and already present on each player.
         setTopLeagues(topLeaguesData.leagues);
         setCurrentLeague(currentLeagueData);
-        setLeaguePlayers(leaguePlayersWithImages);
-        setTop100(top100WithImages);
+        setLeaguePlayers(leaguePlayersResponse.players);
+        setTop100(top100Data.players);
       } catch (error) {
         console.error('Error fetching data:', error);
-      } finally {
-        setIsLoading(false);
       }
+      setIsLoading(false);
     };
 
     fetchData();
@@ -98,30 +88,44 @@ const LeagueRankingPage: React.FC = () => {
     });
   };
 
-  const toggleViewMode = () => {
-    setViewMode(viewMode === 'players' ? 'leagues' : 'players');
+  const renderRankBadge = (index: number) => {
+    const medal = index < 3 ? MEDAL_COLORS[index] : undefined;
+    return (
+      <View style={[styles.rankBadge, medal ? { backgroundColor: medal } : null]}>
+        <Text style={[styles.rankBadgeText, medal ? styles.rankBadgeTextMedal : null]}>
+          {index + 1}
+        </Text>
+      </View>
+    );
   };
 
   const renderPlayerRow = (player: Player, index: number) => (
-    <TouchableOpacity
-      key={player.id}
-      style={[styles.row, player.isCurrentUser && styles.currentUserRow]}
-      onPress={() => navigateToProfile(player.username)}
-    >
-      <Text style={styles.rankNumber}>{index + 1}</Text>
-      <Image
-        source={player.profileImageUrl ? { uri: player.profileImageUrl } : DEFAULT_IMAGE}
-        style={styles.profilePic}
-        contentFit="cover"
-        transition={200}
-        cachePolicy="memory-disk"
-        placeholder={DEFAULT_IMAGE}
-      />
-      <Text style={[styles.username, player.isCurrentUser && styles.currentUserText]}>
-        {player.username} {player.isCurrentUser && '(You)'}
-      </Text>
-      <Text style={styles.points}>{player.points} pts</Text>
-    </TouchableOpacity>
+    <AnimatedEntrance key={player.id} index={index} stagger={20}>
+      <PressableScale
+        haptic="select"
+        style={[styles.row, player.isCurrentUser && styles.currentUserRow]}
+        onPress={() => navigateToProfile(player.username)}
+      >
+        {renderRankBadge(index)}
+        <Avatar
+          uri={player.profileImageUrl}
+          style={styles.profilePic}
+          contentFit="cover"
+          transition={200}
+          placeholder={DEFAULT_IMAGE}
+        />
+        <Text
+          style={[styles.username, player.isCurrentUser && styles.currentUserText]}
+          numberOfLines={1}
+          ellipsizeMode="tail"
+        >
+          {player.username}{player.isCurrentUser ? ' (You)' : ''}
+        </Text>
+        <View style={styles.pointsPill}>
+          <Text style={styles.pointsText}>{player.points} pts</Text>
+        </View>
+      </PressableScale>
+    </AnimatedEntrance>
   );
 
   if (isLoading) {
@@ -136,7 +140,7 @@ const LeagueRankingPage: React.FC = () => {
               transition={300}
               cachePolicy="memory-disk"
             />
-            <ActivityIndicator size="large" color={scheme === 'dark' ? '#4CAF50' : '#4a90e2'} style={styles.loadingSpinner} />
+            <ActivityIndicator size="large" color={palette.accent} style={styles.loadingSpinner} />
             <Text style={styles.loadingText}>Loading rankings...</Text>
             <Text style={styles.loadingSubtext}>Preparing your league data</Text>
           </View>
@@ -148,48 +152,55 @@ const LeagueRankingPage: React.FC = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerText}>Rankings</Text>
-        <TouchableOpacity onPress={toggleViewMode} style={styles.headerButton}>
-          <Ionicons 
-            name={viewMode === 'players' ? 'trophy-outline' : 'people-outline'} 
-            size={24} 
-            color={scheme === 'dark' ? '#FFF' : '#FFF'} 
-          />
-          <Text style={styles.headerButtonText}>{viewMode === 'players' ? 'Leagues' : 'Players'}</Text>
-        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Rankings</Text>
+        <Text style={styles.headerSubtitle}>Climb the leagues, earn your airspace</Text>
       </View>
-      <ScrollView style={styles.content}>
+
+      <View style={styles.segmentWrap}>
+        <SegmentedControl
+          palette={palette}
+          value={viewMode}
+          onChange={setViewMode}
+          options={[
+            { value: 'leagues', label: 'My League', icon: 'trophy' },
+            { value: 'players', label: 'Top 100', icon: 'podium' },
+          ]}
+        />
+      </View>
+
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={styles.contentContainer}>
         {viewMode === 'leagues' ? (
           <>
             {currentLeague && (
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Your Current League</Text>
-                <View style={styles.currentLeagueContainer}>
-                  <Image
-                    source={getLeagueImage(currentLeague.league)}
-                    style={styles.leagueImage}
-                    contentFit="contain"
-                    transition={200}
-                    cachePolicy="memory-disk"
-                  />
-                  <View style={styles.leagueInfo}>
-                    <Text style={styles.currentLeagueName}>{currentLeague.league}</Text>
-                    <Text style={styles.currentLeagueDivision}>Division {currentLeague.division}</Text>
+              <AnimatedEntrance>
+                <View style={styles.heroCard}>
+                  <View style={styles.heroImageWrap}>
+                    <Image
+                      source={getLeagueImage(currentLeague.league)}
+                      style={styles.heroImage}
+                      contentFit="contain"
+                      transition={200}
+                      cachePolicy="memory-disk"
+                    />
+                  </View>
+                  <View style={styles.heroInfo}>
+                    <Text style={styles.heroEyebrow}>Your current league</Text>
+                    <Text style={styles.heroLeague}>{currentLeague.league}</Text>
+                    <Text style={styles.heroDivision}>Division {currentLeague.division}</Text>
+                    <View style={styles.airspacePill}>
+                      <Ionicons name="radio-outline" size={14} color={palette.accent} />
+                      <Text style={styles.airspaceText}>{getLeagueAirspace(currentLeague.league)} m airspace</Text>
+                    </View>
                   </View>
                 </View>
-
-                <View style={styles.spacer} />
-
-                <Text style={styles.leagueAirspace}>
-                  Your current airspace: {getLeagueAirspace(currentLeague.league)} m
-                </Text>
                 <Text style={styles.airspaceDescription}>
                   Airspace is a zone around you that gives you sooner alerts when a missile is approaching or passing nearby.
                 </Text>
-              </View>
+              </AnimatedEntrance>
             )}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Players in Your League</Text>
+
+            <Text style={styles.sectionTitle}>Players in your league</Text>
+            <View style={styles.sectionCard}>
               {leaguePlayers.length > 0 ? (
                 leaguePlayers
                   .sort((a, b) => b.points - a.points)
@@ -198,19 +209,29 @@ const LeagueRankingPage: React.FC = () => {
                 <Text style={styles.noDataText}>No players available</Text>
               )}
             </View>
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Top Leagues</Text>
+
+            <Text style={styles.sectionTitle}>Top leagues</Text>
+            <View style={styles.sectionCard}>
               {Array.isArray(topLeagues) && topLeagues.length > 0 ? (
                 topLeagues.map((league, index) => (
-                  <View key={index} style={styles.row}>
-                    <Text style={styles.rankNumber}>{index + 1}</Text>
-                    <View style={styles.leagueInfo}>
-                      <Text style={styles.leagueName}>{league.name}</Text>
-                      <Text style={styles.leagueTopPlayer}>
-                        Players: {league.playerCount}
-                      </Text>
+                  <AnimatedEntrance key={index} index={index} stagger={20}>
+                    <View style={styles.row}>
+                      {renderRankBadge(index)}
+                      <View style={styles.leagueIconWrap}>
+                        <Image
+                          source={getLeagueImage(league.name)}
+                          style={styles.leagueIcon}
+                          contentFit="contain"
+                          cachePolicy="memory-disk"
+                        />
+                      </View>
+                      <Text style={styles.username}>{league.name}</Text>
+                      <View style={styles.pointsPill}>
+                        <Ionicons name="people" size={12} color={palette.accent} />
+                        <Text style={styles.pointsText}>{league.playerCount}</Text>
+                      </View>
                     </View>
-                  </View>
+                  </AnimatedEntrance>
                 ))
               ) : (
                 <Text style={styles.noDataText}>No leagues available</Text>
@@ -218,413 +239,248 @@ const LeagueRankingPage: React.FC = () => {
             </View>
           </>
         ) : (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Top 100 Players</Text>
-            {Array.isArray(top100) && top100.length > 0 ? (
-              top100.map((player, index) => renderPlayerRow(player, index))
-            ) : (
-              <Text style={styles.noDataText}>No players available</Text>
-            )}
-          </View>
+          <>
+            <Text style={styles.sectionTitle}>Top 100 players</Text>
+            <View style={styles.sectionCard}>
+              {Array.isArray(top100) && top100.length > 0 ? (
+                top100.map((player, index) => renderPlayerRow(player, index))
+              ) : (
+                <Text style={styles.noDataText}>No players available</Text>
+              )}
+            </View>
+          </>
         )}
       </ScrollView>
     </SafeAreaView>
   );
 };
 
-const lightStyles = StyleSheet.create({
+const getStyles = (palette: ThemePalette, isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f0f2f5',
+    backgroundColor: palette.bg,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#4a5568',
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.md,
   },
-  headerText: {
-    fontSize: 24,
-    color: '#ffffff',
-    fontWeight: 'bold',
+  headerTitle: {
+    ...Type.display,
+    color: palette.text,
   },
-  headerButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  headerSubtitle: {
+    ...Type.caption,
+    fontWeight: '400',
+    color: palette.textMuted,
+    marginTop: 2,
   },
-  headerButtonText: {
-    color: '#ffffff',
-    marginLeft: 5,
+  segmentWrap: {
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.md,
   },
   content: {
     flex: 1,
-    padding: 15,
   },
-  section: {
-    marginBottom: 20,
-    backgroundColor: '#ffffff',
-    borderRadius: 10,
-    padding: 15,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+  contentContainer: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.xxl,
+  },
+  heroCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.lg,
+    backgroundColor: palette.surface,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: palette.border,
+    padding: Spacing.lg,
+    ...cardShadow(isDark),
+  },
+  heroImageWrap: {
+    width: 92,
+    height: 92,
+    borderRadius: Radius.md,
+    backgroundColor: palette.surfaceAlt,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroImage: {
+    width: 76,
+    height: 76,
+  },
+  heroInfo: {
+    flex: 1,
+  },
+  heroEyebrow: {
+    ...Type.micro,
+    color: palette.textFaint,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  heroLeague: {
+    ...Type.title,
+    fontSize: 24,
+    color: palette.text,
+    marginTop: 2,
+  },
+  heroDivision: {
+    ...Type.caption,
+    fontWeight: '500',
+    color: palette.textMuted,
+    marginTop: 2,
+  },
+  airspacePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 5,
+    marginTop: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs + 1,
+    borderRadius: Radius.pill,
+    backgroundColor: palette.accentSoft,
+  },
+  airspaceText: {
+    ...Type.caption,
+    color: palette.accent,
+  },
+  airspaceDescription: {
+    ...Type.caption,
+    fontWeight: '400',
+    color: palette.textFaint,
+    marginTop: Spacing.sm,
+    marginHorizontal: Spacing.xs,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#2d3748',
+    ...Type.micro,
+    fontSize: 12,
+    color: palette.textFaint,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginTop: Spacing.xl,
+    marginBottom: Spacing.sm,
+    marginLeft: Spacing.xs,
+  },
+  sectionCard: {
+    backgroundColor: palette.surface,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: palette.border,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    ...cardShadow(isDark),
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    gap: Spacing.md,
+    paddingVertical: Spacing.sm + 2,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: palette.border,
   },
   currentUserRow: {
-    backgroundColor: '#e6f7ff',
+    backgroundColor: palette.accentSoft,
+    borderRadius: Radius.sm,
+    paddingHorizontal: Spacing.sm,
+    marginHorizontal: -Spacing.sm,
+    borderBottomWidth: 0,
   },
-  rankNumber: {
-    width: 30,
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#666',
+  rankBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: palette.surfaceAlt,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rankBadgeText: {
+    ...Type.micro,
+    fontSize: 12,
+    color: palette.textMuted,
+  },
+  rankBadgeTextMedal: {
+    color: '#FFFFFF',
   },
   profilePic: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 10,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: palette.surfaceAlt,
   },
   username: {
     flex: 1,
-    fontSize: 16,
-    color: '#333',
+    ...Type.headline,
+    fontSize: 15,
+    color: palette.text,
   },
   currentUserText: {
-    fontWeight: 'bold',
-    color: '#1890ff',
+    color: palette.accent,
   },
-  points: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#4a90e2',
+  pointsPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs + 1,
+    borderRadius: Radius.pill,
+    backgroundColor: palette.surfaceAlt,
   },
-  leagueInfo: {
-    flex: 1,
+  pointsText: {
+    ...Type.caption,
+    color: palette.accent,
   },
-  leagueName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
+  leagueIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: Radius.sm,
+    backgroundColor: palette.surfaceAlt,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  leagueTopPlayer: {
-    fontSize: 14,
-    color: '#666',
-  },
-  leagueDivision: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 5,
+  leagueIcon: {
+    width: 30,
+    height: 30,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: Spacing.xl,
   },
   loadingCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
-    padding: 30,
+    backgroundColor: palette.surface,
+    borderRadius: Radius.xl,
+    borderWidth: 1,
+    borderColor: palette.border,
+    padding: Spacing.xxl,
     alignItems: 'center',
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 8,
     minWidth: 280,
+    ...cardShadow(isDark),
   },
   loadingImage: {
     width: 120,
     height: 120,
-    marginBottom: 20,
+    marginBottom: Spacing.lg,
   },
   loadingSpinner: {
-    marginBottom: 15,
+    marginBottom: Spacing.md,
   },
   loadingText: {
-    fontSize: 18,
-    color: '#333',
-    textAlign: 'center',
-    marginBottom: 8,
-    fontWeight: '600',
+    ...Type.headline,
+    color: palette.text,
+    marginBottom: Spacing.xs,
   },
   loadingSubtext: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
+    ...Type.caption,
+    fontWeight: '400',
+    color: palette.textMuted,
   },
   noDataText: {
-    fontSize: 16,
-    color: '#666',
+    ...Type.body,
+    color: palette.textMuted,
     textAlign: 'center',
-    marginTop: 10,
-  },
-  currentLeagueContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f0f0f0',
-    borderRadius: 10,
-    padding: 15,
-    marginTop: 10,
-  },
-  leagueImage: {
-    width: 80,
-    height: 80,
-    marginRight: 15,
-  },
-  currentLeagueName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  currentLeagueDivision: {
-    fontSize: 18,
-    color: '#666',
-    marginTop: 5,
-  },
-  spacer: {
-    height: 10,
-  },
-  leagueDescription: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 10,
-    marginBottom: 5,
-  },
-  leagueAirspace: {
-    fontSize: 14,
-    color: '#4a90e2',
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  airspaceDescription: {
-    fontSize: 12,
-    color: '#888',
-    fontStyle: 'italic',
-  },
-  footerAdContainer: {
-    width: '100%',
-    height: 50, // Adjust based on your banner ad size
-    backgroundColor: 'transparent',
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-  },
-  dismissAdButton: {
-    position: 'absolute',
-    right: 5,
-    top: 5,
-    zIndex: 1,
-  },
-});
-
-const darkStyles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#1E1E1E',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#2C2C2C',
-  },
-  headerText: {
-    fontSize: 24,
-    color: '#FFF',
-    fontWeight: 'bold',
-  },
-  headerButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  headerButtonText: {
-    color: '#FFF',
-    marginLeft: 5,
-  },
-  content: {
-    flex: 1,
-    padding: 15,
-  },
-  section: {
-    marginBottom: 20,
-    backgroundColor: '#2C2C2C',
-    borderRadius: 10,
-    padding: 15,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#FFF',
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#3D3D3D',
-  },
-  currentUserRow: {
-    backgroundColor: '#3D3D3D',
-  },
-  rankNumber: {
-    width: 30,
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFF',
-  },
-  profilePic: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 10,
-  },
-  username: {
-    flex: 1,
-    fontSize: 16,
-    color: '#FFF',
-  },
-  currentUserText: {
-    fontWeight: 'bold',
-    color: '#4CAF50',
-  },
-  points: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#4CAF50',
-  },
-  leagueInfo: {
-    flex: 1,
-  },
-  leagueName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFF',
-  },
-  leagueTopPlayer: {
-    fontSize: 14,
-    color: '#B0B0B0',
-  },
-  leagueDivision: {
-    fontSize: 14,
-    color: '#B0B0B0',
-    marginTop: 5,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  loadingCard: {
-    backgroundColor: '#2C2C2C',
-    borderRadius: 20,
-    padding: 30,
-    alignItems: 'center',
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-    minWidth: 280,
-  },
-  loadingImage: {
-    width: 120,
-    height: 120,
-    marginBottom: 20,
-  },
-  loadingSpinner: {
-    marginBottom: 15,
-  },
-  loadingText: {
-    fontSize: 18,
-    color: '#FFF',
-    textAlign: 'center',
-    marginBottom: 8,
-    fontWeight: '600',
-  },
-  loadingSubtext: {
-    fontSize: 14,
-    color: '#B0B0B0',
-    textAlign: 'center',
-  },
-  noDataText: {
-    fontSize: 16,
-    color: '#B0B0B0',
-    textAlign: 'center',
-    marginTop: 10,
-  },
-  currentLeagueContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#3D3D3D',
-    borderRadius: 10,
-    padding: 15,
-    marginTop: 10,
-  },
-  leagueImage: {
-    width: 80,
-    height: 80,
-    marginRight: 15,
-  },
-  currentLeagueName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FFF',
-  },
-  currentLeagueDivision: {
-    fontSize: 18,
-    color: '#B0B0B0',
-    marginTop: 5,
-  },
-  leagueDescription: {
-    fontSize: 14,
-    color: '#B0B0B0',
-    marginTop: 10,
-    marginBottom: 5,
-  },
-  leagueAirspace: {
-    fontSize: 14,
-    color: '#4CAF50',
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  airspaceDescription: {
-    fontSize: 12,
-    color: '#888',
-    fontStyle: 'italic',
-  },
-  footerAdContainer: {
-    width: '100%',
-    height: 50, // Adjust based on your banner ad size
-    backgroundColor: 'transparent',
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-  },
-  dismissAdButton: {
-    position: 'absolute',
-    right: 5,
-    top: 5,
-    zIndex: 1,
+    paddingVertical: Spacing.lg,
   },
 });
 

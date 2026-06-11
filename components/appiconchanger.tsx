@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, TouchableOpacity, Text, Modal, StyleSheet, Image, Alert, useColorScheme } from 'react-native';
+import { View, Pressable, Text, Modal, StyleSheet, Alert, useColorScheme } from 'react-native';
+import { Image } from 'expo-image';
 import * as AlternateAppIcon from 'expo-alternate-app-icons';
 
 const iconOptions = [
-  { name: 'default', path: require('../assets/appIcons/default.png') },
-  { name: 'retro', path: require('../assets/appIcons/retro.png') },
-  { name: 'graphic', path: require('../assets/appIcons/graphic.png') },
+  { name: 'Default', path: require('../assets/appIcons/default.png') },
+  { name: 'Retro', path: require('../assets/appIcons/retro.png') },
+  { name: 'Graphic', path: require('../assets/appIcons/graphic.png') },
 ];
 
 const AppIconChanger: React.FC = () => {
@@ -23,7 +24,7 @@ const AppIconChanger: React.FC = () => {
 
         if (supported) {
           const iconName = await AlternateAppIcon.getAppIconName();
-          setCurrentIcon(iconName || 'default');
+          setCurrentIcon(iconName || 'Default');
         }
       } catch (error) {
         console.error('Error in loadCurrentIcon:', error);
@@ -35,7 +36,7 @@ const AppIconChanger: React.FC = () => {
 
   const changeAppIcon = async (iconName: string) => {
     try {
-      if (iconName === 'default') {
+      if (iconName === 'Default') {
         await AlternateAppIcon.setAlternateAppIcon(null);
       } else {
         await AlternateAppIcon.setAlternateAppIcon(iconName);
@@ -54,9 +55,9 @@ const AppIconChanger: React.FC = () => {
 
   return (
     <View>
-      <TouchableOpacity onPress={() => setModalVisible(true)} style={[styles.button, isDarkMode && styles.buttonDark]}>
+      <Pressable onPress={() => setModalVisible(true)} style={[styles.button, isDarkMode && styles.buttonDark]}>
         <Text style={styles.buttonText}>Change App Icon</Text>
-      </TouchableOpacity>
+      </Pressable>
 
       <Modal
         animationType="slide"
@@ -68,7 +69,7 @@ const AppIconChanger: React.FC = () => {
           <View style={[styles.modalView, isDarkMode && styles.modalViewDark]}>
             <Text style={[styles.modalTitle, isDarkMode && styles.modalTitleDark]}>Choose an App Icon</Text>
             {iconOptions.map((icon) => (
-              <TouchableOpacity
+              <Pressable
                 key={icon.name}
                 style={[styles.iconOption, isDarkMode && styles.iconOptionDark]}
                 onPress={() => changeAppIcon(icon.name)}
@@ -78,14 +79,14 @@ const AppIconChanger: React.FC = () => {
                 {currentIcon === icon.name && (
                   <Text style={[styles.currentIcon, isDarkMode && styles.currentIconDark]}> (Current)</Text>
                 )}
-              </TouchableOpacity>
+              </Pressable>
             ))}
-            <TouchableOpacity
+            <Pressable
               style={[styles.closeButton, isDarkMode && styles.closeButtonDark]}
               onPress={() => setModalVisible(false)}
             >
               <Text style={styles.closeButtonText}>Close</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
       </Modal>
@@ -201,5 +202,9 @@ export default AppIconChanger;
 //for app.json
 // [
 //     "expo-alternate-app-icons",
-//     ["./assets/appIcons/default.png", "./assets/appIcons/retro.png", "./assets/appIcons/graphic.png"]
+//     [
+//       { "name": "Default", "ios": "./assets/appIcons/default.png", "android": { "foregroundImage": "./assets/appIcons/default.png", "backgroundColor": "#ffffff" } },
+//       { "name": "Retro", "ios": "./assets/appIcons/retro.png", "android": { "foregroundImage": "./assets/appIcons/retro.png", "backgroundColor": "#ffffff" } },
+//       { "name": "Graphic", "ios": "./assets/appIcons/graphic.png", "android": { "foregroundImage": "./assets/appIcons/graphic.png", "backgroundColor": "#ffffff" } }
+//     ]
 //   ]

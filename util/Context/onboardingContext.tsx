@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from './authcontext';
 
 type OnboardingStep = 'store' | 'filter_missiles' | 'buy_missile' | 'filter_landmines' | 'buy_landmine' | 'go_to_cart' | 'checkout' | 'fire' | 'friends' | 'fire_landmine' | 'choosefire_landmine' | 'selectlandmine_location' | 'place_landmine' | 'playermenu' | 'fireplayermenu' | 'choosemissile_fireplayermenu'| 'confirmmissile_fireplayermenu' | 'completed';
 
@@ -14,16 +15,23 @@ interface OnboardingContextType {
 const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
 
 export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const { isSignedIn } = useAuth();
     const [currentStep, setCurrentStep] = useState<OnboardingStep>('store');
     const [isOnboardingComplete, setIsOnboardingComplete] = useState(false);
 
     useEffect(() => {
+        if (!isSignedIn) {
+            setCurrentStep('store');
+            setIsOnboardingComplete(false);
+            return;
+        }
+
         const checkOnboardingStatus = async () => {
             const status = await AsyncStorage.getItem('onboardingComplete');
             setIsOnboardingComplete(status === 'true');
         };
         checkOnboardingStatus();
-    }, []);
+    }, [isSignedIn]);
 
     const completeOnboarding = async () => {
         await AsyncStorage.setItem('onboardingComplete', 'true');

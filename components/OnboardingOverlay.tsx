@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Dimensions, Animated, SafeAreaView, Platform, Image } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, Animated, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Image } from 'expo-image';
 import { useOnboarding } from '../util/Context/onboardingContext';
 
 const { width, height } = Dimensions.get('window');
@@ -252,7 +254,7 @@ const styles = StyleSheet.create({
         bottom: 0,
     },
     overlay: {
-        ...StyleSheet.absoluteFillObject,
+        ...StyleSheet.absoluteFill,
         backgroundColor: 'rgba(0, 0, 0, 0.3)',
     },
     textContainer: {

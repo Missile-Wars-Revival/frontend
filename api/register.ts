@@ -1,5 +1,7 @@
-import { isAxiosError, AxiosError } from "axios";
 import axiosInstance from "./axios-instance";
+import { isAxiosError } from "axios";
+import * as SecureStore from "expo-secure-store";
+import { auth, createUserWithEmailAndPassword } from "../util/firebase/firebaseAuth";
 
 export async function register(
   username: string,
@@ -8,21 +10,14 @@ export async function register(
   notificationToken: string
 ) {
   try {
-    const response = await axiosInstance.post("/api/register", {
-      username,
-      email,
-      password,
-      notificationToken,
-    });
-
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    await SecureStore.setItemAsync("firebaseUID", userCredential.user.uid);
+    const idToken = await userCredential.user.getIdToken();
+    const response = await axiosInstance.post("/api/register", { idToken, username, notificationToken });
     return response.data;
   } catch (error) {
     if (isAxiosError(error)) {
-      const axiosError = error as AxiosError;
-      console.log("Axios error:", axiosError.message);
-      if (axiosError.response) {
-        throw new Error(error.response?.data);
-      }
+      throw new Error(error.response?.data?.message ?? error.response?.data ?? "Registration failed");
     }
     throw error;
   }

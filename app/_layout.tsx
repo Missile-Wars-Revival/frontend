@@ -2,30 +2,31 @@ import 'react-native-reanimated';
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
-import { View, StyleSheet, AppStateStatus, AppState, Platform } from 'react-native';
+import { View, StyleSheet, AppStateStatus, AppState, Platform , useColorScheme } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import SplashScreen from './splashscreen';
 import useWebSocket from "../hooks/websockets/websockets";
 import { WebSocketContext, WebSocketProviderProps } from "../util/Context/websocket";
-import { CountdownContext, CountdownProviderProps } from "../util/Context/countdown";
+import { CountdownContext, CountdownProviderProps , useCountdown } from "../util/Context/countdown";
 import CountdownTimer from '../components/countdown';
-import { useCountdown } from '../util/Context/countdown';
-import { AuthProvider } from "../util/Context/authcontext";
-import { useColorScheme } from 'react-native';
+
+import { AuthProvider, useAuth } from "../util/Context/authcontext";
+
 import PermissionsCheck from '../components/PermissionsCheck';
 import Purchases from 'react-native-purchases';
-import mobileAds from 'react-native-google-mobile-ads';
+import AdService from '../util/AdService';
 import * as ExpoSplashScreen from 'expo-splash-screen';
 import { LandmineProvider } from '../util/Context/landminecontext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import PermissionsScreen from './PermissionsScreen';
 import { OnboardingProvider } from '../util/Context/onboardingContext';
+import GameEffectsOverlay from '../components/effects/GameEffectsOverlay';
 
 const WebSocketProvider = ({ children }: WebSocketProviderProps) => {
-  const { data, missiledata, landminedata, lootdata, otherdata, healthdata, friendsdata, inventorydata, playerlocations, leaguesData, sendWebsocket } = useWebSocket();
+  const { missiledata, landminedata, lootdata, otherdata, healthdata, friendsdata, inventorydata, playerlocations, leaguesData, sendWebsocket } = useWebSocket();
 
   return (
-    <WebSocketContext.Provider value={{ data, missiledata, landminedata, lootdata, otherdata, healthdata, friendsdata, inventorydata, playerlocations, leaguesData, sendWebsocket }}>
+    <WebSocketContext.Provider value={{ missiledata, landminedata, lootdata, otherdata, healthdata, friendsdata, inventorydata, playerlocations, leaguesData, sendWebsocket }}>
       {children}
     </WebSocketContext.Provider>
   );
@@ -48,7 +49,7 @@ const CountdownProvider: React.FC<CountdownProviderProps> = ({ children }) => {
 export default function RootLayout() {
   const queryClient = new QueryClient();
   const [isSplashVisible, setIsSplashVisible] = useState(true);
-  const [isFirstLaunch, setIsFirstLaunch] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | undefined>(undefined);
   const [appState, setAppState] = useState(AppState.currentState);
   const [lastActiveTime, setLastActiveTime] = useState(Date.now());
   const router = useRouter();
@@ -67,7 +68,8 @@ export default function RootLayout() {
       }
 
       if (!apiKey) {
-        throw new Error('RevenueCat API key is not set'); // Error if API key is missing
+        console.error('RevenueCat API key is not set');
+        return;
       }
 
       await Purchases.configure({ apiKey }); // Configure Purchases
@@ -91,32 +93,9 @@ export default function RootLayout() {
     }
   }, []);
 
-  useEffect(() => {
-    mobileAds()
-      .initialize()
-      .catch((error) => {
-        console.error('Failed to initialize mobile ads:', error);
-      });
-  }, []);
 
-  useEffect(() => {
-    const checkFirstLaunch = async () => {
-      try {
-        const value = await AsyncStorage.getItem('alreadyLaunchedV2');
-        setIsFirstLaunch(value === null);
-      } catch (error) {
-        console.error('Error checking first launch:', error);
-      }
-    };
-
-    checkFirstLaunch();
-  }, []);
-
-  const handlePermissionGranted = useCallback(() => {
-    setIsFirstLaunch(false);
-  }, []);
-
-  const handleSplashFinish = useCallback(() => {
+  const handleSplashFinish = useCallback((authenticated: boolean) => {
+    setIsAuthenticated(authenticated);
     setIsSplashVisible(false);
   }, []);
 
@@ -168,72 +147,155 @@ export default function RootLayout() {
     return <SplashScreen onFinish={handleSplashFinish} />;
   }
 
-  if (isFirstLaunch) {
-    return <PermissionsScreen onPermissionGranted={handlePermissionGranted} />;
-  }
-
   return (
     <QueryClientProvider client={queryClient}>
       <CountdownProvider>
-        <AuthProvider>
-          <WebSocketProvider>
-            <LandmineProvider>
-              <OnboardingProvider>
-                <PermissionsCheck>
-                  <RootLayoutNav />
-                </PermissionsCheck>
-              </OnboardingProvider>
-            </LandmineProvider>
-          </WebSocketProvider>
-        </AuthProvider>
+        <OnboardingGate>
+          <AuthProvider initialIsSignedIn={isAuthenticated}>
+            <WebSocketProvider>
+              <LandmineProvider>
+                <OnboardingProvider>
+                  <PermissionsCheck>
+                    <RootLayoutNav />
+                  </PermissionsCheck>
+                </OnboardingProvider>
+              </LandmineProvider>
+            </WebSocketProvider>
+          </AuthProvider>
+        </OnboardingGate>
       </CountdownProvider>
     </QueryClientProvider>
   );
+}
+
+/**
+ * Gates onboarding / permissions before login.
+ * If `alreadyLaunchedV3` is missing, show the intro slides first.
+ */
+function OnboardingGate({ children }: { children: React.ReactNode }) {
+  const [onboardingChecked, setOnboardingChecked] = useState(false);
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
+
+  const checkOnboardingStatus = useCallback(async () => {
+    try {
+      const value = await AsyncStorage.getItem('alreadyLaunchedV3');
+      setNeedsOnboarding(value === null);
+    } catch (error) {
+      console.error('Error checking onboarding status:', error);
+    }
+    setOnboardingChecked(true);
+  }, []);
+
+  useEffect(() => {
+    checkOnboardingStatus();
+  }, [checkOnboardingStatus]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        checkOnboardingStatus();
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [checkOnboardingStatus]);
+
+  const handlePermissionGranted = useCallback(async () => {
+    try {
+      await AsyncStorage.setItem('alreadyLaunchedV3', 'true');
+    } catch (error) {
+      console.error('Error saving onboarding status:', error);
+    }
+    setNeedsOnboarding(false);
+  }, []);
+
+  if (!onboardingChecked) {
+    return <View style={styles.onboardingPlaceholder} />;
+  }
+
+  if (needsOnboarding) {
+    return <PermissionsScreen onPermissionGranted={handlePermissionGranted} />;
+  }
+
+  return <>{children}</>;
 }
 
 
 
 function RootLayoutNav() {
   const { countdownIsActive, stopCountdown } = useCountdown();
+  const { isSignedIn } = useAuth();
   const colorScheme = useColorScheme();
+
+  useEffect(() => {
+    if (!isSignedIn) return;
+    AdService.initialize().catch((error) => {
+      console.error('Failed to initialize AdService:', error);
+    });
+  }, [isSignedIn]);
 
   const backgroundColor = colorScheme === 'dark' ? '#1E1E1E' : '#FFFFFF';
 
   return (
     <SafeAreaProvider>
       <View style={{ flex: 1, backgroundColor }}>
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            gestureEnabled: false,
-            animationTypeForReplace: 'push',
-            gestureDirection: 'horizontal',
-          }}
-        >
-          <Stack.Screen
-            name="(tabs)"
-            options={{
+        {isSignedIn ? (
+          <Stack
+            initialRouteName="(tabs)"
+            screenOptions={{
               headerShown: false,
+              gestureEnabled: false,
+              animationTypeForReplace: 'push',
+              gestureDirection: 'horizontal',
             }}
-          />
-          <Stack.Screen
-            name="login"
-            options={{ headerShown: false, gestureEnabled: false, animation: 'slide_from_bottom' }}
-          />
-          <Stack.Screen name="register" options={{ headerShown: false, gestureEnabled: true }} />
-          <Stack.Screen name="PermissionsScreen" options={{ headerShown: false, animation: 'slide_from_bottom' }} />
-          <Stack.Screen name="splashscreen" options={{ headerShown: false }} />
-        </Stack>
+          >
+            <Stack.Screen
+              name="(tabs)"
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name="login"
+              options={{ headerShown: false, gestureEnabled: false, animation: 'slide_from_bottom' }}
+            />
+            <Stack.Screen name="PermissionsScreen" options={{ headerShown: false, animation: 'slide_from_bottom' }} />
+            <Stack.Screen name="splashscreen" options={{ headerShown: false }} />
+          </Stack>
+        ) : (
+          <Stack
+            initialRouteName="login"
+            screenOptions={{
+              headerShown: false,
+              gestureEnabled: false,
+              animationTypeForReplace: 'push',
+              gestureDirection: 'horizontal',
+            }}
+          >
+            <Stack.Screen
+              name="login"
+              options={{ headerShown: false, gestureEnabled: false, animation: 'none' }}
+            />
+          </Stack>
+        )}
         {countdownIsActive && (
           <View style={styles.countdownContainer}>
             <CountdownTimer duration={30} onExpire={stopCountdown} />
           </View>
         )}
+        {/* One-shot Skia celebrations (missile launch, purchases, …) play above everything. */}
+        <GameEffectsOverlay />
       </View>
     </SafeAreaProvider>
   );
 }
 const styles = StyleSheet.create({
+  onboardingPlaceholder: {
+    flex: 1,
+    backgroundColor: '#060818',
+  },
   countdownContainer: {
     position: 'absolute',
     bottom: 90,

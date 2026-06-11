@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useAuth } from "./Context/authcontext";
 
 export const useUserName = () => {
     const [userNAME, setUserName] = useState<string>("load failed");
+    const { signOut } = useAuth();
 
     useEffect(() => {
         const fetchCredentials = async () => {
@@ -19,14 +20,13 @@ export const useUserName = () => {
                 }
             } else {
                 console.log('Credentials not found, please log in');
-                // Optionally redirect to login page
-                await AsyncStorage.setItem('signedIn', 'false');
+                await signOut();
                 router.navigate("/login");
             }
         };
 
         fetchCredentials();
-    }, []);
+    }, [signOut]);
 
     return userNAME;
 };

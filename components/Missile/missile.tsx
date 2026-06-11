@@ -1,45 +1,24 @@
-import React, { useEffect, useState } from "react";
-import { Missilelib } from "../../types/types";
-import { Text, View, TouchableOpacity, Image, Dimensions, Modal, ScrollView, StyleSheet, useColorScheme } from "react-native";
-import { MissilePlacementPopup } from './missileplacement';
+import React, { useEffect, useRef, useState } from "react";
+import { Missilelib , InventoryItem } from "../../types/types";
+import { Text, View, Pressable, Modal, useColorScheme, Platform } from "react-native";
+import { Image } from "expo-image";
 import { firemissileplayer } from "../../api/fireentities";
-import { create } from 'twrnc';
 import useFetchInventory from "../../hooks/websockets/inventoryhook";
-import { InventoryItem } from '../../types/types';
 import { router } from 'expo-router';
 import { getImages } from "../../api/store";
 import { useOnboarding } from "../../util/Context/onboardingContext";
-
-const tw = create(require('../../tailwind.config.js'));
-
-//Missile types
-//   Amplifier:
-//   Ballista: 
-//   BigBertha:
-//   Bombabom: 
-//   BunkerBlocker:
-//   Buzzard: 
-//   ClusterBomb: 
-//   CorporateRaider: 
-//   GutShot: 
-//   TheNuke: 
-//   Yokozuna: 
-//   Zippy: 
-
-//Missile Library needs to be fetched by backend:
-
+import { InventoryEmptyState, InventoryItemList } from '../ui/inventory-library';
+import { tw } from '../../util/twrnc';
 
 const useMissileLib = (): Missilelib[] => {
   const inventory = useFetchInventory();
 
-  const missileLibrary = inventory
-    .filter((item: InventoryItem) => item.category === "Missiles" && item.quantity > 0)
-    .map((item: InventoryItem) => ({
-      type: item.name,
-      quantity: item.quantity
-    }));
-
-  return missileLibrary;
+  return inventory.reduce<Missilelib[]>((acc, item: InventoryItem) => {
+    if (item.category === "Missiles" && item.quantity > 0) {
+      acc.push({ type: item.name, quantity: item.quantity });
+    }
+    return acc;
+  }, []);
 };
 
 const MissileSelector = ({ onSelect, missiles, onClose }: { onSelect: (missile: string) => void, missiles: Missilelib[], onClose: () => void }) => {
@@ -56,39 +35,24 @@ const MissileSelector = ({ onSelect, missiles, onClose }: { onSelect: (missile: 
 
   if (missiles.length === 0) {
     return (
-      <View style={tw`flex-1 justify-center items-center`}>
-        <Text style={tw`text-lg mb-4 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-          No missiles available.
-        </Text>
-        <TouchableOpacity 
-          onPress={() => {
-            onClose(); 
-            router.navigate('/store'); 
-          }}
-          style={tw`bg-blue-500 px-6 py-3 rounded-lg`}
-        >
-          <Text style={tw`text-white font-bold`}>Go to Shop</Text>
-        </TouchableOpacity>
-      </View>
+      <InventoryEmptyState
+        isDark={isDarkMode}
+        message="No missiles available"
+        onGoToShop={() => {
+          onClose();
+          router.navigate('/store');
+        }}
+      />
     );
   }
 
   return (
-    <ScrollView style={tw`flex-1`}>
-      {missiles.map((missile, index) => (
-        <TouchableOpacity 
-          key={index} 
-          onPress={() => onSelect(missile.type)} 
-          style={tw`flex-row items-center ${isDarkMode ? 'bg-gray-900' : 'bg-white'} p-2 mb-1 rounded-lg shadow`}
-        >
-          <Image source={getImageForProduct(missile.type)} style={tw`w-8 h-8 mr-2`} />
-          <View style={tw`flex-1`}>
-            <Text style={tw`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>{missile.type}</Text>
-            <Text style={tw`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Quantity: {missile.quantity}</Text>
-          </View>
-        </TouchableOpacity>
-      ))}
-    </ScrollView>
+    <InventoryItemList
+      items={missiles}
+      isDark={isDarkMode}
+      getImageSource={getImageForProduct}
+      onSelect={onSelect}
+    />
   );
 };
 
@@ -98,7 +62,7 @@ export const MissileLibrary = ({ playerName, onMissileFired, onClose }: { player
   const [showPopup, setShowPopup] = useState(false);
   const isDarkMode = useColorScheme() === 'dark';
   const [getImageForProduct, setGetImageForProduct] = useState<(imageName: string) => any>(() => () => require('../../assets/logo.png'));
-  const { currentStep, isOnboardingComplete, moveToNextStep } = useOnboarding();
+  const { currentStep, moveToNextStep } = useOnboarding();
 
   useEffect(() => {
     const loadImages = async () => {
@@ -116,19 +80,27 @@ export const MissileLibrary = ({ playerName, onMissileFired, onClose }: { player
     setShowPopup(true);
   };
 
+  const fireCompletionPendingRef = useRef(false);
+
+  const completeFire = () => {
+    if (!fireCompletionPendingRef.current) return;
+    fireCompletionPendingRef.current = false;
+    onMissileFired();
+    onClose();
+  };
+
   const handleFire = () => {
     if (selectedMissile) {
-      // Close the popup and trigger callbacks immediately
-      onMissileFired();
-      onClose();
+      fireCompletionPendingRef.current = true;
       setShowPopup(false);
+      if (Platform.OS !== 'ios') {
+        completeFire();
+      }
 
-      // Fire the missile in the background
       if (playerName) {
         firemissileplayer(playerName, selectedMissile)
           .catch(error => {
             console.error("Error firing missile:", error);
-            // Optionally, you can show an error message to the user here
           });
       }
     }
@@ -142,23 +114,23 @@ export const MissileLibrary = ({ playerName, onMissileFired, onClose }: { player
   };
 
   return (
-    <View style={tw`${isDarkMode ? 'bg-black' : 'bg-white'} rounded-lg p-4 h-[90%]`}>
-      <Text style={tw`text-xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Select Missile to Fire at {playerName}</Text>
+    <View style={[tw`rounded-lg p-4 h-[90%]`, isDarkMode ? tw`bg-black` : tw`bg-white`]}>
+      <Text style={[tw`text-xl font-bold mb-2`, isDarkMode ? tw`text-white` : tw`text-gray-800`]}>Select Missile to Fire at {playerName}</Text>
       <MissileSelector onSelect={handleMissileClick} missiles={missileLibrary} onClose={onClose} />
-      <Modal visible={showPopup} animationType="fade" transparent={true}>
+      <Modal visible={showPopup} animationType="fade" transparent={true} onDismiss={completeFire}>
         <View style={tw`flex-1 justify-center items-center bg-black bg-opacity-50`}>
-          <View style={tw`${isDarkMode ? 'bg-gray-900' : 'bg-white'} rounded-lg p-4 w-11/12 max-h-[90%]`}>
-            <Text style={tw`text-lg font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Confirm Missile Launch</Text>
-            <Text style={tw`${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Target: {playerName}</Text>
-            <Text style={tw`${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Missile Type: {selectedMissile}</Text>
+          <View style={[tw`rounded-lg p-4 w-11/12 max-h-[90%]`, isDarkMode ? tw`bg-gray-900` : tw`bg-white`]}>
+            <Text style={[tw`text-lg font-bold mb-2`, isDarkMode ? tw`text-white` : tw`text-gray-800`]}>Confirm Missile Launch</Text>
+            <Text style={isDarkMode ? tw`text-gray-300` : tw`text-gray-600`}>Target: {playerName}</Text>
+            <Text style={isDarkMode ? tw`text-gray-300` : tw`text-gray-600`}>Missile Type: {selectedMissile}</Text>
             <Image source={getImageForProduct(selectedMissile || "")} style={tw`w-24 h-24 mx-auto my-4`} />
             <View style={tw`flex-row justify-around w-full mt-4`}>
-              <TouchableOpacity style={tw`bg-red-500 px-6 py-2 rounded-lg`} onPress={handleFire}>
+              <Pressable style={({ pressed }) => [tw`bg-red-500 px-6 py-2 rounded-lg`, pressed && { opacity: 0.7 }]} onPress={handleFire}>
                 <Text style={tw`text-white font-bold`}>Fire</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={tw`${isDarkMode ? 'bg-gray-800' : 'bg-gray-500'} px-6 py-2 rounded-lg`} onPress={handleCancel}>
+              </Pressable>
+              <Pressable style={({ pressed }) => [tw`px-6 py-2 rounded-lg`, isDarkMode ? tw`bg-gray-800` : tw`bg-gray-500`, pressed && { opacity: 0.7 }]} onPress={handleCancel}>
                 <Text style={tw`text-white font-bold`}>Cancel</Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           </View>
         </View>
@@ -167,39 +139,3 @@ export const MissileLibrary = ({ playerName, onMissileFired, onClose }: { player
   );
 };
 
-//For when fire button is used without player
-//This is what should be used when using fire-selector button
-export const MissilefireposLibrary = ({ onClose }: { onClose: () => void }) => {
-  const missileLibrary = useMissileLib();
-  const [showPlacementPopup, setShowPlacementPopup] = useState(false);
-  const [selectedMissile, setSelectedMissile] = useState<string | null>(null);
-  const isDarkMode = useColorScheme() === 'dark';
-
-  const handleMissileClick = (selectedMissile: string) => {
-    setSelectedMissile(selectedMissile);
-    setShowPlacementPopup(true);
-  };
-
-  const handleCancel = () => {
-    setShowPlacementPopup(false);
-    setSelectedMissile(null);
-  };
-
-  return (
-    <View style={tw`${isDarkMode ? 'bg-black' : 'bg-white'} rounded-lg p-4 h-[90%]`}>
-      <Text style={tw`text-xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Select Missile to Fire at Location</Text>
-      <MissileSelector onSelect={handleMissileClick} missiles={missileLibrary} onClose={onClose} />
-      {showPlacementPopup && selectedMissile && (
-        <MissilePlacementPopup
-          visible={showPlacementPopup}
-          onClose={handleCancel}
-          selectedMissile={selectedMissile}
-          onMissileFired={() => {
-            // Handle successful missile fire
-            onClose();
-          }}
-        />
-      )}
-    </View>
-  );
-};

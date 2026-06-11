@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import * as Location from 'expo-location';
-import { View, Text, TouchableOpacity, StyleSheet, useColorScheme, Linking, Platform } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, Pressable, StyleSheet, useColorScheme, Linking, Platform } from 'react-native';
+import Ionicons from '@react-native-vector-icons/ionicons';
 
 interface PermissionsCheckProps {
   children: React.ReactNode;
@@ -43,7 +43,7 @@ const PermissionsCheck: React.FC<PermissionsCheckProps> = ({ children }) => {
     <View style={styles.container}>
       {children}
       {permissionStatus === 'denied' && (
-        <TouchableOpacity
+        <Pressable
           style={[
             styles.banner,
             colorScheme === 'dark' ? styles.bannerDark : styles.bannerLight
@@ -65,7 +65,7 @@ const PermissionsCheck: React.FC<PermissionsCheckProps> = ({ children }) => {
             size={24}
             color="#FFFFFF" // White color for the icon
           />
-        </TouchableOpacity>
+        </Pressable>
       )}
     </View>
   );
