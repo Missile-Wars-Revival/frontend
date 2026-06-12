@@ -3,16 +3,15 @@ import {
   Alert, Linking, Platform, DevSettings,
   View, Text, ScrollView, Pressable, Switch as RNSwitch,
   StyleSheet, useColorScheme, ActionSheetIOS, ActivityIndicator,
+  Modal, KeyboardAvoidingView,
 } from 'react-native';
 import { Stack, router } from 'expo-router';
 import {
   Button,
   Text as UIText,
-  BottomSheet,
   TextInput,
   useNativeState,
   Column,
-  ScrollView as UIScrollView,
 } from '@expo/ui';
 import {
   User, Smartphone, Bell, MessageSquare, Star, Heart,
@@ -81,6 +80,75 @@ const CREDITS_SECTIONS: {
 
 // Push registration state shown at the top of the notification sheet.
 type PushStatus = 'checking' | 'active' | 'unregistered' | 'disabled' | 'unsupported';
+
+type SettingsBottomSheetProps = {
+  visible: boolean;
+  onClose: () => void;
+  isDark: boolean;
+  children: React.ReactNode;
+  scroll?: boolean;
+  fullHeight?: boolean;
+};
+
+function SettingsBottomSheet({
+  visible,
+  onClose,
+  isDark,
+  children,
+  scroll = true,
+  fullHeight = true,
+}: SettingsBottomSheetProps) {
+  const content = scroll ? (
+    <ScrollView
+      style={stylesBase.sheetScroll}
+      contentContainerStyle={stylesBase.sheetScrollContent}
+      horizontal={false}
+      bounces
+      alwaysBounceHorizontal={false}
+      directionalLockEnabled
+      showsHorizontalScrollIndicator={false}
+      showsVerticalScrollIndicator
+      keyboardShouldPersistTaps="handled"
+      nestedScrollEnabled
+    >
+      {children}
+    </ScrollView>
+  ) : (
+    <View style={stylesBase.sheetScrollContent}>{children}</View>
+  );
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+      statusBarTranslucent
+    >
+      <KeyboardAvoidingView
+        style={stylesBase.sheetOverlay}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <Pressable
+          style={[stylesBase.sheetBackdrop, { backgroundColor: isDark ? 'rgba(0,0,0,0.62)' : 'rgba(0,0,0,0.28)' }]}
+          onPress={onClose}
+          accessibilityRole="button"
+          accessibilityLabel="Close"
+        />
+        <View
+          style={[
+            stylesBase.sheet,
+            fullHeight ? stylesBase.sheetFull : stylesBase.sheetFit,
+            { backgroundColor: isDark ? '#000' : '#F2F2F7' },
+          ]}
+        >
+          <View style={[stylesBase.sheetHandle, { backgroundColor: isDark ? '#38383A' : '#C7C7CC' }]} />
+          {content}
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
 
 const SettingsPage: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -756,19 +824,18 @@ const SettingsPage: React.FC = () => {
       </ScrollView>
 
       {/* ── Account Details Sheet ─────────────────────────── */}
-      <BottomSheet
-        isPresented={showAccountDetails}
-        onDismiss={() => {
+      <SettingsBottomSheet
+        visible={showAccountDetails}
+        onClose={() => {
           setShowAccountDetails(false);
           setIsConfirmingEmail(false);
           setUsernameError('');
           setEmailError('');
           setPasswordError('');
         }}
-        snapPoints={['full']}
+        isDark={isDark}
       >
-        <UIScrollView>
-          <Column style={{ padding: 24 }}>
+          <Column>
             <UIText textStyle={{ fontSize: 28, fontWeight: '700' }} style={{ paddingBottom: 28 }}>
               Account Details
             </UIText>
@@ -846,25 +913,18 @@ const SettingsPage: React.FC = () => {
             )}
             <Button label="Change Password" onPress={handlePasswordChange} style={{ paddingBottom: 40 }} />
           </Column>
-        </UIScrollView>
-      </BottomSheet>
+      </SettingsBottomSheet>
 
       {/* ── Notification Settings Sheet ───────────────────── */}
-      <BottomSheet
-        isPresented={showNotificationSettings}
-        onDismiss={() => {
+      <SettingsBottomSheet
+        visible={showNotificationSettings}
+        onClose={() => {
           setShowNotificationSettings(false);
           // Reset so reopening shows the spinner, not last session's status.
           setPushStatus('checking');
         }}
-        snapPoints={['full']}
+        isDark={isDark}
       >
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={{ padding: 24, paddingBottom: 48 }}
-          showsHorizontalScrollIndicator={false}
-          horizontal={false}
-        >
           <Text style={{ fontSize: 28, fontWeight: '700', color: isDark ? '#fff' : '#000', marginBottom: 8 }}>
             Notifications
           </Text>
@@ -900,6 +960,8 @@ const SettingsPage: React.FC = () => {
                   <Pressable
                     disabled={pushBusy}
                     onPress={handleEnablePush}
+                    accessibilityRole="button"
+                    hitSlop={6}
                     style={({ pressed }) => [s.statusButton, { backgroundColor: m.color, opacity: pushBusy || pressed ? 0.7 : 1 }]}
                   >
                     {pushBusy
@@ -911,6 +973,8 @@ const SettingsPage: React.FC = () => {
                   <Pressable
                     disabled={pushBusy}
                     onPress={handleTestNotification}
+                    accessibilityRole="button"
+                    hitSlop={6}
                     style={({ pressed }) => [
                       s.statusButton,
                       { borderWidth: 1, borderColor: accent, opacity: pushBusy || pressed ? 0.7 : 1 },
@@ -955,21 +1019,14 @@ const SettingsPage: React.FC = () => {
               );
             })}
           </View>
-        </ScrollView>
-      </BottomSheet>
+      </SettingsBottomSheet>
 
       {/* ── Credits Sheet ─────────────────────────────────── */}
-      <BottomSheet
-        isPresented={showCredits}
-        onDismiss={() => setShowCredits(false)}
-        snapPoints={['full']}
+      <SettingsBottomSheet
+        visible={showCredits}
+        onClose={() => setShowCredits(false)}
+        isDark={isDark}
       >
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={{ padding: 24, paddingBottom: 48 }}
-          showsHorizontalScrollIndicator={false}
-          horizontal={false}
-        >
           <Text style={{ fontSize: 28, fontWeight: '700', color: isDark ? '#fff' : '#000', marginBottom: 6 }}>
             Credits
           </Text>
@@ -1021,19 +1078,21 @@ const SettingsPage: React.FC = () => {
           <Text style={{ fontSize: 13, color: '#8E8E93', textAlign: 'center', marginTop: 4 }}>
             Made with ❤️ by the community
           </Text>
-        </ScrollView>
-      </BottomSheet>
+      </SettingsBottomSheet>
 
       {/* ── Delete Account Sheet ──────────────────────────── */}
-      <BottomSheet
-        isPresented={showDeleteModal}
-        onDismiss={() => {
+      <SettingsBottomSheet
+        visible={showDeleteModal}
+        onClose={() => {
           setShowDeleteModal(false);
           // eslint-disable-next-line react-hooks/immutability
           deleteUsernameInput.value = '';
         }}
+        isDark={isDark}
+        scroll={false}
+        fullHeight={false}
       >
-        <Column style={{ padding: 24 }}>
+        <Column>
           <UIText textStyle={{ fontSize: 22, fontWeight: '700', color: '#FF3B30' }} style={{ paddingBottom: 8 }}>
             Delete Account
           </UIText>
@@ -1052,10 +1111,48 @@ const SettingsPage: React.FC = () => {
             <Button label="Cancel" variant="outlined" onPress={() => setShowDeleteModal(false)} />
           </Column>
         </Column>
-      </BottomSheet>
+      </SettingsBottomSheet>
     </>
   );
 };
+
+const stylesBase = StyleSheet.create({
+  sheetOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  sheetBackdrop: {
+    ...StyleSheet.absoluteFill,
+  },
+  sheet: {
+    width: '100%',
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    overflow: 'hidden',
+  },
+  sheetFull: {
+    height: '92%',
+  },
+  sheetFit: {
+    maxHeight: '92%',
+  },
+  sheetHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: 10,
+    marginBottom: 4,
+  },
+  sheetScroll: {
+    flex: 1,
+  },
+  sheetScrollContent: {
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 48,
+  },
+});
 
 const styles = (isDark: boolean) => StyleSheet.create({
   container: {
