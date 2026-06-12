@@ -4,11 +4,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as SecureStore from 'expo-secure-store';
-import type { User } from 'firebase/auth';
 import { ConnectingScreen } from './ConnectingScreen';
 import { UnverifiedTag, UnverifiedWarningModal, VerifiedBadge, palette } from './ServerPicker';
 import { useWebSocketContext } from '../util/Context/websocket';
-import { auth } from '../util/firebase/firebaseAuth';
+import { waitForFirebaseUser } from '../api/account';
 import {
   GameServer,
   ServerHistoryEntry,
@@ -31,25 +30,7 @@ import {
 // so the map/death UI never flashes mid-connect.
 
 const FIRST_DATA_TIMEOUT_MS = 15000;
-
-// Firebase restores the session asynchronously on cold start; give it a
-// moment before concluding there is no signed-in Firebase user.
-function waitForFirebaseUser(timeoutMs = 5000): Promise<User | null> {
-  if (auth.currentUser) return Promise.resolve(auth.currentUser);
-  return new Promise((resolve) => {
-    const timer = setTimeout(() => {
-      unsubscribe();
-      resolve(auth.currentUser);
-    }, timeoutMs);
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      if (user) {
-        clearTimeout(timer);
-        unsubscribe();
-        resolve(user);
-      }
-    });
-  });
-}
+const MAX_RECENT_ROWS = 5;
 
 function lastPlayedLabel(timestamp: number): string {
   const days = Math.floor((Date.now() - timestamp) / (24 * 60 * 60 * 1000));
@@ -135,7 +116,7 @@ export default function ServerSelectScreen({ onDone }: ServerSelectScreenProps) 
 
   const liveById = useMemo(() => new Map(servers.map((s) => [s.id, s])), [servers]);
 
-  const recentRows = useMemo(
+  const allRecentRows = useMemo(
     () =>
       history.map((entry) => ({
         entry,
@@ -147,9 +128,30 @@ export default function ServerSelectScreen({ onDone }: ServerSelectScreenProps) 
   // Quick continue targets the most recent still-listable VERIFIED server;
   // unverified servers are never suggested, only picked explicitly below.
   const continueTarget = useMemo(
-    () => recentRows.find((row) => row.live?.verified)?.live ?? null,
-    [recentRows]
+    () => allRecentRows.find((row) => row.live?.verified)?.live ?? null,
+    [allRecentRows]
   );
+
+  // Each server appears in exactly one section: the Continue card swallows
+  // its own history row, "Recent" holds the rest of the history, and the
+  // directory section lists only what hasn't been shown yet — a lone server
+  // shows once, not three times.
+  const recentRows = useMemo(
+    () =>
+      allRecentRows
+        .filter((row) => row.entry.shardId !== continueTarget?.id)
+        .slice(0, MAX_RECENT_ROWS),
+    [allRecentRows, continueTarget]
+  );
+
+  const otherServers = useMemo(() => {
+    const shown = new Set<string>(
+      [continueTarget?.id, ...recentRows.map((row) => row.live?.id)].filter(
+        (id): id is string => !!id
+      )
+    );
+    return servers.filter((server) => !shown.has(server.id));
+  }, [servers, continueTarget, recentRows]);
 
   const connectTo = useCallback(
     async (server: GameServer) => {
@@ -227,6 +229,12 @@ export default function ServerSelectScreen({ onDone }: ServerSelectScreenProps) 
                 </View>
                 <Text style={[styles.serverMeta, { color: c.subtle }]}>
                   {continueTarget.region} · {continueTarget.playerCount} online
+                  {(() => {
+                    const lastUsedAt = allRecentRows.find(
+                      (row) => row.live?.id === continueTarget.id
+                    )?.entry.lastUsedAt;
+                    return lastUsedAt ? ` · ${lastPlayedLabel(lastUsedAt)}` : '';
+                  })()}
                 </Text>
                 <Pressable onPress={() => onPick(continueTarget)} style={[styles.button, styles.continueButton]}>
                   <Text style={[styles.buttonText, { color: '#fff' }]}>Continue</Text>
@@ -273,31 +281,35 @@ export default function ServerSelectScreen({ onDone }: ServerSelectScreenProps) 
               </>
             )}
 
-            <Text style={[styles.sectionHeader, { color: c.subtle }]}>All servers</Text>
             {servers.length === 0 ? (
               <Text style={[styles.error, { color: c.subtle }]}>No servers are online right now.</Text>
-            ) : (
-              servers.map((server) => (
-                <Pressable
-                  key={server.id}
-                  onPress={() => onPick(server)}
-                  style={[styles.serverRow, { borderColor: c.border }]}
-                >
-                  <View style={styles.serverHead}>
-                    <Text style={[styles.serverName, { color: c.text }]} numberOfLines={1}>{server.name}</Text>
-                    {server.verified ? <VerifiedBadge /> : <UnverifiedTag />}
-                  </View>
-                  <Text style={[styles.serverMeta, { color: c.subtle }]}>
-                    {server.region} · {server.playerCount} online{server.version ? ` · v${server.version}` : ''}
-                  </Text>
-                  {server.description ? (
-                    <Text style={[styles.serverMeta, { color: c.subtle }]} numberOfLines={2}>
-                      {server.description}
+            ) : otherServers.length > 0 ? (
+              <>
+                <Text style={[styles.sectionHeader, { color: c.subtle }]}>
+                  {continueTarget || recentRows.length > 0 ? 'Other servers' : 'All servers'}
+                </Text>
+                {otherServers.map((server) => (
+                  <Pressable
+                    key={server.id}
+                    onPress={() => onPick(server)}
+                    style={[styles.serverRow, { borderColor: c.border }]}
+                  >
+                    <View style={styles.serverHead}>
+                      <Text style={[styles.serverName, { color: c.text }]} numberOfLines={1}>{server.name}</Text>
+                      {server.verified ? <VerifiedBadge /> : <UnverifiedTag />}
+                    </View>
+                    <Text style={[styles.serverMeta, { color: c.subtle }]}>
+                      {server.region} · {server.playerCount} online{server.version ? ` · v${server.version}` : ''}
                     </Text>
-                  ) : null}
-                </Pressable>
-              ))
-            )}
+                    {server.description ? (
+                      <Text style={[styles.serverMeta, { color: c.subtle }]} numberOfLines={2}>
+                        {server.description}
+                      </Text>
+                    ) : null}
+                  </Pressable>
+                ))}
+              </>
+            ) : null}
 
             <Pressable onPress={loadDirectory} style={[styles.button, { backgroundColor: c.card }]}>
               <Text style={[styles.buttonText, { color: c.text }]}>Refresh</Text>

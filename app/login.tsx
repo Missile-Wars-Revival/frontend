@@ -26,8 +26,33 @@ import { signInWithApple, signInWithGoogle } from '../util/firebase/firebaseAuth
 import { oauthLogin } from '../api/oauthLogin';
 import { requestPasswordReset, requestUsernameReminder, resetPassword } from '../api/changedetails';
 import LoginSwirl from '../components/Animations/loginSwirl';
-import ServerPicker from '../components/ServerPicker';
+import { coordinatorConfigured } from '../api/server-discovery';
+import {
+  checkUsernameAvailable,
+  claimUsername,
+  loginWithFirebase,
+  registerWithFirebase,
+  requestFirebasePasswordReset,
+} from '../api/account';
 import { getlocation } from '../util/locationreq';
+
+// Phase 8 (backend/DISTRIBUTED_HOSTING_PLAN.md): with a coordinator baked
+// into the build, authentication is Firebase + coordinator ONLY — email (or
+// Apple/Google) signs in, the username is claimed centrally, and no game
+// server is contacted until the post-login server selector. Solo builds
+// (no EXPO_PUBLIC_COORDINATOR_URL) keep the legacy username login against
+// the env-configured shard.
+const distributed = coordinatorConfigured();
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function firebaseAuthErrorMessage(error: unknown, mode: Mode): string {
+  const code = (error as { code?: string })?.code ?? '';
+  if (code === 'auth/email-already-in-use') return 'An account with this email already exists';
+  if (code === 'auth/too-many-requests') return 'Too many attempts. Please wait a moment and try again.';
+  if (mode === 'login') return 'Invalid email or password';
+  return 'Registration failed. Please try again.';
+}
 
 const IOS_CLIENT_ID = '199249539413-0og9o1srvoq381tajt844jraabb9pmf0.apps.googleusercontent.com';
 const WEB_CLIENT_ID  = '199249539413-4ggab6ob709kii3sumthvi5olqf1g7p4.apps.googleusercontent.com';
@@ -89,6 +114,14 @@ export default function Auth() {
 
   const finishOAuth = useCallback(async (idToken: string, displayName: string) => {
     try {
+      if (distributed) {
+        // The Firebase session is all that's needed — username claim (for
+        // first-time accounts) and server selection happen in the post-login
+        // gate, and the shard provisions on first connect.
+        await AsyncStorage.setItem('signedIn', 'true');
+        setIsSignedIn(true);
+        return;
+      }
       const data = await oauthLogin(idToken, displayName, notificationToken);
       await saveCredentials(data.username, data.token, notificationToken);
       await AsyncStorage.setItem('signedIn', 'true');
@@ -175,6 +208,8 @@ export default function Auth() {
 
   const validateRegister = useCallback((): boolean => {
     if (username.length < 3) { setError('Username must be at least 3 characters'); return false; }
+    // Same rule the backends enforce (shard /api/register, coordinator claim).
+    if (!/^[a-zA-Z0-9]{3,20}$/.test(username)) { setError('Username must be 3-20 letters and numbers'); return false; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError('Please enter a valid email'); return false; }
     if (!/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/.test(password)) {
       setError('Password needs 8+ chars with uppercase, lowercase, number and symbol');
@@ -184,18 +219,71 @@ export default function Auth() {
     return true;
   }, [username, email, password, confirmPassword]);
 
+  // Coordinator-only auth: Firebase sign-in/sign-up plus a central username
+  // claim — the first shard contact is the websocket connect after the
+  // post-login server selector.
+  const [submitting, setSubmitting] = useState(false);
+  const handleDistributedSubmit = useCallback(async () => {
+    if (submitting) return;
+    setError('');
+    setSubmitting(true);
+    try {
+      if (mode === 'login') {
+        if (!EMAIL_RE.test(email)) { setError('Please enter a valid email'); return; }
+        if (!password) { setError('Please enter your password'); return; }
+        await loginWithFirebase(email, password);
+      } else {
+        if (!validateRegister()) return;
+        if (!(await checkUsernameAvailable(username))) {
+          setError('That username is already taken');
+          return;
+        }
+        await registerWithFirebase(email, password);
+        try {
+          await claimUsername(username);
+        } catch (claimError) {
+          // Lost a race for the name after the Firebase account was created —
+          // the account exists, so proceed; the post-login gate asks again.
+          console.error('Username claim failed, the app will re-ask:', claimError);
+        }
+      }
+      await AsyncStorage.setItem('signedIn', 'true');
+      setIsSignedIn(true);
+    } catch (error) {
+      setError(firebaseAuthErrorMessage(error, mode));
+    } finally {
+      setSubmitting(false);
+    }
+  }, [submitting, mode, email, password, username, validateRegister, setIsSignedIn]);
+
   const handleSubmit = useCallback(() => {
+    if (distributed) {
+      handleDistributedSubmit();
+      return;
+    }
     setError('');
     if (mode === 'login') {
       loginMutation.mutate({ username, password, notificationToken });
     } else if (validateRegister()) {
       registerMutation.mutate({ username, email, password, notificationToken });
     }
-  }, [mode, username, password, email, notificationToken, loginMutation, registerMutation, validateRegister]);
+  }, [mode, username, password, email, notificationToken, loginMutation, registerMutation, validateRegister, handleDistributedSubmit]);
 
   const handleForgotRequest = async (type: 'username' | 'password') => {
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(forgotEmail)) {
+    if (!EMAIL_RE.test(forgotEmail)) {
       setForgotError('Please enter a valid email');
+      return;
+    }
+    // Distributed: Firebase emails a reset link itself — no code entry, and
+    // no username reminder (login is by email, so there's nothing to forget).
+    if (distributed) {
+      try {
+        await requestFirebasePasswordReset(forgotEmail);
+        Alert.alert('Check your email', `We sent a password reset link to ${forgotEmail}.`);
+        closeForgot();
+      } catch {
+        setForgotError('Failed to send the reset email. Please try again.');
+      }
       return;
     }
     try {
@@ -243,14 +331,10 @@ export default function Auth() {
         resizeMode="contain"
       />
 
-      {/* Form section — fully in React Native, no SwiftUI keyboard avoidance */}
+      {/* Form section — fully in React Native, no SwiftUI keyboard avoidance.
+          No server picker here anymore (Phase 8): authentication never touches
+          a game server, and the full-screen selector runs after login. */}
       <View style={styles.formSection}>
-        {/* Game-server picker (Phase 6 distributed hosting). Renders nothing
-            unless EXPO_PUBLIC_COORDINATOR_URL is baked into the build. */}
-        <View style={styles.serverPicker}>
-          <ServerPicker />
-        </View>
-
         {/* Native segmented control — tiny Host so SwiftUI avoidance affects nothing visible */}
         <Host style={styles.pickerHost}>
           <Picker
@@ -265,15 +349,31 @@ export default function Auth() {
 
         {/* Grouped text inputs */}
         <View style={[styles.fieldGroup, isDark && styles.fieldGroupDark]}>
-          <NativeTextInput
-            ref={usernameRef}
-            style={[styles.textInput, { color: isDark ? '#fff' : '#000' }]}
-            placeholder="Username"
-            placeholderTextColor="#8e8e93"
-            onChangeText={setUsername}
-            autoCorrect={false}
-            autoCapitalize="none"
-          />
+          {distributed && mode === 'login' ? (
+            // Distributed login is by email (Firebase) — there is no shard to
+            // resolve a username against before authentication.
+            <NativeTextInput
+              ref={emailRef}
+              style={[styles.textInput, { color: isDark ? '#fff' : '#000' }]}
+              placeholder="Email"
+              placeholderTextColor="#8e8e93"
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoComplete="email"
+            />
+          ) : (
+            <NativeTextInput
+              ref={usernameRef}
+              style={[styles.textInput, { color: isDark ? '#fff' : '#000' }]}
+              placeholder="Username"
+              placeholderTextColor="#8e8e93"
+              onChangeText={setUsername}
+              autoCorrect={false}
+              autoCapitalize="none"
+            />
+          )}
           {mode === 'register' && (
             <>
               <View style={[styles.fieldSeparator, isDark && styles.fieldSeparatorDark]} />
@@ -334,7 +434,7 @@ export default function Auth() {
           ]}
         >
           <Text style={styles.submitLabel}>
-            {mode === 'login' ? "Let's Fight" : 'Create Account'}
+            {submitting ? 'One moment…' : mode === 'login' ? "Let's Fight" : 'Create Account'}
           </Text>
         </Pressable>
       </View>
@@ -518,13 +618,17 @@ function ForgotSheet({
               <UIText textStyle={{ color: '#e74c3c', fontSize: 13 }}>{forgotError}</UIText>
             )}
 
-            <SheetButton
-              label="Send My Username"
-              variant="outlined"
-              onPress={() => onForgotRequest('username')}
-              accent={accent}
-              isDark={isDark}
-            />
+            {/* Username reminders only exist for the legacy username login —
+                in distributed mode you sign in with your email. */}
+            {!distributed && (
+              <SheetButton
+                label="Send My Username"
+                variant="outlined"
+                onPress={() => onForgotRequest('username')}
+                accent={accent}
+                isDark={isDark}
+              />
+            )}
             <SheetButton
               label="Reset My Password"
               variant="filled"
@@ -595,9 +699,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     gap: 12,
-  },
-  serverPicker: {
-    marginBottom: 2,
   },
   pickerHost: {
     width: '100%',

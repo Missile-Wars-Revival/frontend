@@ -24,6 +24,8 @@ import GameEffectsOverlay from '../components/effects/GameEffectsOverlay';
 import { registerAndSyncPushToken } from '../components/Notifications/registerPushToken';
 import * as SecureStore from 'expo-secure-store';
 import ServerSelectScreen from '../components/ServerSelectScreen';
+import UsernameClaimScreen from '../components/UsernameClaimScreen';
+import { getMyProfileUsername, waitForFirebaseUser } from '../api/account';
 import {
   confirmServerSession,
   hydrateSelectedServer,
@@ -279,15 +281,16 @@ function OnboardingGate({ children }: { children: React.ReactNode }) {
 
 
 /**
- * Phase 7 (DISTRIBUTED_HOSTING_PLAN.md): in distributed mode, a signed-in
- * player must confirm which server to play on — once per app session — before
- * the gameplay shell mounts and the websocket connects. Sessions that cannot
- * use the coordinator selector (no coordinator configured, the dev offline
- * token, or a legacy shard-local account without a Firebase identity) are
- * auto-confirmed and keep the previous behavior.
+ * Phases 7-8 (DISTRIBUTED_HOSTING_PLAN.md): in distributed mode, a signed-in
+ * player must (a) have a centrally claimed game username and (b) confirm
+ * which server to play on — once per app session — before the gameplay shell
+ * mounts and the websocket connects. Sessions that cannot use the coordinator
+ * (no coordinator configured, the dev offline token, or a legacy shard-local
+ * account without a Firebase identity) are auto-confirmed and keep the
+ * previous behavior.
  */
 function ServerSessionGate({ children }: { children: React.ReactNode }) {
-  const [phase, setPhase] = useState<'checking' | 'select' | 'ready'>(
+  const [phase, setPhase] = useState<'checking' | 'claim' | 'select' | 'ready'>(
     isServerSessionConfirmed() ? 'ready' : 'checking'
   );
 
@@ -295,23 +298,38 @@ function ServerSessionGate({ children }: { children: React.ReactNode }) {
     if (phase !== 'checking') return;
     let cancelled = false;
     (async () => {
-      let needsSelector = false;
+      let next: 'claim' | 'select' | 'ready' = 'ready';
       try {
         const [token, firebaseUID] = await Promise.all([
           SecureStore.getItemAsync('token'),
           SecureStore.getItemAsync('firebaseUID'),
         ]);
-        needsSelector = token !== 'dev-offline-token' && !!firebaseUID;
+        if (token !== 'dev-offline-token' && !!firebaseUID) {
+          next = 'select';
+          // Phase 8: accounts get their game username from Firebase central.
+          // No username yet (first OAuth sign-in, or an email registration
+          // whose claim raced) → ask before the server selector. Errors
+          // (offline, no Firebase session) fall through to the selector,
+          // which has its own fallbacks — never trap an existing user here.
+          try {
+            if (await waitForFirebaseUser()) {
+              const username = await getMyProfileUsername();
+              if (username) {
+                await SecureStore.setItemAsync('username', username);
+              } else {
+                next = 'claim';
+              }
+            }
+          } catch (profileError) {
+            console.error('Profile username check failed:', profileError);
+          }
+        }
       } catch (error) {
         console.error('Server-session check failed:', error);
       }
       if (cancelled) return;
-      if (needsSelector) {
-        setPhase('select');
-      } else {
-        confirmServerSession();
-        setPhase('ready');
-      }
+      if (next === 'ready') confirmServerSession();
+      setPhase(next);
     })();
     return () => {
       cancelled = true;
@@ -319,10 +337,13 @@ function ServerSessionGate({ children }: { children: React.ReactNode }) {
   }, [phase]);
 
   if (phase === 'ready') return <>{children}</>;
+  if (phase === 'claim') {
+    return <UsernameClaimScreen onDone={() => setPhase('select')} />;
+  }
   if (phase === 'select') {
     return <ServerSelectScreen onDone={() => setPhase('ready')} />;
   }
-  // One async-storage read; visually still the splash/app background.
+  // Brief async-storage/profile read; visually still the app background.
   return <View style={styles.onboardingPlaceholder} />;
 }
 

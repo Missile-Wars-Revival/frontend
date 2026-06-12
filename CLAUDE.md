@@ -33,13 +33,14 @@ Almost all live game state arrives over a single WebSocket, not REST:
 2. `app/_layout.tsx` wraps the app in `WebSocketContext.Provider` (defined in `util/Context/websocket.tsx`), exposing that state plus `sendWebsocket()`.
 3. `hooks/websockets/*hook.ts` (`missilehook`, `landminehook`, `loothook`, etc.) are small per-domain hooks that filter the context data; map components consume these.
 
-REST calls live in `api/` — one file per domain, all using `api/axios-instance.ts` (baseURL from `EXPO_PUBLIC_BACKEND_URL`). Auth: username → email lookup → Firebase `signInWithEmailAndPassword` → idToken posted to `/api/login`; the backend JWT is kept in `expo-secure-store` under `"token"`. React Query is available (`hooks/api/`) but most calls are direct.
+REST calls live in `api/` — one file per domain, all using `api/axios-instance.ts` (baseURL resolved per request from the selected server). Auth has two modes: **distributed** (coordinator configured) authenticates with Firebase + the coordinator only — email/Apple/Google sign-in (`api/account.ts`), a centrally claimed username, then the post-login server selector mints the shard token via `POST /auth/select-server` (no game server is contacted before that; the shard provisions new accounts at first websocket connect). **Solo** (no coordinator) keeps the legacy flow: username → `/api/lookup` email lookup → Firebase `signInWithEmailAndPassword` → idToken posted to `/api/login`. Either way the backend JWT is kept in `expo-secure-store` under `"token"`. React Query is available (`hooks/api/`) but most calls are direct.
 
 ### Provider stack & auth gating
 
 `app/_layout.tsx` is the heart of startup. Provider order (outermost first): QueryClient → Countdown → Auth → OnboardingGate → WebSocket → Landmine → Onboarding → PermissionsCheck → Stack. Notes:
 
 - A custom in-app splash (`app/splashscreen.tsx`) decides initial auth before the providers mount; `AuthProvider` (`util/Context/authcontext.tsx`) just holds an `isSignedIn` boolean mirrored to AsyncStorage key `signedIn`.
+- In distributed mode, `ServerSessionGate` (in `app/_layout.tsx`) wraps the signed-in Stack: username claim if the Firebase account has none (`components/UsernameClaimScreen.tsx`) → full-screen server selector (`components/ServerSelectScreen.tsx`) → ConnectingScreen until the first websocket payload. The websocket hook refuses to connect until the gate confirms the session (module flag in `api/server-discovery.ts`, reset on sign-out). Dev-offline and legacy (no `firebaseUID` in SecureStore) sessions are auto-confirmed.
 - `OnboardingGate` shows `PermissionsScreen` for signed-in users until AsyncStorage `alreadyLaunchedV3` is set.
 - Returning from background after >2 minutes forces a splash + reload cycle.
 - RevenueCat (`react-native-purchases`) is configured once here; AdMob via `util/AdService.ts` initializes after sign-in.

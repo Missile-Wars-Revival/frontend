@@ -175,6 +175,10 @@ export async function selectServerViaCoordinator(server: GameServer, idToken: st
   const token = data?.data?.token as string | undefined;
   if (!token) throw new Error("Coordinator returned no token");
   await SecureStore.setItemAsync("token", token);
+  // Phase 8: login is by email, so the coordinator's record of the game
+  // username (read from /profiles at mint time) is the authoritative one.
+  const username = data?.data?.username as string | undefined;
+  if (username) await SecureStore.setItemAsync("username", username);
   // Prefer the coordinator's own record of the server (fresh URLs/verified
   // flag) over the possibly stale list entry the user tapped.
   const fresh = data?.data?.server as Partial<GameServer> | undefined;
