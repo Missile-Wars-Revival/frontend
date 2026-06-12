@@ -25,20 +25,20 @@ type UpdateOverlayProps = {
 
 const PHASE_CONFIG: Record<UpdatePhase, { title: string; subtitle: string }> = {
   checking: {
-    title: 'Checking for updates',
-    subtitle: 'Contacting command',
+    title: 'Checking Updates',
+    subtitle: 'Contacting servers',
   },
   downloading: {
-    title: 'Downloading update',
-    subtitle: 'Loading the latest Missile Wars intel',
+    title: 'Downloading',
+    subtitle: 'Getting the latest build',
   },
   installing: {
-    title: 'Installing update',
-    subtitle: 'Preparing the battlefield',
+    title: 'Installing',
+    subtitle: 'Preparing changes',
   },
   restarting: {
-    title: 'Update ready',
-    subtitle: 'Restarting Missile Wars',
+    title: 'Ready to Restart',
+    subtitle: 'Relaunching Missile Wars',
   },
 };
 
@@ -158,9 +158,23 @@ export default function UpdateOverlay({ visible, phase }: UpdateOverlayProps) {
           )}
         </Animated.View>
 
-        <Text style={[styles.title, { color: palette.text }]}>{config.title}</Text>
+        <Text
+          style={[styles.title, { color: palette.text }]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.82}
+        >
+          {config.title}
+        </Text>
         <View style={styles.subtitleRow}>
-          <Text style={[styles.subtitle, { color: palette.textMuted }]}>{config.subtitle}</Text>
+          <Text
+            style={[styles.subtitle, { color: palette.textMuted }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.86}
+          >
+            {config.subtitle}
+          </Text>
           {phase !== 'restarting' && (
             <View style={styles.dots}>
               <Animated.Text style={[styles.dot, { color: palette.accent }, dot1Style]}>.</Animated.Text>
@@ -202,7 +216,14 @@ function PhaseStep({ label, active, done }: { label: string; active: boolean; do
         {active && <ActivityIndicator size="small" color="#fff" style={styles.phaseSpinner} />}
         {done && <Ionicons name="checkmark" size={12} color="#fff" />}
       </View>
-      <Text style={[styles.phaseLabel, { color: textColor }]}>{label}</Text>
+      <Text
+        style={[styles.phaseLabel, { color: textColor }]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.82}
+      >
+        {label}
+      </Text>
     </View>
   );
 }
@@ -223,7 +244,7 @@ const styles = StyleSheet.create({
     maxWidth: 420,
     borderRadius: Radius.xl,
     borderWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: Spacing.xl,
+    paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.xxl,
     alignItems: 'center',
   },
@@ -260,10 +281,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    maxWidth: '100%',
     marginBottom: Spacing.xl,
   },
   subtitle: {
     ...Type.body,
+    flexShrink: 1,
     textAlign: 'center',
   },
   dots: {
@@ -296,10 +319,11 @@ const styles = StyleSheet.create({
     width: '100%',
     flexDirection: 'row',
     alignItems: 'flex-start',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
   },
   phaseStep: {
-    width: 64,
+    flex: 1,
+    minWidth: 0,
     alignItems: 'center',
   },
   phaseDot: {
@@ -317,9 +341,10 @@ const styles = StyleSheet.create({
   phaseLabel: {
     ...Type.micro,
     textAlign: 'center',
+    maxWidth: '100%',
   },
   phaseDivider: {
-    width: 16,
+    width: 10,
     height: StyleSheet.hairlineWidth,
     marginTop: 11,
   },
