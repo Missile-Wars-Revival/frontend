@@ -25,6 +25,7 @@ import { getSecureItemSafely } from "../util/secure-store";
 
 interface MapCompProps {
     selectedMapStyle: any;
+    onFireMissile?: (username: string) => void;
 }
 
 export const MapComp = (props: MapCompProps) => {
@@ -321,7 +322,7 @@ export const MapComp = (props: MapCompProps) => {
                         fillColor="rgba(0, 0, 0, 0)"
                         strokeColor="rgba(0, 255, 0, 0.5)"
                     />
-                    <AllPlayers />
+                    <AllPlayers onFireMissile={props.onFireMissile} />
                     <AllLootDrops lootLocations={lootData} />
                     <AllOther OtherLocations={otherData} />
                     <AllLandMines landminedata={LandmineData} />

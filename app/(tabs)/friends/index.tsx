@@ -13,7 +13,6 @@ import { useNotifications, notificationEmitter } from "../../../components/Notif
 import useFetchFriends from "../../../hooks/websockets/friendshook";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getlocActive } from "../../../api/locationOptions";
-import MissileFiringAnimation from "../../../components/Animations/MissileFiring";
 import { AnimatedEntrance } from "../../../components/ui/AnimatedEntrance";
 import { PressableScale } from "../../../components/ui/PressableScale";
 import { haptics } from "../../../components/ui/haptics";
@@ -46,7 +45,6 @@ const FriendsPage: React.FC = () => {
   const isDarkMode = colorScheme === 'dark';
   const c = getPalette(isDarkMode);
   const insets = useSafeAreaInsets();
-  const [showMissileFiringAnimation, setShowMissileFiringAnimation] = useState(false);
   const [canShowChatFab, setCanShowChatFab] = useState(false);
 
   const handleUnreadCountUpdate = useCallback(({ count, chatCount }: { count: number, chatCount: number }) => {
@@ -117,14 +115,10 @@ const FriendsPage: React.FC = () => {
     setShowMissileLibrary(true);
   };
 
+  // The launch animation plays at the app root (triggerGameEffect inside
+  // MissileLibrary), so all this has to do is dismiss the library.
   const handleMissileFired = () => {
-    haptics.fire();
     setShowMissileLibrary(false);
-    setShowMissileFiringAnimation(true);
-  };
-
-  const handleMissileAnimationComplete = () => {
-    setShowMissileFiringAnimation(false);
     setSelectedPlayer("");
   };
 
@@ -387,11 +381,6 @@ const FriendsPage: React.FC = () => {
         </PressableScale>
       )}
 
-      {showMissileFiringAnimation && (
-        <View style={styles.animationOverlay}>
-          <MissileFiringAnimation onAnimationComplete={handleMissileAnimationComplete} />
-        </View>
-      )}
     </View>
   );
 };
@@ -553,12 +542,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#fff',
-  },
-  animationOverlay: {
-    ...StyleSheet.absoluteFill,
-    zIndex: 1000,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
 });
 

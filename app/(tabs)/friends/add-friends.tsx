@@ -2,8 +2,10 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Text, View, FlatList, Alert, RefreshControl, TextInput, Keyboard, Pressable, useColorScheme, StyleSheet, ActivityIndicator } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
-import { NearbyPlayersData, searchOtherPlayersData } from "../../../api/getplayerlocations";
-import { addFriend } from "../../../api/friends";
+import { NearbyPlayersData } from "../../../api/getplayerlocations";
+import { addFriend, searchProfiles } from "../../../api/friends";
+import useFetchPlayerlocations from "../../../hooks/websockets/playerlochook";
+import { isInactiveFor12Hours } from "../../../util/get-time-difference";
 import { router } from "expo-router";
 import { getCurrentLocation, location } from "../../../util/locationreq";
 import { getSecureItemSafely } from "../../../util/secure-store";
@@ -19,8 +21,8 @@ import useFetchFriends from "../../../hooks/websockets/friendshook";
 
 interface Filterddata {
   username: string,
-  latitude: string,
-  longitude: string,
+  latitude?: string,
+  longitude?: string,
   profileImageUrl: string | null;
   isFriend?: string;
 }
@@ -69,6 +71,9 @@ const QuickAddPage: React.FC = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [showAnimation, setShowAnimation] = useState(false);
   const friends = useFetchFriends();
+  // Live player feed from the selected shard's websocket — the same source the
+  // map uses, so "nearby" always reflects who the shard actually knows about.
+  const shardPlayers = useFetchPlayerlocations();
 
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
@@ -82,9 +87,31 @@ const QuickAddPage: React.FC = () => {
       ),
     [friends]
   );
+  // Nearby = one-shot REST snapshot merged with the live websocket feed
+  // (websocket wins on conflicts since it's fresher), sorted by distance.
+  const nearbyPlayers = useMemo(() => {
+    const byUsername = new Map<string, any>();
+    for (const player of playersData) {
+      if (player?.username) byUsername.set(player.username, player);
+    }
+    for (const player of shardPlayers) {
+      if (!player.username || isInactiveFor12Hours(player.updatedAt)) continue;
+      byUsername.set(player.username, { ...byUsername.get(player.username), ...player });
+    }
+    const players = Array.from(byUsername.values());
+    if (!userLocation) return players;
+    const distanceSq = (p: any) => {
+      const lat = Number(p.latitude);
+      const lon = Number(p.longitude);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) return Number.POSITIVE_INFINITY;
+      const lonScale = Math.cos((userLocation.latitude * Math.PI) / 180);
+      return (lat - userLocation.latitude) ** 2 + ((lon - userLocation.longitude) * lonScale) ** 2;
+    };
+    return players.sort((a, b) => distanceSq(a) - distanceSq(b));
+  }, [playersData, shardPlayers, userLocation]);
   const visiblePlayersData = useMemo(
-    () => filterPlayerList(playersData, currentUsername, friendUsernames),
-    [playersData, currentUsername, friendUsernames]
+    () => filterPlayerList(nearbyPlayers, currentUsername, friendUsernames),
+    [nearbyPlayers, currentUsername, friendUsernames]
   );
   const visibleFilteredData = useMemo(
     () => filterPlayerList(filteredData, currentUsername, friendUsernames),
@@ -187,10 +214,9 @@ const QuickAddPage: React.FC = () => {
         return;
       }
       setCurrentUsername(currentUserUsername);
-      const result = await searchOtherPlayersData(text);
-      // profileImageUrl is resolved server-side and already present on each
-      // result. Skip blank usernames defensively — ghost accounts rendered as
-      // empty rows before the server-side filter existed.
+      // Search Firebase central /profiles — every addable account lives there,
+      // not just the players provisioned on this shard's local DB.
+      const result = await searchProfiles(text);
       const filteredResult = filterPlayerList(result, currentUserUsername, friendUsernames);
       setFilteredData(filteredResult);
     } catch (error) {
@@ -304,7 +330,7 @@ const QuickAddPage: React.FC = () => {
             }
             ListEmptyComponent={<EmptyState icon="search" label="No players found" c={c} isDarkMode={isDarkMode} />}
           />
-        ) : loading ? (
+        ) : loading && visiblePlayersData.length === 0 ? (
           <View style={styles.emptyWrap}>
             <ActivityIndicator size="large" color={c.accent} />
             <Text style={[styles.emptyText, { color: c.textMuted, marginTop: Spacing.md }]}>

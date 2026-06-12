@@ -3,6 +3,7 @@ import { Missilelib , InventoryItem } from "../../types/types";
 import { Text, View, Pressable, Modal, useColorScheme, Platform } from "react-native";
 import { Image } from "expo-image";
 import { firemissileplayer } from "../../api/fireentities";
+import { triggerGameEffect } from "../effects/game-effects";
 import useFetchInventory from "../../hooks/websockets/inventoryhook";
 import { router } from 'expo-router';
 import { getImages } from "../../api/store";
@@ -98,6 +99,9 @@ export const MissileLibrary = ({ playerName, onMissileFired, onClose }: { player
       }
 
       if (playerName) {
+        // Launch feedback: rumble + full-screen Skia launch animation, played at
+        // the app root (GameEffectsOverlay) so it survives the modal dismissal.
+        triggerGameEffect('missileLaunch');
         firemissileplayer(playerName, selectedMissile)
           .catch(error => {
             console.error("Error firing missile:", error);

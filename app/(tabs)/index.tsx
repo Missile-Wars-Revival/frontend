@@ -39,7 +39,6 @@ import { ConnectingScreen } from "../../components/ConnectingScreen";
 import { getlocActive } from "../../api/locationOptions";
 import PlayerViewButton from "../../components/PlayerViewButton";
 import { MissileLibrary } from "../../components/Missile/missile";
-import MissileFiringAnimation from "../../components/Animations/MissileFiring";
 import { getPalette, Gradients, Spacing, Radius, Type, cardShadow, type ThemePalette } from '../../components/ui/theme';
 import { PressableScale } from '../../components/ui/PressableScale';
 import { AnimatedEntrance } from '../../components/ui/AnimatedEntrance';
@@ -61,7 +60,6 @@ export default function Map() {
   const [locPermsActive, setLocPermsActive] = useState<boolean>(false);
   const [showMissileLibrary, setShowMissileLibrary] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState("");
-  const [showMissileFiringAnimation, setShowMissileFiringAnimation] = useState(false);
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
   const palette = getPalette(isDarkMode);
@@ -285,13 +283,11 @@ export default function Map() {
     setShowMissileLibrary(true);
   };
 
+  // The launch animation itself is triggered inside MissileLibrary via
+  // triggerGameEffect('missileLaunch') and plays at the app root, so all this
+  // has to do is dismiss the library.
   const handleMissileFired = () => {
     setShowMissileLibrary(false);
-    setShowMissileFiringAnimation(true);
-  };
-
-  const handleMissileAnimationComplete = () => {
-    setShowMissileFiringAnimation(false);
     setSelectedPlayer("");
   };
 
@@ -311,7 +307,7 @@ export default function Map() {
       ) : isAlive ? (
         // Render the map and game UI when the user is alive
         <>
-          <MapComp selectedMapStyle={selectedMapStyle} />
+          <MapComp selectedMapStyle={selectedMapStyle} onFireMissile={handleFireMissile} />
           <View style={styles.healthBarContainer}>
             <HealthBar health={health} />
           </View>
@@ -416,12 +412,6 @@ export default function Map() {
           />
         </View>
       </Modal>
-
-      {showMissileFiringAnimation && (
-        <View style={styles.animationOverlay}>
-          <MissileFiringAnimation onAnimationComplete={handleMissileAnimationComplete} />
-        </View>
-      )}
     </View>
   );
 }
@@ -607,11 +597,5 @@ const getStyles = (palette: ThemePalette, isDark: boolean) => StyleSheet.create(
   doneButtonText: {
     ...Type.caption,
     color: '#FFFFFF',
-  },
-  animationOverlay: {
-    ...StyleSheet.absoluteFill,
-    zIndex: 1000,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
 });

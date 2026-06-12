@@ -1,5 +1,6 @@
 import {
   getDatabase, ref, get, set, remove, query, orderByChild, equalTo,
+  startAt, endAt, limitToFirst,
 } from "firebase/database";
 import { auth } from "../util/firebase/firebaseAuth";
 
@@ -34,6 +35,56 @@ export async function lookupUidByUsername(username: string): Promise<string | nu
   if (!snap.exists()) return null;
   const matches = Object.keys(snap.val());
   return matches[0] ?? null;
+}
+
+export interface ProfileSearchResult {
+  uid: string;
+  username: string;
+  profileImageUrl: string | null;
+}
+
+// Username prefix search over Firebase central /profiles (same index that
+// lookupUidByUsername uses) — these are the accounts that can actually be
+// added as friends, unlike the shard-local player rows. RTDB prefix queries
+// are case-sensitive, so a couple of casing variants are queried and merged.
+export async function searchProfiles(searchTerm: string): Promise<ProfileSearchResult[]> {
+  const term = searchTerm.trim();
+  if (!term) return [];
+  const db = getDatabase();
+
+  const prefixes = new Set<string>([
+    term,
+    term.charAt(0).toUpperCase() + term.slice(1),
+    term.toLowerCase(),
+  ]);
+
+  const byUid = new Map<string, ProfileSearchResult>();
+  await Promise.all(
+    Array.from(prefixes).map(async (prefix) => {
+      const snap = await get(
+        query(
+          ref(db, "profiles"),
+          orderByChild("username"),
+          startAt(prefix),
+          endAt(prefix + ""), //  (U+F8FF) = last codepoint, makes this a prefix match
+          limitToFirst(25)
+        )
+      );
+      if (!snap.exists()) return;
+      const profiles = snap.val() as Record<string, { username?: unknown; profileImageUrl?: unknown }>;
+      for (const [uid, profile] of Object.entries(profiles)) {
+        if (typeof profile?.username !== "string" || !profile.username) continue;
+        byUid.set(uid, {
+          uid,
+          username: profile.username,
+          profileImageUrl:
+            typeof profile.profileImageUrl === "string" ? profile.profileImageUrl : null,
+        });
+      }
+    })
+  );
+
+  return Array.from(byUid.values()).sort((a, b) => a.username.localeCompare(b.username));
 }
 
 async function ownUsername(uid: string): Promise<string> {
