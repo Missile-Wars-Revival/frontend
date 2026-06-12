@@ -37,8 +37,17 @@ Copyright (c) 2024 longtimeno-c. All rights reserved.
 Create an `.env` file in the root directory:
 ```env
 EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=""
+
+# Distributed mode: the app discovers community game servers through the
+# coordinator (server picker on the login screen, nearest verified server
+# auto-selected). This is the only backend URL baked into release builds.
+EXPO_PUBLIC_COORDINATOR_URL=https://coordinator.example.dev
+
+# Direct/fallback mode (local dev, solo self-hosted server): used when no
+# coordinator is configured or no server has been selected yet.
 EXPO_PUBLIC_BACKEND_URL=https://api.example.dev
 EXPO_PUBLIC_WEBSOCKET_URL=wss://api.example.dev
+
 EXPO_PUBLIC_REVENUECAT_API_KEY_APPLE=""
 EXPO_PUBLIC_REVENUECAT_API_KEY_GOOGLE=""
 ```

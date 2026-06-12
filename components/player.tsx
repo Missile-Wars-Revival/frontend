@@ -1,8 +1,7 @@
-import React, { useState, useMemo } from "react";
-import { View, Text, Modal, Dimensions, StyleSheet, Pressable, useColorScheme } from "react-native";
+import React, { useMemo } from "react";
+import { View, Text, StyleSheet } from "react-native";
 import { Image } from "expo-image";
 import { Circle, Marker } from "react-native-maps";
-import { MissileLibrary } from "./Missile/missile";
 import { Players } from "./map-players";
 import { useUserName } from "../util/fetchusernameglobal";
 import useFetchFriends from "../hooks/websockets/friendshook";
@@ -52,71 +51,6 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 2,
   },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalOverlayDark: {
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 10,
-    width: Dimensions.get('window').width - 40,
-    maxHeight: Dimensions.get('window').height - 200,
-  },
-  modalContentDark: {
-    backgroundColor: '#1E1E1E',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 15,
-    backgroundColor: '#f7fafc',
-  },
-  modalHeaderDark: {
-    backgroundColor: '#2C2C2C',
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#2d3748',
-  },
-  modalTitleDark: {
-    color: '#FFF',
-  },
-  doneButton: {
-    backgroundColor: '#4299e1',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 5,
-  },
-  doneButtonDark: {
-    backgroundColor: '#3D3D3D',
-  },
-  doneButtonText: {
-    color: '#ffffff',
-    fontWeight: 'bold',
-  },
-  doneButtonTextDark: {
-    color: '#4CAF50',
-  },
-  fireMissileButton: {
-    backgroundColor: 'red',
-    borderRadius: 5,
-    marginTop: 2,
-    padding: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  fireMissileText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
 });
 
 interface PlayerProps {
@@ -127,6 +61,7 @@ interface PlayerProps {
   transportStatus: string;
   index: number;
   randomlocation: boolean;
+  onPlayerSelect?: (player: Players) => void;
 }
 
 export const getLeagueAirspace = (league: string): number => {
@@ -165,17 +100,8 @@ const getRandomLocation = (latitude: number, longitude: number, radius: number) 
 };
 
 export const PlayerComp = (props: PlayerProps) => {
-  const [selectedMarkerIndex, setSelectedMarkerIndex] = useState<number | null>(null);
-  const [showMissileLibrary, setShowMissileLibrary] = useState(false);
-
   const userName = useUserName();
-  const colorScheme = useColorScheme();
-  const isDarkMode = colorScheme === 'dark';
   const friends = useFetchFriends(); // Use the friends hook
-
-  const fireMissile = (playerName: string) => {
-    setShowMissileLibrary(true);
-  };
 
   const getHealthBarColor = (health: number) => {
     const red = Math.round(255 * (100 - health) / 100);
@@ -183,11 +109,13 @@ export const PlayerComp = (props: PlayerProps) => {
     return `rgb(${red}, ${green}, 0)`;
   };
 
+  // Marker children are rasterized by react-native-maps and don't reliably
+  // re-render after mount, so the marker carries no interactive UI at all.
+  // Tapping it reports the selection up to MapComp, which opens the player
+  // details modal hosted outside the MapView.
   const handleMarkerPress = () => {
-    if (selectedMarkerIndex === props.index) {
-      setSelectedMarkerIndex(null); // Reset to null instead of 10
-    } else {
-      setSelectedMarkerIndex(props.index);
+    if (props.player.username !== userName) {
+      props.onPlayerSelect?.(props.player);
     }
   };
 
@@ -238,10 +166,11 @@ export const PlayerComp = (props: PlayerProps) => {
         fillColor={circleFillColor}
         strokeColor={circleStrokeColor}
       />
+      {/* No title/description: the native callout would swallow the first
+          tap, forcing a second tap to reach the action UI. The details modal
+          opens straight from onPress instead. */}
       <Marker
         coordinate={markerLocation}
-        title={props.player.username}
-        description={props.timestamp}
         onPress={handleMarkerPress}
         zIndex={2} // Higher zIndex for players
       >
@@ -265,45 +194,6 @@ export const PlayerComp = (props: PlayerProps) => {
             />
           )}
           <Text style={styles.username}>{props.player.username}</Text>
-
-          {selectedMarkerIndex !== null && selectedMarkerIndex === props.index && props.player.username !== userName && (
-            <Pressable
-              style={({ pressed }) => [styles.fireMissileButton, pressed && { opacity: 0.7 }]}
-              onPress={() => fireMissile(props.player.username)}
-            >
-              <Text style={styles.fireMissileText}>Fire Missile</Text>
-            </Pressable>
-          )}
-
-          <Modal
-            animationType="slide"
-            transparent={true}
-            visible={showMissileLibrary}
-            onRequestClose={() => setShowMissileLibrary(false)}
-          >
-            <View style={[styles.modalOverlay, isDarkMode && styles.modalOverlayDark]}>
-              <View style={[styles.modalContent, isDarkMode && styles.modalContentDark]}>
-                <View style={[styles.modalHeader, isDarkMode && styles.modalHeaderDark]}>
-                  <Text style={[styles.modalTitle, isDarkMode && styles.modalTitleDark]}>Missile Library</Text>
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.doneButton,
-                      isDarkMode && styles.doneButtonDark,
-                      pressed && { opacity: 0.7 },
-                    ]}
-                    onPress={() => setShowMissileLibrary(false)}
-                  >
-                    <Text style={[styles.doneButtonText, isDarkMode && styles.doneButtonTextDark]}>Done</Text>
-                  </Pressable>
-                </View>
-                <MissileLibrary 
-                  playerName={props.player.username} 
-                  onMissileFired={() => setShowMissileLibrary(false)}
-                  onClose={() => setShowMissileLibrary(false)}
-                />
-              </View>
-            </View>
-          </Modal>
 
           <View style={styles.healthBarContainer}>
             <View 

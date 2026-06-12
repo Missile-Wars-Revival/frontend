@@ -1,11 +1,17 @@
 import { useState, useEffect, useRef } from "react";
 import { AppState } from "react-native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { unzip, WebSocketMessage, zip } from "middle-earth";
-import * as SecureStore from "expo-secure-store";
+import { unzip, WebSocketMessage, WSMsg, zip } from "middle-earth";
+import { getDatabase, ref, onValue, get } from "firebase/database";
 import { useAuth } from "../../util/Context/authcontext";
+import { auth } from "../../util/firebase/firebaseAuth";
+import {
+    getWsUrl,
+    isServerSessionConfirmed,
+    subscribeServerSession,
+} from "../../api/server-discovery";
+import { getSecureItemSafely } from "../../util/secure-store";
 
-const WEBSOCKET_URL = process.env.EXPO_PUBLIC_WEBSOCKET_URL || "ws://localhost:3000";
 const RECONNECT_INTERVAL_BASE = 1000; // base interval in ms
 const MAX_RECONNECT_ATTEMPTS = 10;
 const DEV_OFFLINE_TOKEN = "dev-offline-token";
@@ -23,6 +29,10 @@ const formatWebSocketError = (error: unknown): string => {
 
 const useWebSocket = () => {
     const { isSignedIn } = useAuth();
+    // Phase 7: in distributed mode the connection waits until the player has
+    // confirmed a server for this session (post-login selector). Solo/legacy
+    // setups without a coordinator are always confirmed.
+    const [serverConfirmed, setServerConfirmed] = useState(isServerSessionConfirmed());
     const [missiledata, setmissileData] = useState<any>(null);
     const [landminedata, setlandmineData] = useState<any>(null);
     const [lootdata, setlootData] = useState<any>(null);
@@ -46,9 +56,50 @@ const useWebSocket = () => {
         }
     };
 
+    // Phase 6 social cutover: friendships live in Firebase central
+    // (/friends/<uid> uid edges, written by api/friends.ts). The game server
+    // only gets a DECLARED username list over the websocket, used for
+    // gameplay (visibility, friendly-fire exemption, proximity). This
+    // listener re-declares on every change, so adds/removes — from any of the
+    // user's devices — reach the server within moments.
+    const friendsDeclareUnsubRef = useRef<(() => void) | null>(null);
+
+    const stopFriendsDeclare = () => {
+        friendsDeclareUnsubRef.current?.();
+        friendsDeclareUnsubRef.current = null;
+    };
+
+    const startFriendsDeclare = () => {
+        const uid = auth.currentUser?.uid;
+        if (!uid) return; // legacy/offline session — nothing to declare
+        stopFriendsDeclare();
+        const db = getDatabase();
+        friendsDeclareUnsubRef.current = onValue(ref(db, `friends/${uid}`), async (snap) => {
+            try {
+                const friendUids = snap.exists() ? Object.keys(snap.val() as Record<string, unknown>) : [];
+                const usernames = (
+                    await Promise.all(
+                        friendUids.map(async (fuid) => {
+                            const nameSnap = await get(ref(db, `profiles/${fuid}/username`));
+                            return nameSnap.exists() ? String(nameSnap.val()) : null;
+                        })
+                    )
+                ).filter((name): name is string => !!name);
+
+                const ws = websocketRef.current;
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(zip(new WebSocketMessage([new WSMsg("friendsDeclare", { friends: usernames })])));
+                }
+            } catch (error) {
+                console.error("Failed to declare friends to game server:", error);
+            }
+        });
+    };
+
     // Intentional close (sign-out, offline mode): detach onclose first so it
     // doesn't schedule a reconnect.
     const closeWebsocket = () => {
+        stopFriendsDeclare();
         if (websocketRef.current) {
             websocketRef.current.onclose = null;
             websocketRef.current.close();
@@ -64,8 +115,10 @@ const useWebSocket = () => {
                     reject(new Error('Token not found'));
                     return;
                 }
-                // Use the token as a query parameter instead of as a protocol
-                const ws = new WebSocket(`${WEBSOCKET_URL}?token=${encodeURIComponent(token)}`);
+                // Use the token as a query parameter instead of as a protocol.
+                // The URL is resolved at connect time so a server-picker
+                // change applies on the next (re)connect.
+                const ws = new WebSocket(`${getWsUrl()}?token=${encodeURIComponent(token)}`);
     
                 ws.onopen = () => {
                     console.log("Connected to websocket");
@@ -92,7 +145,7 @@ const useWebSocket = () => {
     const initializeWebSocket = async () => {
         clearReconnectTimer();
         try {
-            const token = await SecureStore.getItemAsync("token");
+            const token = await getSecureItemSafely("token");
 
             // Dev-only offline sessions should not attempt websocket/network reconnect loops.
             if (isDevOfflineToken(token)) {
@@ -110,6 +163,9 @@ const useWebSocket = () => {
             const ws = await connectWebsocket(token);
             websocketRef.current = ws;
             reconnectAttemptsRef.current = 0; // Reset reconnect attempts on successful connection
+            // Declare the Firebase-central friends list to this server (fires
+            // immediately on attach, then again on every friends change).
+            startFriendsDeclare();
 
             ws.onclose = () => {
                 console.log('WebSocket connection closed');
@@ -201,17 +257,17 @@ const useWebSocket = () => {
     };
 
     const reconnectWebsocket = async () => {
-        const token = await SecureStore.getItemAsync("token");
-        if (isDevOfflineToken(token)) {
-            await AsyncStorage.setItem('dbconnection', 'true');
-            return;
-        }
-
         // While backgrounded the OS suspends networking, so retries would just
         // burn through the backoff budget. Defer instead; the AppState listener
         // reconnects immediately (with a fresh budget) on foreground.
         if (AppState.currentState !== 'active') {
             reconnectOnForegroundRef.current = true;
+            return;
+        }
+
+        const token = await getSecureItemSafely("token");
+        if (isDevOfflineToken(token)) {
+            await AsyncStorage.setItem('dbconnection', 'true');
             return;
         }
 
@@ -230,21 +286,25 @@ const useWebSocket = () => {
     };
 
     useEffect(() => {
-        if (isSignedIn) {
+        return subscribeServerSession(() => setServerConfirmed(isServerSessionConfirmed()));
+    }, []);
+
+    useEffect(() => {
+        if (isSignedIn && serverConfirmed) {
             initializeWebSocket();
         } else {
             clearReconnectTimer();
             closeWebsocket();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isSignedIn]);
+    }, [isSignedIn, serverConfirmed]);
 
     // Reconnect promptly when the app returns to the foreground — the OS
     // usually drops the socket in the background and backoff timers may be
     // far in the future (or exhausted) by the time the user comes back.
     useEffect(() => {
         const subscription = AppState.addEventListener('change', (state) => {
-            if (state !== 'active' || !isSignedIn) return;
+            if (state !== 'active' || !isSignedIn || !serverConfirmed) return;
 
             const ws = websocketRef.current;
             const socketDown =
@@ -261,7 +321,7 @@ const useWebSocket = () => {
         });
         return () => subscription.remove();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isSignedIn]);
+    }, [isSignedIn, serverConfirmed]);
 
     const sendWebsocket = async (data: WebSocketMessage) => {
         const isSignedIn = await AsyncStorage.getItem('signedIn');

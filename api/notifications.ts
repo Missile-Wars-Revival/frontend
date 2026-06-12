@@ -1,6 +1,9 @@
 import { AxiosResponse } from "axios";
+import { getDatabase, ref, set, get } from "firebase/database";
 import axiosInstance from "./axios-instance";
 import * as SecureStore from "expo-secure-store";
+import { auth } from "../util/firebase/firebaseAuth";
+import { getSecureItemSafely } from "../util/secure-store";
 
 const DEV_OFFLINE_TOKEN = "dev-offline-token";
 
@@ -20,7 +23,7 @@ interface Notification {
 
 export const getNotifications = async (): Promise<Notification[]> => {
 	try {
-		const token = await SecureStore.getItemAsync("token");
+		const token = await getSecureItemSafely("token");
 		if (!token) {
 			// Not signed in: skip the request quietly.
 			return [];
@@ -44,7 +47,7 @@ export const getNotifications = async (): Promise<Notification[]> => {
 
 export const markNotificationAsRead = async (notificationId: string): Promise<void> => {
 	try {
-		const token = await SecureStore.getItemAsync("token");
+		const token = await getSecureItemSafely("token");
 		if (!token) {
 			throw new Error('Authentication token not found');
 		}
@@ -65,7 +68,7 @@ export const markNotificationAsRead = async (notificationId: string): Promise<vo
 
 export const markAllNotificationsAsRead = async (): Promise<void> => {
 	try {
-		const token = await SecureStore.getItemAsync("token");
+		const token = await getSecureItemSafely("token");
 		if (!token) {
 			throw new Error('Authentication token not found');
 		}
@@ -83,7 +86,7 @@ export const markAllNotificationsAsRead = async (): Promise<void> => {
 
 export const markMessageNotificationAsRead = async (): Promise<void> => {
 	try {
-		const token = await SecureStore.getItemAsync("token");
+		const token = await getSecureItemSafely("token");
 		if (!token) {
 			throw new Error('Authentication token not found');
 		}
@@ -103,7 +106,7 @@ export const markMessageNotificationAsRead = async (): Promise<void> => {
 
 export const deleteNotification = async (notificationId: string) => {
 	try {
-		const token = await SecureStore.getItemAsync("token");
+		const token = await getSecureItemSafely("token");
 		if (!token) {
 			throw new Error('Authentication token not found');
 		}
@@ -121,11 +124,14 @@ export const deleteNotification = async (notificationId: string) => {
 	}
 };
 
-// Registers/refreshes this device's Expo push token with the backend.
-// Returns true when the server has confirmed the token.
+// Registers/refreshes this device's Expo push token. Phase 6 of the
+// distributed-hosting plan: the token is written straight to Firebase central
+// (/notificationTokens/<uid>, scoped to auth.uid by the security rules) —
+// game servers never hold it. Delivery reads the same path (owner deployment
+// directly, community shards via the coordinator's push relay).
 export const updateNotificationToken = async (notificationToken: string): Promise<boolean> => {
 	try {
-		const token = await SecureStore.getItemAsync("token");
+		const token = await getSecureItemSafely("token");
 		if (!token) {
 			return false;
 		}
@@ -135,13 +141,17 @@ export const updateNotificationToken = async (notificationToken: string): Promis
 			return true;
 		}
 
-		await axiosInstance.patch("/api/updateNotificationToken", {
-			token,
-			notificationToken,
-		});
+		const uid = auth.currentUser?.uid;
+		if (!uid) {
+			// No Firebase session (legacy password-only login): nowhere to
+			// register the token — pushes are unavailable for this account.
+			return false;
+		}
 
-		// Cache only after the server confirms, so the cached value mirrors
-		// what the backend actually holds.
+		await set(ref(getDatabase(), `notificationTokens/${uid}`), notificationToken);
+
+		// Cache only after the write succeeds, so the cached value mirrors
+		// what Firebase central actually holds.
 		await SecureStore.setItemAsync("notificationToken", notificationToken);
 		return true;
 	} catch (error) {
@@ -150,28 +160,30 @@ export const updateNotificationToken = async (notificationToken: string): Promis
 	}
 };
 
-// Whether the backend currently holds a valid push token for this account.
+// Whether Firebase central currently holds a push token for this account.
 export const getNotificationTokenStatus = async (): Promise<boolean> => {
-	const token = await SecureStore.getItemAsync("token");
+	const token = await getSecureItemSafely("token");
 	if (!token) {
 		return false;
 	}
 
 	if (token === DEV_OFFLINE_TOKEN) {
-		return !!(await SecureStore.getItemAsync("notificationToken"));
+		return !!(await getSecureItemSafely("notificationToken"));
 	}
 
-	const response = await axiosInstance.get<{ registered: boolean }>(
-		"/api/notificationTokenStatus",
-		{ params: { token } },
-	);
-	return response.data.registered;
+	const uid = auth.currentUser?.uid;
+	if (!uid) {
+		return false;
+	}
+
+	const snap = await get(ref(getDatabase(), `notificationTokens/${uid}`));
+	return snap.exists() && typeof snap.val() === "string" && snap.val().length > 0;
 };
 
 // Asks the backend to send a push notification to this account so the user
 // can verify their token end-to-end. Throws on failure.
 export const sendTestNotification = async (): Promise<void> => {
-	const token = await SecureStore.getItemAsync("token");
+	const token = await getSecureItemSafely("token");
 	if (!token) {
 		throw new Error("Authentication token not found");
 	}
@@ -207,7 +219,7 @@ interface UpdatePreferencesResponse {
 
 export const getNotificationPreferences = async (): Promise<NotificationPreferences> => {
 	try {
-		const token = await SecureStore.getItemAsync("token");
+		const token = await getSecureItemSafely("token");
 		if (!token) {
 			console.log('Token not found');
 			throw new Error('Authentication token not found');
@@ -242,7 +254,7 @@ export const updateNotificationPreferences = async (
 	preferences: Partial<NotificationPreferences>
 ): Promise<NotificationPreferences> => {
 	try {
-		const token = await SecureStore.getItemAsync("token");
+		const token = await getSecureItemSafely("token");
 		if (!token) {
 			console.log('Token not found');
 			throw new Error('Authentication token not found');
@@ -265,6 +277,20 @@ export const updateNotificationPreferences = async (
 		);
 
 		console.log("Updated preferences:", response.data.preferences);
+
+		// Mirror the preference flags to Firebase central so the coordinator's
+		// push relay (which gates pushes for community shards) sees the same
+		// settings the game server does. Best-effort — the shard copy is
+		// already saved.
+		try {
+			const uid = auth.currentUser?.uid;
+			if (uid) {
+				const { id: _id, userId: _userId, ...flags } = response.data.preferences;
+				await set(ref(getDatabase(), `notificationPreferences/${uid}`), flags);
+			}
+		} catch (mirrorError) {
+			console.error("Failed to mirror preferences to Firebase central:", mirrorError);
+		}
 
 		return response.data.preferences;
 	} catch (error) {

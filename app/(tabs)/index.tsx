@@ -4,7 +4,6 @@ import { Image } from "expo-image";
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as SecureStore from "expo-secure-store";
 import axiosInstance from "../../api/axios-instance";
 import { isAxiosError } from "axios";
 import Ionicons from '@react-native-vector-icons/ionicons';
@@ -26,6 +25,7 @@ import { getStoredMapStyle, storeMapStyle } from "../../util/mapstore";
 import { ThemeSelectButton } from "../../components/theme-select-button";
 import { FireSelector } from "../../components/fire-selector";
 import { MapComp } from "../../components/map-comp";
+import { getSecureItemSafely } from "../../util/secure-store";
 import { MapStyle } from "../../types/types";
 import { router } from "expo-router";
 import { useAuth } from "../../util/Context/authcontext";
@@ -39,7 +39,6 @@ import { ConnectingScreen } from "../../components/ConnectingScreen";
 import { getlocActive } from "../../api/locationOptions";
 import PlayerViewButton from "../../components/PlayerViewButton";
 import { MissileLibrary } from "../../components/Missile/missile";
-import MissileFiringAnimation from "../../components/Animations/MissileFiring";
 import { getPalette, Gradients, Spacing, Radius, Type, cardShadow, type ThemePalette } from '../../components/ui/theme';
 import { PressableScale } from '../../components/ui/PressableScale';
 import { AnimatedEntrance } from '../../components/ui/AnimatedEntrance';
@@ -61,7 +60,6 @@ export default function Map() {
   const [locPermsActive, setLocPermsActive] = useState<boolean>(false);
   const [showMissileLibrary, setShowMissileLibrary] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState("");
-  const [showMissileFiringAnimation, setShowMissileFiringAnimation] = useState(false);
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
   const palette = getPalette(isDarkMode);
@@ -122,7 +120,7 @@ export default function Map() {
   // Fetch username from secure storage
   useEffect(() => {
     const fetchCredentials = async () => {
-      const credentials = await SecureStore.getItemAsync("username");
+      const credentials = await getSecureItemSafely("username");
       if (!credentials) {
         // signOut relaunches the app shell back to splash → onboarding → login.
         await signOut();
@@ -145,7 +143,7 @@ export default function Map() {
         return;
       }
 
-      const token = await SecureStore.getItemAsync("token");
+      const token = await getSecureItemSafely("token");
       if (!token) {
         console.log('Token not found');
         return;
@@ -180,7 +178,7 @@ export default function Map() {
 
   useEffect(() => {
     const getisAliveeffect = async () => {
-      const token = await SecureStore.getItemAsync("token");
+      const token = await getSecureItemSafely("token");
       try {
         if (!token) {
           console.log('Token not found');
@@ -261,7 +259,7 @@ export default function Map() {
   }, []);
 
   const handleRespawn = async () => {
-    const token = await SecureStore.getItemAsync("token");
+    const token = await getSecureItemSafely("token");
 
     if (!token) {
       console.error("Token is null, cannot proceed with setting items");
@@ -285,13 +283,11 @@ export default function Map() {
     setShowMissileLibrary(true);
   };
 
+  // The launch animation itself is triggered inside MissileLibrary via
+  // triggerGameEffect('missileLaunch') and plays at the app root, so all this
+  // has to do is dismiss the library.
   const handleMissileFired = () => {
     setShowMissileLibrary(false);
-    setShowMissileFiringAnimation(true);
-  };
-
-  const handleMissileAnimationComplete = () => {
-    setShowMissileFiringAnimation(false);
     setSelectedPlayer("");
   };
 
@@ -311,7 +307,7 @@ export default function Map() {
       ) : isAlive ? (
         // Render the map and game UI when the user is alive
         <>
-          <MapComp selectedMapStyle={selectedMapStyle} />
+          <MapComp selectedMapStyle={selectedMapStyle} onFireMissile={handleFireMissile} />
           <View style={styles.healthBarContainer}>
             <HealthBar health={health} />
           </View>
@@ -416,12 +412,6 @@ export default function Map() {
           />
         </View>
       </Modal>
-
-      {showMissileFiringAnimation && (
-        <View style={styles.animationOverlay}>
-          <MissileFiringAnimation onAnimationComplete={handleMissileAnimationComplete} />
-        </View>
-      )}
     </View>
   );
 }
@@ -607,11 +597,5 @@ const getStyles = (palette: ThemePalette, isDark: boolean) => StyleSheet.create(
   doneButtonText: {
     ...Type.caption,
     color: '#FFFFFF',
-  },
-  animationOverlay: {
-    ...StyleSheet.absoluteFill,
-    zIndex: 1000,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
 });

@@ -6,7 +6,6 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
-import * as SecureStore from 'expo-secure-store';
 import { addFriend } from '../../../api/friends';
 import { getuserprofile } from '../../../api/getprofile';
 import useFetchFriends from '../../../hooks/websockets/friendshook';
@@ -14,6 +13,7 @@ import { Avatar } from '../../../components/ui/Avatar';
 import { AnimatedEntrance } from '../../../components/ui/AnimatedEntrance';
 import { PressableScale } from '../../../components/ui/PressableScale';
 import { getPalette, Gradients, Radius, Spacing, cardShadow, floatingAboveTabBar } from '../../../components/ui/theme';
+import { getSecureItemSafely } from '../../../util/secure-store';
 
 const badgeImages = {
   Founder: require('../../../assets/icons/founder.png'),
@@ -115,7 +115,7 @@ const UserProfilePage: React.FC = () => {
   }, [fetchUserProfile]);
 
   const handleAddFriend = async () => {
-    const token = await SecureStore.getItemAsync('token');
+    const token = await getSecureItemSafely('token');
     if (!token || !userProfile) return;
 
     try {

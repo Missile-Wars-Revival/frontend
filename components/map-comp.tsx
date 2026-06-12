@@ -6,12 +6,12 @@ import { AllLootDrops } from "./Loot/map-loot";
 import { AllLandMines } from "./Landmine/map-landmines";
 import { AllMissiles } from "./Missile/map-missile";
 import { MissileDetailsHost } from "./Missile/missile-details";
+import { PlayerDetailsHost, showPlayerDetails } from "./player-details";
 import { AllPlayers } from "./map-players";
 import { loadLastKnownLocation, saveLocation } from '../util/mapstore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCurrentLocation } from "../util/locationreq";
 import { dispatch } from "../api/dispatch";
-import * as SecureStore from "expo-secure-store";
 import { getMainMapStyles } from "../map-themes/stylesheet";
 import { updateFriendsOnlyStatus } from "../api/visibility";
 import useFetchMissiles from "../hooks/websockets/missilehook";
@@ -22,9 +22,11 @@ import useFetchOther from "../hooks/websockets/otherhook";
 import { AllOther } from "./Other/map-other";
 import { getLeagueAirspace } from "./player";
 import { useUserLeague } from "@/hooks/api/useUserLeagues";
+import { getSecureItemSafely } from "../util/secure-store";
 
 interface MapCompProps {
     selectedMapStyle: any;
+    onFireMissile?: (username: string) => void;
 }
 
 export const MapComp = (props: MapCompProps) => {
@@ -74,7 +76,7 @@ export const MapComp = (props: MapCompProps) => {
                 // Check DB Connection
                 const isDBConnection = await AsyncStorage.getItem('dbconnection');
 
-                const token = await SecureStore.getItemAsync("token");
+                const token = await getSecureItemSafely("token");
                 if (!token) {
                     console.error("Authentication token is missing");
                     // Don't return here, continue with the rest of the initialization
@@ -167,7 +169,7 @@ export const MapComp = (props: MapCompProps) => {
         const newMode = visibilitymode === 'friends' ? 'global' : 'friends';
         setMode(newMode);
         friendsorglobal(newMode);
-        const token = await SecureStore.getItemAsync("token");
+        const token = await getSecureItemSafely("token");
 
         if (!token) {
             console.error("Authentication token is missing");
@@ -235,7 +237,7 @@ export const MapComp = (props: MapCompProps) => {
                     dispatchCounterRef.current += 1;
                     if (dispatchCounterRef.current >= 5) {
                         dispatchCounterRef.current = 0;
-                        const token = await SecureStore.getItemAsync('token');
+                        const token = await getSecureItemSafely('token');
                         if (token) {
                             dispatch(token, location.latitude, location.longitude).catch(
                                 (err) => console.warn('Location dispatch failed:', err)
@@ -321,7 +323,7 @@ export const MapComp = (props: MapCompProps) => {
                         fillColor="rgba(0, 0, 0, 0)"
                         strokeColor="rgba(0, 255, 0, 0.5)"
                     />
-                    <AllPlayers />
+                    <AllPlayers onPlayerSelect={showPlayerDetails} />
                     <AllLootDrops lootLocations={lootData} />
                     <AllOther OtherLocations={otherData} />
                     <AllLandMines landminedata={LandmineData} />
@@ -330,6 +332,7 @@ export const MapComp = (props: MapCompProps) => {
             </View>
             {/* Hosted outside the MapView — modals mounted under MapView never present. */}
             <MissileDetailsHost />
+            <PlayerDetailsHost onFireMissile={props.onFireMissile} />
             <Pressable
                 style={[mainmapstyles.relocateButton, { bottom: insets.bottom + 40 }]}
                 onPress={relocate}>

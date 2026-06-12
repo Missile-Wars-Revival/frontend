@@ -1,7 +1,7 @@
 import axiosInstance from "./axios-instance";
 import { isAxiosError } from "axios";
-import * as SecureStore from "expo-secure-store";
 import { auth, createUserWithEmailAndPassword } from "../util/firebase/firebaseAuth";
+import { setBackgroundAccessibleItem } from "../util/secure-store";
 
 export async function register(
   username: string,
@@ -11,7 +11,7 @@ export async function register(
 ) {
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    await SecureStore.setItemAsync("firebaseUID", userCredential.user.uid);
+    await setBackgroundAccessibleItem("firebaseUID", userCredential.user.uid);
     const idToken = await userCredential.user.getIdToken();
     const response = await axiosInstance.post("/api/register", { idToken, username, notificationToken });
     return response.data;

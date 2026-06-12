@@ -1,9 +1,9 @@
 import axiosInstance from './axios-instance';
-import * as SecureStore from "expo-secure-store";
+import { getSecureItemSafely } from '../util/secure-store';
 
 export const updateFriendsOnlyStatus = async (friendsOnly: boolean) => {
   try {
-    const token = await SecureStore.getItemAsync("token");
+    const token = await getSecureItemSafely("token");
     if (!token) throw new Error("No authentication token found.");
     // Including the token as part of the URL query parameters
     const url = `/api/friendsOnlyStatus?token=${encodeURIComponent(token)}`;
@@ -16,4 +16,3 @@ export const updateFriendsOnlyStatus = async (friendsOnly: boolean) => {
     throw new Error('Failed to update visibility mode.');
   }
 };
-

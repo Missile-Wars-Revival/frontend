@@ -5,7 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, Stack, useFocusEffect } from 'expo-router';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { getDatabase, ref, onValue, get, remove, off } from 'firebase/database';
-import * as SecureStore from "expo-secure-store";
+import { getSecureItemSafely } from "../../../util/secure-store";
 import useFetchFriends from '../../../hooks/websockets/friendshook';
 import { markMessageNotificationAsRead } from '../../../api/notifications';
 import { notificationEmitter } from '../../../components/Notifications/useNotifications';
@@ -62,7 +62,7 @@ const ConversationList = () => {
 
   useEffect(() => {
     const fetchUsername = async () => {
-      const fetchedUsername = await SecureStore.getItemAsync("username");
+      const fetchedUsername = await getSecureItemSafely("username");
       setUsername(fetchedUsername);
     };
     void fetchUsername();

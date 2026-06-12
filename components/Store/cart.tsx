@@ -3,7 +3,7 @@ import { View, Text, FlatList, GestureResponderEvent, Alert, StyleSheet, useColo
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import axiosInstance from '../../api/axios-instance';
-import * as SecureStore from "expo-secure-store";
+import { getSecureItemSafely } from "../../util/secure-store";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from "expo-router";
 import { Product } from '../../api/store';
@@ -64,7 +64,7 @@ const Cart: React.FC<CartProps> = ({ cart, onRemove, onCheckoutComplete }) => {
       return;
     }
 
-    const token = await SecureStore.getItemAsync("token");
+    const token = await getSecureItemSafely("token");
     if (!token) {
       Alert.alert("Authentication Error", "No authentication token found.");
       return;

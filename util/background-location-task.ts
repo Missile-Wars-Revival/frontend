@@ -1,10 +1,10 @@
 import * as BackgroundTask from 'expo-background-task';
 import * as TaskManager from 'expo-task-manager';
 import * as Location from 'expo-location';
-import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { dispatch } from '../api/dispatch';
 import { parseStoredIsAlive } from './isalive';
+import { BACKGROUND_ACCESSIBLE_OPTIONS, getSecureItemSafely } from './secure-store';
 
 export const BACKGROUND_LOCATION_TASK = 'background-location-dispatch';
 
@@ -58,15 +58,14 @@ async function hasBackgroundLocationPermission() {
 }
 
 async function getBackgroundToken() {
-  try {
-    return await SecureStore.getItemAsync('token');
-  } catch {
+  const token = await getSecureItemSafely('token', BACKGROUND_ACCESSIBLE_OPTIONS);
+  if (!token) {
     // iOS can deny keychain access to background launches while the device is
     // locked. Treat that as "not dispatchable right now" instead of failing
     // the background task and causing repeated retries/noisy logs.
     console.log('Background location skipped: secure token unavailable in background');
-    return null;
   }
+  return token;
 }
 
 // Must be defined in module scope so the task exists when the app is launched

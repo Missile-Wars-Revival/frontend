@@ -1,6 +1,6 @@
 import axiosInstance from "./axios-instance";
 import { isAxiosError } from "axios";
-import * as SecureStore from "expo-secure-store";
+import { getSecureItemSafely } from "../util/secure-store";
 
 export async function additem(token: string, itemName: string, category: string) {
   try {
@@ -27,7 +27,7 @@ export async function additem(token: string, itemName: string, category: string)
 
 export async function removeItem(itemName: string, quantity: number) {
   try {
-    const token = await SecureStore.getItemAsync("token");
+    const token = await getSecureItemSafely("token");
     if (!token) throw new Error("No authentication token found.");
     const response = await axiosInstance.post("/api/deduct-inventory", {
       token,
@@ -52,7 +52,7 @@ export async function removeItem(itemName: string, quantity: number) {
 
 export async function receiveItem(itemName: string, quantity: number) {
   try {
-    const token = await SecureStore.getItemAsync("token");
+    const token = await getSecureItemSafely("token");
     if (!token) throw new Error("No authentication token found.");
     const response = await axiosInstance.post("/api/add-inventory", {
       token,

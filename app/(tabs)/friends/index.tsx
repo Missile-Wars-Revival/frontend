@@ -6,7 +6,6 @@ import { BlurView } from "expo-blur";
 import Ionicons from '@react-native-vector-icons/ionicons';
 import FriendsList from "../../../components/Friends/FriendsList";
 import { useRouter } from "expo-router";
-import * as SecureStore from 'expo-secure-store';
 import { removeFriend } from "../../../api/friends";
 import { MissileLibrary } from "../../../components/Missile/missile";
 import { searchFriendsAdded } from "../../../api/getplayerlocations";
@@ -14,11 +13,11 @@ import { useNotifications, notificationEmitter } from "../../../components/Notif
 import useFetchFriends from "../../../hooks/websockets/friendshook";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getlocActive } from "../../../api/locationOptions";
-import MissileFiringAnimation from "../../../components/Animations/MissileFiring";
 import { AnimatedEntrance } from "../../../components/ui/AnimatedEntrance";
 import { PressableScale } from "../../../components/ui/PressableScale";
 import { haptics } from "../../../components/ui/haptics";
 import { getPalette, Gradients, Radius, Spacing, cardShadow, floatingAboveTabBar } from "../../../components/ui/theme";
+import { getSecureItemSafely } from "../../../util/secure-store";
 
 const DEV_OFFLINE_TOKEN = "dev-offline-token";
 
@@ -46,7 +45,6 @@ const FriendsPage: React.FC = () => {
   const isDarkMode = colorScheme === 'dark';
   const c = getPalette(isDarkMode);
   const insets = useSafeAreaInsets();
-  const [showMissileFiringAnimation, setShowMissileFiringAnimation] = useState(false);
   const [canShowChatFab, setCanShowChatFab] = useState(false);
 
   const handleUnreadCountUpdate = useCallback(({ count, chatCount }: { count: number, chatCount: number }) => {
@@ -96,8 +94,8 @@ const FriendsPage: React.FC = () => {
   useEffect(() => {
     const checkChatAccess = async () => {
       const [firebaseUID, token] = await Promise.all([
-        SecureStore.getItemAsync("firebaseUID"),
-        SecureStore.getItemAsync("token"),
+        getSecureItemSafely("firebaseUID"),
+        getSecureItemSafely("token"),
       ]);
       const isDevAccount = __DEV__ && token === DEV_OFFLINE_TOKEN;
       setCanShowChatFab(!!firebaseUID || isDevAccount);
@@ -117,19 +115,15 @@ const FriendsPage: React.FC = () => {
     setShowMissileLibrary(true);
   };
 
+  // The launch animation plays at the app root (triggerGameEffect inside
+  // MissileLibrary), so all this has to do is dismiss the library.
   const handleMissileFired = () => {
-    haptics.fire();
     setShowMissileLibrary(false);
-    setShowMissileFiringAnimation(true);
-  };
-
-  const handleMissileAnimationComplete = () => {
-    setShowMissileFiringAnimation(false);
     setSelectedPlayer("");
   };
 
   const handleRemoveFriend = async (friendUsername: string) => {
-    const token = await SecureStore.getItemAsync("token");
+    const token = await getSecureItemSafely("token");
     try {
       if (!token) {
         console.log('Token not found');
@@ -167,7 +161,7 @@ const FriendsPage: React.FC = () => {
 
     setIsSearchActive(true);
     try {
-      const currentUserUsername = await SecureStore.getItemAsync("username");
+      const currentUserUsername = await getSecureItemSafely("username");
       if (currentUserUsername === null) {
         console.error("No username found in secure storage.");
         setFilteredFriends([]);
@@ -387,11 +381,6 @@ const FriendsPage: React.FC = () => {
         </PressableScale>
       )}
 
-      {showMissileFiringAnimation && (
-        <View style={styles.animationOverlay}>
-          <MissileFiringAnimation onAnimationComplete={handleMissileAnimationComplete} />
-        </View>
-      )}
     </View>
   );
 };
@@ -553,12 +542,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#fff',
-  },
-  animationOverlay: {
-    ...StyleSheet.absoluteFill,
-    zIndex: 1000,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
 });
 

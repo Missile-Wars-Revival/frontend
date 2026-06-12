@@ -10,7 +10,7 @@ import {
 import { initializeApp, getApps, FirebaseApp } from "firebase/app";
 import { firebaseConfig } from "./config";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as SecureStore from "expo-secure-store";
+import { setBackgroundAccessibleItem } from "../secure-store";
 
 let app: FirebaseApp;
 if (getApps().length === 0) {
@@ -36,7 +36,7 @@ export async function signInWithApple(identityToken: string, displayName: string
   const provider = new OAuthProvider('apple.com');
   const credential = provider.credential({ idToken: identityToken });
   const { user } = await signInWithCredential(auth, credential);
-  await SecureStore.setItemAsync('firebaseUID', user.uid);
+  await setBackgroundAccessibleItem('firebaseUID', user.uid);
   const idToken = await user.getIdToken();
   return {
     uid: user.uid,
@@ -49,7 +49,7 @@ export async function signInWithApple(identityToken: string, displayName: string
 export async function signInWithGoogle(googleIdToken: string): Promise<OAuthUser> {
   const credential = GoogleAuthProvider.credential(googleIdToken);
   const { user } = await signInWithCredential(auth, credential);
-  await SecureStore.setItemAsync('firebaseUID', user.uid);
+  await setBackgroundAccessibleItem('firebaseUID', user.uid);
   const idToken = await user.getIdToken();
   return {
     uid: user.uid,

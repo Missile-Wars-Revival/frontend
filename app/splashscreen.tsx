@@ -3,11 +3,11 @@ import { View, Text, StyleSheet, Animated, useWindowDimensions } from 'react-nat
 import { Image } from 'expo-image';
 import { Canvas, Path, Skia, Group, Circle, Rect } from '@shopify/react-native-skia';
 import { useSharedValue, withRepeat, withTiming, useDerivedValue, Easing } from 'react-native-reanimated';
-import * as SecureStore from 'expo-secure-store';
 import { getlocation } from '../util/locationreq';
 import { getApps, initializeApp } from "firebase/app";
 import { firebaseConfig } from '../util/firebase/config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSecureItemSafely } from '../util/secure-store';
 
 interface SplashScreenProps {
   onFinish: (isAuthenticated: boolean) => void;
@@ -130,7 +130,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
 
         // Step 4: Auth check + fill bar to 100%
         setLoadingText('Loading assets...');
-        const username = await SecureStore.getItemAsync('username');
+        const username = await getSecureItemSafely('username');
         const isAuthenticated = !!username;
         await animateProgress(1.0, 400);
 

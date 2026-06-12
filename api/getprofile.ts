@@ -1,6 +1,6 @@
 import axiosInstance from "./axios-instance";
 import { isAxiosError } from "axios";
-import * as SecureStore from "expo-secure-store";
+import { getSecureItemSafely } from "../util/secure-store";
 
 const DEV_OFFLINE_TOKEN = "dev-offline-token";
 
@@ -8,7 +8,7 @@ export async function getuserprofile(
     username: string,
 ) {
     try {
-        const token = await SecureStore.getItemAsync("token");
+        const token = await getSecureItemSafely("token");
         if (!token) return { success: false, message: "Not signed in" };
         if (token === DEV_OFFLINE_TOKEN) return { success: false, message: "Not signed in" };
         const response = await axiosInstance.get(`/api/user-profile/`, { params: { token, username }, });
@@ -30,7 +30,7 @@ export async function getuserprofile(
 export async function getselfprofile(
 ) {
     try {
-        const token = await SecureStore.getItemAsync("token");
+        const token = await getSecureItemSafely("token");
         if (!token) return { success: false, message: "Not signed in" };
         if (token === DEV_OFFLINE_TOKEN) return { success: false, message: "Not signed in" };
         const response = await axiosInstance.get(`/api/self-profile/`, { params: { token }, });

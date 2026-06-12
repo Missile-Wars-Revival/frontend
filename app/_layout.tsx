@@ -22,6 +22,16 @@ import { PermissionsScreen } from './PermissionsScreen';
 import { OnboardingProvider } from '../util/Context/onboardingContext';
 import GameEffectsOverlay from '../components/effects/GameEffectsOverlay';
 import { registerAndSyncPushToken } from '../components/Notifications/registerPushToken';
+import { getSecureItemSafely, setBackgroundAccessibleItem } from '../util/secure-store';
+import * as SecureStore from 'expo-secure-store';
+import ServerSelectScreen from '../components/ServerSelectScreen';
+import UsernameClaimScreen from '../components/UsernameClaimScreen';
+import { getMyProfileUsername, waitForFirebaseUser } from '../api/account';
+import {
+  confirmServerSession,
+  hydrateSelectedServer,
+  isServerSessionConfirmed,
+} from '../api/server-discovery';
 // Imported for its side effect too: TaskManager.defineTask must run in module
 // scope so the task exists when the OS launches the app headless.
 import {
@@ -61,6 +71,15 @@ export default function RootLayout() {
   const [appState, setAppState] = useState(AppState.currentState);
   const [lastActiveTime, setLastActiveTime] = useState(() => Date.now());
   const router = useRouter();
+
+  // The persisted game-server choice must be loaded before anything talks to
+  // the backend — the websocket provider connects as soon as auth resolves,
+  // and axios resolves its baseURL per request. Gate the whole shell on it
+  // (native splash is still covering the screen at this point).
+  const [serverHydrated, setServerHydrated] = useState(false);
+  useEffect(() => {
+    hydrateSelectedServer().finally(() => setServerHydrated(true));
+  }, []);
 
   const configurePurchases = useCallback(async () => {
     try {
@@ -161,6 +180,11 @@ export default function RootLayout() {
     };
   }, [handleAppStateChange]);
 
+  // Native splash still covers the screen during this one-frame gap.
+  if (!serverHydrated) {
+    return null;
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <CountdownProvider>
@@ -257,6 +281,73 @@ function OnboardingGate({ children }: { children: React.ReactNode }) {
 
 
 
+/**
+ * Phases 7-8 (DISTRIBUTED_HOSTING_PLAN.md): in distributed mode, a signed-in
+ * player must (a) have a centrally claimed game username and (b) confirm
+ * which server to play on — once per app session — before the gameplay shell
+ * mounts and the websocket connects. Sessions that cannot use the coordinator
+ * (no coordinator configured, the dev offline token, or a legacy shard-local
+ * account without a Firebase identity) are auto-confirmed and keep the
+ * previous behavior.
+ */
+function ServerSessionGate({ children }: { children: React.ReactNode }) {
+  const [phase, setPhase] = useState<'checking' | 'claim' | 'select' | 'ready'>(
+    isServerSessionConfirmed() ? 'ready' : 'checking'
+  );
+
+  useEffect(() => {
+    if (phase !== 'checking') return;
+    let cancelled = false;
+    (async () => {
+      let next: 'claim' | 'select' | 'ready' = 'ready';
+      try {
+        const [token, firebaseUID] = await Promise.all([
+          getSecureItemSafely('token'),
+          getSecureItemSafely('firebaseUID'),
+        ]);
+        if (token !== 'dev-offline-token' && !!firebaseUID) {
+          next = 'select';
+          // Phase 8: accounts get their game username from Firebase central.
+          // No username yet (first OAuth sign-in, or an email registration
+          // whose claim raced) → ask before the server selector. Errors
+          // (offline, no Firebase session) fall through to the selector,
+          // which has its own fallbacks — never trap an existing user here.
+          try {
+            if (await waitForFirebaseUser()) {
+              const username = await getMyProfileUsername();
+              if (username) {
+                await SecureStore.setItemAsync('username', username);
+              } else {
+                next = 'claim';
+              }
+            }
+          } catch (profileError) {
+            console.error('Profile username check failed:', profileError);
+          }
+        }
+      } catch (error) {
+        console.error('Server-session check failed:', error);
+      }
+      if (cancelled) return;
+      if (next === 'ready') confirmServerSession();
+      setPhase(next);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [phase]);
+
+  if (phase === 'ready') return <>{children}</>;
+  if (phase === 'claim') {
+    return <UsernameClaimScreen onDone={() => setPhase('select')} />;
+  }
+  if (phase === 'select') {
+    return <ServerSelectScreen onDone={() => setPhase('ready')} />;
+  }
+  // Brief async-storage/profile read; visually still the app background.
+  return <View style={styles.onboardingPlaceholder} />;
+}
+
 function RootLayoutNav() {
   const { countdownIsActive, stopCountdown } = useCountdown();
   const { isSignedIn, isAuthReady } = useAuth();
@@ -279,6 +370,20 @@ function RootLayoutNav() {
       console.log('Push token sync:', result.status);
     }).catch((error) => {
       console.error('Failed to sync push token:', error);
+    });
+  }, [isAuthReady, isSignedIn]);
+
+  useEffect(() => {
+    if (!isAuthReady || !isSignedIn || AppState.currentState !== 'active') return;
+    (async () => {
+      const [token, firebaseUID] = await Promise.all([
+        getSecureItemSafely('token'),
+        getSecureItemSafely('firebaseUID'),
+      ]);
+      if (token) await setBackgroundAccessibleItem('token', token);
+      if (firebaseUID) await setBackgroundAccessibleItem('firebaseUID', firebaseUID);
+    })().catch((error) => {
+      console.error('Failed to migrate secure credentials:', error);
     });
   }, [isAuthReady, isSignedIn]);
 
@@ -305,6 +410,7 @@ function RootLayoutNav() {
     <SafeAreaProvider>
       <View style={{ flex: 1, backgroundColor }}>
         {isSignedIn ? (
+          <ServerSessionGate>
           <Stack
             initialRouteName="(tabs)"
             screenOptions={{
@@ -329,6 +435,7 @@ function RootLayoutNav() {
             <Stack.Screen name="PermissionsScreen" options={{ headerShown: false, animation: 'slide_from_bottom' }} />
             <Stack.Screen name="splashscreen" options={{ headerShown: false }} />
           </Stack>
+          </ServerSessionGate>
         ) : (
           <Stack
             initialRouteName="login"

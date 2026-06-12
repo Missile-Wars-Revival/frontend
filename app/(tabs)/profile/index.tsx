@@ -22,6 +22,7 @@ import PressableScale from '../../../components/ui/PressableScale';
 import haptics from '../../../components/ui/haptics';
 import { ItemStatsPopup } from '../../../components/ui/item-stats-popup';
 import { getPalette, Gradients, Radius, Spacing, cardShadow, floatingAboveTabBar } from '../../../components/ui/theme';
+import { getSecureItemSafely } from '../../../util/secure-store';
 
 const { width } = Dimensions.get('window');
 
@@ -95,10 +96,12 @@ const ProfilePage: React.FC = () => {
 
   useEffect(() => {
     const fetchUsername = async () => {
-      const name = await SecureStore.getItemAsync("username");
-      const token = await SecureStore.getItemAsync("token");
-      const cachedFirebaseToken = await SecureStore.getItemAsync("firebaseUID");
-      const cachedNotificationToken = await SecureStore.getItemAsync("notificationToken");
+      const [name, token, cachedFirebaseToken, cachedNotificationToken] = await Promise.all([
+        getSecureItemSafely("username"),
+        getSecureItemSafely("token"),
+        getSecureItemSafely("firebaseUID"),
+        getSecureItemSafely("notificationToken"),
+      ]);
       setUsername(name);
       setToken(token);
       setFirebaseToken(cachedFirebaseToken);

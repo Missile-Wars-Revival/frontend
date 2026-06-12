@@ -3,7 +3,7 @@ import { View, Text, Pressable, Modal, FlatList, StyleSheet, useColorScheme, Dim
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from '@react-native-vector-icons/ionicons';
-import * as SecureStore from 'expo-secure-store';
+import { getSecureItemSafely } from '../util/secure-store';
 import { addFriend } from "../api/friends";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import useFetchFriends from '../hooks/websockets/friendshook';
@@ -78,7 +78,7 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
     let cancelled = false;
     const processPlayerData = async () => {
       try {
-        const currentUserUsername = await SecureStore.getItemAsync("username");
+        const currentUserUsername = await getSecureItemSafely("username");
 
         if (currentUserUsername === null) {
           console.error("No username found in secure storage.");
@@ -122,7 +122,7 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
 
   useEffect(() => {
     const fetchUsername = async () => {
-      const name = await SecureStore.getItemAsync("username");
+      const name = await getSecureItemSafely("username");
       if (name) {
         setCurrentUsername(name);
       }
@@ -144,7 +144,7 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
   }, []);
 
   const handleAddFriend = async (friendUsername: string) => {
-    const token = await SecureStore.getItemAsync("token");
+    const token = await getSecureItemSafely("token");
     try {
       if (!token) {
         console.log('Token not found')
@@ -226,13 +226,14 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
                   {item.isFriend ? 'ALLY' : 'UNKNOWN'}
                 </Text>
               </View>
-              <Text style={styles.playerStatus}>{text}</Text>
+              <Text style={styles.playerStatus} numberOfLines={1}>{text}</Text>
             </View>
           </View>
           <View style={styles.actionButtons}>
             {isAlive && locActive && (
               <PressableScale
                 haptic="tap"
+                accessibilityLabel={`Engage ${item.username}`}
                 onPress={() => {
                   fireMissile(item.username);
                   if (currentStep === 'fireplayermenu') {
@@ -240,22 +241,21 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
                   }
                 }}
               >
-                <LinearGradient colors={Gradients.fire} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.actionButton}>
-                  <Ionicons name="rocket" size={13} color="#FFFFFF" />
-                  <Text style={styles.actionButtonText}>Engage</Text>
+                <LinearGradient colors={Gradients.fire} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.iconActionButton}>
+                  <Ionicons name="rocket" size={15} color="#FFFFFF" />
                 </LinearGradient>
               </PressableScale>
             )}
             {!item.isFriend && (
               <PressableScale
                 haptic="tap"
+                accessibilityLabel={`Recruit ${item.username}`}
                 onPress={() => {
                   handleAddFriend(item.username);
                 }}
               >
-                <LinearGradient colors={Gradients.success} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.actionButton}>
-                  <Ionicons name="person-add" size={13} color="#FFFFFF" />
-                  <Text style={styles.actionButtonText}>Recruit</Text>
+                <LinearGradient colors={Gradients.success} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.iconActionButton}>
+                  <Ionicons name="person-add" size={15} color="#FFFFFF" />
                 </LinearGradient>
               </PressableScale>
             )}
@@ -602,26 +602,23 @@ const getStyles = (palette: ThemePalette, isDark: boolean) => StyleSheet.create(
   playerStatus: {
     fontSize: 12,
     color: palette.textFaint,
+    // Shrinks instead of overflowing under the action buttons (RN does not
+    // clip overflow, so without this the Engage button covers the timestamp).
+    flexShrink: 1,
   },
   actionButtons: {
-    flexDirection: 'column',
-    alignItems: 'flex-end',
-    gap: Spacing.xs,
-  },
-  actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 6,
-    borderRadius: Radius.pill,
-    minWidth: 88,
+    gap: Spacing.sm,
   },
-  actionButtonText: {
-    ...Type.micro,
-    fontSize: 12,
-    color: '#FFFFFF',
+  // Icon-only so the row stays one line tall without squeezing the
+  // last-active timestamp off the screen.
+  iconActionButton: {
+    width: 34,
+    height: 34,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   emptyState: {
     alignItems: 'center',

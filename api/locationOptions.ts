@@ -1,7 +1,7 @@
 import { isAxiosError } from "axios";
 import axiosInstance from "./axios-instance";
-import * as SecureStore from "expo-secure-store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getSecureItemSafely } from "../util/secure-store";
 
 const DEV_OFFLINE_TOKEN = "dev-offline-token";
 
@@ -16,7 +16,7 @@ async function getCachedBoolean(key: string, fallback: boolean | null = null) {
 
 export const updatelocActive = async (locActive: boolean) => {
     try {
-        const token = await SecureStore.getItemAsync("token");
+        const token = await getSecureItemSafely("token");
         if (!token) throw new Error("No authentication token found.");
         await AsyncStorage.setItem('locActive', JSON.stringify(locActive));
 
@@ -42,7 +42,7 @@ export const updatelocActive = async (locActive: boolean) => {
 //get loActive status
 export async function getlocActive() {
     try {
-        const token = await SecureStore.getItemAsync("token");
+        const token = await getSecureItemSafely("token");
         if (!token) return null;
 
         if (token === DEV_OFFLINE_TOKEN) {
@@ -71,7 +71,7 @@ export async function getlocActive() {
 
 export const randomLocation = async (randomLocation: boolean) => {
     try {
-        const token = await SecureStore.getItemAsync("token");
+        const token = await getSecureItemSafely("token");
         if (!token) throw new Error("No authentication token found.");
         await AsyncStorage.setItem('randomLocation', JSON.stringify(randomLocation));
 
@@ -99,7 +99,7 @@ export const randomLocation = async (randomLocation: boolean) => {
 //get randomLocation status
 export async function getRandomLocation() {
     try {
-        const token = await SecureStore.getItemAsync("token");
+        const token = await getSecureItemSafely("token");
         if (!token) return null;
 
         if (token === DEV_OFFLINE_TOKEN) {

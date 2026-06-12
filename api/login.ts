@@ -2,6 +2,7 @@ import axiosInstance from "./axios-instance";
 import { isAxiosError } from "axios";
 import * as SecureStore from "expo-secure-store";
 import { auth, signInWithEmailAndPassword } from "../util/firebase/firebaseAuth";
+import { setBackgroundAccessibleItem } from "../util/secure-store";
 
 async function lookupEmail(username: string): Promise<string> {
   const response = await axiosInstance.post("/api/lookup", { username });
@@ -33,7 +34,7 @@ export async function login(username: string, password: string, notificationToke
 
     const email = await lookupEmail(username);
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    await SecureStore.setItemAsync("firebaseUID", userCredential.user.uid);
+    await setBackgroundAccessibleItem("firebaseUID", userCredential.user.uid);
     const idToken = await userCredential.user.getIdToken();
     const response = await axiosInstance.post("/api/login", { idToken, notificationToken });
     return response.data;
@@ -47,14 +48,14 @@ export async function login(username: string, password: string, notificationToke
 
 export async function logout() {
   try {
-    const token = await SecureStore.getItemAsync("token");
-    if (!token) {
-      console.log("No token found during logout, continuing cleanup");
-      return;
+    // Drop this device's push token from Firebase central so a signed-out
+    // device stops receiving pushes (tokens live only there since Phase 6).
+    const uid = auth.currentUser?.uid;
+    if (uid) {
+      const { getDatabase, ref, remove } = await import("firebase/database");
+      await remove(ref(getDatabase(), `notificationTokens/${uid}`));
     }
-    await axiosInstance.delete("/api/deleteNotificationToken", {
-      data: { token },
-    });
+    await SecureStore.deleteItemAsync("notificationToken");
   } catch (error) {
     console.error("Error during logout:", error);
   }

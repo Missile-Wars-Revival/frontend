@@ -8,7 +8,7 @@ import { getDatabase, ref, onValue, push, set, get, update, serverTimestamp, inc
 import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import * as ImagePicker from 'expo-image-picker';
 import * as MediaLibrary from 'expo-media-library';
-import * as SecureStore from "expo-secure-store";
+import { getSecureItemSafely } from "../../util/secure-store";
 import { generateUID } from '../../util/uidGenerator';
 import { File, Paths } from 'expo-file-system';
 import useFetchInventory from '../../hooks/websockets/inventoryhook';
@@ -150,8 +150,8 @@ export default function ChatScreen() {
 
   useEffect(() => {
     const fetchUsernameAndGenerateUID = async () => {
-      const fetchedToken = await SecureStore.getItemAsync("token");
-      const fetchedUsername = await SecureStore.getItemAsync("username");
+      const fetchedToken = await getSecureItemSafely("token");
+      const fetchedUsername = await getSecureItemSafely("username");
       if (fetchedToken) {
         const generatedUID = await generateUID(fetchedToken);
         setUid(generatedUID);

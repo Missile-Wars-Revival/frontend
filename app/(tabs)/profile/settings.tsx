@@ -41,6 +41,7 @@ import {
 import { registerAndSyncPushToken } from '../../../components/Notifications/registerPushToken';
 import * as Location from 'expo-location';
 import { isBackgroundLocationActive, setBackgroundLocationEnabled } from '../../../util/background-location-task';
+import { getSecureItemSafely } from '../../../util/secure-store';
 
 const IMAGE_PREFERENCES = [
   { label: '🚀  Default', value: 'default' },
@@ -223,8 +224,10 @@ const SettingsPage: React.FC = () => {
   };
 
   const loadUserData = async () => {
-    const storedUsername = await SecureStore.getItemAsync('username');
-    const storedEmail = await SecureStore.getItemAsync('email');
+    const [storedUsername, storedEmail] = await Promise.all([
+      getSecureItemSafely('username'),
+      getSecureItemSafely('email'),
+    ]);
     setUsername(storedUsername || '');
     setEmail(storedEmail || '');
   };

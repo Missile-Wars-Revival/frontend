@@ -1,5 +1,5 @@
 import axiosInstance from "./axios-instance";
-import * as SecureStore from "expo-secure-store";
+import { getSecureItemSafely } from "../util/secure-store";
 
 // All entity endpoints share the same shape: attach the stored auth token to
 // the body and post. `label` names the action in logs and thrown errors.
@@ -8,7 +8,7 @@ const postWithToken = async (
   label: string,
   body: Record<string, unknown>
 ) => {
-  const token = await SecureStore.getItemAsync("token");
+  const token = await getSecureItemSafely("token");
   try {
     if (!token) {
       console.log("Token not found");

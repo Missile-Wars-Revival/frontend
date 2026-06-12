@@ -14,9 +14,9 @@ export interface Players {
   profileImageUrl?: string | null;
 }
 
-export const AllPlayers = () => {
+export const AllPlayers = ({ onPlayerSelect }: { onPlayerSelect?: (player: Players) => void }) => {
 
-  const otherPlayersData = useFetchPlayerlocations() 
+  const otherPlayersData = useFetchPlayerlocations()
 
   return (
     <>
@@ -34,7 +34,7 @@ export const AllPlayers = () => {
 
         return (
           <React.Fragment key={`${player.username}-${index}`}>
-            <PlayerComp index={index} player={player} location={location} timestamp={text} health={player.health} transportStatus={player.transportStatus} randomlocation={player.randomlocation} />
+            <PlayerComp index={index} player={player} location={location} timestamp={text} health={player.health} transportStatus={player.transportStatus} randomlocation={player.randomlocation} onPlayerSelect={onPlayerSelect} />
           </React.Fragment>
         );
       })}
