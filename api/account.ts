@@ -7,6 +7,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
 } from "../util/firebase/firebaseAuth";
+import { setBackgroundAccessibleItem } from "../util/secure-store";
 
 // Phase 8 (backend/DISTRIBUTED_HOSTING_PLAN.md): in distributed mode the app
 // authenticates with Firebase + the coordinator ONLY — no shard is contacted
@@ -81,12 +82,12 @@ export async function claimUsername(username: string): Promise<string> {
 
 export async function loginWithFirebase(email: string, password: string): Promise<void> {
   const credential = await signInWithEmailAndPassword(auth, email, password);
-  await SecureStore.setItemAsync("firebaseUID", credential.user.uid);
+  await setBackgroundAccessibleItem("firebaseUID", credential.user.uid);
 }
 
 export async function registerWithFirebase(email: string, password: string): Promise<void> {
   const credential = await createUserWithEmailAndPassword(auth, email, password);
-  await SecureStore.setItemAsync("firebaseUID", credential.user.uid);
+  await setBackgroundAccessibleItem("firebaseUID", credential.user.uid);
 }
 
 // Firebase emails a reset link itself — no shard, no coordinator, no code

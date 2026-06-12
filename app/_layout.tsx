@@ -22,6 +22,7 @@ import { PermissionsScreen } from './PermissionsScreen';
 import { OnboardingProvider } from '../util/Context/onboardingContext';
 import GameEffectsOverlay from '../components/effects/GameEffectsOverlay';
 import { registerAndSyncPushToken } from '../components/Notifications/registerPushToken';
+import { getSecureItemSafely, setBackgroundAccessibleItem } from '../util/secure-store';
 import * as SecureStore from 'expo-secure-store';
 import ServerSelectScreen from '../components/ServerSelectScreen';
 import UsernameClaimScreen from '../components/UsernameClaimScreen';
@@ -301,8 +302,8 @@ function ServerSessionGate({ children }: { children: React.ReactNode }) {
       let next: 'claim' | 'select' | 'ready' = 'ready';
       try {
         const [token, firebaseUID] = await Promise.all([
-          SecureStore.getItemAsync('token'),
-          SecureStore.getItemAsync('firebaseUID'),
+          getSecureItemSafely('token'),
+          getSecureItemSafely('firebaseUID'),
         ]);
         if (token !== 'dev-offline-token' && !!firebaseUID) {
           next = 'select';
@@ -369,6 +370,20 @@ function RootLayoutNav() {
       console.log('Push token sync:', result.status);
     }).catch((error) => {
       console.error('Failed to sync push token:', error);
+    });
+  }, [isAuthReady, isSignedIn]);
+
+  useEffect(() => {
+    if (!isAuthReady || !isSignedIn || AppState.currentState !== 'active') return;
+    (async () => {
+      const [token, firebaseUID] = await Promise.all([
+        getSecureItemSafely('token'),
+        getSecureItemSafely('firebaseUID'),
+      ]);
+      if (token) await setBackgroundAccessibleItem('token', token);
+      if (firebaseUID) await setBackgroundAccessibleItem('firebaseUID', firebaseUID);
+    })().catch((error) => {
+      console.error('Failed to migrate secure credentials:', error);
     });
   }, [isAuthReady, isSignedIn]);
 

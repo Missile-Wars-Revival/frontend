@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, Modal, useColorScheme, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNotifications } from '../../../components/Notifications/useNotifications';
-import * as SecureStore from "expo-secure-store";
+import { getSecureItemSafely } from "../../../util/secure-store";
 import { addFriend } from '../../../api/friends';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { useRouter } from 'expo-router';
@@ -142,7 +142,7 @@ const NotificationsPage: React.FC = () => {
 
 	const handleAccept = useCallback(async (item: Notification) => {
 		try {
-			const token = await SecureStore.getItemAsync("token");
+			const token = await getSecureItemSafely("token");
 			if (!token) {
 				console.error('No token found');
 				return;

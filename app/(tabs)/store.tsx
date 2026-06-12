@@ -7,7 +7,7 @@ import Cart from '../../components/Store/cart';
 import { CartBottomSheet } from '../../components/Store/CartBottomSheet';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axiosInstance from '../../api/axios-instance';
-import * as SecureStore from "expo-secure-store";
+import { getSecureItemSafely } from "../../util/secure-store";
 import { isAxiosError } from 'axios';
 import Purchases from 'react-native-purchases';
 import { addmoney } from '../../api/money';
@@ -207,7 +207,7 @@ const StorePage: React.FC = () => {
 
   useEffect(() => {
     const fetchCurrencyAmount = async () => {
-      const token = await SecureStore.getItemAsync("token");
+      const token = await getSecureItemSafely("token");
       try {
         if (!token) {
           console.log('Token not found');
@@ -277,7 +277,7 @@ const StorePage: React.FC = () => {
   //buys item - SET API TOKENS IN _LAYOUT.TSX
   const buyItem = async (product: PremProduct) => {
     setIsPurchasing(true);
-    const token = await SecureStore.getItemAsync("token");
+    const token = await getSecureItemSafely("token");
     if (!token) {
       console.log('Token not found');
       setIsPurchasing(false);

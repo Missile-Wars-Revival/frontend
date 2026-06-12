@@ -1,6 +1,6 @@
 import axiosInstance from "./axios-instance";
 import { isAxiosError } from "axios";
-import * as SecureStore from "expo-secure-store";
+import { getSecureItemSafely } from "../util/secure-store";
 
 const DEV_OFFLINE_TOKEN = "dev-offline-token";
 
@@ -15,7 +15,7 @@ export interface League {
 
 export async function fetchTopLeagues() {
     try {
-        const token = await SecureStore.getItemAsync("token");
+        const token = await getSecureItemSafely("token");
         if (!token) return { leagues: [] };
         if (token === DEV_OFFLINE_TOKEN) return { leagues: [] };
         const response = await axiosInstance.get('/api/topleagues', {
@@ -35,7 +35,7 @@ export async function fetchTopLeagues() {
 
 export async function fetchCurrentLeague() {
     try {
-        const token = await SecureStore.getItemAsync("token");
+        const token = await getSecureItemSafely("token");
         if (!token) return null;
         if (token === DEV_OFFLINE_TOKEN) return null;
         const response = await axiosInstance.get('/api/leagues/current', {
@@ -55,7 +55,7 @@ export async function fetchCurrentLeague() {
 
 export async function fetchLeaguePlayers() {
     try {
-        const token = await SecureStore.getItemAsync("token");
+        const token = await getSecureItemSafely("token");
         if (!token) return { players: [] };
         if (token === DEV_OFFLINE_TOKEN) return { players: [] };
         const response = await axiosInstance.get('/api/leagues/players', {
@@ -75,7 +75,7 @@ export async function fetchLeaguePlayers() {
 
 export async function top100Players() {
     try {
-        const token = await SecureStore.getItemAsync("token");
+        const token = await getSecureItemSafely("token");
         if (!token) return { players: [] };
         if (token === DEV_OFFLINE_TOKEN) return { players: [] };
         const response = await axiosInstance.get('/api/top100players', {

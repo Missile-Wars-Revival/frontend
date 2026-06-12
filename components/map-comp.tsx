@@ -11,7 +11,6 @@ import { loadLastKnownLocation, saveLocation } from '../util/mapstore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCurrentLocation } from "../util/locationreq";
 import { dispatch } from "../api/dispatch";
-import * as SecureStore from "expo-secure-store";
 import { getMainMapStyles } from "../map-themes/stylesheet";
 import { updateFriendsOnlyStatus } from "../api/visibility";
 import useFetchMissiles from "../hooks/websockets/missilehook";
@@ -22,6 +21,7 @@ import useFetchOther from "../hooks/websockets/otherhook";
 import { AllOther } from "./Other/map-other";
 import { getLeagueAirspace } from "./player";
 import { useUserLeague } from "@/hooks/api/useUserLeagues";
+import { getSecureItemSafely } from "../util/secure-store";
 
 interface MapCompProps {
     selectedMapStyle: any;
@@ -74,7 +74,7 @@ export const MapComp = (props: MapCompProps) => {
                 // Check DB Connection
                 const isDBConnection = await AsyncStorage.getItem('dbconnection');
 
-                const token = await SecureStore.getItemAsync("token");
+                const token = await getSecureItemSafely("token");
                 if (!token) {
                     console.error("Authentication token is missing");
                     // Don't return here, continue with the rest of the initialization
@@ -167,7 +167,7 @@ export const MapComp = (props: MapCompProps) => {
         const newMode = visibilitymode === 'friends' ? 'global' : 'friends';
         setMode(newMode);
         friendsorglobal(newMode);
-        const token = await SecureStore.getItemAsync("token");
+        const token = await getSecureItemSafely("token");
 
         if (!token) {
             console.error("Authentication token is missing");
@@ -235,7 +235,7 @@ export const MapComp = (props: MapCompProps) => {
                     dispatchCounterRef.current += 1;
                     if (dispatchCounterRef.current >= 5) {
                         dispatchCounterRef.current = 0;
-                        const token = await SecureStore.getItemAsync('token');
+                        const token = await getSecureItemSafely('token');
                         if (token) {
                             dispatch(token, location.latitude, location.longitude).catch(
                                 (err) => console.warn('Location dispatch failed:', err)

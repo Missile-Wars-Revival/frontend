@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import * as SecureStore from "expo-secure-store";
 import { useAuth } from "./Context/authcontext";
+import { getSecureItemSafely } from "./secure-store";
 
 export const useUserName = () => {
     const [userNAME, setUserName] = useState<string>("load failed");
@@ -8,9 +8,9 @@ export const useUserName = () => {
 
     useEffect(() => {
         const fetchCredentials = async () => {
-            const token = await SecureStore.getItemAsync("token");
+            const token = await getSecureItemSafely("token");
             if (token) {
-                const user = await SecureStore.getItemAsync("username");
+                const user = await getSecureItemSafely("username");
                 if (user) {
                     setUserName(user);
                 } else {

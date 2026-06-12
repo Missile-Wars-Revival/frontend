@@ -1,6 +1,6 @@
 import { isAxiosError } from "axios";
 import axiosInstance from "./axios-instance";
-import * as SecureStore from "expo-secure-store";
+import { getSecureItemSafely, setBackgroundAccessibleItem } from "../util/secure-store";
 
 export async function requestPasswordReset(email: string) {
   try {
@@ -44,14 +44,14 @@ export async function requestUsernameReminder(email: string) {
 
 export async function changePassword(newPassword: string) {
   try {
-    const token = await SecureStore.getItemAsync("token");
+    const token = await getSecureItemSafely("token");
     if (!token) throw new Error("No authentication token found.");
     const response = await axiosInstance.post("/api/changePassword", {
       token,
       newPassword
     });
     if (response.data.token) {
-      await SecureStore.setItemAsync("token", response.data.token);
+      await setBackgroundAccessibleItem("token", response.data.token);
     }
     return { success: true, message: response.data.message, token: response.data.token };
   } catch (error) {
@@ -80,7 +80,7 @@ export async function changePassword(newPassword: string) {
 
 export async function changeUsername(newUsername: string) {
   try {
-    const token = await SecureStore.getItemAsync("token");
+    const token = await getSecureItemSafely("token");
     if (!token) throw new Error("No authentication token found.");
     const response = await axiosInstance.post("/api/changeUsername", {
       token,
@@ -88,7 +88,7 @@ export async function changeUsername(newUsername: string) {
     });
     
     if (response.data.token) {
-      await SecureStore.setItemAsync("token", response.data.token);
+      await setBackgroundAccessibleItem("token", response.data.token);
     }
     
     return {
@@ -133,7 +133,7 @@ export async function changeUsername(newUsername: string) {
 
 export async function changeEmail(newEmail: string) {
   try {
-    const token = await SecureStore.getItemAsync("token");
+    const token = await getSecureItemSafely("token");
     if (!token) throw new Error("No authentication token found.");
     const response = await axiosInstance.post("/api/changeEmail", {
       token,
@@ -156,7 +156,7 @@ export async function changeEmail(newEmail: string) {
 
 export async function deleteAcc(username: string) {
   try {
-    const token = await SecureStore.getItemAsync("token");
+    const token = await getSecureItemSafely("token");
     if (!token) throw new Error("No authentication token found.");
     const response = await axiosInstance.post("/api/deleteAccount", {
       token,

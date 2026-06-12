@@ -6,7 +6,7 @@ import { NearbyPlayersData, searchOtherPlayersData } from "../../../api/getplaye
 import { addFriend } from "../../../api/friends";
 import { router } from "expo-router";
 import { getCurrentLocation, location } from "../../../util/locationreq";
-import * as SecureStore from "expo-secure-store";
+import { getSecureItemSafely } from "../../../util/secure-store";
 import { useAuth } from "../../../util/Context/authcontext";
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { Avatar } from "../../../components/ui/Avatar";
@@ -93,7 +93,7 @@ const QuickAddPage: React.FC = () => {
 
   useEffect(() => {
     const fetchCredentials = async () => {
-      const username = await SecureStore.getItemAsync("username");
+      const username = await getSecureItemSafely("username");
       setCurrentUsername(username);
       if (!username) {
         console.log('Credentials not found, please log in');
@@ -125,12 +125,14 @@ const QuickAddPage: React.FC = () => {
 
   useEffect(() => {
     if (userLocation) {
-      fetchPlayers(userLocation.latitude, userLocation.longitude);
+      void Promise.resolve().then(() => {
+        fetchPlayers(userLocation.latitude, userLocation.longitude);
+      });
     }
   }, [userLocation, fetchPlayers]);
 
   const handleAddFriend = async (friendUsername: string) => {
-    const token = await SecureStore.getItemAsync("token");
+    const token = await getSecureItemSafely("token");
     try {
       if (!token) {
         console.log('Token not found');
@@ -177,7 +179,7 @@ const QuickAddPage: React.FC = () => {
 
     setIsSearching(true);
     try {
-      const currentUserUsername = currentUsername ?? await SecureStore.getItemAsync("username");
+      const currentUserUsername = currentUsername ?? await getSecureItemSafely("username");
       if (currentUserUsername === null) {
         console.error("No username found in secure storage.");
         setFilteredData([]);

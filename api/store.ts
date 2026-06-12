@@ -1,6 +1,6 @@
 import axiosInstance from "./axios-instance";
 import { isAxiosError } from "axios";
-import * as SecureStore from "expo-secure-store";
+import { getSecureItemSafely } from "../util/secure-store";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const DEV_OFFLINE_TOKEN = "dev-offline-token";
@@ -161,7 +161,7 @@ export const getImages = async () => {
 
 export async function getWeaponTypes(): Promise<WeaponTypesResponse> {
   try {
-    const token = await SecureStore.getItemAsync("token");
+    const token = await getSecureItemSafely("token");
     if (!token) return { landmineTypes: [], missileTypes: [], otherTypes: [] };
     if (token === DEV_OFFLINE_TOKEN) return { landmineTypes: [], missileTypes: [], otherTypes: [] };
     const response = await axiosInstance.get('/api/getWeaponTypes', {

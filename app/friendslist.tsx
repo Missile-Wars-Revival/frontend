@@ -6,7 +6,7 @@ import Ionicons from '@react-native-vector-icons/ionicons';
 import useFetchFriends from '../hooks/websockets/friendshook';
 import { Friend } from '../types/types';
 import { getDatabase, ref, push, set, update, serverTimestamp, query, orderByChild, equalTo, get } from 'firebase/database';
-import * as SecureStore from 'expo-secure-store';
+import { getSecureItemSafely } from '../util/secure-store';
 import { useAuth } from '../util/Context/authcontext';
 import { Avatar } from '../components/ui/Avatar';
 import { AnimatedEntrance } from '../components/ui/AnimatedEntrance';
@@ -69,7 +69,7 @@ const FriendsList = () => {
 
   useEffect(() => {
     const checkAuthentication = async () => {
-      const storedUsername = await SecureStore.getItemAsync('username');
+      const storedUsername = await getSecureItemSafely('username');
       if (storedUsername) {
         setUsername(storedUsername);
       } else {

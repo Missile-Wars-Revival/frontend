@@ -6,7 +6,6 @@ import { BlurView } from "expo-blur";
 import Ionicons from '@react-native-vector-icons/ionicons';
 import FriendsList from "../../../components/Friends/FriendsList";
 import { useRouter } from "expo-router";
-import * as SecureStore from 'expo-secure-store';
 import { removeFriend } from "../../../api/friends";
 import { MissileLibrary } from "../../../components/Missile/missile";
 import { searchFriendsAdded } from "../../../api/getplayerlocations";
@@ -19,6 +18,7 @@ import { AnimatedEntrance } from "../../../components/ui/AnimatedEntrance";
 import { PressableScale } from "../../../components/ui/PressableScale";
 import { haptics } from "../../../components/ui/haptics";
 import { getPalette, Gradients, Radius, Spacing, cardShadow, floatingAboveTabBar } from "../../../components/ui/theme";
+import { getSecureItemSafely } from "../../../util/secure-store";
 
 const DEV_OFFLINE_TOKEN = "dev-offline-token";
 
@@ -96,8 +96,8 @@ const FriendsPage: React.FC = () => {
   useEffect(() => {
     const checkChatAccess = async () => {
       const [firebaseUID, token] = await Promise.all([
-        SecureStore.getItemAsync("firebaseUID"),
-        SecureStore.getItemAsync("token"),
+        getSecureItemSafely("firebaseUID"),
+        getSecureItemSafely("token"),
       ]);
       const isDevAccount = __DEV__ && token === DEV_OFFLINE_TOKEN;
       setCanShowChatFab(!!firebaseUID || isDevAccount);
@@ -129,7 +129,7 @@ const FriendsPage: React.FC = () => {
   };
 
   const handleRemoveFriend = async (friendUsername: string) => {
-    const token = await SecureStore.getItemAsync("token");
+    const token = await getSecureItemSafely("token");
     try {
       if (!token) {
         console.log('Token not found');
@@ -167,7 +167,7 @@ const FriendsPage: React.FC = () => {
 
     setIsSearchActive(true);
     try {
-      const currentUserUsername = await SecureStore.getItemAsync("username");
+      const currentUserUsername = await getSecureItemSafely("username");
       if (currentUserUsername === null) {
         console.error("No username found in secure storage.");
         setFilteredFriends([]);

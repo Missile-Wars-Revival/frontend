@@ -1,6 +1,7 @@
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
+import { setBackgroundAccessibleItem } from "../util/secure-store";
 
 // Phase 6 of backend/DISTRIBUTED_HOSTING_PLAN.md: the app no longer bakes in
 // a single backend URL. Only the COORDINATOR url is baked into the build; the
@@ -175,7 +176,7 @@ export async function selectServerViaCoordinator(server: GameServer, idToken: st
   );
   const token = data?.data?.token as string | undefined;
   if (!token) throw new Error("Coordinator returned no token");
-  await SecureStore.setItemAsync("token", token);
+  await setBackgroundAccessibleItem("token", token);
   // Phase 8: login is by email, so the coordinator's record of the game
   // username (read from /profiles at mint time) is the authoritative one.
   const username = data?.data?.username as string | undefined;

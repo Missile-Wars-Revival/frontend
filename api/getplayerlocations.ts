@@ -1,10 +1,10 @@
 import { isAxiosError } from "axios";
 import axiosInstance from "./axios-instance";
-import * as SecureStore from "expo-secure-store";
+import { getSecureItemSafely } from "../util/secure-store";
 
 export async function fetchOtherPlayersData(): Promise<any[]> {
     try {
-        const token = await SecureStore.getItemAsync("token");
+        const token = await getSecureItemSafely("token");
         if (!token) {
             throw new Error("Token not found");
         }
@@ -34,7 +34,7 @@ export async function fetchOtherPlayersData(): Promise<any[]> {
 
 export async function searchOtherPlayersData(searchTerm: string): Promise<any[]> {
     try {
-        const token = await SecureStore.getItemAsync("token");
+        const token = await getSecureItemSafely("token");
         if (!token) {
             throw new Error("No authentication token found.");
         }
@@ -89,7 +89,7 @@ export async function searchFriendsAdded(searchTerm: string): Promise<any[]> {
 
 export const NearbyPlayersData = async (latitude: number, longitude: number) => {
     try {
-        const token = await SecureStore.getItemAsync("token");
+        const token = await getSecureItemSafely("token");
         if (!token) {
             throw new Error("Token not found");
         }

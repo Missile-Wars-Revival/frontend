@@ -3,6 +3,7 @@ import { getDatabase, ref, set, get } from "firebase/database";
 import axiosInstance from "./axios-instance";
 import * as SecureStore from "expo-secure-store";
 import { auth } from "../util/firebase/firebaseAuth";
+import { getSecureItemSafely } from "../util/secure-store";
 
 const DEV_OFFLINE_TOKEN = "dev-offline-token";
 
@@ -22,7 +23,7 @@ interface Notification {
 
 export const getNotifications = async (): Promise<Notification[]> => {
 	try {
-		const token = await SecureStore.getItemAsync("token");
+		const token = await getSecureItemSafely("token");
 		if (!token) {
 			// Not signed in: skip the request quietly.
 			return [];
@@ -46,7 +47,7 @@ export const getNotifications = async (): Promise<Notification[]> => {
 
 export const markNotificationAsRead = async (notificationId: string): Promise<void> => {
 	try {
-		const token = await SecureStore.getItemAsync("token");
+		const token = await getSecureItemSafely("token");
 		if (!token) {
 			throw new Error('Authentication token not found');
 		}
@@ -67,7 +68,7 @@ export const markNotificationAsRead = async (notificationId: string): Promise<vo
 
 export const markAllNotificationsAsRead = async (): Promise<void> => {
 	try {
-		const token = await SecureStore.getItemAsync("token");
+		const token = await getSecureItemSafely("token");
 		if (!token) {
 			throw new Error('Authentication token not found');
 		}
@@ -85,7 +86,7 @@ export const markAllNotificationsAsRead = async (): Promise<void> => {
 
 export const markMessageNotificationAsRead = async (): Promise<void> => {
 	try {
-		const token = await SecureStore.getItemAsync("token");
+		const token = await getSecureItemSafely("token");
 		if (!token) {
 			throw new Error('Authentication token not found');
 		}
@@ -105,7 +106,7 @@ export const markMessageNotificationAsRead = async (): Promise<void> => {
 
 export const deleteNotification = async (notificationId: string) => {
 	try {
-		const token = await SecureStore.getItemAsync("token");
+		const token = await getSecureItemSafely("token");
 		if (!token) {
 			throw new Error('Authentication token not found');
 		}
@@ -130,7 +131,7 @@ export const deleteNotification = async (notificationId: string) => {
 // directly, community shards via the coordinator's push relay).
 export const updateNotificationToken = async (notificationToken: string): Promise<boolean> => {
 	try {
-		const token = await SecureStore.getItemAsync("token");
+		const token = await getSecureItemSafely("token");
 		if (!token) {
 			return false;
 		}
@@ -161,13 +162,13 @@ export const updateNotificationToken = async (notificationToken: string): Promis
 
 // Whether Firebase central currently holds a push token for this account.
 export const getNotificationTokenStatus = async (): Promise<boolean> => {
-	const token = await SecureStore.getItemAsync("token");
+	const token = await getSecureItemSafely("token");
 	if (!token) {
 		return false;
 	}
 
 	if (token === DEV_OFFLINE_TOKEN) {
-		return !!(await SecureStore.getItemAsync("notificationToken"));
+		return !!(await getSecureItemSafely("notificationToken"));
 	}
 
 	const uid = auth.currentUser?.uid;
@@ -182,7 +183,7 @@ export const getNotificationTokenStatus = async (): Promise<boolean> => {
 // Asks the backend to send a push notification to this account so the user
 // can verify their token end-to-end. Throws on failure.
 export const sendTestNotification = async (): Promise<void> => {
-	const token = await SecureStore.getItemAsync("token");
+	const token = await getSecureItemSafely("token");
 	if (!token) {
 		throw new Error("Authentication token not found");
 	}
@@ -218,7 +219,7 @@ interface UpdatePreferencesResponse {
 
 export const getNotificationPreferences = async (): Promise<NotificationPreferences> => {
 	try {
-		const token = await SecureStore.getItemAsync("token");
+		const token = await getSecureItemSafely("token");
 		if (!token) {
 			console.log('Token not found');
 			throw new Error('Authentication token not found');
@@ -253,7 +254,7 @@ export const updateNotificationPreferences = async (
 	preferences: Partial<NotificationPreferences>
 ): Promise<NotificationPreferences> => {
 	try {
-		const token = await SecureStore.getItemAsync("token");
+		const token = await getSecureItemSafely("token");
 		if (!token) {
 			console.log('Token not found');
 			throw new Error('Authentication token not found');

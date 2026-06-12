@@ -3,7 +3,7 @@ import { View, Text, Pressable, Modal, FlatList, StyleSheet, useColorScheme, Dim
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from '@react-native-vector-icons/ionicons';
-import * as SecureStore from 'expo-secure-store';
+import { getSecureItemSafely } from '../util/secure-store';
 import { addFriend } from "../api/friends";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import useFetchFriends from '../hooks/websockets/friendshook';
@@ -78,7 +78,7 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
     let cancelled = false;
     const processPlayerData = async () => {
       try {
-        const currentUserUsername = await SecureStore.getItemAsync("username");
+        const currentUserUsername = await getSecureItemSafely("username");
 
         if (currentUserUsername === null) {
           console.error("No username found in secure storage.");
@@ -122,7 +122,7 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
 
   useEffect(() => {
     const fetchUsername = async () => {
-      const name = await SecureStore.getItemAsync("username");
+      const name = await getSecureItemSafely("username");
       if (name) {
         setCurrentUsername(name);
       }
@@ -144,7 +144,7 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
   }, []);
 
   const handleAddFriend = async (friendUsername: string) => {
-    const token = await SecureStore.getItemAsync("token");
+    const token = await getSecureItemSafely("token");
     try {
       if (!token) {
         console.log('Token not found')

@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { AppState } from "react-native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { unzip, WebSocketMessage, WSMsg, zip } from "middle-earth";
-import * as SecureStore from "expo-secure-store";
 import { getDatabase, ref, onValue, get } from "firebase/database";
 import { useAuth } from "../../util/Context/authcontext";
 import { auth } from "../../util/firebase/firebaseAuth";
@@ -11,6 +10,7 @@ import {
     isServerSessionConfirmed,
     subscribeServerSession,
 } from "../../api/server-discovery";
+import { getSecureItemSafely } from "../../util/secure-store";
 
 const RECONNECT_INTERVAL_BASE = 1000; // base interval in ms
 const MAX_RECONNECT_ATTEMPTS = 10;
@@ -145,7 +145,7 @@ const useWebSocket = () => {
     const initializeWebSocket = async () => {
         clearReconnectTimer();
         try {
-            const token = await SecureStore.getItemAsync("token");
+            const token = await getSecureItemSafely("token");
 
             // Dev-only offline sessions should not attempt websocket/network reconnect loops.
             if (isDevOfflineToken(token)) {
@@ -257,17 +257,17 @@ const useWebSocket = () => {
     };
 
     const reconnectWebsocket = async () => {
-        const token = await SecureStore.getItemAsync("token");
-        if (isDevOfflineToken(token)) {
-            await AsyncStorage.setItem('dbconnection', 'true');
-            return;
-        }
-
         // While backgrounded the OS suspends networking, so retries would just
         // burn through the backoff budget. Defer instead; the AppState listener
         // reconnects immediately (with a fresh budget) on foreground.
         if (AppState.currentState !== 'active') {
             reconnectOnForegroundRef.current = true;
+            return;
+        }
+
+        const token = await getSecureItemSafely("token");
+        if (isDevOfflineToken(token)) {
+            await AsyncStorage.setItem('dbconnection', 'true');
             return;
         }
 

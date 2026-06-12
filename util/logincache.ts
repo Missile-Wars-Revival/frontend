@@ -2,6 +2,7 @@ import * as SecureStore from "expo-secure-store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { logout } from "../api/login";
 import { resetServerSession } from "../api/server-discovery";
+import { setBackgroundAccessibleItem } from "./secure-store";
 
 export async function saveCredentials(
   username: string,
@@ -11,7 +12,7 @@ export async function saveCredentials(
   try {
     // Store encrypted username and password
     await SecureStore.setItemAsync("username", username);
-    await SecureStore.setItemAsync("token", token);
+    await setBackgroundAccessibleItem("token", token);
     // The push token is often still empty at login (permission granted later /
     // async fetch unresolved). Only cache a real value — the cache mirrors
     // what the backend holds, and login skips empty tokens server-side too.

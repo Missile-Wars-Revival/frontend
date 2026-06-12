@@ -4,7 +4,6 @@ import { Image } from "expo-image";
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as SecureStore from "expo-secure-store";
 import axiosInstance from "../../api/axios-instance";
 import { isAxiosError } from "axios";
 import Ionicons from '@react-native-vector-icons/ionicons';
@@ -26,6 +25,7 @@ import { getStoredMapStyle, storeMapStyle } from "../../util/mapstore";
 import { ThemeSelectButton } from "../../components/theme-select-button";
 import { FireSelector } from "../../components/fire-selector";
 import { MapComp } from "../../components/map-comp";
+import { getSecureItemSafely } from "../../util/secure-store";
 import { MapStyle } from "../../types/types";
 import { router } from "expo-router";
 import { useAuth } from "../../util/Context/authcontext";
@@ -122,7 +122,7 @@ export default function Map() {
   // Fetch username from secure storage
   useEffect(() => {
     const fetchCredentials = async () => {
-      const credentials = await SecureStore.getItemAsync("username");
+      const credentials = await getSecureItemSafely("username");
       if (!credentials) {
         // signOut relaunches the app shell back to splash → onboarding → login.
         await signOut();
@@ -145,7 +145,7 @@ export default function Map() {
         return;
       }
 
-      const token = await SecureStore.getItemAsync("token");
+      const token = await getSecureItemSafely("token");
       if (!token) {
         console.log('Token not found');
         return;
@@ -180,7 +180,7 @@ export default function Map() {
 
   useEffect(() => {
     const getisAliveeffect = async () => {
-      const token = await SecureStore.getItemAsync("token");
+      const token = await getSecureItemSafely("token");
       try {
         if (!token) {
           console.log('Token not found');
@@ -261,7 +261,7 @@ export default function Map() {
   }, []);
 
   const handleRespawn = async () => {
-    const token = await SecureStore.getItemAsync("token");
+    const token = await getSecureItemSafely("token");
 
     if (!token) {
       console.error("Token is null, cannot proceed with setting items");
