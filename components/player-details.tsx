@@ -153,9 +153,11 @@ export function PlayerDetailsHost({ onFireMissile }: { onFireMissile?: (username
           <View style={styles.modalHeader}>
             <Avatar uri={player.profileImageUrl} style={styles.avatar} />
             <View style={styles.modalTitleContainer}>
-              <Text style={[styles.modalTitle, { color: c.text }]} numberOfLines={1}>
-                {player.username}
-              </Text>
+              <PressableScale haptic="select" onPress={handleViewProfile} style={{ alignSelf: 'flex-start' }}>
+                <Text style={[styles.modalTitle, { color: c.text }]} numberOfLines={1}>
+                  {player.username}
+                </Text>
+              </PressableScale>
               <View
                 style={[
                   styles.statusChip,
@@ -212,8 +214,8 @@ export function PlayerDetailsHost({ onFireMissile }: { onFireMissile?: (username
             </LinearGradient>
           </PressableScale>
 
-          <View style={styles.secondaryRow}>
-            {!isFriend && (
+          {!isFriend && (
+            <View style={styles.secondaryRow}>
               <PressableScale haptic="tap" style={styles.secondaryFlex} onPress={handleRecruit}>
                 <LinearGradient
                   colors={Gradients.success}
@@ -225,14 +227,8 @@ export function PlayerDetailsHost({ onFireMissile }: { onFireMissile?: (username
                   <Text style={styles.secondaryButtonText}>Recruit</Text>
                 </LinearGradient>
               </PressableScale>
-            )}
-            <PressableScale haptic="select" style={styles.secondaryFlex} onPress={handleViewProfile}>
-              <View style={[styles.secondaryButton, styles.profileButton, { borderColor: c.border }]}>
-                <Ionicons name="person-circle-outline" size={14} color={c.text} />
-                <Text style={[styles.secondaryButtonText, { color: c.text }]}>View Profile</Text>
-              </View>
-            </PressableScale>
-          </View>
+            </View>
+          )}
         </Pressable>
       </Pressable>
     </Modal>
