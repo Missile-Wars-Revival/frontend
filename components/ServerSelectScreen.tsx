@@ -203,7 +203,8 @@ export default function ServerSelectScreen({ onDone }: ServerSelectScreenProps) 
         <Text style={[styles.title, { color: c.text }]}>Choose your server</Text>
         <Text style={[styles.subtitle, { color: c.subtle }]}>
           Your account, friends and chat work on every server. Inventory and in-game progress
-          belong to the world of each server.
+          belong to the world of each server. Unverified server operators can see your live
+          location while you play there, but personal account details stay in the central database.
         </Text>
 
         {!!connectError && <Text style={styles.error}>{connectError}</Text>}

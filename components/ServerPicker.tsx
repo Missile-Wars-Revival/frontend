@@ -130,7 +130,8 @@ export default function ServerPicker({ onSelected }: ServerPickerProps) {
           <View style={[styles.sheet, { backgroundColor: c.bg }]}>
             <Text style={[styles.title, { color: c.text }]}>Choose a server</Text>
             <Text style={[styles.subtitle, { color: c.subtle }]}>
-              Community-hosted servers. Your account and friends work on any of them.
+              Community-hosted servers. Unverified operators can see your live location while
+              you play there, but personal account details stay in the central database.
             </Text>
 
             {loading ? (
@@ -207,9 +208,13 @@ export function UnverifiedWarningModal({
             by the Missile Wars team.
           </Text>
           <Text style={[styles.warnBody, { color: c.text }]}>
-            Whoever operates this server can see data you send while playing on it — including
+            Whoever operates this server can see data needed to run gameplay on it, including
             your <Text style={styles.warnEmph}>live location</Text>, username, and in-game
-            activity. Your password and payment details are never shared with game servers.
+            activity.
+          </Text>
+          <Text style={[styles.warnBody, { color: c.text }]}>
+            Personal account details, password data, and payment details stay in the central
+            database and are never shared with game servers.
           </Text>
           <Text style={[styles.warnBody, { color: c.subtle }]}>
             Only continue if you trust whoever runs this server.
