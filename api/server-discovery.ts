@@ -29,6 +29,7 @@ export interface GameServer {
   publicWsUrl: string;
   verified: boolean;
   playerCount: number;
+  totalPlayerCount?: number;
   version?: string;
   lastHeartbeatAt?: number;
 }

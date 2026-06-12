@@ -27,6 +27,13 @@ interface ServerPickerProps {
   onSelected?: (server: GameServer) => void;
 }
 
+export function playerCountLabel(server: Pick<GameServer, 'playerCount' | 'totalPlayerCount'>): string {
+  if (server.totalPlayerCount !== undefined) {
+    return `${server.playerCount}/${Math.max(server.playerCount, server.totalPlayerCount)} players`;
+  }
+  return `${server.playerCount} online`;
+}
+
 async function lastKnownCoords(): Promise<{ lat: number; lon: number } | null> {
   try {
     const raw = await AsyncStorage.getItem('regionlocation');
@@ -147,7 +154,7 @@ export default function ServerPicker({ onSelected }: ServerPickerProps) {
                       {item.verified ? <VerifiedBadge /> : <UnverifiedTag />}
                     </View>
                     <Text style={[styles.serverMeta, { color: c.subtle }]}>
-                      {item.region} · {item.playerCount} online{item.version ? ` · v${item.version}` : ''}
+                      {item.region} · {playerCountLabel(item)}{item.version ? ` · v${item.version}` : ''}
                     </Text>
                     {item.description ? (
                       <Text style={[styles.serverMeta, { color: c.subtle }]} numberOfLines={2}>{item.description}</Text>

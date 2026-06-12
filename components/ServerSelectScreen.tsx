@@ -5,7 +5,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as SecureStore from 'expo-secure-store';
 import { ConnectingScreen } from './ConnectingScreen';
-import { UnverifiedTag, UnverifiedWarningModal, VerifiedBadge, palette } from './ServerPicker';
+import { UnverifiedTag, UnverifiedWarningModal, VerifiedBadge, palette, playerCountLabel } from './ServerPicker';
 import { useWebSocketContext } from '../util/Context/websocket';
 import { waitForFirebaseUser } from '../api/account';
 import {
@@ -228,7 +228,7 @@ export default function ServerSelectScreen({ onDone }: ServerSelectScreenProps) 
                   <VerifiedBadge />
                 </View>
                 <Text style={[styles.serverMeta, { color: c.subtle }]}>
-                  {continueTarget.region} · {continueTarget.playerCount} online
+                  {continueTarget.region} · {playerCountLabel(continueTarget)}
                   {(() => {
                     const lastUsedAt = allRecentRows.find(
                       (row) => row.live?.id === continueTarget.id
@@ -257,7 +257,7 @@ export default function ServerSelectScreen({ onDone }: ServerSelectScreenProps) 
                         {live.verified ? <VerifiedBadge /> : <UnverifiedTag />}
                       </View>
                       <Text style={[styles.serverMeta, { color: c.subtle }]}>
-                        {live.region} · {live.playerCount} online · {lastPlayedLabel(entry.lastUsedAt)}
+                        {live.region} · {playerCountLabel(live)} · {lastPlayedLabel(entry.lastUsedAt)}
                       </Text>
                     </Pressable>
                   ) : (
@@ -299,7 +299,7 @@ export default function ServerSelectScreen({ onDone }: ServerSelectScreenProps) 
                       {server.verified ? <VerifiedBadge /> : <UnverifiedTag />}
                     </View>
                     <Text style={[styles.serverMeta, { color: c.subtle }]}>
-                      {server.region} · {server.playerCount} online{server.version ? ` · v${server.version}` : ''}
+                      {server.region} · {playerCountLabel(server)}{server.version ? ` · v${server.version}` : ''}
                     </Text>
                     {server.description ? (
                       <Text style={[styles.serverMeta, { color: c.subtle }]} numberOfLines={2}>
