@@ -165,43 +165,61 @@ export default function ServerPicker({ onSelected }: ServerPickerProps) {
       </Modal>
 
       {/* Blocking unverified-server acknowledgment */}
-      <Modal visible={!!pendingUnverified} animationType="fade" transparent onRequestClose={() => setPendingUnverified(null)}>
-        <View style={styles.backdrop}>
-          <View style={[styles.warnCard, { backgroundColor: c.bg }]}>
-            <Text style={[styles.warnTitle, { color: c.text }]}>Unverified server</Text>
-            <Text style={[styles.warnBody, { color: c.text }]}>
-              “{pendingUnverified?.name}” is run by a community member and has NOT been verified
-              by the Missile Wars team.
-            </Text>
-            <Text style={[styles.warnBody, { color: c.text }]}>
-              Whoever operates this server can see data you send while playing on it — including
-              your <Text style={styles.warnEmph}>live location</Text>, username, and in-game
-              activity. Your password and payment details are never shared with game servers.
-            </Text>
-            <Text style={[styles.warnBody, { color: c.subtle }]}>
-              Only continue if you trust whoever runs this server.
-            </Text>
-            <Pressable
-              onPress={async () => {
-                if (!pendingUnverified) return;
-                await acknowledgeUnverified(pendingUnverified.id);
-                await applySelection(pendingUnverified);
-              }}
-              style={[styles.button, styles.warnAccept]}
-            >
-              <Text style={[styles.buttonText, { color: '#fff' }]}>I understand the risk — connect</Text>
-            </Pressable>
-            <Pressable onPress={() => setPendingUnverified(null)} style={[styles.button, { backgroundColor: c.card }]}>
-              <Text style={[styles.buttonText, { color: c.text }]}>Go back</Text>
-            </Pressable>
-          </View>
-        </View>
-      </Modal>
+      <UnverifiedWarningModal
+        server={pendingUnverified}
+        onConfirm={async () => {
+          if (!pendingUnverified) return;
+          await acknowledgeUnverified(pendingUnverified.id);
+          await applySelection(pendingUnverified);
+        }}
+        onCancel={() => setPendingUnverified(null)}
+      />
     </View>
   );
 }
 
-function VerifiedBadge() {
+// Shared with the Phase 7 post-login server selector — one copy of the
+// warning wording, one set of badge visuals.
+export function UnverifiedWarningModal({
+  server,
+  onConfirm,
+  onCancel,
+}: {
+  server: GameServer | null;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const c = palette(useColorScheme() === 'dark');
+  return (
+    <Modal visible={!!server} animationType="fade" transparent onRequestClose={onCancel}>
+      <View style={styles.backdrop}>
+        <View style={[styles.warnCard, { backgroundColor: c.bg }]}>
+          <Text style={[styles.warnTitle, { color: c.text }]}>Unverified server</Text>
+          <Text style={[styles.warnBody, { color: c.text }]}>
+            “{server?.name}” is run by a community member and has NOT been verified
+            by the Missile Wars team.
+          </Text>
+          <Text style={[styles.warnBody, { color: c.text }]}>
+            Whoever operates this server can see data you send while playing on it — including
+            your <Text style={styles.warnEmph}>live location</Text>, username, and in-game
+            activity. Your password and payment details are never shared with game servers.
+          </Text>
+          <Text style={[styles.warnBody, { color: c.subtle }]}>
+            Only continue if you trust whoever runs this server.
+          </Text>
+          <Pressable onPress={onConfirm} style={[styles.button, styles.warnAccept]}>
+            <Text style={[styles.buttonText, { color: '#fff' }]}>I understand the risk — connect</Text>
+          </Pressable>
+          <Pressable onPress={onCancel} style={[styles.button, { backgroundColor: c.card }]}>
+            <Text style={[styles.buttonText, { color: c.text }]}>Go back</Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+export function VerifiedBadge() {
   return (
     <View style={[styles.badge, styles.badgeVerified]}>
       <Text style={styles.badgeText}>✓ Verified</Text>
@@ -209,7 +227,7 @@ function VerifiedBadge() {
   );
 }
 
-function UnverifiedTag() {
+export function UnverifiedTag() {
   return (
     <View style={[styles.badge, styles.badgeUnverified]}>
       <Text style={styles.badgeText}>Unverified</Text>
@@ -217,7 +235,7 @@ function UnverifiedTag() {
   );
 }
 
-function palette(isDark: boolean) {
+export function palette(isDark: boolean) {
   return {
     bg: isDark ? '#16181d' : '#ffffff',
     card: isDark ? '#23262e' : '#f1f1f4',

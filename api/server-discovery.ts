@@ -1,5 +1,6 @@
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from "expo-secure-store";
 
 // Phase 6 of backend/DISTRIBUTED_HOSTING_PLAN.md: the app no longer bakes in
 // a single backend URL. Only the COORDINATOR url is baked into the build; the
@@ -7,6 +8,12 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 // choice is persisted here. EXPO_PUBLIC_BACKEND_URL / _WEBSOCKET_URL remain as
 // fallbacks so existing dev setups and solo/self-hosted servers keep working
 // without a coordinator.
+//
+// Phase 7 adds the explicit post-login flow: server selection is confirmed
+// once per app session (the "session confirmation" below gates the websocket),
+// the coordinator's /servers response carries the user's server history, and
+// POST /auth/select-server is the authoritative way to obtain a shard token
+// for the chosen server.
 
 const COORDINATOR_URL = (process.env.EXPO_PUBLIC_COORDINATOR_URL || "").replace(/\/$/, "");
 
@@ -24,6 +31,20 @@ export interface GameServer {
   playerCount: number;
   version?: string;
   lastHeartbeatAt?: number;
+}
+
+// Coordinator-recorded "where has this account played" entry. The lastServer*
+// fields are snapshots taken at the last token mint, so a server that has
+// since gone offline (available: false) can still be rendered by name.
+export interface ServerHistoryEntry {
+  shardId: string;
+  firstUsedAt: number;
+  lastUsedAt: number;
+  useCount: number;
+  lastServerName: string;
+  lastRegion: string;
+  lastVerified: boolean;
+  available: boolean;
 }
 
 // In-memory mirror of the persisted selection so URL lookups stay synchronous
@@ -83,10 +104,81 @@ export function getWsUrl(): string {
   return getBackendUrl().replace(/^http/, "ws");
 }
 
+// ---------------------------------------------------------------------------
+// Phase 7 session confirmation: in distributed mode the websocket must not
+// connect until the player has confirmed which server to play on this app
+// session (fresh login OR cold start with an existing session). Module state,
+// not persisted — a cold start always re-asks; a background-resume within the
+// same JS session does not.
+
+let sessionConfirmed = false;
+const sessionListeners = new Set<() => void>();
+
+export function isServerSessionConfirmed(): boolean {
+  // Without a coordinator there is no selector — the legacy direct-URL flow
+  // is always "confirmed" so solo hosting and dev setups are untouched.
+  if (!coordinatorConfigured()) return true;
+  return sessionConfirmed;
+}
+
+export function confirmServerSession(): void {
+  sessionConfirmed = true;
+  sessionListeners.forEach((listener) => listener());
+}
+
+// Called on sign-out so the next account doesn't inherit the confirmation.
+export function resetServerSession(): void {
+  sessionConfirmed = false;
+  sessionListeners.forEach((listener) => listener());
+}
+
+export function subscribeServerSession(listener: () => void): () => void {
+  sessionListeners.add(listener);
+  return () => sessionListeners.delete(listener);
+}
+
+// ---------------------------------------------------------------------------
+
 export async function fetchServers(): Promise<GameServer[]> {
   if (!coordinatorConfigured()) return [];
   const { data } = await axios.get(`${COORDINATOR_URL}/servers`, { timeout: 10000 });
   return (data?.data?.servers ?? []) as GameServer[];
+}
+
+// Same directory call, but authenticated: the coordinator then includes this
+// account's server history so the selector can show a "recent servers" /
+// continue section. An invalid/expired idToken degrades to an empty history.
+export async function fetchServersWithHistory(
+  idToken?: string | null
+): Promise<{ servers: GameServer[]; history: ServerHistoryEntry[] }> {
+  if (!coordinatorConfigured()) return { servers: [], history: [] };
+  const { data } = await axios.get(`${COORDINATOR_URL}/servers`, {
+    timeout: 10000,
+    headers: idToken ? { Authorization: `Bearer ${idToken}` } : undefined,
+  });
+  return {
+    servers: (data?.data?.servers ?? []) as GameServer[],
+    history: (data?.data?.history ?? []) as ServerHistoryEntry[],
+  };
+}
+
+// The authoritative Phase 7 selection path: the coordinator verifies the
+// Firebase ID token, confirms the shard is listable, mints the shard-scoped
+// session token, and records server history. On success the new token is the
+// active session token and the selection is persisted.
+export async function selectServerViaCoordinator(server: GameServer, idToken: string): Promise<void> {
+  const { data } = await axios.post(
+    `${COORDINATOR_URL}/auth/select-server`,
+    { serverId: server.id },
+    { headers: { Authorization: `Bearer ${idToken}` }, timeout: 15000 }
+  );
+  const token = data?.data?.token as string | undefined;
+  if (!token) throw new Error("Coordinator returned no token");
+  await SecureStore.setItemAsync("token", token);
+  // Prefer the coordinator's own record of the server (fresh URLs/verified
+  // flag) over the possibly stale list entry the user tapped.
+  const fresh = data?.data?.server as Partial<GameServer> | undefined;
+  await selectServer({ ...server, ...fresh });
 }
 
 // Coordinator picks the nearest (or least-loaded) shard. Coordinates are

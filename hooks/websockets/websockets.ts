@@ -6,7 +6,11 @@ import * as SecureStore from "expo-secure-store";
 import { getDatabase, ref, onValue, get } from "firebase/database";
 import { useAuth } from "../../util/Context/authcontext";
 import { auth } from "../../util/firebase/firebaseAuth";
-import { getWsUrl } from "../../api/server-discovery";
+import {
+    getWsUrl,
+    isServerSessionConfirmed,
+    subscribeServerSession,
+} from "../../api/server-discovery";
 
 const RECONNECT_INTERVAL_BASE = 1000; // base interval in ms
 const MAX_RECONNECT_ATTEMPTS = 10;
@@ -25,6 +29,10 @@ const formatWebSocketError = (error: unknown): string => {
 
 const useWebSocket = () => {
     const { isSignedIn } = useAuth();
+    // Phase 7: in distributed mode the connection waits until the player has
+    // confirmed a server for this session (post-login selector). Solo/legacy
+    // setups without a coordinator are always confirmed.
+    const [serverConfirmed, setServerConfirmed] = useState(isServerSessionConfirmed());
     const [missiledata, setmissileData] = useState<any>(null);
     const [landminedata, setlandmineData] = useState<any>(null);
     const [lootdata, setlootData] = useState<any>(null);
@@ -278,21 +286,25 @@ const useWebSocket = () => {
     };
 
     useEffect(() => {
-        if (isSignedIn) {
+        return subscribeServerSession(() => setServerConfirmed(isServerSessionConfirmed()));
+    }, []);
+
+    useEffect(() => {
+        if (isSignedIn && serverConfirmed) {
             initializeWebSocket();
         } else {
             clearReconnectTimer();
             closeWebsocket();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isSignedIn]);
+    }, [isSignedIn, serverConfirmed]);
 
     // Reconnect promptly when the app returns to the foreground — the OS
     // usually drops the socket in the background and backoff timers may be
     // far in the future (or exhausted) by the time the user comes back.
     useEffect(() => {
         const subscription = AppState.addEventListener('change', (state) => {
-            if (state !== 'active' || !isSignedIn) return;
+            if (state !== 'active' || !isSignedIn || !serverConfirmed) return;
 
             const ws = websocketRef.current;
             const socketDown =
@@ -309,7 +321,7 @@ const useWebSocket = () => {
         });
         return () => subscription.remove();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isSignedIn]);
+    }, [isSignedIn, serverConfirmed]);
 
     const sendWebsocket = async (data: WebSocketMessage) => {
         const isSignedIn = await AsyncStorage.getItem('signedIn');

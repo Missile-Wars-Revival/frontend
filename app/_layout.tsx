@@ -22,7 +22,13 @@ import { PermissionsScreen } from './PermissionsScreen';
 import { OnboardingProvider } from '../util/Context/onboardingContext';
 import GameEffectsOverlay from '../components/effects/GameEffectsOverlay';
 import { registerAndSyncPushToken } from '../components/Notifications/registerPushToken';
-import { hydrateSelectedServer } from '../api/server-discovery';
+import * as SecureStore from 'expo-secure-store';
+import ServerSelectScreen from '../components/ServerSelectScreen';
+import {
+  confirmServerSession,
+  hydrateSelectedServer,
+  isServerSessionConfirmed,
+} from '../api/server-discovery';
 // Imported for its side effect too: TaskManager.defineTask must run in module
 // scope so the task exists when the OS launches the app headless.
 import {
@@ -272,6 +278,54 @@ function OnboardingGate({ children }: { children: React.ReactNode }) {
 
 
 
+/**
+ * Phase 7 (DISTRIBUTED_HOSTING_PLAN.md): in distributed mode, a signed-in
+ * player must confirm which server to play on — once per app session — before
+ * the gameplay shell mounts and the websocket connects. Sessions that cannot
+ * use the coordinator selector (no coordinator configured, the dev offline
+ * token, or a legacy shard-local account without a Firebase identity) are
+ * auto-confirmed and keep the previous behavior.
+ */
+function ServerSessionGate({ children }: { children: React.ReactNode }) {
+  const [phase, setPhase] = useState<'checking' | 'select' | 'ready'>(
+    isServerSessionConfirmed() ? 'ready' : 'checking'
+  );
+
+  useEffect(() => {
+    if (phase !== 'checking') return;
+    let cancelled = false;
+    (async () => {
+      let needsSelector = false;
+      try {
+        const [token, firebaseUID] = await Promise.all([
+          SecureStore.getItemAsync('token'),
+          SecureStore.getItemAsync('firebaseUID'),
+        ]);
+        needsSelector = token !== 'dev-offline-token' && !!firebaseUID;
+      } catch (error) {
+        console.error('Server-session check failed:', error);
+      }
+      if (cancelled) return;
+      if (needsSelector) {
+        setPhase('select');
+      } else {
+        confirmServerSession();
+        setPhase('ready');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [phase]);
+
+  if (phase === 'ready') return <>{children}</>;
+  if (phase === 'select') {
+    return <ServerSelectScreen onDone={() => setPhase('ready')} />;
+  }
+  // One async-storage read; visually still the splash/app background.
+  return <View style={styles.onboardingPlaceholder} />;
+}
+
 function RootLayoutNav() {
   const { countdownIsActive, stopCountdown } = useCountdown();
   const { isSignedIn, isAuthReady } = useAuth();
@@ -320,6 +374,7 @@ function RootLayoutNav() {
     <SafeAreaProvider>
       <View style={{ flex: 1, backgroundColor }}>
         {isSignedIn ? (
+          <ServerSessionGate>
           <Stack
             initialRouteName="(tabs)"
             screenOptions={{
@@ -344,6 +399,7 @@ function RootLayoutNav() {
             <Stack.Screen name="PermissionsScreen" options={{ headerShown: false, animation: 'slide_from_bottom' }} />
             <Stack.Screen name="splashscreen" options={{ headerShown: false }} />
           </Stack>
+          </ServerSessionGate>
         ) : (
           <Stack
             initialRouteName="login"

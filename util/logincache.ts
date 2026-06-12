@@ -1,6 +1,7 @@
 import * as SecureStore from "expo-secure-store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { logout } from "../api/login";
+import { resetServerSession } from "../api/server-discovery";
 
 export async function saveCredentials(
   username: string,
@@ -26,6 +27,8 @@ export async function saveCredentials(
 export async function signOut(): Promise<void> {
   await clearCredentials();
   await AsyncStorage.setItem('signedIn', 'false');
+  // Next sign-in must go through the server selector again (Phase 7).
+  resetServerSession();
 }
 
 export async function clearCredentials(): Promise<void> {
