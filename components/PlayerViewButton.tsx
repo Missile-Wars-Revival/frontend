@@ -226,7 +226,7 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
                   {item.isFriend ? 'ALLY' : 'UNKNOWN'}
                 </Text>
               </View>
-              <Text style={styles.playerStatus}>{text}</Text>
+              <Text style={styles.playerStatus} numberOfLines={1}>{text}</Text>
             </View>
           </View>
           <View style={styles.actionButtons}>
@@ -602,6 +602,9 @@ const getStyles = (palette: ThemePalette, isDark: boolean) => StyleSheet.create(
   playerStatus: {
     fontSize: 12,
     color: palette.textFaint,
+    // Shrinks instead of overflowing under the action buttons (RN does not
+    // clip overflow, so without this the Engage button covers the timestamp).
+    flexShrink: 1,
   },
   actionButtons: {
     flexDirection: 'column',

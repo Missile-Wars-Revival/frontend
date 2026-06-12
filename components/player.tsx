@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Image } from "expo-image";
 import { Circle, Marker } from "react-native-maps";
@@ -51,19 +51,6 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 2,
   },
-  fireMissileButton: {
-    backgroundColor: 'red',
-    borderRadius: 5,
-    marginTop: 2,
-    padding: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  fireMissileText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
 });
 
 interface PlayerProps {
@@ -74,7 +61,7 @@ interface PlayerProps {
   transportStatus: string;
   index: number;
   randomlocation: boolean;
-  onFireMissile?: (username: string) => void;
+  onPlayerSelect?: (username: string) => void;
 }
 
 export const getLeagueAirspace = (league: string): number => {
@@ -113,8 +100,6 @@ const getRandomLocation = (latitude: number, longitude: number, radius: number) 
 };
 
 export const PlayerComp = (props: PlayerProps) => {
-  const [selectedMarkerIndex, setSelectedMarkerIndex] = useState<number | null>(null);
-
   const userName = useUserName();
   const friends = useFetchFriends(); // Use the friends hook
 
@@ -124,21 +109,13 @@ export const PlayerComp = (props: PlayerProps) => {
     return `rgb(${red}, ${green}, 0)`;
   };
 
-  const isSelected = selectedMarkerIndex === props.index;
-  const canFire = props.player.username !== userName && !!props.onFireMissile;
-
-  // Marker children are rasterized by react-native-maps (Google provider), so
-  // the "Fire Missile" button below is only a visual — taps anywhere on the
-  // marker land on the Marker itself. First tap selects (reveals the button),
-  // the next tap fires via the callback hoisted to the map screen.
+  // Marker children are rasterized by react-native-maps and don't reliably
+  // re-render after mount, so the marker carries no interactive UI at all.
+  // Tapping it reports the selection up to MapComp, which shows a real
+  // (tappable) action card hosted outside the MapView.
   const handleMarkerPress = () => {
-    if (isSelected) {
-      if (canFire) {
-        props.onFireMissile?.(props.player.username);
-      }
-      setSelectedMarkerIndex(null);
-    } else {
-      setSelectedMarkerIndex(props.index);
+    if (props.player.username !== userName) {
+      props.onPlayerSelect?.(props.player.username);
     }
   };
 
@@ -216,12 +193,6 @@ export const PlayerComp = (props: PlayerProps) => {
             />
           )}
           <Text style={styles.username}>{props.player.username}</Text>
-
-          {isSelected && canFire && (
-            <View style={styles.fireMissileButton}>
-              <Text style={styles.fireMissileText}>Fire Missile</Text>
-            </View>
-          )}
 
           <View style={styles.healthBarContainer}>
             <View 

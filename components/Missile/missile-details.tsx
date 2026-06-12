@@ -57,6 +57,15 @@ export function MissileDetailsHost() {
     loadImages();
   }, []);
 
+  // Re-render every second while open so the ETA in the status chip counts
+  // down live instead of freezing at the moment the marker was tapped.
+  const [, setEtaTick] = useState(0);
+  useEffect(() => {
+    if (!visible) return;
+    const intervalId = setInterval(() => setEtaTick((tick) => tick + 1), 1000);
+    return () => clearInterval(intervalId);
+  }, [visible]);
+
   useEffect(() => {
     const fetchWeapons = async () => {
       try {
@@ -143,6 +152,7 @@ export function MissileDetailsHost() {
             <View style={[styles.statusChip, { backgroundColor: isIncoming ? c.dangerSoft : c.warningSoft }]}>
               <Text style={[styles.statusChipText, { color: isIncoming ? c.danger : c.warning }]}>
                 {details.status || 'Unknown'}
+                {details.etatimetoimpact ? ` · ETA ${eta}` : ''}
               </Text>
             </View>
 

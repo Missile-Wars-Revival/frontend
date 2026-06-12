@@ -14,7 +14,7 @@ export interface Players {
   profileImageUrl?: string | null;
 }
 
-export const AllPlayers = ({ onFireMissile }: { onFireMissile?: (username: string) => void }) => {
+export const AllPlayers = ({ onPlayerSelect }: { onPlayerSelect?: (username: string) => void }) => {
 
   const otherPlayersData = useFetchPlayerlocations()
 
@@ -34,7 +34,7 @@ export const AllPlayers = ({ onFireMissile }: { onFireMissile?: (username: strin
 
         return (
           <React.Fragment key={`${player.username}-${index}`}>
-            <PlayerComp index={index} player={player} location={location} timestamp={text} health={player.health} transportStatus={player.transportStatus} randomlocation={player.randomlocation} onFireMissile={onFireMissile} />
+            <PlayerComp index={index} player={player} location={location} timestamp={text} health={player.health} transportStatus={player.transportStatus} randomlocation={player.randomlocation} onPlayerSelect={onPlayerSelect} />
           </React.Fragment>
         );
       })}

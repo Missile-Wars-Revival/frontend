@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
-import { AppState, View, Text, Switch, Alert, Pressable, useColorScheme } from "react-native";
+import { AppState, View, Text, Switch, Alert, Pressable, useColorScheme, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Circle } from "react-native-maps";
 import { AllLootDrops } from "./Loot/map-loot";
@@ -44,6 +44,9 @@ export const MapComp = (props: MapCompProps) => {
     const [visibilitymode, setMode] = useState<'friends' | 'global'>('global');
     const [locActive] = useState<boolean>(true);
     const [isMapDisabled, setIsMapDisabled] = useState(false);
+    // Player tapped on the map. The action card lives OUTSIDE the MapView
+    // because marker children are rasterized and can't host tappable buttons.
+    const [targetPlayer, setTargetPlayer] = useState<string | null>(null);
 
     const colorScheme = useColorScheme();
     const isDarkMode = colorScheme === 'dark';
@@ -322,7 +325,7 @@ export const MapComp = (props: MapCompProps) => {
                         fillColor="rgba(0, 0, 0, 0)"
                         strokeColor="rgba(0, 255, 0, 0.5)"
                     />
-                    <AllPlayers onFireMissile={props.onFireMissile} />
+                    <AllPlayers onPlayerSelect={(username) => setTargetPlayer((prev) => prev === username ? null : username)} />
                     <AllLootDrops lootLocations={lootData} />
                     <AllOther OtherLocations={otherData} />
                     <AllLandMines landminedata={LandmineData} />
@@ -331,6 +334,25 @@ export const MapComp = (props: MapCompProps) => {
             </View>
             {/* Hosted outside the MapView — modals mounted under MapView never present. */}
             <MissileDetailsHost />
+            {targetPlayer && (
+                <View style={[targetStyles.card, { bottom: insets.bottom + 110 }]}>
+                    <Text style={targetStyles.name} numberOfLines={1}>{targetPlayer}</Text>
+                    <Pressable
+                        style={({ pressed }) => [targetStyles.fireButton, pressed && { opacity: 0.7 }]}
+                        onPress={() => {
+                            const username = targetPlayer;
+                            setTargetPlayer(null);
+                            props.onFireMissile?.(username);
+                        }}
+                    >
+                        <FontAwesome name="rocket" size={14} color="#ffffff" />
+                        <Text style={targetStyles.fireText}>Fire Missile</Text>
+                    </Pressable>
+                    <Pressable style={targetStyles.close} onPress={() => setTargetPlayer(null)} hitSlop={8}>
+                        <FontAwesome name="times" size={14} color="#ffffff" />
+                    </Pressable>
+                </View>
+            )}
             <Pressable
                 style={[mainmapstyles.relocateButton, { bottom: insets.bottom + 40 }]}
                 onPress={relocate}>
@@ -372,3 +394,46 @@ export const MapComp = (props: MapCompProps) => {
         </View>
     );
 };
+
+const targetStyles = StyleSheet.create({
+    card: {
+        position: 'absolute',
+        alignSelf: 'center',
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        backgroundColor: 'rgba(0, 0, 0, 0.75)',
+        borderRadius: 24,
+        paddingVertical: 8,
+        paddingHorizontal: 14,
+        maxWidth: '90%',
+    },
+    name: {
+        color: '#ffffff',
+        fontWeight: 'bold',
+        fontSize: 14,
+        maxWidth: 130,
+    },
+    fireButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: '#E53935',
+        borderRadius: 16,
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+    },
+    fireText: {
+        color: '#ffffff',
+        fontWeight: 'bold',
+        fontSize: 13,
+    },
+    close: {
+        width: 26,
+        height: 26,
+        borderRadius: 13,
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+});
