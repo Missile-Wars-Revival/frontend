@@ -19,7 +19,7 @@ npx expo prebuild --platform ios   # only when native code changes
 eas build --profile development|preview|production --platform ios|android
 ```
 
-Required `.env` (loaded via `loadenv.js` / app.json `extra.dotenv`): `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY`, `EXPO_PUBLIC_BACKEND_URL`, `EXPO_PUBLIC_WEBSOCKET_URL`, `EXPO_PUBLIC_REVENUECAT_API_KEY_APPLE`, `EXPO_PUBLIC_REVENUECAT_API_KEY_GOOGLE`.
+Required `.env` (loaded via `loadenv.js` / app.json `extra.dotenv`): `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY`, `EXPO_PUBLIC_REVENUECAT_API_KEY_APPLE`, `EXPO_PUBLIC_REVENUECAT_API_KEY_GOOGLE`, and a backend source: `EXPO_PUBLIC_COORDINATOR_URL` (distributed mode — the app discovers game servers via the coordinator, the player's choice persists in AsyncStorage `selectedServer`, and `api/server-discovery.ts` resolves REST/WS URLs) and/or `EXPO_PUBLIC_BACKEND_URL` + `EXPO_PUBLIC_WEBSOCKET_URL` (direct/fallback, used when no server is selected or no coordinator is configured).
 
 Dev login: username `Test` (or `Test2`), password `Testing123!`. In `__DEV__`, if the backend is unreachable, `api/login.ts` falls back to a frontend-only offline session with token `dev-offline-token`; that sentinel token is checked throughout `api/` and the websocket hook to skip network calls — preserve those checks when touching auth or API code.
 

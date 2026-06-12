@@ -22,6 +22,7 @@ import { PermissionsScreen } from './PermissionsScreen';
 import { OnboardingProvider } from '../util/Context/onboardingContext';
 import GameEffectsOverlay from '../components/effects/GameEffectsOverlay';
 import { registerAndSyncPushToken } from '../components/Notifications/registerPushToken';
+import { hydrateSelectedServer } from '../api/server-discovery';
 // Imported for its side effect too: TaskManager.defineTask must run in module
 // scope so the task exists when the OS launches the app headless.
 import {
@@ -61,6 +62,15 @@ export default function RootLayout() {
   const [appState, setAppState] = useState(AppState.currentState);
   const [lastActiveTime, setLastActiveTime] = useState(() => Date.now());
   const router = useRouter();
+
+  // The persisted game-server choice must be loaded before anything talks to
+  // the backend — the websocket provider connects as soon as auth resolves,
+  // and axios resolves its baseURL per request. Gate the whole shell on it
+  // (native splash is still covering the screen at this point).
+  const [serverHydrated, setServerHydrated] = useState(false);
+  useEffect(() => {
+    hydrateSelectedServer().finally(() => setServerHydrated(true));
+  }, []);
 
   const configurePurchases = useCallback(async () => {
     try {
@@ -160,6 +170,11 @@ export default function RootLayout() {
       subscription.remove();
     };
   }, [handleAppStateChange]);
+
+  // Native splash still covers the screen during this one-frame gap.
+  if (!serverHydrated) {
+    return null;
+  }
 
   return (
     <QueryClientProvider client={queryClient}>

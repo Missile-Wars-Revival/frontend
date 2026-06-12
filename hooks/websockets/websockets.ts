@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { AppState } from "react-native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { unzip, WebSocketMessage, zip } from "middle-earth";
+import { unzip, WebSocketMessage, WSMsg, zip } from "middle-earth";
 import * as SecureStore from "expo-secure-store";
+import { getDatabase, ref, onValue, get } from "firebase/database";
 import { useAuth } from "../../util/Context/authcontext";
+import { auth } from "../../util/firebase/firebaseAuth";
+import { getWsUrl } from "../../api/server-discovery";
 
-const WEBSOCKET_URL = process.env.EXPO_PUBLIC_WEBSOCKET_URL || "ws://localhost:3000";
 const RECONNECT_INTERVAL_BASE = 1000; // base interval in ms
 const MAX_RECONNECT_ATTEMPTS = 10;
 const DEV_OFFLINE_TOKEN = "dev-offline-token";
@@ -46,9 +48,50 @@ const useWebSocket = () => {
         }
     };
 
+    // Phase 6 social cutover: friendships live in Firebase central
+    // (/friends/<uid> uid edges, written by api/friends.ts). The game server
+    // only gets a DECLARED username list over the websocket, used for
+    // gameplay (visibility, friendly-fire exemption, proximity). This
+    // listener re-declares on every change, so adds/removes — from any of the
+    // user's devices — reach the server within moments.
+    const friendsDeclareUnsubRef = useRef<(() => void) | null>(null);
+
+    const stopFriendsDeclare = () => {
+        friendsDeclareUnsubRef.current?.();
+        friendsDeclareUnsubRef.current = null;
+    };
+
+    const startFriendsDeclare = () => {
+        const uid = auth.currentUser?.uid;
+        if (!uid) return; // legacy/offline session — nothing to declare
+        stopFriendsDeclare();
+        const db = getDatabase();
+        friendsDeclareUnsubRef.current = onValue(ref(db, `friends/${uid}`), async (snap) => {
+            try {
+                const friendUids = snap.exists() ? Object.keys(snap.val() as Record<string, unknown>) : [];
+                const usernames = (
+                    await Promise.all(
+                        friendUids.map(async (fuid) => {
+                            const nameSnap = await get(ref(db, `profiles/${fuid}/username`));
+                            return nameSnap.exists() ? String(nameSnap.val()) : null;
+                        })
+                    )
+                ).filter((name): name is string => !!name);
+
+                const ws = websocketRef.current;
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(zip(new WebSocketMessage([new WSMsg("friendsDeclare", { friends: usernames })])));
+                }
+            } catch (error) {
+                console.error("Failed to declare friends to game server:", error);
+            }
+        });
+    };
+
     // Intentional close (sign-out, offline mode): detach onclose first so it
     // doesn't schedule a reconnect.
     const closeWebsocket = () => {
+        stopFriendsDeclare();
         if (websocketRef.current) {
             websocketRef.current.onclose = null;
             websocketRef.current.close();
@@ -64,8 +107,10 @@ const useWebSocket = () => {
                     reject(new Error('Token not found'));
                     return;
                 }
-                // Use the token as a query parameter instead of as a protocol
-                const ws = new WebSocket(`${WEBSOCKET_URL}?token=${encodeURIComponent(token)}`);
+                // Use the token as a query parameter instead of as a protocol.
+                // The URL is resolved at connect time so a server-picker
+                // change applies on the next (re)connect.
+                const ws = new WebSocket(`${getWsUrl()}?token=${encodeURIComponent(token)}`);
     
                 ws.onopen = () => {
                     console.log("Connected to websocket");
@@ -110,6 +155,9 @@ const useWebSocket = () => {
             const ws = await connectWebsocket(token);
             websocketRef.current = ws;
             reconnectAttemptsRef.current = 0; // Reset reconnect attempts on successful connection
+            // Declare the Firebase-central friends list to this server (fires
+            // immediately on attach, then again on every friends change).
+            startFriendsDeclare();
 
             ws.onclose = () => {
                 console.log('WebSocket connection closed');

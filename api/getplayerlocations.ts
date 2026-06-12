@@ -66,28 +66,23 @@ export async function searchOtherPlayersData(searchTerm: string): Promise<any[]>
     }
 }
 
+// Friends I've added who haven't added me back (outgoing pending requests).
+// Phase 6: computed from Firebase central friend edges, not shard REST.
 export async function searchFriendsAdded(searchTerm: string): Promise<any[]> {
     try {
-        const token = await SecureStore.getItemAsync("token");
-        if (!token) {
-            throw new Error("No authentication token found.");
-        }
-        const response = await axiosInstance.get('/api/searchfriendsadded', {
-            params: {
-                token,
-                searchTerm,
-            }
-        });
-        //console.log(response.data);
-        // The backend already returns the data in the correct format, so we don't need to map it again
-        return response.data;
+        const { getFriendEdges } = await import("./friends");
+        const edges = await getFriendEdges();
+        const needle = searchTerm.trim().toLowerCase();
+        return edges
+            .filter((edge) => !edge.mutual)
+            .filter((edge) => !needle || edge.username.toLowerCase().includes(needle))
+            .map((edge) => ({
+                username: edge.username,
+                updatedAt: null,
+                profileImageUrl: null,
+            }));
     } catch (error) {
-        if (isAxiosError(error)) {
-            console.error("Error fetching other players data:", error.response?.data || error.message);
-        } else {
-            console.error("Error fetching other players data:", error);
-        }
-        // Return an empty array if an error occurs
+        console.error("Error fetching pending friends:", error);
         return [];
     }
 }

@@ -47,14 +47,14 @@ export async function login(username: string, password: string, notificationToke
 
 export async function logout() {
   try {
-    const token = await SecureStore.getItemAsync("token");
-    if (!token) {
-      console.log("No token found during logout, continuing cleanup");
-      return;
+    // Drop this device's push token from Firebase central so a signed-out
+    // device stops receiving pushes (tokens live only there since Phase 6).
+    const uid = auth.currentUser?.uid;
+    if (uid) {
+      const { getDatabase, ref, remove } = await import("firebase/database");
+      await remove(ref(getDatabase(), `notificationTokens/${uid}`));
     }
-    await axiosInstance.delete("/api/deleteNotificationToken", {
-      data: { token },
-    });
+    await SecureStore.deleteItemAsync("notificationToken");
   } catch (error) {
     console.error("Error during logout:", error);
   }

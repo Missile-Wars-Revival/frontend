@@ -1,9 +1,15 @@
 import axios from "axios";
+import { getBackendUrl } from "./server-discovery";
 
-const uri = process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:3000';
-
+// baseURL is resolved per-request so switching game servers (server picker)
+// takes effect immediately, without recreating the instance or restarting.
 const axiosInstance = axios.create({
-  baseURL: uri,
+  baseURL: getBackendUrl(),
+});
+
+axiosInstance.interceptors.request.use((config) => {
+  config.baseURL = getBackendUrl();
+  return config;
 });
 
 export default axiosInstance;

@@ -26,6 +26,7 @@ import { signInWithApple, signInWithGoogle } from '../util/firebase/firebaseAuth
 import { oauthLogin } from '../api/oauthLogin';
 import { requestPasswordReset, requestUsernameReminder, resetPassword } from '../api/changedetails';
 import LoginSwirl from '../components/Animations/loginSwirl';
+import ServerPicker from '../components/ServerPicker';
 import { getlocation } from '../util/locationreq';
 
 const IOS_CLIENT_ID = '199249539413-0og9o1srvoq381tajt844jraabb9pmf0.apps.googleusercontent.com';
@@ -244,6 +245,12 @@ export default function Auth() {
 
       {/* Form section — fully in React Native, no SwiftUI keyboard avoidance */}
       <View style={styles.formSection}>
+        {/* Game-server picker (Phase 6 distributed hosting). Renders nothing
+            unless EXPO_PUBLIC_COORDINATOR_URL is baked into the build. */}
+        <View style={styles.serverPicker}>
+          <ServerPicker />
+        </View>
+
         {/* Native segmented control — tiny Host so SwiftUI avoidance affects nothing visible */}
         <Host style={styles.pickerHost}>
           <Picker
@@ -588,6 +595,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     gap: 12,
+  },
+  serverPicker: {
+    marginBottom: 2,
   },
   pickerHost: {
     width: '100%',
