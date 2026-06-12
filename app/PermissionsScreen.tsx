@@ -483,11 +483,11 @@ const PermissionsScreenInner: React.FC<PermissionsScreenProps> = ({ onPermission
               {/* Permissions section */}
               <View style={styles.permissionsContainer}>
                 <PermissionRow
-                  icon="analytics-outline"
-                  title="App Tracking Transparency"
-                  description="Lets us measure ad performance and reduce repeated ads"
-                  isGranted={trackingPermissionResolved}
-                  onPress={requestTrackingPermission}
+                  icon="notifications-outline"
+                  title="Notifications"
+                  description="Get alerts when you're under attack"
+                  isGranted={notificationPermission}
+                  onPress={requestNotifications}
                   accentColor={slide.accentColor}
                 />
 
@@ -503,7 +503,7 @@ const PermissionsScreenInner: React.FC<PermissionsScreenProps> = ({ onPermission
 
                 <PermissionRow
                   icon="navigate-outline"
-                  title="Background Location"
+                  title="Always Location"
                   description="Keeps your position fresh for accurate missile & landmine placement while you're away"
                   isGranted={backgroundLocationPermission}
                   onPress={requestBackgroundLocationPermission}
@@ -511,11 +511,11 @@ const PermissionsScreenInner: React.FC<PermissionsScreenProps> = ({ onPermission
                 />
 
                 <PermissionRow
-                  icon="notifications-outline"
-                  title="Notifications"
-                  description="Get alerts when you're under attack"
-                  isGranted={notificationPermission}
-                  onPress={requestNotifications}
+                  icon="analytics-outline"
+                  title="App Tracking Transparency"
+                  description="Lets us measure ad performance and reduce repeated ads"
+                  isGranted={trackingPermissionResolved}
+                  onPress={requestTrackingPermission}
                   accentColor={slide.accentColor}
                 />
 
@@ -549,7 +549,7 @@ const PermissionsScreenInner: React.FC<PermissionsScreenProps> = ({ onPermission
                 </Pressable>
 
                 <Text style={styles.permissionDisclosureText}>
-                  Tracking and background location permissions are optional and do not block gameplay. Location is required for map-based gameplay.
+                  Notifications, always location, and tracking are optional and do not block gameplay. Location is required for map-based gameplay.
                 </Text>
               </View>
 
