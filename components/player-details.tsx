@@ -43,6 +43,7 @@ const TRANSPORT_INFO: Record<string, { label: string; icon: string }> = {
   boat: { label: 'On a boat', icon: 'boat' },
   ship: { label: 'On a ship', icon: 'boat' },
 };
+const DEFAULT_TRANSPORT_INFO = { label: 'On foot', icon: 'walk' };
 
 const getHealthBarColor = (health: number) => {
   const red = Math.round((255 * (100 - health)) / 100);
@@ -91,7 +92,7 @@ export function PlayerDetailsHost({ onFireMissile }: { onFireMissile?: (username
 
   const isFriend = friends.some((friend) => friend.username === player.username);
   const lastSeen = getTimeDifference(player.updatedAt).text;
-  const transport = TRANSPORT_INFO[player.transportStatus] ?? TRANSPORT_INFO.walking;
+  const transport = TRANSPORT_INFO[player.transportStatus] ?? DEFAULT_TRANSPORT_INFO;
   const health = Math.max(0, Math.min(100, player.health));
 
   const close = () => setVisible(false);

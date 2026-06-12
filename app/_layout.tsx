@@ -20,7 +20,10 @@ import { LandmineProvider } from '../util/Context/landminecontext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PermissionsScreen } from './PermissionsScreen';
 import { OnboardingProvider } from '../util/Context/onboardingContext';
+import UpdateOverlay from '../components/UpdateOverlay';
 import GameEffectsOverlay from '../components/effects/GameEffectsOverlay';
+import GameReviewModal from '../components/effects/GameReviewModal';
+import { UpdatePhase, useUpdates } from '../hooks/useUpdates';
 import { registerAndSyncPushToken } from '../components/Notifications/registerPushToken';
 import { getSecureItemSafely, setBackgroundAccessibleItem } from '../util/secure-store';
 import * as SecureStore from 'expo-secure-store';
@@ -352,6 +355,16 @@ function RootLayoutNav() {
   const { countdownIsActive, stopCountdown } = useCountdown();
   const { isSignedIn, isAuthReady } = useAuth();
   const colorScheme = useColorScheme();
+  const [updateOverlay, setUpdateOverlay] = useState<{ visible: boolean; phase: UpdatePhase | null }>({
+    visible: false,
+    phase: null,
+  });
+
+  const handleUpdateOverlayChange = useCallback((visible: boolean, phase: UpdatePhase | null) => {
+    setUpdateOverlay({ visible, phase });
+  }, []);
+
+  useUpdates({ onOverlayChange: handleUpdateOverlayChange });
 
   useEffect(() => {
     if (!isAuthReady || !isSignedIn) return;
@@ -460,6 +473,8 @@ function RootLayoutNav() {
         )}
         {/* One-shot Skia celebrations (missile launch, purchases, …) play above everything. */}
         <GameEffectsOverlay />
+        <GameReviewModal />
+        <UpdateOverlay visible={updateOverlay.visible} phase={updateOverlay.phase ?? 'checking'} />
       </View>
     </SafeAreaProvider>
   );

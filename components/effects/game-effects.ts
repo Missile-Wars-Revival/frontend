@@ -1,5 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { Platform } from 'react-native';
+import { maybePromptForReviewAfterEffect } from './review-prompt';
 
 // Tiny event bus for full-screen game effects. `GameEffectsOverlay` (mounted
 // once in app/_layout.tsx) subscribes and plays a Skia animation for each
@@ -139,6 +140,11 @@ export function triggerGameEffect(type: GameEffectType, payload?: GameEffectPayl
   HAPTIC_FOR_EFFECT[type]();
   const event: GameEffectEvent = { id: nextId++, type, ...payload };
   listeners.forEach((listener) => listener(event));
+  setTimeout(() => {
+    maybePromptForReviewAfterEffect(type).catch((error) => {
+      console.error('Failed to run review prompt check:', error);
+    });
+  }, 900);
 }
 
 export function onGameEffect(listener: Listener): () => void {

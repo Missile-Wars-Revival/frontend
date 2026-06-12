@@ -122,6 +122,16 @@ Use the Expo Notifications tool:
 https://expo.dev/notifications
 ```
 
+### EAS Updates
+Production builds listen on the `missilewars-beta` update channel:
+```
+eas update --channel missilewars-beta --message "description" --environment production
+```
+
+OTA updates only apply to installed binaries with the same `runtimeVersion`
+(`app.json` uses the `appVersion` policy). Native changes, config plugins,
+permissions, dependencies, or app version changes require a new store build.
+
 ## 📝 Support
 For support, please open an issue in the GitHub repository or contact me on [X](https://x.com/longtimeno_c).
 
