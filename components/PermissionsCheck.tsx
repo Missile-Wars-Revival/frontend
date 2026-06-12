@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import * as Location from 'expo-location';
 import { View, Text, Pressable, StyleSheet, useColorScheme, Linking, Platform } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
@@ -11,14 +11,17 @@ const PermissionsCheck: React.FC<PermissionsCheckProps> = ({ children }) => {
   const [permissionStatus, setPermissionStatus] = useState<'checking' | 'granted' | 'denied'>('checking');
   const colorScheme = useColorScheme();
 
-  useEffect(() => {
-    checkPermissions();
-  }, []);
-
-  const checkPermissions = async () => {
+  const checkPermissions = useCallback(async () => {
     const { status } = await Location.getForegroundPermissionsAsync();
     setPermissionStatus(status === 'granted' ? 'granted' : 'denied');
-  };
+  }, []);
+
+  useEffect(() => {
+    // checkPermissions awaits the native permission API before setState, so the
+    // update is async and safe here.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    checkPermissions();
+  }, [checkPermissions]);
 
   const handleRequestPermission = async () => {
     const { status } = await Location.getForegroundPermissionsAsync();

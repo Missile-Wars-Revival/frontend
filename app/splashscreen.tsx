@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, Animated, useWindowDimensions } from 'react-nat
 import { Image } from 'expo-image';
 import { Canvas, Path, Skia, Group, Circle, Rect } from '@shopify/react-native-skia';
 import { useSharedValue, withRepeat, withTiming, useDerivedValue, Easing } from 'react-native-reanimated';
-import { getlocation } from '../util/locationreq';
 import { getApps, initializeApp } from "firebase/app";
 import { firebaseConfig } from '../util/firebase/config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -109,12 +108,9 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
   useEffect(() => {
     const initializeAppLoad = async () => {
       try {
-        // Step 1: location + animate to 33% in parallel (whichever is slower wins)
+        // Step 1: startup animation only. Location permission is handled after auth.
         setLoadingText('Initializing connection...');
-        await Promise.all([
-          getlocation(),
-          animateProgress(0.33, 900),
-        ]);
+        await animateProgress(0.33, 900);
 
         // Step 2: Firebase (instant) + animate to 60%
         setLoadingText('Connecting to servers...');

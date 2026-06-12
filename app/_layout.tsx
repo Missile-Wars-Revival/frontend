@@ -206,9 +206,7 @@ export default function RootLayout() {
               <OnboardingGate>
                 <LandmineProvider>
                   <OnboardingProvider>
-                    <PermissionsCheck>
-                      <RootLayoutNav />
-                    </PermissionsCheck>
+                    <RootLayoutNav />
                   </OnboardingProvider>
                 </LandmineProvider>
               </OnboardingGate>
@@ -424,30 +422,32 @@ function RootLayoutNav() {
       <View style={{ flex: 1, backgroundColor }}>
         {isSignedIn ? (
           <ServerSessionGate>
-          <Stack
-            initialRouteName="(tabs)"
-            screenOptions={{
-              headerShown: false,
-              gestureEnabled: false,
-              animationTypeForReplace: 'push',
-              gestureDirection: 'horizontal',
-              // Match the app background so transitions never flash white.
-              contentStyle: { backgroundColor },
-            }}
-          >
-            <Stack.Screen
-              name="(tabs)"
-              options={{
-                headerShown: false,
-              }}
-            />
-            <Stack.Screen
-              name="login"
-              options={{ headerShown: false, gestureEnabled: false, animation: 'fade' }}
-            />
-            <Stack.Screen name="PermissionsScreen" options={{ headerShown: false, animation: 'slide_from_bottom' }} />
-            <Stack.Screen name="splashscreen" options={{ headerShown: false }} />
-          </Stack>
+            <PermissionsCheck>
+              <Stack
+                initialRouteName="(tabs)"
+                screenOptions={{
+                  headerShown: false,
+                  gestureEnabled: false,
+                  animationTypeForReplace: 'push',
+                  gestureDirection: 'horizontal',
+                  // Match the app background so transitions never flash white.
+                  contentStyle: { backgroundColor },
+                }}
+              >
+                <Stack.Screen
+                  name="(tabs)"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="login"
+                  options={{ headerShown: false, gestureEnabled: false, animation: 'fade' }}
+                />
+                <Stack.Screen name="PermissionsScreen" options={{ headerShown: false, animation: 'slide_from_bottom' }} />
+                <Stack.Screen name="splashscreen" options={{ headerShown: false }} />
+              </Stack>
+            </PermissionsCheck>
           </ServerSessionGate>
         ) : (
           <Stack

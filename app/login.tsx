@@ -20,7 +20,6 @@ import { useAuth } from '../util/Context/authcontext';
 import useLogin from '../hooks/api/useLogin';
 import useRegister from '../hooks/api/useRegister';
 import { saveCredentials } from '../util/logincache';
-import { usePushNotifications } from '../components/Notifications/usePushNotifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { signInWithApple, signInWithGoogle } from '../util/firebase/firebaseAuth';
 import { oauthLogin } from '../api/oauthLogin';
@@ -34,7 +33,6 @@ import {
   registerWithFirebase,
   requestFirebasePasswordReset,
 } from '../api/account';
-import { getlocation } from '../util/locationreq';
 
 // Phase 8 (backend/DISTRIBUTED_HOSTING_PLAN.md): with a coordinator baked
 // into the build, authentication is Firebase + coordinator ONLY — email (or
@@ -75,8 +73,7 @@ const { width, height } = Dimensions.get('window');
 const INNER_WIDTH = width - 32;
 
 export default function Auth() {
-  const { expoPushToken } = usePushNotifications();
-  const notificationToken = expoPushToken?.data ?? '';
+  const notificationToken = '';
   const { setIsSignedIn } = useAuth();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -101,8 +98,6 @@ export default function Auth() {
   const passwordRef = useRef<NativeTextInput>(null);
   const emailRef = useRef<NativeTextInput>(null);
   const confirmRef = useRef<NativeTextInput>(null);
-
-  useEffect(() => { getlocation(); }, []);
 
   useEffect(() => {
     GoogleSignin.configure({
