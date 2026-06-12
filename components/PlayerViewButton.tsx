@@ -233,6 +233,7 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
             {isAlive && locActive && (
               <PressableScale
                 haptic="tap"
+                accessibilityLabel={`Engage ${item.username}`}
                 onPress={() => {
                   fireMissile(item.username);
                   if (currentStep === 'fireplayermenu') {
@@ -240,22 +241,21 @@ const PlayerViewButton: React.FC<PlayerViewButtonProps> = ({ onFireMissile }) =>
                   }
                 }}
               >
-                <LinearGradient colors={Gradients.fire} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.actionButton}>
-                  <Ionicons name="rocket" size={13} color="#FFFFFF" />
-                  <Text style={styles.actionButtonText}>Engage</Text>
+                <LinearGradient colors={Gradients.fire} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.iconActionButton}>
+                  <Ionicons name="rocket" size={15} color="#FFFFFF" />
                 </LinearGradient>
               </PressableScale>
             )}
             {!item.isFriend && (
               <PressableScale
                 haptic="tap"
+                accessibilityLabel={`Recruit ${item.username}`}
                 onPress={() => {
                   handleAddFriend(item.username);
                 }}
               >
-                <LinearGradient colors={Gradients.success} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.actionButton}>
-                  <Ionicons name="person-add" size={13} color="#FFFFFF" />
-                  <Text style={styles.actionButtonText}>Recruit</Text>
+                <LinearGradient colors={Gradients.success} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.iconActionButton}>
+                  <Ionicons name="person-add" size={15} color="#FFFFFF" />
                 </LinearGradient>
               </PressableScale>
             )}
@@ -607,24 +607,18 @@ const getStyles = (palette: ThemePalette, isDark: boolean) => StyleSheet.create(
     flexShrink: 1,
   },
   actionButtons: {
-    flexDirection: 'column',
-    alignItems: 'flex-end',
-    gap: Spacing.xs,
-  },
-  actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 6,
-    borderRadius: Radius.pill,
-    minWidth: 88,
+    gap: Spacing.sm,
   },
-  actionButtonText: {
-    ...Type.micro,
-    fontSize: 12,
-    color: '#FFFFFF',
+  // Icon-only so the row stays one line tall without squeezing the
+  // last-active timestamp off the screen.
+  iconActionButton: {
+    width: 34,
+    height: 34,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   emptyState: {
     alignItems: 'center',

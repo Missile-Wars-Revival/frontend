@@ -61,7 +61,7 @@ interface PlayerProps {
   transportStatus: string;
   index: number;
   randomlocation: boolean;
-  onPlayerSelect?: (username: string) => void;
+  onPlayerSelect?: (player: Players) => void;
 }
 
 export const getLeagueAirspace = (league: string): number => {
@@ -111,11 +111,11 @@ export const PlayerComp = (props: PlayerProps) => {
 
   // Marker children are rasterized by react-native-maps and don't reliably
   // re-render after mount, so the marker carries no interactive UI at all.
-  // Tapping it reports the selection up to MapComp, which shows a real
-  // (tappable) action card hosted outside the MapView.
+  // Tapping it reports the selection up to MapComp, which opens the player
+  // details modal hosted outside the MapView.
   const handleMarkerPress = () => {
     if (props.player.username !== userName) {
-      props.onPlayerSelect?.(props.player.username);
+      props.onPlayerSelect?.(props.player);
     }
   };
 
@@ -166,10 +166,11 @@ export const PlayerComp = (props: PlayerProps) => {
         fillColor={circleFillColor}
         strokeColor={circleStrokeColor}
       />
+      {/* No title/description: the native callout would swallow the first
+          tap, forcing a second tap to reach the action UI. The details modal
+          opens straight from onPress instead. */}
       <Marker
         coordinate={markerLocation}
-        title={props.player.username}
-        description={props.timestamp}
         onPress={handleMarkerPress}
         zIndex={2} // Higher zIndex for players
       >

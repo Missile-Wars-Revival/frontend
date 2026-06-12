@@ -14,7 +14,7 @@ export interface Players {
   profileImageUrl?: string | null;
 }
 
-export const AllPlayers = ({ onPlayerSelect }: { onPlayerSelect?: (username: string) => void }) => {
+export const AllPlayers = ({ onPlayerSelect }: { onPlayerSelect?: (player: Players) => void }) => {
 
   const otherPlayersData = useFetchPlayerlocations()
 
