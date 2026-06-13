@@ -184,11 +184,11 @@ export function PlayerDetailsHost({ onFireMissile }: { onFireMissile?: (username
             {renderStatRow('Last active', lastSeen.replace('Last seen: ', ''))}
             {renderStatRow('Transport', transport.label, transport.icon)}
             {(() => {
-              // Phase 11A: trust the server's precision flag; fall back to the
-              // legacy randomlocation+friend rule only for old servers.
+              // Phase 11A: trust the server's precision flag; fall back to
+              // randomlocation for old servers that do not send the flag.
               const approximate = player.locationPrecision
                 ? player.locationPrecision === 'diffused'
-                : player.randomlocation && !isFriend;
+                : player.randomlocation;
               return renderStatRow(
                 'Location',
                 approximate ? 'Approximate' : 'Precise',

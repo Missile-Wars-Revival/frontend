@@ -15,14 +15,17 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export function useUpdates({ onOverlayChange }: UseUpdatesOptions = {}) {
   const checkingRef = useRef(false);
+  const reloadingRef = useRef(false);
   const lastCheckAtRef = useRef(0);
+  const mountedRef = useRef(true);
 
   const setOverlay = useCallback((visible: boolean, phase: UpdatePhase | null) => {
+    if (!mountedRef.current) return;
     onOverlayChange?.(visible, phase);
   }, [onOverlayChange]);
 
   const checkAndUpdate = useCallback(async ({ silent = true }: { silent?: boolean } = {}) => {
-    if (__DEV__ || !Updates.isEnabled || checkingRef.current) {
+    if (__DEV__ || !Updates.isEnabled || checkingRef.current || reloadingRef.current) {
       return false;
     }
 
@@ -39,24 +42,49 @@ export function useUpdates({ onOverlayChange }: UseUpdatesOptions = {}) {
       }
 
       setOverlay(true, 'downloading');
-      await Updates.fetchUpdateAsync();
+      const fetchResult = await Updates.fetchUpdateAsync();
+      if (!fetchResult.isNew && !fetchResult.isRollBackToEmbedded) {
+        setOverlay(false, null);
+        return false;
+      }
 
       setOverlay(true, 'installing');
       await wait(900);
 
-      setOverlay(true, 'restarting');
-      await wait(700);
+      if (AppState.currentState !== 'active') {
+        setOverlay(false, null);
+        return true;
+      }
 
-      await Updates.reloadAsync();
+      setOverlay(true, 'restarting');
+      await wait(1200);
+
+      reloadingRef.current = true;
+      await Updates.reloadAsync({
+        reloadScreenOptions: {
+          backgroundColor: '#0E1020',
+          spinner: {
+            color: '#FFFFFF',
+            size: 'large',
+          },
+        },
+      });
       return true;
     } catch (error) {
+      reloadingRef.current = false;
       console.error('Failed to apply OTA update:', error);
       setOverlay(false, null);
       return false;
     } finally {
-      checkingRef.current = false;
+      if (!reloadingRef.current) {
+        checkingRef.current = false;
+      }
     }
   }, [setOverlay]);
+
+  useEffect(() => () => {
+    mountedRef.current = false;
+  }, []);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {

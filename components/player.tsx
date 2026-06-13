@@ -4,7 +4,6 @@ import { Image } from "expo-image";
 import { Circle, Marker } from "react-native-maps";
 import { Players } from "./map-players";
 import { useUserName } from "../util/fetchusernameglobal";
-import useFetchFriends from "../hooks/websockets/friendshook";
 
 const resizedplayerimage = require("../assets/mapassets/Female_Avatar_PNG.png");
 const carImage = require("../assets/transport/car.png");
@@ -88,21 +87,8 @@ const getOffsetLocation = (latitude: number, longitude: number, offsetRadius: nu
   return { latitude: offsetLatitude, longitude: offsetLongitude };
 };
 
-// Function to get a random location within a given radius
-const getRandomLocation = (latitude: number, longitude: number, radius: number) => {
-  const earthRadius = 6371000; // Radius of the Earth in meters
-  const randomAngle = Math.random() * 2 * Math.PI; // Random angle
-  const randomDistance = Math.random() * radius; // Random distance within the radius
-
-  const newLatitude = latitude + (randomDistance / earthRadius) * (180 / Math.PI) * Math.cos(randomAngle);
-  const newLongitude = longitude + (randomDistance / earthRadius) * (180 / Math.PI) * Math.sin(randomAngle) / Math.cos(latitude * Math.PI / 180);
-
-  return { latitude: newLatitude, longitude: newLongitude };
-};
-
 export const PlayerComp = (props: PlayerProps) => {
   const userName = useUserName();
-  const friends = useFetchFriends(); // Use the friends hook
 
   const getHealthBarColor = (health: number) => {
     const red = Math.round(255 * (100 - health) / 100);
@@ -126,36 +112,26 @@ export const PlayerComp = (props: PlayerProps) => {
 
   // Define radii
   const baseRadius = 6; // Default radius when randomlocation is false
-  const randomRadius = 50; // Radius when randomlocation is true
-
-  // Check if the player is a friend
-  const isFriend = friends.some(friend => friend.username === props.player.username);
+  const approximateRadius = 100; // Matches the server-side diffusion radius.
 
   // Phase 11A: the server now diffuses locations. When it tells us the point is
   // already diffused, render it AS-IS — a stable coordinate that's easy to tap.
   // Only fall back to the legacy client-side offset when talking to an old
-  // server that sends no precision flag (then honour the old randomlocation rule).
+  // server that sends no precision flag (then honour randomlocation for all viewers).
   const serverDiffused = props.locationPrecision === "diffused";
-  const legacyDiffuse = props.locationPrecision === undefined && props.randomlocation && !isFriend;
+  const legacyDiffuse = props.locationPrecision === undefined && props.randomlocation;
   const isApproximate = serverDiffused || legacyDiffuse;
 
-  const circleRadius = isApproximate ? randomRadius : baseRadius;
+  const circleRadius = isApproximate ? approximateRadius : baseRadius;
 
-  // Only the legacy old-server path offsets client-side; a server-diffused
-  // point is used directly so the marker no longer jumps each location tick.
-  const circleCenter = useMemo(() => {
+  // One display point drives both the visible marker and its approximation
+  // circle, so the tap target stays on the marker instead of the circle center.
+  const displayLocation = useMemo(() => {
     if (legacyDiffuse) {
       return getOffsetLocation(latitude, longitude, 100);
     }
     return { latitude, longitude };
   }, [legacyDiffuse, latitude, longitude]);
-
-  const markerLocation = useMemo(() => {
-    if (legacyDiffuse) {
-      return getRandomLocation(circleCenter.latitude, circleCenter.longitude, randomRadius);
-    }
-    return circleCenter;
-  }, [legacyDiffuse, circleCenter]);
 
   // Define dynamic colors based on whether the location is approximate
   const circleFillColor = isApproximate ? "rgba(0, 255, 0, 0.1)" : "rgba(0, 255, 0, 0.2)";
@@ -164,7 +140,7 @@ export const PlayerComp = (props: PlayerProps) => {
   return (
     <View>
       <Circle
-        center={circleCenter}
+        center={displayLocation}
         radius={circleRadius}
         fillColor={circleFillColor}
         strokeColor={circleStrokeColor}
@@ -173,7 +149,8 @@ export const PlayerComp = (props: PlayerProps) => {
           tap, forcing a second tap to reach the action UI. The details modal
           opens straight from onPress instead. */}
       <Marker
-        coordinate={markerLocation}
+        coordinate={displayLocation}
+        anchor={{ x: 0.5, y: 0.32 }}
         onPress={handleMarkerPress}
         zIndex={2} // Higher zIndex for players
       >

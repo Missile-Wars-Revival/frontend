@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { ActivityIndicator, Image, StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { ActivityIndicator, Image, StyleSheet, Text, View, useColorScheme, useWindowDimensions } from 'react-native';
 import { BlurView } from 'expo-blur';
 import Animated, {
   Easing,
@@ -25,26 +25,28 @@ type UpdateOverlayProps = {
 
 const PHASE_CONFIG: Record<UpdatePhase, { title: string; subtitle: string }> = {
   checking: {
-    title: 'Checking Updates',
-    subtitle: 'Contacting servers',
+    title: 'Checking for updates',
+    subtitle: 'Looking for the newest Missile Wars build',
   },
   downloading: {
-    title: 'Downloading',
-    subtitle: 'Getting the latest build',
+    title: 'Downloading update',
+    subtitle: 'Saving the latest build to this device',
   },
   installing: {
-    title: 'Installing',
-    subtitle: 'Preparing changes',
+    title: 'Preparing update',
+    subtitle: 'Finishing setup before the app restarts',
   },
   restarting: {
-    title: 'Ready to Restart',
+    title: 'Restarting',
     subtitle: 'Relaunching Missile Wars',
   },
 };
 
 export default function UpdateOverlay({ visible, phase }: UpdateOverlayProps) {
   const isDark = useColorScheme() === 'dark';
+  const { width } = useWindowDimensions();
   const palette = getPalette(isDark);
+  const compact = width < 360;
 
   const progress = useSharedValue(0);
   const iconScale = useSharedValue(1);
@@ -166,20 +168,20 @@ export default function UpdateOverlay({ visible, phase }: UpdateOverlayProps) {
         >
           {config.title}
         </Text>
-        <View style={styles.subtitleRow}>
+        <View style={styles.subtitleBlock}>
           <Text
             style={[styles.subtitle, { color: palette.textMuted }]}
-            numberOfLines={1}
+            numberOfLines={2}
             adjustsFontSizeToFit
-            minimumFontScale={0.86}
+            minimumFontScale={0.9}
           >
             {config.subtitle}
           </Text>
           {phase !== 'restarting' && (
             <View style={styles.dots}>
-              <Animated.Text style={[styles.dot, { color: palette.accent }, dot1Style]}>.</Animated.Text>
-              <Animated.Text style={[styles.dot, { color: palette.accent }, dot2Style]}>.</Animated.Text>
-              <Animated.Text style={[styles.dot, { color: palette.accent }, dot3Style]}>.</Animated.Text>
+              <Animated.View style={[styles.dot, { backgroundColor: palette.accent }, dot1Style]} />
+              <Animated.View style={[styles.dot, { backgroundColor: palette.accent }, dot2Style]} />
+              <Animated.View style={[styles.dot, { backgroundColor: palette.accent }, dot3Style]} />
             </View>
           )}
         </View>
@@ -193,9 +195,9 @@ export default function UpdateOverlay({ visible, phase }: UpdateOverlayProps) {
         <View style={styles.phases}>
           <PhaseStep label="Check" active={phase === 'checking'} done={phase !== 'checking'} />
           <View style={[styles.phaseDivider, { backgroundColor: palette.border }]} />
-          <PhaseStep label="Download" active={phase === 'downloading'} done={phase === 'installing' || phase === 'restarting'} />
+          <PhaseStep label={compact ? 'Fetch' : 'Download'} active={phase === 'downloading'} done={phase === 'installing' || phase === 'restarting'} />
           <View style={[styles.phaseDivider, { backgroundColor: palette.border }]} />
-          <PhaseStep label="Install" active={phase === 'installing'} done={phase === 'restarting'} />
+          <PhaseStep label="Prepare" active={phase === 'installing'} done={phase === 'restarting'} />
           <View style={[styles.phaseDivider, { backgroundColor: palette.border }]} />
           <PhaseStep label="Restart" active={phase === 'restarting'} done={false} />
         </View>
@@ -213,7 +215,7 @@ function PhaseStep({ label, active, done }: { label: string; active: boolean; do
   return (
     <View style={styles.phaseStep}>
       <View style={[styles.phaseDot, { backgroundColor: dotColor, borderColor: palette.border }]}>
-        {active && <ActivityIndicator size="small" color="#fff" style={styles.phaseSpinner} />}
+        {active && <ActivityIndicator size={14} color="#fff" style={styles.phaseSpinner} />}
         {done && <Ionicons name="checkmark" size={12} color="#fff" />}
       </View>
       <Text
@@ -234,7 +236,7 @@ const styles = StyleSheet.create({
     zIndex: 9999,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
+    paddingHorizontal: Spacing.md,
   },
   backdrop: {
     ...StyleSheet.absoluteFill,
@@ -245,7 +247,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.xl,
     borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.xxl,
+    paddingVertical: Spacing.xl,
     alignItems: 'center',
   },
   iconContainer: {
@@ -276,9 +278,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: Spacing.sm,
   },
-  subtitleRow: {
-    minHeight: 24,
-    flexDirection: 'row',
+  subtitleBlock: {
+    minHeight: 48,
     alignItems: 'center',
     justifyContent: 'center',
     maxWidth: '100%',
@@ -286,17 +287,21 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     ...Type.body,
-    flexShrink: 1,
     textAlign: 'center',
+    maxWidth: 300,
   },
   dots: {
     flexDirection: 'row',
-    width: 20,
-    marginLeft: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 12,
+    marginTop: Spacing.xs,
   },
   dot: {
-    ...Type.body,
-    fontWeight: '800',
+    width: 5,
+    height: 5,
+    borderRadius: Radius.pill,
+    marginHorizontal: 3,
   },
   progressTrack: {
     width: '100%',
@@ -317,6 +322,7 @@ const styles = StyleSheet.create({
   },
   phases: {
     width: '100%',
+    minHeight: 50,
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
@@ -325,6 +331,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     alignItems: 'center',
+    paddingHorizontal: 1,
   },
   phaseDot: {
     width: 22,
@@ -344,7 +351,8 @@ const styles = StyleSheet.create({
     maxWidth: '100%',
   },
   phaseDivider: {
-    width: 10,
+    width: 8,
+    flexShrink: 1,
     height: StyleSheet.hairlineWidth,
     marginTop: 11,
   },
