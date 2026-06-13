@@ -75,16 +75,22 @@ export const getLeagueAirspace = (league: string): number => {
   }
 };
 
-// Function to get a random offset location for the circle center
-const getOffsetLocation = (latitude: number, longitude: number, offsetRadius: number) => {
-  const earthRadius = 6371000; // Radius of the Earth in meters
-  const randomAngle = Math.random() * 2 * Math.PI; // Random angle
-  const randomDistance = Math.random() * offsetRadius; // Random distance within the offset radius
-
-  const offsetLatitude = latitude + (randomDistance / earthRadius) * (180 / Math.PI) * Math.cos(randomAngle);
-  const offsetLongitude = longitude + (randomDistance / earthRadius) * (180 / Math.PI) * Math.sin(randomAngle) / Math.cos(latitude * Math.PI / 180);
-
-  return { latitude: offsetLatitude, longitude: offsetLongitude };
+// A DETERMINISTIC point within `maxMeters` of (lat,lng), seeded by `seed`
+// (FNV-1a hash, not Math.random), so a diffused player's circle/marker stay put
+// across location ticks instead of jittering — and the marker is easy to tap.
+const stableOffset = (latitude: number, longitude: number, seed: string, maxMeters: number) => {
+  let hash = 2166136261;
+  for (let i = 0; i < seed.length; i++) {
+    hash ^= seed.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  const u = hash >>> 0;
+  const angle = ((u % 36000) / 36000) * 2 * Math.PI;
+  const distance = (((u >>> 8) % 1000) / 1000) * maxMeters;
+  const earthRadius = 6371000;
+  const dLat = (distance / earthRadius) * (180 / Math.PI) * Math.cos(angle);
+  const dLng = (distance / earthRadius) * (180 / Math.PI) * Math.sin(angle) / Math.cos(latitude * Math.PI / 180);
+  return { latitude: latitude + dLat, longitude: longitude + dLng };
 };
 
 export const PlayerComp = (props: PlayerProps) => {
@@ -110,28 +116,38 @@ export const PlayerComp = (props: PlayerProps) => {
 
   const { latitude, longitude } = props.location;
 
-  // Define radii
-  const baseRadius = 6; // Default radius when randomlocation is false
-  const approximateRadius = 100; // Matches the server-side diffusion radius.
+  const username = props.player.username;
 
-  // Phase 11A: the server now diffuses locations. When it tells us the point is
-  // already diffused, render it AS-IS — a stable coordinate that's easy to tap.
-  // Only fall back to the legacy client-side offset when talking to an old
-  // server that sends no precision flag (then honour randomlocation for all viewers).
+  // Define radii. The diffusion circle is kept modest (≈ the server-side
+  // DIFFUSION_RADIUS_METERS) so it doesn't dominate the map.
+  const baseRadius = 6; // Default radius when randomlocation is false
+  const approximateRadius = 60;
+
+  // Phase 11A: the server now diffuses locations. A "diffused" point is already
+  // privacy-safe. Only fall back to a client-side offset when an OLD server
+  // sends no precision flag (then honour randomlocation for all viewers).
   const serverDiffused = props.locationPrecision === "diffused";
   const legacyDiffuse = props.locationPrecision === undefined && props.randomlocation;
   const isApproximate = serverDiffused || legacyDiffuse;
 
   const circleRadius = isApproximate ? approximateRadius : baseRadius;
 
-  // One display point drives both the visible marker and its approximation
-  // circle, so the tap target stays on the marker instead of the circle center.
-  const displayLocation = useMemo(() => {
-    if (legacyDiffuse) {
-      return getOffsetLocation(latitude, longitude, 100);
-    }
+  // Circle center: a server-diffused coordinate is safe to sit on. The legacy
+  // old-server coordinate is still PRECISE, so push the circle off it (stably)
+  // so we never draw it on the real spot.
+  const circleCenter = useMemo(() => {
+    if (legacyDiffuse) return stableOffset(latitude, longitude, username + ':c', approximateRadius);
     return { latitude, longitude };
-  }, [legacyDiffuse, latitude, longitude]);
+  }, [legacyDiffuse, latitude, longitude, username]);
+
+  // Avatar marker: for diffused players, a stable spot INSIDE the circle (not
+  // dead center, seeded by username) — so it reads as "somewhere in this area"
+  // and the tap target is the marker, not the circle's middle. Precise players
+  // render right on their point.
+  const markerLocation = useMemo(() => {
+    if (!isApproximate) return { latitude, longitude };
+    return stableOffset(circleCenter.latitude, circleCenter.longitude, username + ':m', approximateRadius * 0.62);
+  }, [isApproximate, circleCenter, latitude, longitude, username]);
 
   // Define dynamic colors based on whether the location is approximate
   const circleFillColor = isApproximate ? "rgba(0, 255, 0, 0.1)" : "rgba(0, 255, 0, 0.2)";
@@ -140,7 +156,7 @@ export const PlayerComp = (props: PlayerProps) => {
   return (
     <View>
       <Circle
-        center={displayLocation}
+        center={circleCenter}
         radius={circleRadius}
         fillColor={circleFillColor}
         strokeColor={circleStrokeColor}
@@ -149,7 +165,7 @@ export const PlayerComp = (props: PlayerProps) => {
           tap, forcing a second tap to reach the action UI. The details modal
           opens straight from onPress instead. */}
       <Marker
-        coordinate={displayLocation}
+        coordinate={markerLocation}
         anchor={{ x: 0.5, y: 0.32 }}
         onPress={handleMarkerPress}
         zIndex={2} // Higher zIndex for players
