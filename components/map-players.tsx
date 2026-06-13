@@ -15,6 +15,9 @@ export interface Players {
   // already the display-safe offset point — render as-is. Absent on old
   // servers (fall back to the legacy client-side diffusion of randomlocation).
   locationPrecision?: "precise" | "diffused";
+  // The player's league airspace radius (m) — sizes the diffusion circle and
+  // the marker's offset within it.
+  airspaceRadius?: number;
   profileImageUrl?: string | null;
 }
 
@@ -38,7 +41,7 @@ export const AllPlayers = ({ onPlayerSelect }: { onPlayerSelect?: (player: Playe
 
         return (
           <React.Fragment key={`${player.username}-${index}`}>
-            <PlayerComp index={index} player={player} location={location} timestamp={text} health={player.health} transportStatus={player.transportStatus} randomlocation={player.randomlocation} locationPrecision={player.locationPrecision} onPlayerSelect={onPlayerSelect} />
+            <PlayerComp index={index} player={player} location={location} timestamp={text} health={player.health} transportStatus={player.transportStatus} randomlocation={player.randomlocation} locationPrecision={player.locationPrecision} airspaceRadius={player.airspaceRadius} onPlayerSelect={onPlayerSelect} />
           </React.Fragment>
         );
       })}

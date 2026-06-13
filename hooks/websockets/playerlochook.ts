@@ -24,6 +24,7 @@ const useFetchPlayerlocations = (): Players[] => {
                         transportStatus: item.transportStatus,
                         randomlocation: item.randomlocation,
                         locationPrecision: item.locationPrecision,
+                        airspaceRadius: item.airspaceRadius,
                         profileImageUrl: item.profileImageUrl ?? null
                     })));
                 }

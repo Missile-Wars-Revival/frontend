@@ -61,6 +61,7 @@ interface PlayerProps {
   index: number;
   randomlocation: boolean;
   locationPrecision?: "precise" | "diffused";
+  airspaceRadius?: number;
   onPlayerSelect?: (player: Players) => void;
 }
 
@@ -118,10 +119,10 @@ export const PlayerComp = (props: PlayerProps) => {
 
   const username = props.player.username;
 
-  // Define radii. The diffusion circle is kept modest (≈ the server-side
-  // DIFFUSION_RADIUS_METERS) so it doesn't dominate the map.
+  // Define radii. The diffusion circle is the player's league AIRSPACE (sent by
+  // the server: bronze 60m … legend 200m); a fallback covers old servers.
   const baseRadius = 6; // Default radius when randomlocation is false
-  const approximateRadius = 60;
+  const approximateRadius = props.airspaceRadius ?? 60;
 
   // Phase 11A: the server now diffuses locations. A "diffused" point is already
   // privacy-safe. Only fall back to a client-side offset when an OLD server
@@ -138,7 +139,7 @@ export const PlayerComp = (props: PlayerProps) => {
   const circleCenter = useMemo(() => {
     if (legacyDiffuse) return stableOffset(latitude, longitude, username + ':c', approximateRadius);
     return { latitude, longitude };
-  }, [legacyDiffuse, latitude, longitude, username]);
+  }, [legacyDiffuse, latitude, longitude, username, approximateRadius]);
 
   // Avatar marker: for diffused players, a stable spot INSIDE the circle (not
   // dead center, seeded by username) — so it reads as "somewhere in this area"
@@ -147,7 +148,7 @@ export const PlayerComp = (props: PlayerProps) => {
   const markerLocation = useMemo(() => {
     if (!isApproximate) return { latitude, longitude };
     return stableOffset(circleCenter.latitude, circleCenter.longitude, username + ':m', approximateRadius * 0.62);
-  }, [isApproximate, circleCenter, latitude, longitude, username]);
+  }, [isApproximate, circleCenter, latitude, longitude, username, approximateRadius]);
 
   // Define dynamic colors based on whether the location is approximate
   const circleFillColor = isApproximate ? "rgba(0, 255, 0, 0.1)" : "rgba(0, 255, 0, 0.2)";
