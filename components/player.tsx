@@ -166,7 +166,6 @@ export const PlayerComp = (props: PlayerProps) => {
           opens straight from onPress instead. */}
       <Marker
         coordinate={markerLocation}
-        anchor={{ x: 0.5, y: 0.32 }}
         onPress={handleMarkerPress}
         zIndex={2} // Higher zIndex for players
       >
