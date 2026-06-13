@@ -20,6 +20,11 @@ const COORDINATOR_URL = (process.env.EXPO_PUBLIC_COORDINATOR_URL || "").replace(
 
 const SELECTED_SERVER_KEY = "selectedServer";
 const UNVERIFIED_ACK_KEY_PREFIX = "unverifiedServerAck:";
+// Phase 12: consecutive connection/session failures for the stored shard.
+// After MAX_SERVER_FAILURES the shard is dropped and the player is sent back to
+// the selector, so a dead/migrating server can't trap them on a black screen.
+const SERVER_FAILURE_KEY = "selectedServerFailures";
+const MAX_SERVER_FAILURES = 5;
 
 export interface GameServer {
   id: string;
@@ -87,7 +92,34 @@ export async function selectServer(server: GameServer): Promise<void> {
 
 export async function clearSelectedServer(): Promise<void> {
   selectedServer = null;
-  await AsyncStorage.removeItem(SELECTED_SERVER_KEY);
+  await AsyncStorage.multiRemove([SELECTED_SERVER_KEY, SERVER_FAILURE_KEY]);
+}
+
+// A successful connect/session resets the failure streak.
+export async function resetServerFailures(): Promise<void> {
+  await AsyncStorage.removeItem(SERVER_FAILURE_KEY);
+}
+
+// Records one failed connection/session for the stored shard. When the streak
+// reaches MAX_SERVER_FAILURES it drops the stored shard and un-confirms the
+// session (so ServerSessionGate re-shows the selector) and returns true. A
+// no-op in solo mode or with no selected server.
+export async function recordServerFailure(): Promise<boolean> {
+  if (!coordinatorConfigured() || !selectedServer) return false;
+  let count = 0;
+  try {
+    count = Number(await AsyncStorage.getItem(SERVER_FAILURE_KEY)) || 0;
+  } catch {
+    count = 0;
+  }
+  count += 1;
+  if (count >= MAX_SERVER_FAILURES) {
+    await clearSelectedServer();
+    resetServerSession();
+    return true;
+  }
+  await AsyncStorage.setItem(SERVER_FAILURE_KEY, String(count));
+  return false;
 }
 
 // REST base for the current shard. Selection wins; env vars keep legacy and

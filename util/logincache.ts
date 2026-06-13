@@ -1,7 +1,7 @@
 import * as SecureStore from "expo-secure-store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { logout } from "../api/login";
-import { resetServerSession } from "../api/server-discovery";
+import { clearSelectedServer, resetServerSession } from "../api/server-discovery";
 import { setBackgroundAccessibleItem } from "./secure-store";
 
 export async function saveCredentials(
@@ -30,6 +30,9 @@ export async function signOut(): Promise<void> {
   await AsyncStorage.setItem('signedIn', 'false');
   // Next sign-in must go through the server selector again (Phase 7).
   resetServerSession();
+  // Phase 12: drop the stored shard (and its failure streak) so the next
+  // account doesn't inherit this one's server selection.
+  await clearSelectedServer();
 }
 
 export async function clearCredentials(): Promise<void> {

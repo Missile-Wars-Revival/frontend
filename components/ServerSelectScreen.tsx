@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View, useColorScheme,
+  ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, View, useColorScheme,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as SecureStore from 'expo-secure-store';
@@ -31,6 +31,8 @@ import {
 
 const FIRST_DATA_TIMEOUT_MS = 15000;
 const MAX_RECENT_ROWS = 5;
+// Where the "Host your own" empty-state CTA sends people.
+const HOST_INSTRUCTIONS_URL = 'https://discord.gg/Gk8jqUnVd3';
 
 function lastPlayedLabel(timestamp: number): string {
   const days = Math.floor((Date.now() - timestamp) / (24 * 60 * 60 * 1000));
@@ -283,7 +285,17 @@ export default function ServerSelectScreen({ onDone }: ServerSelectScreenProps) 
             )}
 
             {servers.length === 0 ? (
-              <Text style={[styles.error, { color: c.subtle }]}>No servers are online right now.</Text>
+              // Phase 12: a dead-end "no servers" message becomes a call to
+              // action — the network is community-hosted, so anyone can add one.
+              <View style={styles.emptyState}>
+                <Text style={[styles.emptyTitle, { color: c.text }]}>No servers online</Text>
+                <Pressable
+                  onPress={() => Linking.openURL(HOST_INSTRUCTIONS_URL).catch(() => {})}
+                  style={[styles.hostButton, { borderColor: c.border }]}
+                >
+                  <Text style={[styles.hostButtonText, { color: c.text }]}>Host your own →</Text>
+                </Pressable>
+              </View>
             ) : otherServers.length > 0 ? (
               <>
                 <Text style={[styles.sectionHeader, { color: c.subtle }]}>
@@ -341,6 +353,10 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 14, lineHeight: 20, marginTop: 6, marginBottom: 14 },
   spinner: { marginVertical: 48 },
   error: { color: '#e74c3c', fontSize: 14, marginVertical: 12, textAlign: 'center' },
+  emptyState: { alignItems: 'center', marginVertical: 28, gap: 12 },
+  emptyTitle: { fontSize: 16, fontWeight: '700', textAlign: 'center' },
+  hostButton: { borderWidth: 1, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 20 },
+  hostButtonText: { fontSize: 15, fontWeight: '700' },
   sectionHeader: {
     fontSize: 13,
     fontWeight: '700',

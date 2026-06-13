@@ -34,6 +34,7 @@ import {
   confirmServerSession,
   hydrateSelectedServer,
   isServerSessionConfirmed,
+  subscribeServerSession,
 } from '../api/server-discovery';
 // Imported for its side effect too: TaskManager.defineTask must run in module
 // scope so the task exists when the OS launches the app headless.
@@ -350,6 +351,17 @@ function ServerSessionGate({ children }: { children: React.ReactNode }) {
       cancelled = true;
     };
   }, [phase]);
+
+  // Phase 12: if the session is un-confirmed at runtime (e.g. the stored shard
+  // failed too many times and was dropped by recordServerFailure), drop back to
+  // the selector so the player can pick another server instead of being stuck.
+  useEffect(() => {
+    return subscribeServerSession(() => {
+      if (!isServerSessionConfirmed()) {
+        setPhase((current) => (current === 'ready' ? 'select' : current));
+      }
+    });
+  }, []);
 
   if (phase === 'ready') return <>{children}</>;
   if (phase === 'claim') {

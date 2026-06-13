@@ -59,6 +59,15 @@ export function useUpdates({ onOverlayChange }: UseUpdatesOptions = {}) {
       setOverlay(true, 'restarting');
       await wait(1200);
 
+      // Re-check after the restart delay: if the app was backgrounded (or this
+      // hook unmounted) during the 1.2s window, defer the reload — reloading a
+      // backgrounded app can wedge the relaunch. The fetched update applies on
+      // the next foreground check or cold start instead.
+      if (AppState.currentState !== 'active' || !mountedRef.current) {
+        setOverlay(false, null);
+        return true;
+      }
+
       reloadingRef.current = true;
       await Updates.reloadAsync({
         reloadScreenOptions: {

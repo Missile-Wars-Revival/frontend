@@ -8,6 +8,8 @@ import { auth } from "../../util/firebase/firebaseAuth";
 import {
     getWsUrl,
     isServerSessionConfirmed,
+    recordServerFailure,
+    resetServerFailures,
     subscribeServerSession,
 } from "../../api/server-discovery";
 import { getSecureItemSafely } from "../../util/secure-store";
@@ -163,6 +165,8 @@ const useWebSocket = () => {
             const ws = await connectWebsocket(token);
             websocketRef.current = ws;
             reconnectAttemptsRef.current = 0; // Reset reconnect attempts on successful connection
+            // Phase 12: a good connection clears the stored-shard failure streak.
+            resetServerFailures().catch(() => {});
             // Declare the Firebase-central friends list to this server (fires
             // immediately on attach, then again on every friends change).
             startFriendsDeclare();
@@ -273,6 +277,11 @@ const useWebSocket = () => {
 
         if (reconnectAttemptsRef.current >= MAX_RECONNECT_ATTEMPTS) {
             console.error("Max reconnect attempts reached. Could not connect to WebSocket.");
+            // Phase 12: count this as a failure for the stored shard. After
+            // enough consecutive give-ups the shard is dropped and the session
+            // un-confirmed, so ServerSessionGate routes the player back to the
+            // selector instead of looping on a dead/migrating server.
+            recordServerFailure().catch(() => {});
             return;
         }
 

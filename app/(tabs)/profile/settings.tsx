@@ -29,6 +29,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { changeEmail, changePassword, changeUsername, deleteAcc } from '../../../api/changedetails';
 import { updateFriendsOnlyStatus } from '../../../api/visibility';
 import { updatelocActive, getlocActive, getRandomLocation, randomLocation } from '../../../api/locationOptions';
+import { coordinatorConfigured, resetServerSession } from '../../../api/server-discovery';
 import { useAuth } from '../../../util/Context/authcontext';
 import AppIconChanger from '../../../components/appiconchanger';
 import * as StoreReview from 'expo-store-review';
@@ -639,6 +640,36 @@ const SettingsPage: React.FC = () => {
             </View>
             <AppIconChanger />
           </View>
+          {/* Phase 12: switch game servers. Re-opens the verified/unverified-
+              aware selector; the current session stays until the new shard
+              connects (the selector holds the connecting screen). */}
+          {coordinatorConfigured() && (
+            <>
+              <View style={s.sep} />
+              <Pressable
+                style={s.row}
+                onPress={() =>
+                  Alert.alert(
+                    'Change Server',
+                    'Choose a different game server. Your current session stays until the new server connects.',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      { text: 'Choose Server', onPress: () => resetServerSession() },
+                    ]
+                  )
+                }
+              >
+                <View style={[s.iconCircle, { backgroundColor: accent + '22' }]}>
+                  <Server size={18} color={accent} />
+                </View>
+                <View style={s.rowBody}>
+                  <Text style={s.rowTitle}>Change Server</Text>
+                  <Text style={s.rowSub}>Pick a different game server</Text>
+                </View>
+                <ChevronRight size={16} color="#C7C7CC" />
+              </Pressable>
+            </>
+          )}
         </View>
 
         {/* ── Privacy & Location ────────────────────────────── */}
