@@ -23,6 +23,7 @@ const useFetchPlayerlocations = (): Players[] => {
                         health: item.health,
                         transportStatus: item.transportStatus,
                         randomlocation: item.randomlocation,
+                        locationPrecision: item.locationPrecision,
                         profileImageUrl: item.profileImageUrl ?? null
                     })));
                 }

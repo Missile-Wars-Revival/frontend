@@ -61,6 +61,7 @@ interface PlayerProps {
   transportStatus: string;
   index: number;
   randomlocation: boolean;
+  locationPrecision?: "precise" | "diffused";
   onPlayerSelect?: (player: Players) => void;
 }
 
@@ -130,33 +131,35 @@ export const PlayerComp = (props: PlayerProps) => {
   // Check if the player is a friend
   const isFriend = friends.some(friend => friend.username === props.player.username);
 
-  // Determine if we should use random location
-  const useRandomLocation = props.randomlocation && !isFriend;
+  // Phase 11A: the server now diffuses locations. When it tells us the point is
+  // already diffused, render it AS-IS — a stable coordinate that's easy to tap.
+  // Only fall back to the legacy client-side offset when talking to an old
+  // server that sends no precision flag (then honour the old randomlocation rule).
+  const serverDiffused = props.locationPrecision === "diffused";
+  const legacyDiffuse = props.locationPrecision === undefined && props.randomlocation && !isFriend;
+  const isApproximate = serverDiffused || legacyDiffuse;
 
-  const circleRadius = useRandomLocation ? randomRadius : baseRadius;
+  const circleRadius = isApproximate ? randomRadius : baseRadius;
 
-  // Define offset radius for the circle center when using random location
-  const offsetRadius = useRandomLocation ? 100 : 0;
-
-  // Compute circle center with offset when using random location
+  // Only the legacy old-server path offsets client-side; a server-diffused
+  // point is used directly so the marker no longer jumps each location tick.
   const circleCenter = useMemo(() => {
-    if (useRandomLocation) {
-      return getOffsetLocation(latitude, longitude, offsetRadius);
+    if (legacyDiffuse) {
+      return getOffsetLocation(latitude, longitude, 100);
     }
     return { latitude, longitude };
-  }, [useRandomLocation, latitude, longitude, offsetRadius]);
+  }, [legacyDiffuse, latitude, longitude]);
 
-  // Compute marker location
   const markerLocation = useMemo(() => {
-    if (useRandomLocation) {
-      return getRandomLocation(circleCenter.latitude, circleCenter.longitude, circleRadius);
+    if (legacyDiffuse) {
+      return getRandomLocation(circleCenter.latitude, circleCenter.longitude, randomRadius);
     }
-    return { latitude, longitude };
-  }, [useRandomLocation, circleCenter, circleRadius, latitude, longitude]);
+    return circleCenter;
+  }, [legacyDiffuse, circleCenter]);
 
-  // Define dynamic colors based on useRandomLocation
-  const circleFillColor = useRandomLocation ? "rgba(0, 255, 0, 0.1)" : "rgba(0, 255, 0, 0.2)";
-  const circleStrokeColor = useRandomLocation ? "rgba(0, 255, 0, 0.6)" : "rgba(0, 255, 0, 0.8)";
+  // Define dynamic colors based on whether the location is approximate
+  const circleFillColor = isApproximate ? "rgba(0, 255, 0, 0.1)" : "rgba(0, 255, 0, 0.2)";
+  const circleStrokeColor = isApproximate ? "rgba(0, 255, 0, 0.6)" : "rgba(0, 255, 0, 0.8)";
 
   return (
     <View>

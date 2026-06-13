@@ -25,6 +25,7 @@ export type PlayerDetails = {
   health: number;
   transportStatus: string;
   randomlocation: boolean;
+  locationPrecision?: "precise" | "diffused";
 };
 
 type Listener = (details: PlayerDetails) => void;
@@ -182,11 +183,18 @@ export function PlayerDetailsHost({ onFireMissile }: { onFireMissile?: (username
           <View style={[styles.statsContainer, { backgroundColor: c.surfaceAlt }]}>
             {renderStatRow('Last active', lastSeen.replace('Last seen: ', ''))}
             {renderStatRow('Transport', transport.label, transport.icon)}
-            {renderStatRow(
-              'Location',
-              player.randomlocation && !isFriend ? 'Approximate' : 'Precise',
-              player.randomlocation && !isFriend ? 'help-circle-outline' : 'locate-outline'
-            )}
+            {(() => {
+              // Phase 11A: trust the server's precision flag; fall back to the
+              // legacy randomlocation+friend rule only for old servers.
+              const approximate = player.locationPrecision
+                ? player.locationPrecision === 'diffused'
+                : player.randomlocation && !isFriend;
+              return renderStatRow(
+                'Location',
+                approximate ? 'Approximate' : 'Precise',
+                approximate ? 'help-circle-outline' : 'locate-outline'
+              );
+            })()}
             <View style={styles.statRow}>
               <Text style={[styles.statLabel, { color: c.textMuted }]}>Health</Text>
               <View style={styles.healthValue}>

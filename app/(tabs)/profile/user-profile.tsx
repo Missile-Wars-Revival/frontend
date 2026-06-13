@@ -8,6 +8,7 @@ import Ionicons from '@react-native-vector-icons/ionicons';
 import MaterialCommunityIcons from '@react-native-vector-icons/material-design-icons';
 import { addFriend } from '../../../api/friends';
 import { getuserprofile } from '../../../api/getprofile';
+import { getIdentityBadgesByUsername, isIdentityBadge } from '../../../api/identityBadges';
 import useFetchFriends from '../../../hooks/websockets/friendshook';
 import { Avatar } from '../../../components/ui/Avatar';
 import { AnimatedEntrance } from '../../../components/ui/AnimatedEntrance';
@@ -74,6 +75,7 @@ const UserProfilePage: React.FC = () => {
   const insets = useSafeAreaInsets();
 
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [identityBadges, setIdentityBadges] = useState<string[]>([]);
   const [selectedBadge, setSelectedBadge] = useState<string | null>(null);
   const [addedAsFriend, setAddedAsFriend] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -99,6 +101,9 @@ const UserProfilePage: React.FC = () => {
       if (response.success && response.userProfile) {
         setAddedAsFriend(false);
         setUserProfile(response.userProfile);
+        // Identity badges come from central Firebase (account-level), not the
+        // shard profile payload; resolve them by username.
+        getIdentityBadgesByUsername(username).then(setIdentityBadges);
       } else {
         console.error('Failed to fetch user profile: Invalid response structure');
       }
@@ -211,16 +216,25 @@ const UserProfilePage: React.FC = () => {
         <AnimatedEntrance index={0} style={[styles.card, { backgroundColor: c.surface }, cardShadow(isDarkMode)]}>
           <Text style={[styles.sectionTitle, { color: c.text }]}>Badges</Text>
           <View style={styles.badgesList}>
-            {userProfile.statistics.badges?.length ? (
-              userProfile.statistics.badges.map(renderBadge)
-            ) : (
-              <Text style={[styles.muted, { color: c.textMuted }]}>No badges yet</Text>
-            )}
+            {(() => {
+              const gameplay = (userProfile.statistics.badges ?? []).filter((b) => !isIdentityBadge(b));
+              const badges = [...identityBadges, ...gameplay];
+              return badges.length ? (
+                badges.map(renderBadge)
+              ) : (
+                <Text style={[styles.muted, { color: c.textMuted }]}>No badges yet</Text>
+              );
+            })()}
           </View>
         </AnimatedEntrance>
 
         <AnimatedEntrance index={1} style={styles.sectionWrap}>
           <Text style={[styles.sectionHeading, { color: c.text }]}>Statistics</Text>
+          {/* Phase 10: per-shard stats — this is their progression on this
+              server, not a cross-shard total. */}
+          <Text style={[styles.muted, { color: c.textMuted, marginBottom: Spacing.md, textAlign: 'left' }]}>
+            Specific to this server.
+          </Text>
           <View style={styles.statsGrid}>
             {STAT_META.map((s) => (
               <View key={s.key} style={[styles.statCard, { backgroundColor: c.surface }, cardShadow(isDarkMode)]}>

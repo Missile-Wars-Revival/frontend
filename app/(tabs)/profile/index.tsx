@@ -17,6 +17,7 @@ import { Avatar } from '../../../components/ui/Avatar';
 import { editUser, uploadProfileImage } from '../../../api/editUser';
 import * as Clipboard from 'expo-clipboard';
 import { getImages } from '../../../api/store';
+import { getIdentityBadges, isIdentityBadge } from '../../../api/identityBadges';
 import AnimatedEntrance from '../../../components/ui/AnimatedEntrance';
 import PressableScale from '../../../components/ui/PressableScale';
 import haptics from '../../../components/ui/haptics';
@@ -93,6 +94,9 @@ const ProfilePage: React.FC = () => {
   const [firebaseToken, setFirebaseToken] = useState<string | null>(null);
   const [getImageForProduct, setGetImageForProduct] = useState<(imageName: string) => any>(() => () => require('../../../assets/logo.png'));
   const [isUploadingProfileImage, setIsUploadingProfileImage] = useState(false);
+  // Phase 10: identity badges (staff/early/founder/debug) come from central
+  // Firebase, not the shard stats. League badges still ride in statistics.
+  const [identityBadges, setIdentityBadges] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchUsername = async () => {
@@ -118,9 +122,32 @@ const ProfilePage: React.FC = () => {
     loadImages();
   }, []);
 
+  // firebaseToken holds the firebaseUID (SecureStore key "firebaseUID"); use it
+  // to read this account's central identity badges.
+  useEffect(() => {
+    if (!firebaseToken) return;
+    let cancelled = false;
+    getIdentityBadges(firebaseToken).then((badges) => {
+      if (!cancelled) setIdentityBadges(badges);
+    });
+    return () => { cancelled = true; };
+  }, [firebaseToken]);
+
   const filteredInventory = useMemo(() => {
     return inventory.filter(item => item.quantity > 0);
   }, [inventory]);
+
+  // Identity badges (Firebase) first, then league/gameplay badges from the
+  // shard with any legacy identity copies stripped so nothing shows twice.
+  const displayBadges = useMemo(() => {
+    const gameplay = (statistics?.badges ?? []).filter((b) => !isIdentityBadge(b));
+    return [...identityBadges, ...gameplay];
+  }, [identityBadges, statistics]);
+
+  const hasDebugBadge = useMemo(
+    () => identityBadges.includes('Debug') || (statistics?.badges ?? []).includes('Debug'),
+    [identityBadges, statistics],
+  );
 
   const openSettings = () => {
     haptics.select();
@@ -479,8 +506,8 @@ const ProfilePage: React.FC = () => {
         <AnimatedEntrance index={0} style={[styles.card, { backgroundColor: c.surface }, cardShadow(isDarkMode)]}>
           <Text style={[styles.sectionTitle, { color: c.text }]}>Badges</Text>
           <View style={styles.badgesList}>
-            {statistics && statistics.badges && statistics.badges.length > 0 ? (
-              statistics.badges.map(renderBadge)
+            {displayBadges.length > 0 ? (
+              displayBadges.map(renderBadge)
             ) : (
               <Text style={[styles.muted, { color: c.textMuted }]}>No badges yet</Text>
             )}
@@ -490,6 +517,12 @@ const ProfilePage: React.FC = () => {
         {/* Statistics grid */}
         <AnimatedEntrance index={1} style={styles.sectionWrap}>
           <Text style={[styles.sectionHeading, { color: c.text }]}>Statistics</Text>
+          {/* Phase 10: stats/rank/league badges are per-shard — each server is
+              its own world. Make that explicit so RP and counts don't read as a
+              global total. */}
+          <Text style={[styles.muted, { color: c.textMuted, marginBottom: Spacing.md }]}>
+            Stats, rank and league badges are specific to this server.
+          </Text>
           {statistics ? (
             <View style={styles.statsGrid}>
               {STAT_META.map((s) => (
@@ -561,7 +594,7 @@ const ProfilePage: React.FC = () => {
           )}
         </AnimatedEntrance>
 
-        {statistics && statistics.badges.includes('Debug') && (
+        {hasDebugBadge && (
           <PressableScale haptic="select" onPress={() => setIsDebugMenuVisible(!isDebugMenuVisible)}>
             <Text style={[styles.debugMenuToggle, { color: c.accent }]}>
               {isDebugMenuVisible ? 'Hide' : 'Show'} Debug Menu
