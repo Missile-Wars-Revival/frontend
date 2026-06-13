@@ -32,8 +32,10 @@ import UsernameClaimScreen from '../components/UsernameClaimScreen';
 import { getMyProfileUsername, waitForFirebaseUser } from '../api/account';
 import {
   confirmServerSession,
+  getSelectedServer,
   hydrateSelectedServer,
   isServerSessionConfirmed,
+  selectServerViaCoordinator,
   subscribeServerSession,
 } from '../api/server-discovery';
 // Imported for its side effect too: TaskManager.defineTask must run in module
@@ -343,6 +345,26 @@ function ServerSessionGate({ children }: { children: React.ReactNode }) {
       } catch (error) {
         console.error('Server-session check failed:', error);
       }
+
+      // Phase 12: persist the server across sessions. If a server was already
+      // selected in a previous session, reuse it on cold start instead of
+      // re-showing the selector. Re-mint a fresh shard token (they expire ~12h),
+      // falling back to the cached token/selection if the coordinator is
+      // unreachable — failure recovery (5 strikes) surfaces the selector if the
+      // stored server is genuinely dead.
+      if (next === 'select') {
+        const stored = getSelectedServer();
+        if (stored) {
+          try {
+            const user = await waitForFirebaseUser();
+            if (user) await selectServerViaCoordinator(stored, await user.getIdToken());
+          } catch (reuseError) {
+            console.error('Stored-server re-mint failed; reusing cached token:', reuseError);
+          }
+          next = 'ready';
+        }
+      }
+
       if (cancelled) return;
       if (next === 'ready') confirmServerSession();
       setPhase(next);

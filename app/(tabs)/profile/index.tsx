@@ -144,10 +144,13 @@ const ProfilePage: React.FC = () => {
     return [...identityBadges, ...gameplay];
   }, [identityBadges, statistics]);
 
-  const hasDebugBadge = useMemo(
-    () => identityBadges.includes('Debug') || (statistics?.badges ?? []).includes('Debug'),
-    [identityBadges, statistics],
-  );
+  // Staff/debug access is Firebase-authoritative (Staff or Debug identity
+  // badge). The backend enforces the same via the coordinator-stamped `staff`
+  // JWT claim; this only gates the menu's visibility.
+  const hasStaffAccess = useMemo(() => {
+    const isStaffBadge = (b: string) => b === 'Staff' || b === 'Debug';
+    return identityBadges.some(isStaffBadge) || (statistics?.badges ?? []).some(isStaffBadge);
+  }, [identityBadges, statistics]);
 
   const openSettings = () => {
     haptics.select();
@@ -594,7 +597,7 @@ const ProfilePage: React.FC = () => {
           )}
         </AnimatedEntrance>
 
-        {hasDebugBadge && (
+        {hasStaffAccess && (
           <PressableScale haptic="select" onPress={() => setIsDebugMenuVisible(!isDebugMenuVisible)}>
             <Text style={[styles.debugMenuToggle, { color: c.accent }]}>
               {isDebugMenuVisible ? 'Hide' : 'Show'} Debug Menu

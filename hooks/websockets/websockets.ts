@@ -17,6 +17,11 @@ import { getSecureItemSafely } from "../../util/secure-store";
 const RECONNECT_INTERVAL_BASE = 1000; // base interval in ms
 const MAX_RECONNECT_ATTEMPTS = 10;
 const DEV_OFFLINE_TOKEN = "dev-offline-token";
+// The server pushes state every ~1s. If nothing arrives for this long while the
+// app is foregrounded, the socket is almost certainly half-open (dead but never
+// fired onclose — common on mobile/NAT), so we force a reconnect instead of
+// showing stale data until the user fully reopens the app.
+const STALE_SOCKET_MS = 12000;
 
 const isDevOfflineToken = (token: string | null): token is string => token === DEV_OFFLINE_TOKEN;
 
@@ -50,12 +55,45 @@ const useWebSocket = () => {
     // Set when a reconnect was deferred because the app was backgrounded; the
     // AppState listener performs it as soon as the app is active again.
     const reconnectOnForegroundRef = useRef(false);
+    // Liveness watchdog: reset this timeout whenever a message arrives.
+    const watchdogTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const clearReconnectTimer = () => {
         if (reconnectTimerRef.current) {
             clearTimeout(reconnectTimerRef.current);
             reconnectTimerRef.current = null;
         }
+    };
+
+    const clearWatchdog = () => {
+        if (watchdogTimerRef.current) {
+            clearTimeout(watchdogTimerRef.current);
+            watchdogTimerRef.current = null;
+        }
+    };
+
+    // Detects a half-open socket (reports OPEN but no data is arriving) and
+    // forces a clean reconnect. Only judges staleness while foregrounded — the
+    // OS suspends the socket in the background, where silence is expected and
+    // the AppState handler already reconnects on return.
+    const startWatchdog = () => {
+        clearWatchdog();
+        watchdogTimerRef.current = setTimeout(() => {
+            watchdogTimerRef.current = null;
+            if (AppState.currentState !== 'active') {
+                reconnectOnForegroundRef.current = true;
+                return;
+            }
+
+            const ws = websocketRef.current;
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+
+            console.warn('WebSocket appears stale (no data received); forcing reconnect.');
+            closeWebsocket(); // detaches onclose so it won't double-schedule
+            reconnectAttemptsRef.current = 0;
+            clearReconnectTimer();
+            initializeWebSocket();
+        }, STALE_SOCKET_MS);
     };
 
     // Phase 6 social cutover: friendships live in Firebase central
@@ -102,6 +140,7 @@ const useWebSocket = () => {
     // doesn't schedule a reconnect.
     const closeWebsocket = () => {
         stopFriendsDeclare();
+        clearWatchdog();
         if (websocketRef.current) {
             websocketRef.current.onclose = null;
             websocketRef.current.close();
@@ -165,6 +204,7 @@ const useWebSocket = () => {
             const ws = await connectWebsocket(token);
             websocketRef.current = ws;
             reconnectAttemptsRef.current = 0; // Reset reconnect attempts on successful connection
+            startWatchdog(); // detect a silently-dead socket and reconnect
             // Phase 12: a good connection clears the stored-shard failure streak.
             resetServerFailures().catch(() => {});
             // Declare the Firebase-central friends list to this server (fires
@@ -178,6 +218,7 @@ const useWebSocket = () => {
             };
 
             ws.onmessage = async (event) => {
+                startWatchdog(); // feed the liveness watchdog
                 try {
                     let uint8Array;
 

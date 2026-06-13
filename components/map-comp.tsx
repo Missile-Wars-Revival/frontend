@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo, useRef } from "react";
 import { AppState, View, Text, Switch, Alert, Pressable, useColorScheme } from "react-native";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Circle } from "react-native-maps";
+import type { Region } from "react-native-maps";
 import { AllLootDrops } from "./Loot/map-loot";
 import { AllLandMines } from "./Landmine/map-landmines";
 import { AllMissiles } from "./Missile/map-missile";
@@ -29,6 +30,23 @@ interface MapCompProps {
     onFireMissile?: (username: string) => void;
 }
 
+type MapRegion = Region & {
+    pitch?: number;
+    heading?: number;
+};
+
+const DEFAULT_MAP_DELTA = 0.01;
+const RECENTER_ANIMATION_MS = 500;
+
+const buildRegion = (latitude: number, longitude: number): MapRegion => ({
+    latitude,
+    longitude,
+    latitudeDelta: DEFAULT_MAP_DELTA,
+    longitudeDelta: DEFAULT_MAP_DELTA,
+    pitch: 0,
+    heading: 0
+});
+
 export const MapComp = (props: MapCompProps) => {
 
     //WS hooks
@@ -45,17 +63,19 @@ export const MapComp = (props: MapCompProps) => {
     const [visibilitymode, setMode] = useState<'friends' | 'global'>('global');
     const [locActive] = useState<boolean>(true);
     const [isMapDisabled, setIsMapDisabled] = useState(false);
+    const mapRef = useRef<MapView>(null);
+    const initialFocusRegionRef = useRef<MapRegion | null>(null);
 
     const colorScheme = useColorScheme();
     const isDarkMode = colorScheme === 'dark';
     const insets = useSafeAreaInsets();
     const mainmapstyles = useMemo(() => getMainMapStyles(isDarkMode), [isDarkMode]);
 
-    const [region, setRegion] = useState({
+    const [region, setRegion] = useState<MapRegion>({
         latitude: 0,
         longitude: 0,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
+        latitudeDelta: DEFAULT_MAP_DELTA,
+        longitudeDelta: DEFAULT_MAP_DELTA,
         pitch: 0,
         heading: 0
     });
@@ -65,12 +85,28 @@ export const MapComp = (props: MapCompProps) => {
         longitude: 0
     });
 
+    const focusMap = (nextRegion: MapRegion, animated = true) => {
+        setRegion(nextRegion);
+        mapRef.current?.animateToRegion(nextRegion, animated ? RECENTER_ANIMATION_MS : 0);
+    };
+
     useEffect(() => {
         const initializeApp = async () => {
             try {
                 const cachedRegion = await loadLastKnownLocation();
                 if (cachedRegion !== null) {
+                    initialFocusRegionRef.current = cachedRegion;
                     setRegion(cachedRegion);
+                } else {
+                    try {
+                        const location = await getCurrentLocation();
+                        const currentRegion = buildRegion(location.latitude, location.longitude);
+                        initialFocusRegionRef.current = currentRegion;
+                        await saveLocation(currentRegion);
+                        setRegion(currentRegion);
+                    } catch (error) {
+                        console.warn('Unable to initialise map focus from current location:', error);
+                    }
                 }
 
                 // Check DB Connection
@@ -232,6 +268,15 @@ export const MapComp = (props: MapCompProps) => {
                         longitude: location.longitude
                     });
 
+                    if (!initialFocusRegionRef.current) {
+                        const currentRegion = buildRegion(location.latitude, location.longitude);
+                        initialFocusRegionRef.current = currentRegion;
+                        setRegion(currentRegion);
+                        saveLocation(currentRegion).catch((err) =>
+                            console.warn('Failed to cache initial map focus:', err)
+                        );
+                    }
+
                     // Dispatch location to backend every 5 seconds so missile/landmine
                     // endpoints can look up the user's current location from the DB.
                     dispatchCounterRef.current += 1;
@@ -272,25 +317,14 @@ export const MapComp = (props: MapCompProps) => {
 
     const relocate = async () => {
         try {
-            const cachedLocation = await loadLastKnownLocation();
-            if (cachedLocation) {
-                setRegion(cachedLocation);
-            } else {
-                // Fallback to getting current location if cached location is not available
+            let focusRegion = initialFocusRegionRef.current;
+            if (!focusRegion) {
                 const location = await getCurrentLocation();
-                if (location) {
-                    const newRegion = {
-                        latitude: location.latitude,
-                        longitude: location.longitude,
-                        latitudeDelta: 0.01,
-                        longitudeDelta: 0.01,
-                        pitch: 0,
-                        heading: 0
-                    };
-                    await saveLocation(newRegion);
-                    setRegion(newRegion);
-                }
+                focusRegion = buildRegion(location.latitude, location.longitude);
+                initialFocusRegionRef.current = focusRegion;
+                await saveLocation(focusRegion);
             }
+            focusMap(focusRegion);
         } catch (error) {
             console.error("Error relocating:", error);
         }
@@ -303,6 +337,7 @@ export const MapComp = (props: MapCompProps) => {
         <View style={mainmapstyles.container}>
             <View style={{ width: '100%', height: '100%' }}>
                 <MapView
+                    ref={mapRef}
                     style={[mainmapstyles.map, isMapDisabled && mainmapstyles.disabledMap]}
                     region={region}
                     showsCompass={false}
@@ -334,7 +369,16 @@ export const MapComp = (props: MapCompProps) => {
             <MissileDetailsHost />
             <PlayerDetailsHost onFireMissile={props.onFireMissile} />
             <Pressable
-                style={[mainmapstyles.relocateButton, { bottom: insets.bottom + 40 }]}
+                accessibilityRole="button"
+                accessibilityLabel="Recenter map"
+                hitSlop={16}
+                pressRetentionOffset={20}
+                android_ripple={{ color: 'rgba(255, 255, 255, 0.18)', borderless: false }}
+                style={({ pressed }) => [
+                    mainmapstyles.relocateButton,
+                    { bottom: insets.bottom + 40 },
+                    pressed && mainmapstyles.relocateButtonPressed,
+                ]}
                 onPress={relocate}>
                 <FontAwesome name="location-arrow" size={24} color="#ffffff" />
             </Pressable>

@@ -103,15 +103,23 @@ const createStyles = (isDarkMode: boolean) => StyleSheet.create({
     },
     relocateButton: {
       position: 'absolute',
-      height: 42,  
-      width: 42,   
+      height: 56,
+      width: 56,
       right: width * 0.05, // 5% from the right
       bottom: height * 0.1, // increased to clear bottom nav bar
-      padding: 10,
       backgroundColor: 'rgba(0, 0, 0, 0.6)', 
-      borderRadius: 21, 
+      borderRadius: 28,
       alignItems: 'center', 
-      justifyContent: 'center', 
+      justifyContent: 'center',
+      zIndex: 50,
+      elevation: 12,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.25,
+      shadowRadius: 6,
+  },
+    relocateButtonPressed: {
+      opacity: 0.78,
   },
 });
 
