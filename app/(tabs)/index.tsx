@@ -155,14 +155,20 @@ export default function Map() {
       }
 
       try {
-        const response = await axiosInstance.post('/api/addMoney', {
-          token, amount: 1000
-        });
+        // Phase 9: the server now owns the amount and the once-per-day rule
+        // (the old /api/addMoney call let the client pick the amount and the
+        // local date was the only guard). The local date stays as a cheap
+        // "don't re-ask the server today" cache, but the server is authority.
+        const response = await axiosInstance.post('/api/claimDailyReward', { token });
 
-        if (response.data) {
-          console.log('Money added successfully:', response.data.message);
-          Alert.alert("Claimed!", `You have clamed your daily reward! 1000 Coins`);
-          await AsyncStorage.setItem('lastRewardedDate', today); // Update the last rewarded date
+        const claimed = response.data?.claimed === true;
+        const amount = response.data?.amount ?? 1000;
+        // Mark locally claimed whether the server granted it now or reports it
+        // was already claimed today — either way we shouldn't re-ask today.
+        await AsyncStorage.setItem('lastRewardedDate', today);
+        if (claimed) {
+          console.log('Daily reward claimed:', response.data?.message);
+          Alert.alert("Claimed!", `You have claimed your daily reward! ${amount} Coins`);
         }
       } catch (error) {
         if (isAxiosError(error)) {

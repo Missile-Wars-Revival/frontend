@@ -106,6 +106,19 @@ export default function RootLayout() {
 
       await Purchases.getCustomerInfo();
 
+      // Phase 9: tie RevenueCat's app_user_id to the firebaseUID so the
+      // coordinator can verify purchases server-side by that stable identity
+      // (an anonymous id makes server-side attribution impossible). Covers the
+      // cold-start-already-signed-in case; runtime sign-in/out is handled by
+      // the effect in RootLayoutNav.
+      const [firebaseUID, signedIn] = await Promise.all([
+        getSecureItemSafely('firebaseUID'),
+        AsyncStorage.getItem('signedIn'),
+      ]);
+      if (firebaseUID && signedIn === 'true') {
+        await Purchases.logIn(firebaseUID);
+      }
+
     } catch (error) {
       console.error('Failed to initialize Purchases:', error); // Log initialization errors
     }
@@ -396,6 +409,29 @@ function RootLayoutNav() {
     })().catch((error) => {
       console.error('Failed to migrate secure credentials:', error);
     });
+  }, [isAuthReady, isSignedIn]);
+
+  // Phase 9: keep RevenueCat's identity in lock-step with the signed-in
+  // account so coordinator-side purchase verification resolves by firebaseUID.
+  // Sign-in → logIn(firebaseUID); sign-out → logOut (only when not already
+  // anonymous, since react-native-purchases rejects logOut on an anon user).
+  useEffect(() => {
+    if (!isAuthReady) return;
+    (async () => {
+      try {
+        if (isSignedIn) {
+          const firebaseUID = await getSecureItemSafely('firebaseUID');
+          if (firebaseUID) await Purchases.logIn(firebaseUID);
+        } else {
+          const currentId = await Purchases.getAppUserID();
+          if (currentId && !currentId.startsWith('$RCAnonymousID:')) {
+            await Purchases.logOut();
+          }
+        }
+      } catch (error) {
+        console.error('RevenueCat identity sync failed:', error);
+      }
+    })();
   }, [isAuthReady, isSignedIn]);
 
   // Periodic background location dispatch so the backend has a fresh position

@@ -12,6 +12,8 @@ import { isAxiosError } from 'axios';
 import Purchases from 'react-native-purchases';
 import { addmoney } from '../../api/money';
 import { additem } from '../../api/add-item';
+import { redeemPurchase } from '../../api/purchases';
+import { coordinatorConfigured } from '../../api/server-discovery';
 import { getWeaponTypes, mapProductType, PremProduct, Product, getImages } from '../../api/store';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { useOnboarding } from '../../util/Context/onboardingContext';
@@ -305,9 +307,36 @@ const StorePage: React.FC = () => {
         const { customerInfo, productIdentifier } = await Purchases.purchaseStoreProduct(storeProduct.product);
         console.log('Purchase completed. Product Identifier:', productIdentifier);
 
-        // Wait for a short time to allow entitlements to update
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Phase 9: in distributed mode the grant is authoritative server-side.
+        // The coordinator verifies the real transaction (it holds the
+        // RevenueCat secret key) and mints a voucher the shard redeems — the
+        // client no longer checks entitlements or chooses an amount.
+        if (coordinatorConfigured()) {
+          const result = await redeemPurchase(product.sku);
+          setIsPurchasing(false);
+          switch (result.status) {
+            case 'success':
+              return { status: 'success', message: result.message };
+            case 'already_redeemed':
+              return { status: 'success', message: 'This purchase was already redeemed.' };
+            case 'no_purchase':
+              // The store charged but RevenueCat hasn't surfaced the
+              // transaction yet — it will credit on a later retry/restore.
+              return { status: 'purchase_error', error: 'Purchase is still being verified. It will be credited shortly.' };
+            case 'no_server':
+              return { status: 'purchase_error', error: 'Pick a server before redeeming a purchase.' };
+            case 'not_signed_in':
+              return { status: 'purchase_error', error: 'Sign in again to redeem this purchase.' };
+            case 'not_configured':
+              return { status: 'purchase_error', error: 'Purchases are not available on this server.' };
+            default:
+              return { status: 'purchase_error', error: result.error };
+          }
+        }
 
+        // Solo/no-coordinator: legacy client-side grant. There is no secret-key
+        // holder to verify against, so the host owns their own economy anyway.
+        await new Promise(resolve => setTimeout(resolve, 2000));
         console.log('Checking entitlement for product type:', product.type);
 
         if (customerInfo.entitlements.active[product.type]) {
